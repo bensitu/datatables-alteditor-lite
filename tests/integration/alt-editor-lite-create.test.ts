@@ -3,6 +3,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest
 
 import {
   AltEditorLite,
+  AltEditorLiteError,
   EditorAlreadyInitializedError,
   EditorConfigurationError,
   EditorDestroyedError,
@@ -255,7 +256,11 @@ describe('AltEditorLite synchronous Create', () => {
     let shouldFail = true;
     const { api, editor, tableElement } = createEditor('callback-failure', (values) => {
       if (shouldFail) {
-        throw new Error('Domain mapping failed.');
+        throw new AltEditorLiteError({
+          code: 'DOMAIN_MAPPING',
+          message: 'Domain mapping failed.',
+          retryable: true,
+        });
       }
       return {
         id: 'retried-row',

@@ -1,6 +1,5 @@
 import { getPathValue } from '../object-path/get-path-value.js';
 
-import type { DeepPartial } from '../core/editor-values.js';
 import type { ManagedFieldController } from '../fields/managed-field-controller.js';
 
 /**
@@ -11,7 +10,7 @@ import type { ManagedFieldController } from '../fields/managed-field-controller.
  */
 export function populateFormValues<TFormValues extends object>(
   controllers: readonly ManagedFieldController<TFormValues>[],
-  values: Readonly<DeepPartial<TFormValues>>,
+  values: Readonly<object>,
 ): void {
   for (const controller of controllers) {
     const fieldValue = getPathValue(values, controller.name);

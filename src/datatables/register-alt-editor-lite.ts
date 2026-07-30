@@ -5,6 +5,10 @@ import {
 } from '../instance/editor-instance-store.js';
 
 import { registerEditorApi } from './register-editor-api.js';
+import {
+  registerEditorButtons,
+  type EditorButtonName,
+} from './register-editor-buttons.js';
 
 import type { DataTablesStatic } from 'datatables.net';
 
@@ -16,6 +20,7 @@ type RegisteredDataTable = DataTablesStatic & {
 
 interface RegistrationRecord {
   readonly instanceLookups: Set<EditorInstanceLookup>;
+  readonly registeredButtonNames: Set<EditorButtonName>;
 }
 
 /**
@@ -40,13 +45,24 @@ export function registerAltEditorLite(dataTable: DataTablesStatic): void {
   const existingRegistration = registeredDataTable[REGISTRATION_MARKER];
   if (existingRegistration !== undefined) {
     existingRegistration.instanceLookups.add(getEditorInstance);
+    registerEditorButtons(
+      dataTable,
+      existingRegistration.instanceLookups,
+      existingRegistration.registeredButtonNames,
+    );
     return;
   }
 
   const registration: RegistrationRecord = {
     instanceLookups: new Set([getEditorInstance]),
+    registeredButtonNames: new Set(),
   };
   registerEditorApi(dataTable, registration.instanceLookups);
+  registerEditorButtons(
+    dataTable,
+    registration.instanceLookups,
+    registration.registeredButtonNames,
+  );
   Object.defineProperty(registeredDataTable, REGISTRATION_MARKER, {
     configurable: false,
     enumerable: false,

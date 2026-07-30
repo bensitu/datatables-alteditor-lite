@@ -1,0 +1,163 @@
+import DataTable from 'datatables.net';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+
+import {
+  AltEditorLite,
+  registerAltEditorLite,
+  type FieldConfig,
+} from '../../src/index.js';
+
+import {
+  createContractTable,
+  destroyContractTables,
+  type ContractRow,
+} from './datatables-contract-fixture.js';
+
+interface ButtonOnlyValues {
+  readonly name: string;
+}
+
+interface TriggerableButtonsApi {
+  button(buttonIndex: number): {
+    trigger(): void;
+  };
+}
+
+const fields = [
+  {
+    label: 'Name',
+    name: 'name',
+    required: true,
+    type: 'text',
+  },
+] satisfies readonly FieldConfig<ButtonOnlyValues>[];
+
+let activeEditor: AltEditorLite<ContractRow, ButtonOnlyValues> | undefined;
+let originalShowModalDescriptor: PropertyDescriptor | undefined;
+let originalCloseDescriptor: PropertyDescriptor | undefined;
+
+beforeAll(async () => {
+  originalShowModalDescriptor = Object.getOwnPropertyDescriptor(
+    HTMLDialogElement.prototype,
+    'showModal',
+  );
+  originalCloseDescriptor = Object.getOwnPropertyDescriptor(
+    HTMLDialogElement.prototype,
+    'close',
+  );
+  Object.defineProperty(HTMLDialogElement.prototype, 'showModal', {
+    configurable: true,
+    value(this: HTMLDialogElement): void {
+      this.open = true;
+    },
+  });
+  Object.defineProperty(HTMLDialogElement.prototype, 'close', {
+    configurable: true,
+    value(this: HTMLDialogElement): void {
+      this.open = false;
+    },
+  });
+  Object.defineProperty(window, 'DataTable', {
+    configurable: true,
+    value: DataTable,
+  });
+
+  const buttonsRuntimeSpecifier = 'datatables.net-buttons';
+  await import(buttonsRuntimeSpecifier);
+  registerAltEditorLite(DataTable);
+});
+
+afterAll(() => {
+  if (originalShowModalDescriptor === undefined) {
+    Reflect.deleteProperty(HTMLDialogElement.prototype, 'showModal');
+  } else {
+    Object.defineProperty(
+      HTMLDialogElement.prototype,
+      'showModal',
+      originalShowModalDescriptor,
+    );
+  }
+
+  if (originalCloseDescriptor === undefined) {
+    Reflect.deleteProperty(HTMLDialogElement.prototype, 'close');
+  } else {
+    Object.defineProperty(HTMLDialogElement.prototype, 'close', originalCloseDescriptor);
+  }
+});
+
+afterEach(() => {
+  activeEditor?.destroy();
+  activeEditor = undefined;
+  destroyContractTables();
+});
+
+function buttonByText(tableElement: HTMLTableElement, text: string): HTMLButtonElement {
+  const tableContainer = tableElement.closest('.dt-container');
+  const button = [
+    ...(tableContainer?.querySelectorAll<HTMLButtonElement>('button') ?? []),
+  ].find((candidate) => candidate.textContent.trim() === text);
+  if (button === undefined) {
+    throw new Error(`Expected the ${text} button.`);
+  }
+  return button;
+}
+
+describe('Buttons without Select', () => {
+  it('keeps Create and Refresh operational while selection actions stay disabled', async () => {
+    const { api, tableElement } = createContractTable('buttons-only-table', {
+      layout: {
+        topStart: {
+          buttons: [
+            'altEditorLiteCreate',
+            'altEditorLiteEdit',
+            'altEditorLiteRemove',
+            'altEditorLiteRefresh',
+          ],
+        },
+      },
+    });
+    const editor = new AltEditorLite<ContractRow, ButtonOnlyValues>(api, {
+      clientSide: {
+        createRow: (values) => ({
+          id: 'buttons-created',
+          name: values.name ?? '',
+          rank: 0,
+        }),
+      },
+      fields,
+    });
+    activeEditor = editor;
+    const buttonsApi = api as unknown as TriggerableButtonsApi;
+    const createButton = buttonByText(tableElement, 'Create');
+    const editButton = buttonByText(tableElement, 'Edit');
+    const removeButton = buttonByText(tableElement, 'Remove');
+    const refreshButton = buttonByText(tableElement, 'Refresh');
+
+    expect('select' in api.row(0)).toBe(false);
+    expect(createButton.disabled).toBe(false);
+    expect(refreshButton.disabled).toBe(false);
+    expect(editButton.disabled).toBe(true);
+    expect(editButton.getAttribute('aria-disabled')).toBe('true');
+    expect(editButton.title).toContain('Select is required');
+    expect(removeButton.disabled).toBe(true);
+    expect(removeButton.getAttribute('aria-disabled')).toBe('true');
+    expect(removeButton.title).toContain('Select is required');
+
+    buttonsApi.button(0).trigger();
+    await vi.waitFor(() => {
+      expect(editor.getState()).toMatchObject({
+        action: 'create',
+        status: 'open',
+      });
+    });
+    await editor.closeDialog();
+
+    const refreshSuccess = vi.fn();
+    tableElement.addEventListener('alteditor-lite:success', refreshSuccess);
+    buttonsApi.button(3).trigger();
+    await vi.waitFor(() => {
+      expect(refreshSuccess).toHaveBeenCalledOnce();
+    });
+    expect(editor.getState().status).toBe('ready');
+  });
+});

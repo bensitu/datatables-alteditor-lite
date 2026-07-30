@@ -3,9 +3,16 @@ import { expectAssignable, expectNotAssignable, expectType } from 'tsd';
 import {
   AltEditorLite,
   type AltEditorLiteOptions,
+  type ClientSideOperations,
+  type EditorErrorEventDetail,
+  type EditorOperations,
+  type EditorSubmitEventDetail,
+  type EditorSuccessEventDetail,
+  type EditorValues,
   type FieldConfig,
   type FieldPath,
   type FieldValue,
+  type OperationContext,
 } from '../../src/index.js';
 
 import type { Api } from 'datatables.net';
@@ -72,6 +79,90 @@ const editor = new AltEditorLite<Row, FormValues>(table, {
 expectType<AltEditorLite<Row, FormValues>>(editor);
 expectType<AltEditorLite<Row, FormValues> | null>(table.altEditorLite<FormValues>());
 expectType<AltEditorLite<Row> | null>(table.altEditorLite());
+expectType<Promise<void>>(editor.openCreateDialog());
+expectType<Promise<void>>(editor.openEditDialog('#row'));
+expectType<Promise<void>>(editor.openEditDialog(0));
+expectType<Promise<void>>(editor.openRemoveDialog(['#row-a', '#row-b']));
+expectType<Promise<void>>(editor.refreshTable());
+expectType<Promise<void>>(editor.closeDialog());
+
+const operations: EditorOperations<Row, FormValues> = {
+  create: async (values, context) => {
+    await Promise.resolve();
+    expectType<Readonly<EditorValues<FormValues>>>(values);
+    expectType<OperationContext<Row>>(context);
+    expectType<Api<Row>>(context.table);
+    expectType<AbortSignal>(context.signal);
+    expectType<'create' | 'edit' | 'remove' | 'refresh'>(context.operation);
+    return {
+      id: 'created',
+      profile: { email: values.contact?.email ?? '' },
+      rank: values.rank ?? 0,
+    };
+  },
+  remove: (rows, context) => {
+    expectType<readonly Readonly<Row>[]>(rows);
+    expectType<OperationContext<Row>>(context);
+  },
+  update: (values, original, context) => {
+    expectType<Readonly<EditorValues<FormValues>>>(values);
+    expectType<Readonly<Row>>(original);
+    expectType<OperationContext<Row>>(context);
+    return {
+      ...original,
+      profile: { email: values.contact?.email ?? original.profile.email },
+      rank: values.rank ?? original.rank,
+    };
+  },
+};
+expectAssignable<EditorOperations<Row, FormValues>>(operations);
+
+const clientSide: ClientSideOperations<Row, FormValues> = {
+  createRow: (values) => ({
+    id: 'client-created',
+    profile: { email: values.contact?.email ?? '' },
+    rank: values.rank ?? 0,
+  }),
+  updateRow: (original, values) => ({
+    ...original,
+    rank: values.rank ?? original.rank,
+  }),
+};
+expectAssignable<ClientSideOperations<Row, FormValues>>(clientSide);
+expectNotAssignable<ClientSideOperations<Row, FormValues>>({
+  createRow: async () => ({
+    ...(await Promise.resolve({
+      id: 'invalid-async',
+      profile: { email: '' },
+      rank: 0,
+    })),
+  }),
+});
+
+declare const submitDetail: EditorSubmitEventDetail<Row, FormValues>;
+if (submitDetail.operation === 'create') {
+  expectType<Readonly<EditorValues<FormValues>>>(submitDetail.values);
+} else if (submitDetail.operation === 'edit') {
+  expectType<Readonly<Row>>(submitDetail.original);
+  expectType<Readonly<EditorValues<FormValues>>>(submitDetail.values);
+} else {
+  expectType<readonly Readonly<Row>[]>(submitDetail.rows);
+}
+
+declare const successDetail: EditorSuccessEventDetail<Row, FormValues>;
+if (successDetail.operation === 'create') {
+  expectType<Readonly<Row>>(successDetail.row);
+} else if (successDetail.operation === 'edit') {
+  expectType<Readonly<Row>>(successDetail.original);
+  expectType<Readonly<Row>>(successDetail.row);
+} else if (successDetail.operation === 'remove') {
+  expectType<readonly Readonly<Row>[]>(successDetail.rows);
+} else {
+  expectType<'refresh'>(successDetail.operation);
+}
+
+declare const errorDetail: EditorErrorEventDetail<Row, FormValues>;
+expectType<'create' | 'edit' | 'remove' | 'refresh'>(errorDetail.operation);
 
 expectAssignable<FieldPath<FormValues>>('contact.email');
 expectAssignable<FieldPath<FormValues>>('attachment');

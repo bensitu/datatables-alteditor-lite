@@ -41,23 +41,23 @@ export class DialogFocusScope {
   }
 
   /**
-   * Installs the Tab scope and focuses form content after the dialog opens.
+   * Installs the Tab scope and focuses dialog content after the dialog opens.
    *
-   * @param formElement - Newly rendered editor form.
+   * @param contentElement - Newly rendered form or confirmation content.
    */
-  public activate(formElement: HTMLFormElement): void {
+  public activate(contentElement: HTMLElement): void {
     this.isActive = true;
     this.dialogElement.addEventListener('keydown', this.handleKeyDown);
-    this.focusInitial(formElement);
+    this.focusInitial(contentElement);
   }
 
   /**
-   * Focuses the first invalid control or the first editable field.
+   * Focuses the first invalid control or the first interactive content.
    *
-   * @param formElement - Current editor form.
+   * @param contentElement - Current form or confirmation content.
    */
-  public focusInitial(formElement: HTMLFormElement): void {
-    const invalidElement = formElement.querySelector<HTMLElement>(
+  public focusInitial(contentElement: HTMLElement): void {
+    const invalidElement = contentElement.querySelector<HTMLElement>(
       '[aria-invalid="true"]',
     );
     const invalidControl =
@@ -66,11 +66,14 @@ export class DialogFocusScope {
         : invalidElement?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
     const initialControl =
       invalidControl ??
-      [...formElement.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)].find(
+      [...contentElement.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)].find(
         isFocusable,
+      ) ??
+      this.dialogElement.querySelector<HTMLButtonElement>(
+        '.dt-alteditor-lite-dialog__button--cancel:not([disabled])',
       );
 
-    if (initialControl === undefined) {
+    if (initialControl === null) {
       this.dialogElement.tabIndex = -1;
       this.dialogElement.focus();
     } else {

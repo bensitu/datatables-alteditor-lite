@@ -13,3 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Native Create dialog, safe form fields and nested values, synchronous
   `clientSide.createRow`, DataTables instance retrieval, lifecycle events, and
   English fallback text.
+- Complete Create, Edit, Remove, and Refresh flows with asynchronous operation
+  callbacks, cancellation ownership, stale-result protection, non-optimistic
+  DataTables mutation, target snapshots, safe declared-field merging, mandatory
+  Remove confirmation, and normalized operation errors.
+- Optional DataTables Buttons and Select integration, including explicit selector
+  fallbacks and lifecycle-aware button enablement.

@@ -124,6 +124,19 @@ export class EditorFormController<
     populateFormValues(this.controllers, values);
   }
 
+  /**
+   * Populates matching configured paths from a row-shaped source object.
+   *
+   * This internal boundary keeps `TRow` and `TFormValues` separate: paths
+   * absent from the row retain their configured defaults.
+   *
+   * @param sourceValues - Row snapshot read through safe configured paths.
+   */
+  public populateFromSource(sourceValues: Readonly<object>): void {
+    this.assertActive();
+    populateFormValues(this.controllers, sourceValues);
+  }
+
   /** Collects enabled normalized values. */
   public async collect(): Promise<EditorValues<TFormValues>> {
     this.assertActive();

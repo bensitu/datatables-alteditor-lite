@@ -106,6 +106,86 @@ export class EditorOperationBusyError extends AltEditorLiteError {
 }
 
 /**
+ * Indicates that selection-based targeting was requested without Select.
+ *
+ * The editor remains ready and DataTables is not mutated. Supplying an
+ * explicit public row selector or loading Select makes the request retryable.
+ */
+export class EditorSelectionUnavailableError extends AltEditorLiteError {
+  /**
+   * Creates a selection-capability error.
+   *
+   * @param message - Localized safe explanation.
+   */
+  public constructor(
+    message = 'DataTables Select is required when no row selector is provided.',
+  ) {
+    super({
+      code: 'SELECTION_UNAVAILABLE',
+      message,
+      retryable: true,
+    });
+  }
+}
+
+/**
+ * Indicates that a selection or explicit selector resolved the wrong row count.
+ *
+ * The editor remains ready and DataTables is not mutated. The caller can
+ * correct the selector or selection and retry.
+ */
+export class EditorSelectionCountError extends AltEditorLiteError {
+  /** Number of rows resolved by the failed request. */
+  public readonly actualCount: number;
+
+  /** Required selection cardinality. */
+  public readonly expected: 'exactly-one' | 'one-or-more';
+
+  /**
+   * Creates a selection-count error.
+   *
+   * @param expected - Required cardinality.
+   * @param actualCount - Number of rows actually resolved.
+   * @param message - Localized safe explanation.
+   */
+  public constructor(
+    expected: 'exactly-one' | 'one-or-more',
+    actualCount: number,
+    message: string,
+  ) {
+    super({
+      code: 'SELECTION_COUNT',
+      message,
+      retryable: true,
+    });
+    this.actualCount = actualCount;
+    this.expected = expected;
+  }
+}
+
+/**
+ * Indicates that an Edit or Remove snapshot can no longer identify its rows.
+ *
+ * The persistence callback is not invoked when detected before submission.
+ * If detected after an asynchronous callback, AltEditorLite still performs no
+ * DataTables mutation. Closing and opening a new dialog is required.
+ */
+export class EditorTargetUnavailableError extends AltEditorLiteError {
+  /**
+   * Creates a stale-target error.
+   *
+   * @param message - Localized safe explanation.
+   */
+  public constructor(message = 'The selected row is no longer available.') {
+    super({
+      code: 'TARGET_UNAVAILABLE',
+      message,
+      retryable: false,
+    });
+  }
+}
+
+/**
  * Indicates that a public method was called after the instance was destroyed.
  *
  * The destroyed state remains unchanged and DataTables is not mutated.

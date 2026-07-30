@@ -95,6 +95,12 @@
   border-color: var(--dt-alteditor-lite-primary-color);
 }
 
+.dt-alteditor-lite-dialog__button--destructive {
+  color: #fff;
+  background: var(--dt-alteditor-lite-error-color);
+  border-color: var(--dt-alteditor-lite-error-color);
+}
+
 .dt-alteditor-lite-dialog__button:disabled {
   cursor: progress;
   opacity: 0.6;
@@ -103,6 +109,19 @@
 .dt-alteditor-lite-form {
   display: grid;
   gap: var(--dt-alteditor-lite-spacing);
+}
+
+.dt-alteditor-lite-remove-confirmation {
+  display: grid;
+  gap: calc(var(--dt-alteditor-lite-spacing) / 2);
+}
+
+.dt-alteditor-lite-remove-confirmation > * {
+  margin: 0;
+}
+
+.dt-alteditor-lite-remove-confirmation__warning {
+  font-weight: 600;
 }
 
 .dt-alteditor-lite-form[aria-busy='true'] {

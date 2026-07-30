@@ -4,8 +4,8 @@
 DataTables 3.x. It uses TypeScript and native browser APIs, with no jQuery or UI
 framework runtime.
 
-The current implementation provides the core native Create dialog and synchronous
-client-side row creation. It is not yet published to npm.
+The current implementation provides Create, Edit, Remove, and Refresh with
+synchronous client-side mappings or asynchronous persistence operations.
 
 ## Current capabilities
 
@@ -18,10 +18,13 @@ client-side row creation. It is not yet published to npm.
 - Exact number, typed select/radio, and file value normalization
 - English fallback language with nested overrides
 - Non-bubbling DOM `CustomEvent` lifecycle notifications
+- Non-optimistic asynchronous Create, Update, and Remove operations with
+  `AbortSignal`
+- Edit and Remove target snapshots that survive selection changes and redraws
+- Explicit DataTables row selectors with optional Select integration
+- Optional Buttons definitions with lifecycle-aware enablement
+- Ajax-aware and local-table Refresh
 - ESM and Browser Global registration without optional DataTables runtime imports
-
-Edit, Remove, Refresh, asynchronous persistence, Buttons/Select behavior, and
-SearchSelect are not implemented yet.
 
 ## ESM usage
 
@@ -80,6 +83,14 @@ const editor = new AltEditorLite<UserRow, UserForm>(table, {
 document.querySelector('#create-user')?.addEventListener('click', () => {
   void editor.openCreateDialog();
 });
+
+document.querySelector('#edit-user')?.addEventListener('click', () => {
+  void editor.openEditDialog('#user-42');
+});
+
+document.querySelector('#remove-user')?.addEventListener('click', () => {
+  void editor.openRemoveDialog('#user-42');
+});
 ```
 
 The getter never creates an instance:
@@ -90,6 +101,23 @@ table.altEditorLite<UserForm>(); // AltEditorLite<UserRow, UserForm> | null
 
 Call `editor.destroy()` before replacing the DataTables table or creating another
 editor for the same table.
+
+For remote persistence, use `operations.create`, `operations.update`, and
+`operations.remove`. DataTables changes only after the callback succeeds. See
+[Operations](docs/operations.md) and [Configuration](docs/configuration.md).
+
+Buttons and Select remain optional peer dependencies. If Buttons is loaded before
+AltEditorLite registration, these definitions are available:
+
+```text
+altEditorLiteCreate
+altEditorLiteEdit
+altEditorLiteRemove
+altEditorLiteRefresh
+```
+
+Edit and Remove can always use an explicit row selector. Omitting the selector
+requires Select.
 
 ## Browser Global usage
 
@@ -115,18 +143,20 @@ const tableElement = table.table().node();
 
 tableElement.addEventListener('alteditor-lite:success', (event) => {
   if (event instanceof CustomEvent) {
-    console.log(event.detail.row);
+    console.log(event.detail.operation);
   }
 });
 ```
 
-The implemented Create sequence is:
+The Create, Edit, and Remove sequence is:
 
 ```text
 open → submit → success | error → close (when closed)
 ```
 
+Refresh publishes `refresh(start) → success | error → refresh(complete)`.
 `alteditor-lite:destroy` is emitted once after owned resources are cleaned up.
+See [Events](docs/events.md) for the discriminated detail types.
 
 ## Development
 
