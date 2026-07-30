@@ -68,16 +68,42 @@ test('loads after globalThis.DataTable without introducing jQuery', async ({ pag
   const loadedState = await page.evaluate(() => {
     const runtimeScope = globalThis as typeof globalThis & {
       DataTable?: {
+        new (selector: string): {
+          altEditorLite(): unknown;
+          destroy(): void;
+        };
         readonly version?: unknown;
       };
+      DataTablesAltEditorLite?: {
+        readonly AltEditorLite?: new (
+          table: object,
+          options: { readonly fields: readonly [] },
+        ) => { destroy(): void };
+      };
     };
+    const dataTableConstructor = runtimeScope.DataTable;
+    const editorConstructor = runtimeScope.DataTablesAltEditorLite?.AltEditorLite;
+
+    if (dataTableConstructor === undefined || editorConstructor === undefined) {
+      throw new Error('Expected both browser globals after bundle loading.');
+    }
+
+    const table = new dataTableConstructor('#contract-table');
+    const editor = new editorConstructor(table, { fields: [] });
+    const isGetterMatchedToSecondBundleInstance = table.altEditorLite() === editor;
+    editor.destroy();
+    table.destroy();
 
     return {
       dataTableType: typeof runtimeScope.DataTable,
       dataTableVersion: runtimeScope.DataTable?.version,
+      isGetterMatchedToSecondBundleInstance,
       hasJQuery: 'jQuery' in globalThis,
     };
   });
 
-  expect(loadedState).toEqual(baselineState);
+  expect(loadedState).toEqual({
+    ...baselineState,
+    isGetterMatchedToSecondBundleInstance: true,
+  });
 });

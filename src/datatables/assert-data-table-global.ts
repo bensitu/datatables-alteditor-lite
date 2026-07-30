@@ -1,9 +1,11 @@
+import type { DataTablesStatic } from 'datatables.net';
+
 /**
  * Describes a scope whose DataTables constructor has passed the runtime boundary
  * check.
  */
 export interface DataTableGlobalScopeWithConstructor {
-  readonly DataTable: (...arguments_: never[]) => unknown;
+  readonly DataTable: DataTablesStatic;
 }
 
 /**

@@ -10,3 +10,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Reproducible development, build, test, and continuous-integration foundations.
+- Native Create dialog, safe form fields and nested values, synchronous
+  `clientSide.createRow`, DataTables instance retrieval, lifecycle events, and
+  English fallback text.
