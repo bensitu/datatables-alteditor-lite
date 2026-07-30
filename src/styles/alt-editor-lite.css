@@ -1,0 +1,7 @@
+:root {
+  --dt-alteditor-lite-dialog-width: 42rem;
+  --dt-alteditor-lite-spacing: 1rem;
+  --dt-alteditor-lite-border-radius: 0.5rem;
+  --dt-alteditor-lite-error-color: #b42318;
+  --dt-alteditor-lite-overlay-color: rgb(0 0 0 / 45%);
+}

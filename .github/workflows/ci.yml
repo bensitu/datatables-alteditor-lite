@@ -1,0 +1,132 @@
+name: Core CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+env:
+  HUSKY: 0
+
+jobs:
+  format-lint-typecheck:
+    name: Format, lint, and typecheck (Node ${{ matrix.node-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version:
+          - '20.19.0'
+          - '22.13.0'
+          - '24.0.0'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+      - run: npm ci
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run lint:styles
+      - run: npm run typecheck
+
+  unit-integration:
+    name: Unit and baseline integration tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24.0.0'
+          cache: npm
+      - run: npm ci
+      - run: npm run test
+      - run: npm run test:integration
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage
+          path: coverage/
+          if-no-files-found: ignore
+
+  build-types:
+    name: JavaScript, CSS, declarations, and type tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24.0.0'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm run test:types
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: dist/
+
+  e2e-chromium:
+    name: E2E Chromium
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24.0.0'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e -- --project=chromium
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report-chromium
+          path: playwright-report/
+          if-no-files-found: ignore
+
+  e2e-firefox:
+    name: E2E Firefox
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24.0.0'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npx playwright install --with-deps firefox
+      - run: npm run test:e2e -- --project=firefox
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report-firefox
+          path: playwright-report/
+          if-no-files-found: ignore
+
+  e2e-webkit:
+    name: E2E WebKit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24.0.0'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npx playwright install --with-deps webkit
+      - run: npm run test:e2e -- --project=webkit
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report-webkit
+          path: playwright-report/
+          if-no-files-found: ignore
