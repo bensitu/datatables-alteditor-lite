@@ -1,7 +1,7 @@
 {
   "locale": "ja",
   "actions": {
-    "create": "作成",
+    "create": "新規",
     "edit": "編集",
     "remove": "削除",
     "refresh": "更新",

@@ -11,7 +11,16 @@ const offices = [
   { label: 'Tokyo', value: 10 },
   { label: 'Madrid', value: 20 },
   { label: 'New York', value: 30 },
-  { disabled: true, label: 'Closed office', value: 40 },
+  { label: 'Beijing', value: 40 },
+  { label: 'London', value: 50 },
+  { label: 'Paris', value: 60 },
+  { label: 'Berlin', value: 70 },
+  { label: 'Sydney', value: 80 },
+  { label: 'Singapore', value: 90 },
+  { label: 'Dubai', value: 100 },
+  { label: 'Hong Kong', value: 110 },
+  { label: 'Seoul', value: 120 },
+  { disabled: true, label: 'Closed office', value: 130 },
 ];
 const languageFileByLocale = new Map([
   ['ja', 'ja.json'],
@@ -51,6 +60,28 @@ const initialRows = [
     officeId: 30,
     role: 'developer',
     startDate: '2024-01-08',
+  },
+  {
+    active: true,
+    age: 30,
+    email: 'john@example.test',
+    id: 4,
+    name: 'John Doe',
+    notes: 'New employee.',
+    officeId: 40,
+    role: 'developer',
+    startDate: '2024-01-09',
+  },
+  {
+    active: true,
+    age: 45,
+    email: 'jane@example.test',
+    id: 5,
+    name: 'Jane Smith',
+    notes: 'Senior developer.',
+    officeId: 50,
+    role: 'manager',
+    startDate: '2019-06-15',
   },
 ];
 const fieldConfigurations = [
@@ -117,7 +148,7 @@ const localeStatus = document.querySelector('#locale-status');
 const employeeTableElement = document.querySelector('#employees');
 let currentLocaleName = 'en';
 let currentEditor;
-let nextRowId = 4;
+let nextRowId = 6;
 let secondaryEditor;
 let shouldFailNextOperation = false;
 

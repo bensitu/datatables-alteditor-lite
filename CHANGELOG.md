@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Initial public release.
+- ✨ Initial public release. ✨
 - Native Create, Edit, Remove, and Refresh workflows with synchronous client-side
   mappings or asynchronous persistence operations.
 - Safe nested form values, typed fields, local uniqueness validation, operation
