@@ -14,9 +14,12 @@ synchronous client-side mappings or asynchronous persistence operations.
 - Safe nested field paths with prototype-pollution protection
 - Native constraints followed by asynchronous custom field validation
 - Hidden, text, email, password, number, date, time, datetime-local, textarea,
-  checkbox, radio, select, and single/multiple file fields
-- Exact number, typed select/radio, and file value normalization
-- English fallback language with nested overrides
+  checkbox, radio, select, SearchSelect, and single/multiple file fields
+- Local single-value SearchSelect with exact string/number identity, dynamic
+  options, keyboard/IME support, clear, sorting, and optional manual strings
+- Exact number, typed option, and file value normalization
+- English fallback with nested overrides and published English, Japanese,
+  Simplified Chinese, and Spanish locale modules
 - Non-bubbling DOM `CustomEvent` lifecycle notifications
 - Non-optimistic asynchronous Create, Update, and Remove operations with
   `AbortSignal`
@@ -25,6 +28,8 @@ synchronous client-side mappings or asynchronous persistence operations.
 - Optional Buttons definitions with lifecycle-aware enablement
 - Ajax-aware and local-table Refresh
 - ESM and Browser Global registration without optional DataTables runtime imports
+- Browser Global locale registry and minified/source-mapped locale bundles
+- Responsive light/dark CSS with reduced-motion and high-zoom support
 
 ## ESM usage
 
@@ -104,7 +109,8 @@ editor for the same table.
 
 For remote persistence, use `operations.create`, `operations.update`, and
 `operations.remove`. DataTables changes only after the callback succeeds. See
-[Operations](docs/operations.md) and [Configuration](docs/configuration.md).
+[Operations](docs/operations.md), [Configuration](docs/configuration.md), and
+[Fields](docs/fields.md).
 
 Buttons and Select remain optional peer dependencies. If Buttons is loaded before
 AltEditorLite registration, these definitions are available:
@@ -133,6 +139,20 @@ The constructor is available as
 `DataTablesAltEditorLite.AltEditorLite`. Repeated evaluation of the browser bundle
 does not register the DataTables method again.
 
+Locale IIFEs load after the core and register through its public registry:
+
+```html
+<script src="datatables-alteditor-lite.js"></script>
+<script src="locales/datatables-alteditor-lite.ja.js"></script>
+```
+
+```js
+const language = DataTablesAltEditorLite.getLocale('ja');
+```
+
+See [Localization](docs/localization.md) and
+[Browser Global](docs/browser-global.md) for all published paths and load order.
+
 ## Events
 
 Listen directly on `table.table().node()`. Events do not bubble and cannot cancel
@@ -157,6 +177,19 @@ open → submit → success | error → close (when closed)
 Refresh publishes `refresh(start) → success | error → refresh(complete)`.
 `alteditor-lite:destroy` is emitted once after owned resources are cleaned up.
 See [Events](docs/events.md) for the discriminated detail types.
+
+## Public demo
+
+The Browser Global demo uses the built `dist/` files and local DataTables peers;
+
+```bash
+npm run build
+npm run demo
+```
+
+Open `http://127.0.0.1:4173/`. It demonstrates full CRUD, Buttons and Select,
+typed SearchSelect, asynchronous failures, four locales, events, state, and a
+second independent instance.
 
 ## Development
 

@@ -191,6 +191,39 @@ export interface SelectFieldConfig<
   readonly allowClear?: boolean;
 }
 
+interface BaseSearchSelectFieldConfig<
+  TFormValues extends object,
+  TValue extends string | number,
+> extends VisibleFieldConfig<TFormValues, TValue | undefined> {
+  readonly type: 'search-select';
+  /** Local options available to the single-value combobox. */
+  readonly options: readonly SelectOption<TValue>[];
+  /** Whether the current selection can be cleared. */
+  readonly allowClear?: boolean;
+  /** Whether matching options are sorted with the active locale. */
+  readonly sortOptions?: boolean;
+  /** Minimum query length before local filtering starts. */
+  readonly searchThreshold?: number;
+  /** Delay applied to local filtering after text input. */
+  readonly debounceMs?: number;
+}
+
+/**
+ * Local searchable single-select configuration.
+ *
+ * Manual values are intentionally limited to string-valued fields in 0.1.0.
+ */
+export type SearchSelectFieldConfig<
+  TFormValues extends object,
+  TValue extends string | number = string,
+> = [TValue] extends [string]
+  ? BaseSearchSelectFieldConfig<TFormValues, TValue> & {
+      readonly allowManualValue?: boolean;
+    }
+  : BaseSearchSelectFieldConfig<TFormValues, TValue> & {
+      readonly allowManualValue?: false;
+    };
+
 /** Hidden string value configuration. */
 export interface HiddenFieldConfig<TFormValues extends object> extends BaseFieldConfig<
   TFormValues,
@@ -261,5 +294,8 @@ export type FieldConfig<TFormValues extends object> =
   | CheckboxFieldConfig<TFormValues>
   | RadioFieldConfig<TFormValues>
   | SelectFieldConfig<TFormValues>
+  | SearchSelectFieldConfig<TFormValues>
+  | SearchSelectFieldConfig<TFormValues, string | number>
+  | SearchSelectFieldConfig<TFormValues, number>
   | FileFieldConfig<TFormValues>
   | HiddenFieldConfig<TFormValues>;

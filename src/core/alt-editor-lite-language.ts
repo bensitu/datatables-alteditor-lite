@@ -7,6 +7,8 @@ import type { DeepPartial } from './editor-values.js';
  * with this complete shape.
  */
 export interface AltEditorLiteLanguage {
+  /** BCP 47 locale used for local matching and sorting. */
+  readonly locale: string;
   /** Labels for editor actions. */
   readonly actions: {
     readonly create: string;
@@ -30,12 +32,18 @@ export interface AltEditorLiteLanguage {
     readonly invalid: string;
     readonly unique: string;
   };
-  /** Reserved text for the later SearchSelect field. */
+  /** Text used by SearchSelect fields. */
   readonly searchSelect: {
     readonly placeholder: string;
     readonly searchPlaceholder: string;
     readonly noResults: string;
     readonly clear: string;
+  };
+  /** Labels and announcements exposed to assistive technology. */
+  readonly accessibility: {
+    readonly searchSelectInstructions: string;
+    readonly searchSelectResults: string;
+    readonly searchSelectSelection: string;
   };
   /** Operation-level error fallbacks. */
   readonly errors: {
@@ -57,6 +65,7 @@ export type PartialEditorLanguage = DeepPartial<AltEditorLiteLanguage>;
  * Complete built-in English language.
  */
 export const ENGLISH_LANGUAGE: Readonly<AltEditorLiteLanguage> = {
+  locale: 'en',
   actions: {
     create: 'Create',
     edit: 'Edit',
@@ -83,6 +92,11 @@ export const ENGLISH_LANGUAGE: Readonly<AltEditorLiteLanguage> = {
     noResults: 'No matching options',
     clear: 'Clear selection',
   },
+  accessibility: {
+    searchSelectInstructions: 'Use the arrow keys to navigate options.',
+    searchSelectResults: '{count} options available.',
+    searchSelectSelection: '{label} selected.',
+  },
   errors: {
     generic: 'The operation could not be completed.',
     fileCount: 'Too many files were selected.',
@@ -103,12 +117,17 @@ export function resolveLanguage(
   language: Readonly<PartialEditorLanguage> | undefined,
 ): Readonly<AltEditorLiteLanguage> {
   return {
+    locale: language?.locale ?? ENGLISH_LANGUAGE.locale,
     actions: { ...ENGLISH_LANGUAGE.actions, ...language?.actions },
     dialog: { ...ENGLISH_LANGUAGE.dialog, ...language?.dialog },
     validation: { ...ENGLISH_LANGUAGE.validation, ...language?.validation },
     searchSelect: {
       ...ENGLISH_LANGUAGE.searchSelect,
       ...language?.searchSelect,
+    },
+    accessibility: {
+      ...ENGLISH_LANGUAGE.accessibility,
+      ...language?.accessibility,
     },
     errors: { ...ENGLISH_LANGUAGE.errors, ...language?.errors },
   };

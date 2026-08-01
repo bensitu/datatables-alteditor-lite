@@ -16,6 +16,8 @@ export default defineConfig({
         'src/datatables/assert-data-table-global.ts',
         'src/datatables/row-target-resolution.ts',
         'src/object-path/*.ts',
+        'src/search-select/filter-search-options.ts',
+        'src/search-select/search-select-keyboard.ts',
       ],
       reporter: ['text', 'json-summary', 'html'],
       thresholds: {

@@ -1,0 +1,160 @@
+import { describe, expect, it } from 'vitest';
+
+import { EditorConfigurationError } from '../../src/core/alt-editor-lite-error.js';
+import {
+  ENGLISH_LANGUAGE,
+  resolveLanguage,
+} from '../../src/core/alt-editor-lite-language.js';
+import { es } from '../../src/locales/es.js';
+import { ja } from '../../src/locales/ja.js';
+import {
+  getLocale,
+  getRegisteredLocaleNames,
+  registerLocale,
+} from '../../src/locales/locale-registry.js';
+import { zhCn } from '../../src/locales/zh-cn.js';
+import { filterSearchOptions } from '../../src/search-select/filter-search-options.js';
+import {
+  isComposingEnter,
+  resolveSearchSelectActiveIndex,
+} from '../../src/search-select/search-select-keyboard.js';
+
+import type { AltEditorLiteLanguage } from '../../src/core/alt-editor-lite-language.js';
+
+function languageLeaves(
+  value: Readonly<AltEditorLiteLanguage>,
+): ReadonlyMap<string, string> {
+  const leaves = new Map<string, string>();
+
+  const visit = (currentValue: unknown, path: string): void => {
+    if (typeof currentValue === 'string') {
+      leaves.set(path, currentValue);
+      return;
+    }
+
+    if (typeof currentValue !== 'object' || currentValue === null) {
+      return;
+    }
+
+    for (const [key, nestedValue] of Object.entries(
+      currentValue as Readonly<Record<string, unknown>>,
+    )) {
+      visit(nestedValue, path.length === 0 ? key : `${path}.${key}`);
+    }
+  };
+
+  visit(value, '');
+  return leaves;
+}
+
+function messageTokens(message: string): readonly string[] {
+  return [...message.matchAll(/\{[^}]+\}/gu)].map(([token]) => token);
+}
+
+describe('SearchSelect local filtering', () => {
+  const entries = [
+    { option: { label: 'Café', value: 1 }, token: 'option-0' },
+    { option: { label: 'Bravo', value: 2 }, token: 'option-1' },
+    { option: { label: 'Alpha', value: 3 }, token: 'option-2' },
+  ] as const;
+
+  it('normalizes locale text without mutating source order', () => {
+    expect(filterSearchOptions(entries, 'cafe', 'es', 0, false)).toEqual([entries[0]]);
+    expect(filterSearchOptions(entries, 'a', 'en', 2, false)).toEqual(entries);
+    expect(entries.map(({ token }) => token)).toEqual([
+      'option-0',
+      'option-1',
+      'option-2',
+    ]);
+  });
+
+  it('sorts with a collator and falls back for an invalid locale', () => {
+    expect(
+      filterSearchOptions(entries, '', 'en', 0, true).map(({ option }) => option.label),
+    ).toEqual(['Alpha', 'Bravo', 'Café']);
+    expect(filterSearchOptions(entries, 'alpha', 'invalid_locale', 0, true)).toEqual([
+      entries[2],
+    ]);
+    expect(filterSearchOptions(entries, 'bravo', 'invalid_locale', 0, false)).toEqual([
+      entries[1],
+    ]);
+  });
+});
+
+describe('SearchSelect keyboard state', () => {
+  const enabledOptionIndices = [1, 3] as const;
+
+  it('moves, wraps, and jumps only across enabled indices', () => {
+    expect(
+      resolveSearchSelectActiveIndex(enabledOptionIndices, undefined, 'ArrowDown'),
+    ).toBe(1);
+    expect(resolveSearchSelectActiveIndex(enabledOptionIndices, 1, 'ArrowDown')).toBe(3);
+    expect(resolveSearchSelectActiveIndex(enabledOptionIndices, 3, 'ArrowDown')).toBe(1);
+    expect(resolveSearchSelectActiveIndex(enabledOptionIndices, 1, 'ArrowUp')).toBe(3);
+    expect(resolveSearchSelectActiveIndex(enabledOptionIndices, 3, 'ArrowUp')).toBe(1);
+    expect(
+      resolveSearchSelectActiveIndex(enabledOptionIndices, undefined, 'ArrowUp'),
+    ).toBe(3);
+    expect(resolveSearchSelectActiveIndex(enabledOptionIndices, 99, 'ArrowDown')).toBe(1);
+    expect(resolveSearchSelectActiveIndex(enabledOptionIndices, 3, 'Home')).toBe(1);
+    expect(resolveSearchSelectActiveIndex(enabledOptionIndices, 1, 'End')).toBe(3);
+    expect(resolveSearchSelectActiveIndex([], undefined, 'ArrowDown')).toBeUndefined();
+  });
+
+  it('blocks only Enter while an IME composition is active', () => {
+    expect(isComposingEnter(true, 'Enter')).toBe(true);
+    expect(isComposingEnter(true, 'ArrowDown')).toBe(false);
+    expect(isComposingEnter(false, 'Enter')).toBe(false);
+  });
+});
+
+describe('locale contracts', () => {
+  it('keeps exact keys, placeholder tokens, and non-empty reviewed text', () => {
+    const englishLeaves = languageLeaves(ENGLISH_LANGUAGE);
+
+    for (const locale of [ja, zhCn, es]) {
+      const localeLeaves = languageLeaves(locale);
+      expect([...localeLeaves.keys()]).toEqual([...englishLeaves.keys()]);
+
+      for (const [key, englishMessage] of englishLeaves) {
+        const translatedMessage = localeLeaves.get(key);
+        expect(translatedMessage?.trim().length).toBeGreaterThan(0);
+        expect(messageTokens(translatedMessage ?? '')).toEqual(
+          messageTokens(englishMessage),
+        );
+      }
+    }
+  });
+
+  it('deep-merges partial language overrides over English', () => {
+    const resolvedLanguage = resolveLanguage({
+      accessibility: { searchSelectResults: '{count} choices.' },
+      actions: { create: 'Add' },
+      locale: 'en-GB',
+      searchSelect: { noResults: 'Nothing found' },
+    });
+
+    expect(resolvedLanguage).toMatchObject({
+      accessibility: { searchSelectResults: '{count} choices.' },
+      actions: { cancel: 'Cancel', create: 'Add' },
+      locale: 'en-GB',
+      searchSelect: {
+        clear: 'Clear selection',
+        noResults: 'Nothing found',
+      },
+    });
+  });
+
+  it('supports a deterministic public locale registry', () => {
+    registerLocale('ja', ja);
+    registerLocale('zh-CN', zhCn);
+    registerLocale('es', es);
+
+    expect(getLocale('ja')).toBe(ja);
+    expect(getLocale('missing')).toBeUndefined();
+    expect(getRegisteredLocaleNames()).toEqual(['en', 'ja', 'zh-CN', 'es']);
+    expect(() => {
+      registerLocale(' ', es);
+    }).toThrow(EditorConfigurationError);
+  });
+});

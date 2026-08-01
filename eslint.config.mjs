@@ -201,6 +201,15 @@ export default defineConfig(
     },
   },
   {
+    files: ['examples/**/*.js'],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        DataTable: 'readonly',
+      },
+    },
+  },
+  {
     files: ['**/*.js', '**/*.mjs'],
     languageOptions: {
       ecmaVersion: 'latest',

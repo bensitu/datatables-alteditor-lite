@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta content="IE=edge" http-equiv="X-UA-Compatible" />
+    <title>DataTables AltEditorLite 0.1.0 demo</title>
+    <link href="https://cdn.datatables.net/v/dt/dt-3.0.0/b-4.0.0/sl-4.0.0/datatables.min.css" rel="stylesheet" integrity="sha384-vtri3MDC9EdlORcbUT+75+1DS18TjVezVMqnmKG3PQbW8G7FUGqD5fCM9npdHJiP" crossorigin="anonymous">
+    <link rel="stylesheet" href="/dist/alt-editor-lite.css" />
+    <link rel="stylesheet" href="/examples/demo/demo.css" />
+  </head>
+  <body>
+    <main>
+      <header class="demo-hero">
+        <p class="demo-kicker">datatables-alteditor-lite 0.1.0</p>
+        <h1>Native DataTables editing, without jQuery</h1>
+        <p>
+          Create, edit, remove, refresh, search local options, and switch all four
+          published locales. This page loads only public distribution artifacts.
+        </p>
+      </header>
+
+      <section class="demo-controls" aria-labelledby="demo-controls-title">
+        <h2 id="demo-controls-title">Demo controls</h2>
+        <label>
+          Editor language
+          <select id="locale-select">
+            <option value="en">English</option>
+            <option value="ja">日本語</option>
+            <option value="zh-CN">简体中文</option>
+            <option value="es">Español</option>
+          </select>
+        </label>
+        <button id="fail-next" type="button">Fail the next persistence request</button>
+        <button id="add-instance" type="button">Initialize a second table</button>
+        <dl class="demo-status">
+          <div>
+            <dt>jQuery</dt>
+            <dd id="jquery-status">Checking…</dd>
+          </div>
+          <div>
+            <dt>Editor state</dt>
+            <dd id="editor-state">ready</dd>
+          </div>
+          <div>
+            <dt>Locale registry</dt>
+            <dd id="locale-status">Checking…</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="demo-table-panel" aria-labelledby="employees-title">
+        <h2 id="employees-title">Employees</h2>
+        <p>
+          Select one row for Edit, or one or more rows for Remove. Office is a numeric
+          SearchSelect; the other controls cover the 0.1.0 field set.
+        </p>
+        <div class="demo-table-scroll">
+          <table id="employees">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Age</th>
+                <th>Role</th>
+                <th>Office</th>
+                <th>Active</th>
+                <th>Start date</th>
+              </tr>
+            </thead>
+          </table>
+        </div>
+      </section>
+
+      <section class="demo-events" aria-labelledby="event-log-title">
+        <h2 id="event-log-title">Non-bubbling event log</h2>
+        <p>Only timestamps, operation names, phases, and bubbling state are shown.</p>
+        <ol id="event-log" aria-live="polite"></ol>
+      </section>
+
+      <section id="secondary-host" class="demo-table-panel" hidden>
+        <h2>Second independent instance</h2>
+        <div class="demo-table-scroll">
+          <table id="secondary-employees">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Office</th>
+              </tr>
+            </thead>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script src="https://cdn.datatables.net/v/dt/dt-3.0.0/b-4.0.0/sl-4.0.0/datatables.min.js" integrity="sha384-ZQndwHXrzaDfda3mHERxJKfMSjmXje0Zo6lSciJjmYE66Ucr76PNpz1yG8svFquT" crossorigin="anonymous"></script>
+    <script src="/dist/datatables-alteditor-lite.js"></script>
+    <script src="/dist/locales/datatables-alteditor-lite.en.js"></script>
+    <script src="/dist/locales/datatables-alteditor-lite.ja.js"></script>
+    <script src="/dist/locales/datatables-alteditor-lite.zh-cn.js"></script>
+    <script src="/dist/locales/datatables-alteditor-lite.es.js"></script>
+    <script src="/examples/demo/demo.js"></script>
+  </body>
+</html>

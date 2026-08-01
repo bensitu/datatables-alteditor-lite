@@ -3,6 +3,7 @@ import { expectAssignable, expectNotAssignable, expectType } from 'tsd';
 import {
   AltEditorLite,
   type AltEditorLiteOptions,
+  type AltEditorLiteLanguage,
   type ClientSideOperations,
   type EditorErrorEventDetail,
   type EditorOperations,
@@ -13,7 +14,12 @@ import {
   type FieldPath,
   type FieldValue,
   type OperationContext,
+  type SearchSelectFieldConfig,
 } from '../../src/index.js';
+import enDefault, { en } from '../../src/locales/en.js';
+import { es } from '../../src/locales/es.js';
+import { ja } from '../../src/locales/ja.js';
+import { zhCn } from '../../src/locales/zh-cn.js';
 
 import type { Api } from 'datatables.net';
 
@@ -208,6 +214,60 @@ const numericSelect = {
 expectType<7 | undefined>({} as FieldValue<typeof numericSelect>);
 expectAssignable<FieldConfig<FormValues>>(numericSelect);
 
+const numericSearchSelect = {
+  allowClear: true,
+  label: 'Role',
+  name: 'role',
+  options: [
+    { label: 'Administrator', value: 7 },
+    { label: 'Editor', value: 8 },
+  ],
+  type: 'search-select',
+} as const satisfies SearchSelectFieldConfig<FormValues, number>;
+expectType<7 | 8 | undefined>({} as FieldValue<typeof numericSearchSelect>);
+expectAssignable<FieldConfig<FormValues>>(numericSearchSelect);
+
+const manualStringSearchSelect = {
+  allowManualValue: true,
+  label: 'Email',
+  name: 'contact.email',
+  options: [{ label: 'Known address', value: 'known@example.test' }],
+  type: 'search-select',
+} as const satisfies SearchSelectFieldConfig<FormValues>;
+expectType<string | undefined>({} as FieldValue<typeof manualStringSearchSelect>);
+expectAssignable<FieldConfig<FormValues>>(manualStringSearchSelect);
+
+expectNotAssignable<SearchSelectFieldConfig<FormValues, number>>({
+  allowManualValue: true,
+  label: 'Role',
+  name: 'role',
+  options: [{ label: 'Administrator', value: 7 }],
+  type: 'search-select',
+});
+
+const mixedSearchSelect = {
+  label: 'Role',
+  name: 'role',
+  options: [
+    { label: 'Numeric', value: 1 },
+    { label: 'String', value: '1' },
+  ],
+  type: 'search-select',
+} as const satisfies SearchSelectFieldConfig<FormValues, string | number>;
+expectType<1 | '1' | undefined>({} as FieldValue<typeof mixedSearchSelect>);
+expectAssignable<FieldConfig<FormValues>>(mixedSearchSelect);
+
+const roleController = editor.getField<number | undefined>('role');
+roleController?.setOptions?.([{ label: 'Administrator', value: 7 }]);
+expectNotAssignable<
+  Parameters<NonNullable<NonNullable<typeof roleController>['setOptions']>>[0]
+>([{ label: 'Invalid', value: '7' }]);
+
+expectType<Readonly<AltEditorLiteLanguage>>(en);
+expectType<Readonly<AltEditorLiteLanguage>>(enDefault);
+expectType<Readonly<AltEditorLiteLanguage>>(ja);
+expectType<Readonly<AltEditorLiteLanguage>>(zhCn);
+expectType<Readonly<AltEditorLiteLanguage>>(es);
 const singleFile = {
   label: 'Attachment',
   name: 'attachment',

@@ -7,6 +7,11 @@ export {
   type PartialEditorLanguage,
 } from './core/alt-editor-lite-language.js';
 export {
+  getLocale,
+  getRegisteredLocaleNames,
+  registerLocale,
+} from './locales/locale-registry.js';
+export {
   AltEditorLiteError,
   EditorAlreadyInitializedError,
   EditorConfigurationError,
@@ -66,6 +71,7 @@ export type {
   NumberFieldConfig,
   PasswordFieldConfig,
   RadioFieldConfig,
+  SearchSelectFieldConfig,
   SelectFieldConfig,
   SelectOption,
   SingleFileFieldConfig,

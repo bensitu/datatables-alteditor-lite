@@ -1,3 +1,4 @@
+import type { SelectOption } from './field-config.js';
 import type { MaybePromise } from './field-value.js';
 
 /**
@@ -10,6 +11,18 @@ export interface FieldController<TValue> {
   getValue(): MaybePromise<TValue>;
   /** Replaces the displayed field value. */
   setValue(value: TValue): void;
+  /**
+   * Replaces local options when supported by the field.
+   *
+   * SearchSelect controllers expose this method. Other field types omit it.
+   */
+  readonly setOptions?: (
+    options: readonly SelectOption<
+      [Extract<TValue, string | number>] extends [never]
+        ? string | number
+        : Extract<TValue, string | number>
+    >[],
+  ) => void;
   /** Updates the field's disabled state. */
   setDisabled(isDisabled: boolean): void;
   /** Moves keyboard focus to the primary control. */

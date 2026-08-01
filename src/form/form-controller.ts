@@ -11,7 +11,7 @@ import { type FormValidationResult, validateEditorForm } from './validate-editor
 
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type { DeepPartial, EditorValues } from '../core/editor-values.js';
-import type { FieldConfig } from '../fields/field-config.js';
+import type { FieldConfig, SelectOption } from '../fields/field-config.js';
 import type {
   FieldController,
   FieldValidationResult,
@@ -189,6 +189,7 @@ export class EditorFormController<
       return null;
     }
 
+    const setOptions = managedController.setOptions;
     let isFieldDestroyed = false;
     const fieldController: FieldController<unknown> = {
       element: managedController.element,
@@ -196,6 +197,13 @@ export class EditorFormController<
       setValue: (value: unknown) => {
         managedController.setValue(value);
       },
+      ...(setOptions === undefined
+        ? {}
+        : {
+            setOptions: (options: readonly SelectOption[]) => {
+              setOptions(options);
+            },
+          }),
       setDisabled: (isDisabled: boolean) => {
         managedController.setDisabled(isDisabled);
       },

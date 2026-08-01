@@ -21,10 +21,15 @@ export type FieldValue<TConfig> = TConfig extends { readonly type: 'number' }
           ? string | null
           : File | null
       : TConfig extends {
-            readonly type: 'select' | 'radio';
-            readonly options: readonly {
-              readonly value: infer TOptionValue;
-            }[];
+            readonly type: 'search-select';
+            readonly allowManualValue: true;
           }
-        ? TOptionValue | undefined
-        : string;
+        ? string | undefined
+        : TConfig extends {
+              readonly type: 'select' | 'radio' | 'search-select';
+              readonly options: readonly {
+                readonly value: infer TOptionValue;
+              }[];
+            }
+          ? TOptionValue | undefined
+          : string;

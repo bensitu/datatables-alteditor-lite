@@ -1,7 +1,9 @@
 import { EditorConfigurationError } from '../core/alt-editor-lite-error.js';
 import { parseFieldPath } from '../object-path/field-path.js';
+import { SEARCH_SELECT_MAX_OPTION_COUNT } from '../search-select/search-select.js';
 
 import { assertAllowedFieldAttributes } from './field-attributes.js';
+import { assertUniqueOptionValues } from './option-token-map.js';
 
 import type { FieldConfig } from './field-config.js';
 
@@ -16,6 +18,21 @@ function assertPositiveLimit(
   ) {
     throw new EditorConfigurationError(
       `${propertyName} for field "${fieldName}" must be a positive integer.`,
+    );
+  }
+}
+
+function assertNonNegativeInteger(
+  value: number | undefined,
+  propertyName: string,
+  fieldName: string,
+): void {
+  if (
+    value !== undefined &&
+    (!Number.isFinite(value) || value < 0 || !Number.isInteger(value))
+  ) {
+    throw new EditorConfigurationError(
+      `${propertyName} for field "${fieldName}" must be a non-negative integer.`,
     );
   }
 }
@@ -55,12 +72,40 @@ export function validateFieldConfigurations<TFormValues extends object>(
     }
 
     if (
-      (config.type === 'select' || config.type === 'radio') &&
+      (config.type === 'select' ||
+        config.type === 'radio' ||
+        config.type === 'search-select') &&
       config.options.length === 0
     ) {
       throw new EditorConfigurationError(
         `Field "${config.name}" requires at least one option.`,
       );
+    }
+
+    if (
+      config.type === 'select' ||
+      config.type === 'radio' ||
+      config.type === 'search-select'
+    ) {
+      assertUniqueOptionValues<string | number>(config.options);
+    }
+
+    if (config.type === 'search-select') {
+      if (config.options.length > SEARCH_SELECT_MAX_OPTION_COUNT) {
+        throw new EditorConfigurationError(
+          `Field "${config.name}" exceeds the ${String(SEARCH_SELECT_MAX_OPTION_COUNT)}-option SearchSelect limit.`,
+        );
+      }
+      assertNonNegativeInteger(config.searchThreshold, 'searchThreshold', config.name);
+      assertNonNegativeInteger(config.debounceMs, 'debounceMs', config.name);
+      if (
+        config.allowManualValue === true &&
+        config.options.some(({ value }) => typeof value !== 'string')
+      ) {
+        throw new EditorConfigurationError(
+          `Field "${config.name}" can allow manual values only with string options.`,
+        );
+      }
     }
 
     if (config.type === 'file') {

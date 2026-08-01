@@ -10,6 +10,10 @@ const dataTablesScriptPath = resolve(
   'node_modules/datatables.net/js/dataTables.js',
 );
 const browserBundlePath = resolve(repositoryRoot, 'dist/datatables-alteditor-lite.js');
+const japaneseLocaleBundlePath = resolve(
+  repositoryRoot,
+  'dist/locales/datatables-alteditor-lite.ja.js',
+);
 
 test('requires the DataTables browser global to load first', async ({ page }) => {
   await page.setContent('<!doctype html><html><body></body></html>');
@@ -105,5 +109,71 @@ test('loads after globalThis.DataTable without introducing jQuery', async ({ pag
   expect(loadedState).toEqual({
     ...baselineState,
     isGetterMatchedToSecondBundleInstance: true,
+  });
+});
+
+test('requires the core Browser Global before a locale bundle', async ({ page }) => {
+  await page.setContent('<!doctype html><html><body></body></html>');
+  const pageErrorPromise = page.waitForEvent('pageerror');
+
+  await page.addScriptTag({ path: japaneseLocaleBundlePath });
+
+  const pageError = await pageErrorPromise;
+  expect(pageError.message).toContain(
+    'DataTablesAltEditorLite core must be loaded before a locale bundle.',
+  );
+});
+
+test('registers locale bundles through the public core registry', async ({ page }) => {
+  await page.setContent(`
+    <!doctype html>
+    <html>
+      <body>
+        <table id="locale-table"><thead><tr><th>Name</th></tr></thead></table>
+      </body>
+    </html>
+  `);
+  await page.addScriptTag({ path: dataTablesScriptPath });
+  await page.addScriptTag({ path: browserBundlePath });
+  await page.addScriptTag({ path: japaneseLocaleBundlePath });
+
+  const localeState = await page.evaluate(() => {
+    const runtimeScope = globalThis as typeof globalThis & {
+      DataTablesAltEditorLite?: {
+        getLocale(localeName: string):
+          | {
+              readonly actions: { readonly create: string };
+              readonly locale: string;
+            }
+          | undefined;
+        getRegisteredLocaleNames(): readonly string[];
+        registerLocale(localeName: string, language: object): void;
+      };
+    };
+    const localeApi = runtimeScope.DataTablesAltEditorLite;
+    if (localeApi === undefined) {
+      throw new Error('Expected the AltEditorLite Browser Global.');
+    }
+
+    const japaneseLanguage = localeApi.getLocale('ja');
+    return {
+      createLabel: japaneseLanguage?.actions.create,
+      hasJQuery: 'jQuery' in globalThis,
+      locale: japaneseLanguage?.locale,
+      names: localeApi.getRegisteredLocaleNames(),
+      registryApiTypes: [
+        typeof localeApi.getLocale,
+        typeof localeApi.getRegisteredLocaleNames,
+        typeof localeApi.registerLocale,
+      ],
+    };
+  });
+
+  expect(localeState).toEqual({
+    createLabel: '作成',
+    hasJQuery: false,
+    locale: 'ja',
+    names: ['en', 'ja'],
+    registryApiTypes: ['function', 'function', 'function'],
   });
 });

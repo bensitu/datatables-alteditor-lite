@@ -9,6 +9,13 @@ export default defineConfig({
   use: {
     trace: 'retain-on-failure',
   },
+  webServer: {
+    command: 'npm run demo',
+    reuseExistingServer: true,
+    timeout: 30_000,
+    url: 'http://127.0.0.1:4173/',
+  },
+  workers: 3,
   projects: [
     {
       name: 'chromium',

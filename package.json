@@ -2,7 +2,6 @@
   "name": "datatables-alteditor-lite",
   "version": "0.1.0",
   "description": "A lightweight native editing extension for DataTables 3.x.",
-  "private": true,
   "type": "module",
   "license": "MIT",
   "engines": {
@@ -22,7 +21,27 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
-    "./style.css": "./dist/alt-editor-lite.css"
+    "./style.css": "./dist/alt-editor-lite.css",
+    "./locales/en": {
+      "types": "./dist/locales/en.d.ts",
+      "import": "./dist/locales/en.js"
+    },
+    "./locales/ja": {
+      "types": "./dist/locales/ja.d.ts",
+      "import": "./dist/locales/ja.js"
+    },
+    "./locales/zh-cn": {
+      "types": "./dist/locales/zh-cn.d.ts",
+      "import": "./dist/locales/zh-cn.js"
+    },
+    "./locales/es": {
+      "types": "./dist/locales/es.d.ts",
+      "import": "./dist/locales/es.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
   },
   "files": [
     "dist",
@@ -33,10 +52,11 @@
   "scripts": {
     "prepare": "husky",
     "clean": "node scripts/clean-dist.mjs",
+    "demo": "node scripts/serve-demo.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint . --max-warnings 0",
-    "lint:styles": "stylelint \"src/**/*.css\" --max-warnings 0",
+    "lint:styles": "stylelint \"src/**/*.css\" \"examples/**/*.css\" --max-warnings 0",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --coverage",
     "test:integration": "vitest run --config vitest.integration.config.ts",

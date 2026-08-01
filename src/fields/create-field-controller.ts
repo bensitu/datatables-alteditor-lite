@@ -5,6 +5,7 @@ import {
   createNumberFieldController,
 } from './input-field-controller.js';
 import { createRadioFieldController } from './radio-field-controller.js';
+import { createSearchSelectFieldController } from './search-select-field-controller.js';
 import { createSelectFieldController } from './select-field-controller.js';
 import { createTextareaFieldController } from './textarea-field-controller.js';
 
@@ -76,6 +77,8 @@ export function createFieldController<TFormValues extends object>(
         language.validation.invalid,
         onUserChange,
       );
+    case 'search-select':
+      return createSearchSelectFieldController(config, fieldId, language, onUserChange);
     case 'file':
       return createFileFieldController(
         config,
