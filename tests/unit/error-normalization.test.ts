@@ -41,7 +41,7 @@ describe('operation error normalization', () => {
     ).toBeInstanceOf(InternalOperationAbort);
   });
 
-  it('accepts only a fully validated own-property operation contract', () => {
+  it('accepts only a fully validated own-property error shape', () => {
     const rawError = {
       code: 'CONFLICT',
       fieldErrors: {
@@ -66,7 +66,7 @@ describe('operation error normalization', () => {
     });
   });
 
-  it('supports the minimal operation error contract', () => {
+  it('supports the minimal operation error shape', () => {
     const rawError = { message: 'Operation refused.' };
     const normalized = normalizeOperationError(
       rawError,

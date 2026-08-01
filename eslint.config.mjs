@@ -24,6 +24,7 @@ export default defineConfig(
     ignores: [
       'node_modules/**',
       'dist/**',
+      '.pages/**',
       '.work/**',
       'artifacts/**',
       'coverage/**',

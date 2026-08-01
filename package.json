@@ -2,6 +2,13 @@
   "name": "datatables-alteditor-lite",
   "version": "0.1.0",
   "description": "A lightweight native editing extension for DataTables 3.x.",
+  "keywords": [
+    "datatables",
+    "data-table",
+    "crud",
+    "editor",
+    "typescript"
+  ],
   "type": "module",
   "license": "MIT",
   "engines": {
@@ -22,21 +29,10 @@
       "import": "./dist/index.js"
     },
     "./style.css": "./dist/alt-editor-lite.css",
-    "./locales/en": {
-      "types": "./dist/locales/en.d.ts",
-      "import": "./dist/locales/en.js"
-    },
-    "./locales/ja": {
-      "types": "./dist/locales/ja.d.ts",
-      "import": "./dist/locales/ja.js"
-    },
-    "./locales/zh-cn": {
-      "types": "./dist/locales/zh-cn.d.ts",
-      "import": "./dist/locales/zh-cn.js"
-    },
-    "./locales/es": {
-      "types": "./dist/locales/es.d.ts",
-      "import": "./dist/locales/es.js"
+    "./locales/*.json": "./dist/locales/*.json",
+    "./locales/*": {
+      "types": "./dist/locales/*.d.ts",
+      "import": "./dist/locales/*.js"
     }
   },
   "publishConfig": {
@@ -51,6 +47,7 @@
   ],
   "scripts": {
     "prepare": "husky",
+    "prepack": "npm run build",
     "clean": "node scripts/clean-dist.mjs",
     "demo": "node scripts/serve-demo.mjs",
     "format": "prettier --write .",
@@ -58,17 +55,19 @@
     "lint": "eslint . --max-warnings 0",
     "lint:styles": "stylelint \"src/**/*.css\" \"examples/**/*.css\" --max-warnings 0",
     "typecheck": "tsc --noEmit",
-    "test": "npm run test:coverage && npm run test:critical",
-    "test:coverage": "vitest run --config vitest.coverage.config.ts --coverage",
-    "test:critical": "vitest run --coverage",
-    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test": "vitest run",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
+    "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "test:types": "tsd",
     "build:js": "rolldown -c",
     "build:css": "node scripts/build-css.mjs",
+    "build:locales": "node scripts/build-locales.mjs",
+    "build:pages": "npm run build && node scripts/build-pages.mjs",
     "build:types": "tsc -p tsconfig.build.json --emitDeclarationOnly",
-    "build": "npm run clean && npm run typecheck && npm run build:js && npm run build:css && npm run build:types",
-    "ci:core": "npm run format:check && npm run lint && npm run lint:styles && npm run typecheck && npm run test && npm run build && npm run test:types && npm run test:e2e"
+    "build": "npm run clean && npm run typecheck && npm run build:js && npm run build:css && npm run build:locales && npm run build:types",
+    "check": "npm run format:check && npm run lint && npm run lint:styles && npm run test:coverage && npm run build && npm run test:types && npm run test:e2e"
   },
   "peerDependencies": {
     "datatables.net": ">=3.0.0 <4",
@@ -93,9 +92,9 @@
     "@types/jquery": "4.0.1",
     "@types/node": "25.4.0",
     "@vitest/coverage-v8": "4.1.10",
-    "datatables.net": "3.0.1",
-    "datatables.net-buttons": "4.0.1",
-    "datatables.net-select": "4.0.0",
+    "datatables.net": "^3.0.0",
+    "datatables.net-buttons": "^4.0.0",
+    "datatables.net-select": "^4.0.0",
     "eslint": "10.8.0",
     "eslint-plugin-import-x": "4.17.1",
     "eslint-plugin-tsdoc": "0.5.2",

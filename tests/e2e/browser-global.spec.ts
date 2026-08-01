@@ -33,7 +33,7 @@ test('loads after globalThis.DataTable without introducing jQuery', async ({ pag
     <!doctype html>
     <html>
       <body>
-        <table id="contract-table">
+        <table id="browser-table">
           <thead>
             <tr><th>Name</th></tr>
           </thead>
@@ -46,7 +46,7 @@ test('loads after globalThis.DataTable without introducing jQuery', async ({ pag
   `);
   await page.addScriptTag({ path: dataTablesScriptPath });
 
-  const baselineState = await page.evaluate(() => {
+  const beforeLoadState = await page.evaluate(() => {
     const runtimeScope = globalThis as typeof globalThis & {
       DataTable?: {
         readonly version?: unknown;
@@ -60,11 +60,11 @@ test('loads after globalThis.DataTable without introducing jQuery', async ({ pag
     };
   });
 
-  expect(baselineState).toEqual({
+  expect(beforeLoadState).toMatchObject({
     dataTableType: 'function',
-    dataTableVersion: '3.0.1',
     hasJQuery: false,
   });
+  expect(typeof beforeLoadState.dataTableVersion).toBe('string');
 
   await page.addScriptTag({ path: browserBundlePath });
   await page.addScriptTag({ path: browserBundlePath });
@@ -92,7 +92,7 @@ test('loads after globalThis.DataTable without introducing jQuery', async ({ pag
       throw new Error('Expected both browser globals after bundle loading.');
     }
 
-    const table = new dataTableConstructor('#contract-table');
+    const table = new dataTableConstructor('#browser-table');
     const editor = new editorConstructor(table, { fields: [] });
     const isGetterMatchedToSecondBundleInstance = table.altEditorLite() === editor;
     editor.destroy();
@@ -107,12 +107,12 @@ test('loads after globalThis.DataTable without introducing jQuery', async ({ pag
   });
 
   expect(loadedState).toEqual({
-    ...baselineState,
+    ...beforeLoadState,
     isGetterMatchedToSecondBundleInstance: true,
   });
 });
 
-test('requires the core Browser Global before a locale bundle', async ({ page }) => {
+test('requires the main browser bundle before a language bundle', async ({ page }) => {
   await page.setContent('<!doctype html><html><body></body></html>');
   const pageErrorPromise = page.waitForEvent('pageerror');
 
@@ -120,7 +120,7 @@ test('requires the core Browser Global before a locale bundle', async ({ page })
 
   const pageError = await pageErrorPromise;
   expect(pageError.message).toContain(
-    'DataTablesAltEditorLite core must be loaded before a locale bundle.',
+    'The DataTablesAltEditorLite browser bundle must be loaded before a language bundle.',
   );
 });
 

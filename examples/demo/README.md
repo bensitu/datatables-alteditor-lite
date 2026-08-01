@@ -1,14 +1,25 @@
-# Public distribution demo
+# Distribution example
 
-Build and serve the demo from the repository root:
+The GitHub Pages workflow runs `npm run build:pages`, builds the ignored `dist/`
+directory, and publishes a self-contained site from `.pages/`. Distribution files
+therefore do not need to be committed.
+
+Before the first deployment, select **GitHub Actions** as the repository's Pages
+source. The workflow then builds and uploads the site artifact on pushes to `main`
+or a manual workflow run.
+
+For a local preview from the repository root:
 
 ```bash
 npm run build
 npm run demo
 ```
 
-Open `http://127.0.0.1:4173/`. The server exposes only the demo and built `dist/`
-artifacts. DataTables 3.0.1, Buttons 4.0.1, and Select 4.0.0 load from the official
-DataTables CDN with SHA-384 integrity metadata. The Content Security Policy allows
-that exact CDN origin for scripts and styles; the runtime still does not load
-jQuery.
+Open `http://127.0.0.1:4173/examples/demo/`. The preview server exposes only the
+example and built `dist/` artifacts.
+
+After `npm run build`, a general static server or editor Live Server can also open
+`http://127.0.0.1:5500/examples/demo/index.html`. The example's own stylesheet,
+script, library bundle, and language JSON paths are relative to that page. Optional
+DataTables extensions load from the official DataTables CDN with integrity
+metadata; the runtime does not load jQuery.

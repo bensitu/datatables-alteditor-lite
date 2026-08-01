@@ -1,0 +1,51 @@
+{
+  "locale": "en",
+  "actions": {
+    "create": "Create",
+    "edit": "Edit",
+    "remove": "Remove",
+    "refresh": "Refresh",
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "close": "Close"
+  },
+  "dialog": {
+    "createTitle": "Create row",
+    "editTitle": "Edit row",
+    "removeTitle": "Remove rows",
+    "removeCount": "Selected rows: {count}.",
+    "removeMessage": "Confirm that the selected rows should be removed."
+  },
+  "buttons": {
+    "createUnavailable": "Configure a Create operation to enable this action.",
+    "selectUnavailable": "DataTables Select is required for this action.",
+    "busy": "The editor is busy.",
+    "editSelection": "Select exactly one row to edit.",
+    "removeSelection": "Select one or more rows to remove.",
+    "initialize": "Initialize AltEditorLite to use this action."
+  },
+  "validation": {
+    "required": "This field is required.",
+    "invalid": "Enter a valid value.",
+    "unique": "The same value exists in the currently loaded table data."
+  },
+  "searchSelect": {
+    "placeholder": "Select an option",
+    "searchPlaceholder": "Search options",
+    "noResults": "No matching options",
+    "clear": "Clear selection"
+  },
+  "accessibility": {
+    "searchSelectInstructions": "Use the arrow keys to navigate options.",
+    "searchSelectResults": "{count} options available.",
+    "searchSelectSelection": "{label} selected."
+  },
+  "errors": {
+    "generic": "The operation could not be completed.",
+    "fileCount": "Too many files were selected.",
+    "fileSize": "A selected file is too large.",
+    "selectionRequired": "Select at least one row.",
+    "singleSelectionRequired": "Select exactly one row.",
+    "targetUnavailable": "The selected row is no longer available."
+  }
+}

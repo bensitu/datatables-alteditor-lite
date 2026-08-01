@@ -1,8 +1,3 @@
----
-audience: public
-status: stable
----
-
 # Accessibility
 
 AltEditorLite uses native `<dialog>`, form controls, labels, descriptions, and
@@ -13,7 +8,7 @@ table. Busy operations expose `aria-busy` and make owned form controls inert.
 Field errors have stable IDs, use `aria-invalid`, and remain associated through
 `aria-describedby`. Remove always has a destructive confirmation step.
 
-## SearchSelect keyboard contract
+## SearchSelect keyboard behavior
 
 | Key                   | Behavior                                                            |
 | --------------------- | ------------------------------------------------------------------- |
@@ -33,7 +28,7 @@ Composition pauses filtering. Enter during Japanese or Chinese IME composition i
 consumed by the combobox and cannot be mistaken for option selection or dialog
 submission. Filtering resumes on `compositionend`.
 
-The final stylesheet includes visible focus, light and dark color schemes,
+The provided stylesheet includes visible focus, light and dark color schemes,
 reduced-motion behavior, a 320 px layout, and high-zoom wrapping. Applications
 must preserve the supplied labels and maintain sufficient contrast when
 overriding CSS variables.

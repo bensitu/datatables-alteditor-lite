@@ -6,13 +6,13 @@ import {
   registerAltEditorLite,
   type FieldConfig,
 } from '../../src/index.js';
-import { zhCn } from '../../src/locales/zh-cn.js';
+import zhCn from '../../src/locales/zh-cn.json' with { type: 'json' };
 
 import {
-  createContractTable,
-  destroyContractTables,
-  type ContractRow,
-} from './datatables-contract-fixture.js';
+  createTestTable,
+  destroyTestTables,
+  type TestRow,
+} from './datatables-test-fixture.js';
 
 import type { PartialEditorLanguage } from '../../src/core/alt-editor-lite-language.js';
 
@@ -50,7 +50,7 @@ const fields = [
   },
 ] satisfies readonly FieldConfig<ExtensionValues>[];
 
-const activeEditors = new Set<AltEditorLite<ContractRow, ExtensionValues>>();
+const activeEditors = new Set<AltEditorLite<TestRow, ExtensionValues>>();
 let originalShowModalDescriptor: PropertyDescriptor | undefined;
 let originalCloseDescriptor: PropertyDescriptor | undefined;
 
@@ -110,19 +110,19 @@ afterEach(() => {
     editor.destroy();
   }
   activeEditors.clear();
-  destroyContractTables();
+  destroyTestTables();
 });
 
 function createExtensionEditor(
   tableId: string,
   language?: Readonly<PartialEditorLanguage>,
 ): {
-  readonly api: Api<ContractRow>;
-  readonly editor: AltEditorLite<ContractRow, ExtensionValues>;
+  readonly api: Api<TestRow>;
+  readonly editor: AltEditorLite<TestRow, ExtensionValues>;
   readonly extensionApi: ExtensionsApi;
   readonly tableElement: HTMLTableElement;
 } {
-  const { api, tableElement } = createContractTable(tableId, {
+  const { api, tableElement } = createTestTable(tableId, {
     layout: {
       topStart: {
         buttons: [
@@ -135,7 +135,7 @@ function createExtensionEditor(
     },
     select: true,
   });
-  const editor = new AltEditorLite<ContractRow, ExtensionValues>(api, {
+  const editor = new AltEditorLite<TestRow, ExtensionValues>(api, {
     clientSide: {
       createRow: (values) => ({
         id: 'extension-created',

@@ -157,7 +157,7 @@ main > * {
 }
 
 .demo-hero__copy,
-.demo-contract-card {
+.demo-workflow-card {
   position: relative;
   z-index: 1;
   min-width: 0;
@@ -248,7 +248,7 @@ main > * {
   overflow-wrap: anywhere;
 }
 
-.demo-contract-card {
+.demo-workflow-card {
   padding: 1rem;
   color: #e7eee9;
   background: rgb(7 14 11 / 68%);
@@ -258,7 +258,7 @@ main > * {
   backdrop-filter: blur(0.75rem);
 }
 
-.demo-contract-card__bar {
+.demo-workflow-card__bar {
   display: flex;
   gap: 0.4rem;
   align-items: center;
@@ -272,18 +272,18 @@ main > * {
   border-bottom: 1px solid rgb(255 255 255 / 10%);
 }
 
-.demo-contract-card__dot {
+.demo-workflow-card__dot {
   width: 0.5rem;
   aspect-ratio: 1;
   background: #67776f;
   border-radius: 50%;
 }
 
-.demo-contract-card__dot:first-child {
+.demo-workflow-card__dot:first-child {
   background: var(--demo-accent);
 }
 
-.demo-contract-card__bar strong {
+.demo-workflow-card__bar strong {
   min-width: 0;
   margin-inline-start: auto;
   font-weight: 500;
@@ -291,12 +291,12 @@ main > * {
   overflow-wrap: anywhere;
 }
 
-.demo-contract-card__label {
+.demo-workflow-card__label {
   margin: 1.25rem 0;
   font-weight: 750;
 }
 
-.demo-contract-card ol {
+.demo-workflow-card ol {
   display: grid;
   gap: 0.625rem;
   padding: 0;
@@ -304,7 +304,7 @@ main > * {
   list-style: none;
 }
 
-.demo-contract-card li {
+.demo-workflow-card li {
   display: grid;
   grid-template-columns: 2rem minmax(0, 1fr);
   gap: 0.625rem;
@@ -315,7 +315,7 @@ main > * {
   overflow-wrap: anywhere;
 }
 
-.demo-contract-card__step {
+.demo-workflow-card__marker {
   color: #ff9b82;
   font:
     0.6875rem ui-monospace,
@@ -324,7 +324,7 @@ main > * {
     monospace;
 }
 
-.demo-contract-card__result {
+.demo-workflow-card__result {
   padding: 0.75rem;
   margin: 1.25rem 0 0;
   color: #bff4dd;
@@ -732,7 +732,7 @@ tbody tr.selected:hover {
     max-width: 16ch;
   }
 
-  .demo-contract-card {
+  .demo-workflow-card {
     max-width: 34rem;
   }
 
@@ -813,7 +813,7 @@ tbody tr.selected:hover {
     display: grid;
   }
 
-  .demo-contract-card {
+  .demo-workflow-card {
     padding: 0.75rem;
   }
 

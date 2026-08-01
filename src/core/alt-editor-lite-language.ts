@@ -1,3 +1,5 @@
+import englishLanguage from '../locales/en.json' with { type: 'json' };
+
 import type { DeepPartial } from './editor-values.js';
 
 /**
@@ -72,65 +74,23 @@ export interface AltEditorLiteLanguage {
 export type PartialEditorLanguage = DeepPartial<AltEditorLiteLanguage>;
 
 /**
+ * Language data loaded from an application or external JSON resource.
+ */
+export type EditorLanguageDefinition = Omit<PartialEditorLanguage, 'locale'> & {
+  /** BCP 47 locale associated with the translated text. */
+  readonly locale: string;
+};
+
+/**
  * Complete built-in English language.
  */
-export const ENGLISH_LANGUAGE: Readonly<AltEditorLiteLanguage> = {
-  locale: 'en',
-  actions: {
-    create: 'Create',
-    edit: 'Edit',
-    remove: 'Remove',
-    refresh: 'Refresh',
-    submit: 'Submit',
-    cancel: 'Cancel',
-    close: 'Close',
-  },
-  dialog: {
-    createTitle: 'Create row',
-    editTitle: 'Edit row',
-    removeTitle: 'Remove rows',
-    removeCount: 'Selected rows: {count}.',
-    removeMessage: 'Confirm that the selected rows should be removed.',
-  },
-  buttons: {
-    createUnavailable: 'Configure a Create operation to enable this action.',
-    selectUnavailable: 'DataTables Select is required for this action.',
-    busy: 'The editor is busy.',
-    editSelection: 'Select exactly one row to edit.',
-    removeSelection: 'Select one or more rows to remove.',
-    initialize: 'Initialize AltEditorLite to use this action.',
-  },
-  validation: {
-    required: 'This field is required.',
-    invalid: 'Enter a valid value.',
-    unique: 'The same value exists in the currently loaded table data.',
-  },
-  searchSelect: {
-    placeholder: 'Select an option',
-    searchPlaceholder: 'Search options',
-    noResults: 'No matching options',
-    clear: 'Clear selection',
-  },
-  accessibility: {
-    searchSelectInstructions: 'Use the arrow keys to navigate options.',
-    searchSelectResults: '{count} options available.',
-    searchSelectSelection: '{label} selected.',
-  },
-  errors: {
-    generic: 'The operation could not be completed.',
-    fileCount: 'Too many files were selected.',
-    fileSize: 'A selected file is too large.',
-    selectionRequired: 'Select at least one row.',
-    singleSelectionRequired: 'Select exactly one row.',
-    targetUnavailable: 'The selected row is no longer available.',
-  },
-};
+export const ENGLISH_LANGUAGE: Readonly<AltEditorLiteLanguage> = englishLanguage;
 
 /**
  * Merges nested language overrides with the complete English fallback.
  *
  * @param language - Consumer-provided language overrides.
- * @returns A complete immutable-by-contract language object.
+ * @returns A complete readonly language object.
  */
 export function resolveLanguage(
   language: Readonly<PartialEditorLanguage> | undefined,

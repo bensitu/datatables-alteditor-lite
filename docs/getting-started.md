@@ -1,8 +1,3 @@
----
-audience: public
-status: stable
----
-
 # Getting started
 
 ## Install
@@ -86,9 +81,9 @@ the Chromium, Firefox, and WebKit versions exercised by the release test suite.
 The published Node engine range applies to installation, builds, and server-side
 tooling; the runtime itself is browser code.
 
-The repository's current compatibility baseline is DataTables 3.0.1, Buttons
-4.0.1, and Select 4.0.0. The public peer ranges accept compatible releases across
-the same major versions.
+The package metadata defines the supported DataTables, Buttons, and Select peer
+ranges. Development uses compatible releases resolved by the lockfile without
+requiring one exact patch version at runtime.
 
 See [Fields](fields.md), [Operations](operations.md),
 [Localization](localization.md), and [Browser Global](browser-global.md).

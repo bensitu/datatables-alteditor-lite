@@ -60,7 +60,7 @@ export interface EditorButtonStateInput {
  * Derives enablement and accessible titles for all editor buttons.
  *
  * @param input - Current editor capabilities, state, and selection count.
- * @returns Complete immutable-by-contract button state.
+ * @returns Complete readonly button state.
  */
 export function createEditorButtonState(
   input: Readonly<EditorButtonStateInput>,

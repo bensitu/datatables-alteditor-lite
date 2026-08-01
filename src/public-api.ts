@@ -4,13 +4,15 @@ export {
   ENGLISH_LANGUAGE,
   resolveLanguage,
   type AltEditorLiteLanguage,
+  type EditorLanguageDefinition,
   type PartialEditorLanguage,
 } from './core/alt-editor-lite-language.js';
+export { loadEditorLanguage } from './localization/editor-language-resource.js';
 export {
   getLocale,
   getRegisteredLocaleNames,
   registerLocale,
-} from './locales/locale-registry.js';
+} from './localization/locale-registry.js';
 export {
   AltEditorLiteError,
   EditorAlreadyInitializedError,

@@ -8,10 +8,10 @@ import {
 } from '../../src/index.js';
 
 import {
-  createContractTable,
-  destroyContractTables,
-  type ContractRow,
-} from './datatables-contract-fixture.js';
+  createTestTable,
+  destroyTestTables,
+  type TestRow,
+} from './datatables-test-fixture.js';
 
 interface ButtonOnlyValues {
   readonly name: string;
@@ -32,7 +32,7 @@ const fields = [
   },
 ] satisfies readonly FieldConfig<ButtonOnlyValues>[];
 
-let activeEditor: AltEditorLite<ContractRow, ButtonOnlyValues> | undefined;
+let activeEditor: AltEditorLite<TestRow, ButtonOnlyValues> | undefined;
 let originalShowModalDescriptor: PropertyDescriptor | undefined;
 let originalCloseDescriptor: PropertyDescriptor | undefined;
 
@@ -88,7 +88,7 @@ afterAll(() => {
 afterEach(() => {
   activeEditor?.destroy();
   activeEditor = undefined;
-  destroyContractTables();
+  destroyTestTables();
 });
 
 function buttonByText(tableElement: HTMLTableElement, text: string): HTMLButtonElement {
@@ -104,7 +104,7 @@ function buttonByText(tableElement: HTMLTableElement, text: string): HTMLButtonE
 
 describe('Buttons without Select', () => {
   it('keeps Create and Refresh operational while selection actions stay disabled', async () => {
-    const { api, tableElement } = createContractTable('buttons-only-table', {
+    const { api, tableElement } = createTestTable('buttons-only-table', {
       layout: {
         topStart: {
           buttons: [
@@ -116,7 +116,7 @@ describe('Buttons without Select', () => {
         },
       },
     });
-    const editor = new AltEditorLite<ContractRow, ButtonOnlyValues>(api, {
+    const editor = new AltEditorLite<TestRow, ButtonOnlyValues>(api, {
       clientSide: {
         createRow: (values) => ({
           id: 'buttons-created',

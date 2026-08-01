@@ -13,7 +13,7 @@ export default defineConfig({
     command: 'npm run demo',
     reuseExistingServer: true,
     timeout: 30_000,
-    url: 'http://127.0.0.1:4173/',
+    url: 'http://127.0.0.1:4173/examples/demo/',
   },
   workers: 3,
   projects: [

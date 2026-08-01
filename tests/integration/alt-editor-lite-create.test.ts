@@ -11,10 +11,10 @@ import {
 } from '../../src/index.js';
 
 import {
-  createContractTable,
-  destroyContractTables,
-  type ContractRow,
-} from './datatables-contract-fixture.js';
+  createTestTable,
+  destroyTestTables,
+  type TestRow,
+} from './datatables-test-fixture.js';
 
 interface CreateValues {
   readonly name: string;
@@ -36,7 +36,7 @@ const fields = [
   },
 ] satisfies readonly FieldConfig<CreateValues>[];
 
-const activeEditors = new Set<AltEditorLite<ContractRow, CreateValues>>();
+const activeEditors = new Set<AltEditorLite<TestRow, CreateValues>>();
 let originalShowModalDescriptor: PropertyDescriptor | undefined;
 let originalCloseDescriptor: PropertyDescriptor | undefined;
 
@@ -87,20 +87,20 @@ afterEach(() => {
     editor.destroy();
   }
   activeEditors.clear();
-  destroyContractTables();
+  destroyTestTables();
 });
 
 function createEditor(
   tableId: string,
-  createRow: (values: Readonly<Partial<CreateValues>>) => ContractRow,
+  createRow: (values: Readonly<Partial<CreateValues>>) => TestRow,
   closeOnSuccess = true,
 ): {
-  readonly api: ReturnType<typeof createContractTable>['api'];
-  readonly editor: AltEditorLite<ContractRow, CreateValues>;
+  readonly api: ReturnType<typeof createTestTable>['api'];
+  readonly editor: AltEditorLite<TestRow, CreateValues>;
   readonly tableElement: HTMLTableElement;
 } {
-  const { api, tableElement } = createContractTable(tableId);
-  const editor = new AltEditorLite<ContractRow, CreateValues>(api, {
+  const { api, tableElement } = createTestTable(tableId);
+  const editor = new AltEditorLite<TestRow, CreateValues>(api, {
     clientSide: { createRow },
     closeOnSuccess,
     fields,
@@ -132,9 +132,7 @@ describe('AltEditorLite synchronous Create', () => {
     }));
 
     expect(api.altEditorLite<CreateValues>()).toBe(editor);
-    expect(new DataTable<ContractRow>('#manual').altEditorLite<CreateValues>()).toBe(
-      editor,
-    );
+    expect(new DataTable<TestRow>('#manual').altEditorLite<CreateValues>()).toBe(editor);
   });
 
   it('rejects duplicate initialization for the same public table node', () => {
@@ -146,7 +144,7 @@ describe('AltEditorLite synchronous Create', () => {
 
     expect(
       () =>
-        new AltEditorLite<ContractRow, CreateValues>(api, {
+        new AltEditorLite<TestRow, CreateValues>(api, {
           clientSide: {
             createRow: (values) => ({
               id: 'duplicate-row',
@@ -294,12 +292,12 @@ describe('AltEditorLite synchronous Create', () => {
   it('rejects a Promise-returning clientSide callback without mutation', async () => {
     const asynchronousCreateRow = ((
       values: Readonly<Partial<CreateValues>>,
-    ): Promise<ContractRow> =>
+    ): Promise<TestRow> =>
       Promise.resolve({
         id: 'async-row',
         name: values.name ?? '',
         rank: values.rank ?? 0,
-      })) as unknown as (values: Readonly<Partial<CreateValues>>) => ContractRow;
+      })) as unknown as (values: Readonly<Partial<CreateValues>>) => TestRow;
     const { api, editor } = createEditor('async-callback', asynchronousCreateRow);
     await editor.openCreateDialog();
     editor.getField<string>('name')?.setValue('Async');
@@ -393,7 +391,7 @@ describe('AltEditorLite synchronous Create', () => {
   });
 
   it('does not construct or mutate a row when a submit observer destroys the editor', async () => {
-    const createRow = vi.fn((values: Readonly<Partial<CreateValues>>): ContractRow => ({
+    const createRow = vi.fn((values: Readonly<Partial<CreateValues>>): TestRow => ({
       id: 'observer-row',
       name: values.name ?? '',
       rank: values.rank ?? 0,
@@ -420,8 +418,8 @@ describe('AltEditorLite synchronous Create', () => {
   });
 
   it('initializes without Create capability but rejects opening it', async () => {
-    const { api } = createContractTable('unavailable');
-    const editor = new AltEditorLite<ContractRow, CreateValues>(api, {
+    const { api } = createTestTable('unavailable');
+    const editor = new AltEditorLite<TestRow, CreateValues>(api, {
       fields,
     });
     activeEditors.add(editor);

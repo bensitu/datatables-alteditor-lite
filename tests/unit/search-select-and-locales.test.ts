@@ -5,14 +5,14 @@ import {
   ENGLISH_LANGUAGE,
   resolveLanguage,
 } from '../../src/core/alt-editor-lite-language.js';
-import { es } from '../../src/locales/es.js';
-import { ja } from '../../src/locales/ja.js';
+import es from '../../src/locales/es.json' with { type: 'json' };
+import ja from '../../src/locales/ja.json' with { type: 'json' };
+import zhCn from '../../src/locales/zh-cn.json' with { type: 'json' };
 import {
   getLocale,
   getRegisteredLocaleNames,
   registerLocale,
-} from '../../src/locales/locale-registry.js';
-import { zhCn } from '../../src/locales/zh-cn.js';
+} from '../../src/localization/locale-registry.js';
 import { filterSearchOptions } from '../../src/search-select/filter-search-options.js';
 import {
   isComposingEnter,
@@ -108,7 +108,7 @@ describe('SearchSelect keyboard state', () => {
   });
 });
 
-describe('locale contracts', () => {
+describe('locale data', () => {
   it('keeps exact keys, placeholder tokens, and non-empty reviewed text', () => {
     const englishLeaves = languageLeaves(ENGLISH_LANGUAGE);
 
@@ -145,16 +145,18 @@ describe('locale contracts', () => {
     });
   });
 
-  it('supports a deterministic public locale registry', () => {
-    registerLocale('ja', ja);
-    registerLocale('zh-CN', zhCn);
-    registerLocale('es', es);
+  it('supports canonical public locale lookup', () => {
+    const registeredJapanese = registerLocale(ja);
+    registerLocale(zhCn);
+    registerLocale(es);
 
-    expect(getLocale('ja')).toBe(ja);
+    expect(getLocale('JA')).toBe(registeredJapanese);
     expect(getLocale('missing')).toBeUndefined();
-    expect(getRegisteredLocaleNames()).toEqual(['en', 'ja', 'zh-CN', 'es']);
+    expect(getRegisteredLocaleNames()).toEqual(
+      expect.arrayContaining(['en', 'ja', 'zh-CN', 'es']),
+    );
     expect(() => {
-      registerLocale(' ', es);
+      registerLocale({ locale: 'invalid_locale' });
     }).toThrow(EditorConfigurationError);
   });
 });

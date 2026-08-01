@@ -94,6 +94,6 @@ export interface AltEditorLiteOptions<
   readonly clientSide?: ClientSideOperations<TRow, TFormValues>;
   /** Whether successful Create and Edit operations close the dialog. Defaults to true. */
   readonly closeOnSuccess?: boolean;
-  /** Nested language overrides merged with the English fallback. */
+  /** Language data or nested overrides merged with the English fallback. */
   readonly language?: PartialEditorLanguage;
 }

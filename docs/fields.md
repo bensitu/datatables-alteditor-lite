@@ -1,14 +1,9 @@
----
-audience: public
-status: stable
----
-
 # Fields
 
 Every field has a safe dot-separated `name`. Segments that can mutate object
 prototypes are rejected. Visible fields require a non-empty label.
 
-The 0.1.0 field types are:
+Supported field types are:
 
 | Type                                                                      | Collected value                                                                 |
 | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -47,8 +42,8 @@ the final uniqueness constraint.
 
 ## SearchSelect
 
-SearchSelect is a local, single-value combobox. It has no remote data source,
-multiple-selection mode, or virtualization in 0.1.0.
+SearchSelect is a local, single-value combobox. It does not provide a remote data
+source, multiple-selection mode, or virtualization.
 
 ```ts
 const officeField = {
@@ -74,7 +69,7 @@ the same type are rejected.
 `searchThreshold` is the minimum normalized query length before filtering starts.
 `debounceMs` delays local filtering. `sortOptions` uses an `Intl.Collator` for the
 active locale. `allowClear` returns `undefined`. `allowManualValue` is available
-only for string-valued configurations; numeric manual parsing is outside 0.1.0.
+only for string-valued configurations; manual numeric parsing is not supported.
 
 Use at most 1,000 options for the best experience. The enforced and documented
 hard limit is 5,000 local options. Large remote datasets and virtualization are

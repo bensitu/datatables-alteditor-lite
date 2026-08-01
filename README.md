@@ -4,10 +4,10 @@
 DataTables 3.x. It uses TypeScript and native browser APIs, with no jQuery or UI
 framework runtime.
 
-The current implementation provides Create, Edit, Remove, and Refresh with
+It provides Create, Edit, Remove, and Refresh with
 synchronous client-side mappings or asynchronous persistence operations.
 
-## Current capabilities
+## Features
 
 - One editor instance per DataTables table
 - Native `<dialog>` with keyboard focus containment and restoration
@@ -19,8 +19,8 @@ synchronous client-side mappings or asynchronous persistence operations.
 - Local single-value SearchSelect with exact string/number identity, dynamic
   options, keyboard/IME support, clear, sorting, and optional manual strings
 - Exact number, typed option, and file value normalization
-- English fallback with nested overrides and published English, Japanese,
-  Simplified Chinese, and Spanish locale modules
+- English fallback with nested overrides, independently loadable JSON language
+  resources, and ESM modules for English, Japanese, Simplified Chinese, and Spanish
 - Non-bubbling DOM `CustomEvent` lifecycle notifications
 - Non-optimistic asynchronous Create, Update, and Remove operations with
   `AbortSignal`
@@ -30,7 +30,7 @@ synchronous client-side mappings or asynchronous persistence operations.
   enablement
 - Ajax-aware and local-table Refresh
 - ESM and Browser Global registration without optional DataTables runtime imports
-- Browser Global locale registry and minified/source-mapped locale bundles
+- Browser Global language registry and optional registration bundles
 - Responsive light/dark CSS with reduced-motion and high-zoom support
 
 ## ESM usage
@@ -141,7 +141,7 @@ The constructor is available as
 `DataTablesAltEditorLite.AltEditorLite`. Repeated evaluation of the browser bundle
 does not register the DataTables method again.
 
-Locale IIFEs load after the core and register through its public registry:
+Language registration bundles load after the main browser bundle:
 
 ```html
 <script src="datatables-alteditor-lite.js"></script>
@@ -150,6 +150,15 @@ Locale IIFEs load after the core and register through its public registry:
 
 ```js
 const language = DataTablesAltEditorLite.getLocale('ja');
+```
+
+Applications can also load their own JSON language resource without modifying or
+rebuilding AltEditorLite:
+
+```js
+const language = await DataTablesAltEditorLite.loadEditorLanguage(
+  './languages/fr-FR.json',
+);
 ```
 
 See [Localization](docs/localization.md) and
@@ -180,19 +189,20 @@ Refresh publishes `refresh(start) → success | error → refresh(complete)`.
 `alteditor-lite:destroy` is emitted once after owned resources are cleaned up.
 See [Events](docs/events.md) for the discriminated detail types.
 
-## Public demo
+## Demonstration
 
-The Browser Global demo uses the built `dist/` files and official CDN builds for
-DataTables and its optional peers:
+The static example uses built distribution files and the official DataTables CDN.
+Build it before opening `examples/demo/index.html` with a local static server:
 
 ```bash
 npm run build
-npm run demo
 ```
 
-Open `http://127.0.0.1:4173/`. It demonstrates full CRUD, Buttons and Select,
-typed SearchSelect, asynchronous failures, four locales, events, state, and a
-second independent instance.
+`npm run demo` is available as a local preview helper. The GitHub Pages workflow
+builds `dist/` and publishes only the example and its required distribution files.
+The page demonstrates CRUD, optional Buttons and Select integration, typed
+SearchSelect, external JSON languages, asynchronous failures, events, and multiple
+independent instances.
 
 ## Development
 
@@ -202,11 +212,10 @@ Use a supported Node.js version and install the exact dependency graph:
 npm ci
 ```
 
-Run the complete repository verification:
+Run the repository checks:
 
 ```bash
-npm run ci:core
+npm run check
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for repository conventions and documentation
-governance.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for repository conventions.

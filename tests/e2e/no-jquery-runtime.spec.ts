@@ -48,7 +48,7 @@ test('core, Buttons, and Select operate without a jQuery global', async ({ page 
     <!doctype html>
     <html>
       <body>
-        <table id="contract-table">
+        <table id="runtime-table">
           <thead>
             <tr><th>Name</th></tr>
           </thead>
@@ -74,12 +74,12 @@ test('core, Buttons, and Select operate without a jQuery global', async ({ page 
       throw new Error('Expected the DataTables browser global.');
     }
 
-    const tableElement = document.querySelector<HTMLTableElement>('#contract-table');
+    const tableElement = document.querySelector<HTMLTableElement>('#runtime-table');
     if (tableElement === null) {
-      throw new Error('Expected the contract table element.');
+      throw new Error('Expected the runtime test table element.');
     }
 
-    const tableApi = new dataTableStatic('#contract-table', {
+    const tableApi = new dataTableStatic('#runtime-table', {
       layout: {
         topStart: {
           buttons: ['copy'],
@@ -94,9 +94,9 @@ test('core, Buttons, and Select operate without a jQuery global', async ({ page 
       }
     };
 
-    tableApi.on('draw.contract', drawListener);
+    tableApi.on('draw.test', drawListener);
     tableApi.draw(false);
-    tableApi.off('draw.contract', drawListener);
+    tableApi.off('draw.test', drawListener);
     tableApi.draw(false);
     tableApi.row(0).select();
 

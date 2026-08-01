@@ -2,7 +2,7 @@ import { AltEditorLiteError } from './alt-editor-lite-error.js';
 
 import type { AltEditorLiteLanguage } from './alt-editor-lite-language.js';
 
-interface OperationErrorContract {
+interface OperationErrorLike {
   readonly message: string;
   readonly code?: string;
   readonly fieldErrors?: Readonly<Record<string, string>>;
@@ -41,7 +41,7 @@ function isFieldErrorRecord(value: unknown): value is Readonly<Record<string, st
   return Object.values(value).every((message) => typeof message === 'string');
 }
 
-function isOperationErrorContract(value: unknown): value is OperationErrorContract {
+function isOperationErrorLike(value: unknown): value is OperationErrorLike {
   if (!isRecord(value)) {
     return false;
   }
@@ -107,7 +107,7 @@ export function normalizeOperationError(
     return new InternalOperationAbort();
   }
 
-  if (isOperationErrorContract(rawError)) {
+  if (isOperationErrorLike(rawError)) {
     return new AltEditorLiteError({
       message: rawError.message,
       ...(rawError.code === undefined ? {} : { code: rawError.code }),

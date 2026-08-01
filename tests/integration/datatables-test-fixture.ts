@@ -1,35 +1,36 @@
 import DataTable, { type Api } from 'datatables.net';
 
 /**
- * Row shape shared by the permanent DataTables public-contract tests.
+ * Row shape shared by integration tests that use a real DataTables instance.
  */
-export interface ContractRow {
+export interface TestRow {
   readonly id: string;
   readonly name: string;
   readonly rank: number;
 }
 
 /**
- * DataTables instance and owned table element created for a contract test.
+ * DataTables instance and owned table element created for an integration test.
  */
-export interface ContractTable {
-  readonly api: Api<ContractRow>;
+export interface TestTable {
+  readonly api: Api<TestRow>;
   readonly tableElement: HTMLTableElement;
 }
 
-const activeContractTables = new Set<Api<ContractRow>>();
+const activeTestTables = new Set<Api<TestRow>>();
 
 /**
  * Creates a real DataTables instance using only public initialization options.
  *
  * @param tableId - DOM identity assigned to the table element.
- * @param additionalOptions - Public options that extend the baseline fixture.
+ * @param additionalOptions - Public options that extend the default fixture.
  * @returns The initialized API and its table element.
  */
-export function createContractTable(
-  tableId = 'contract-table',
+export function createTestTable(
+  tableId = 'test-table',
   additionalOptions: object = {},
-): ContractTable {
+): TestTable {
+  DataTable.ext.errMode = 'throw';
   const tableElement = document.createElement('table');
   const header = tableElement.createTHead();
   const headerRow = header.insertRow();
@@ -44,7 +45,7 @@ export function createContractTable(
   tableElement.id = tableId;
   document.body.append(tableElement);
 
-  const api = new DataTable<ContractRow>(tableElement, {
+  const api = new DataTable<TestRow>(tableElement, {
     data: [
       { id: 'row-a', name: 'Alpha', rank: 1 },
       { id: 'row-b', name: 'Beta', rank: 2 },
@@ -59,7 +60,7 @@ export function createContractTable(
     ...additionalOptions,
   });
 
-  activeContractTables.add(api);
+  activeTestTables.add(api);
 
   return {
     api,
@@ -70,8 +71,8 @@ export function createContractTable(
 /**
  * Destroys every fixture instance and restores an empty document body.
  */
-export function destroyContractTables(): void {
-  for (const api of activeContractTables) {
+export function destroyTestTables(): void {
+  for (const api of activeTestTables) {
     const tableElement = api.table().node();
 
     if (DataTable.isDataTable(tableElement)) {
@@ -79,6 +80,6 @@ export function destroyContractTables(): void {
     }
   }
 
-  activeContractTables.clear();
+  activeTestTables.clear();
   document.body.replaceChildren();
 }

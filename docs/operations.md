@@ -1,8 +1,3 @@
----
-audience: public
-status: stable
----
-
 # Operations
 
 AltEditorLite performs non-optimistic mutations. A persistence callback must
@@ -112,7 +107,7 @@ throw new AltEditorLiteError({
 ```
 
 A plain object can also use the validated `message`, `code`, `fieldErrors`, and
-`retryable` contract. Ordinary `Error`, `TypeError`, and unknown values are shown
+`retryable` properties. Ordinary `Error`, `TypeError`, and unknown values are shown
 with the localized generic message; raw messages, stacks, and serialized values
 are not exposed.
 

@@ -1,15 +1,22 @@
----
-audience: public
-status: stable
----
-
 # Localization
 
-English is the complete built-in fallback. Published locale data is available for
-English, Japanese, Simplified Chinese, and Spanish:
+AltEditorLite keeps translation data separate from its implementation. English is
+the built-in fallback, and every included language is stored as a JSON file under
+`src/locales/`. The build discovers those files automatically and produces:
+
+- unchanged JSON resources in `dist/locales/`;
+- ESM modules such as `datatables-alteditor-lite/locales/ja`;
+- optional Browser Global registration bundles.
+
+Adding an included language requires only one JSON file. No TypeScript wrapper,
+build configuration entry, or package export change is required.
+
+## Included languages
+
+ESM applications can import an included language module:
 
 ```ts
-import { ja } from 'datatables-alteditor-lite/locales/ja';
+import ja from 'datatables-alteditor-lite/locales/ja';
 
 const editor = new AltEditorLite(table, {
   fields,
@@ -17,41 +24,93 @@ const editor = new AltEditorLite(table, {
 });
 ```
 
-The ESM locale subpaths are pure data modules with no registration side effect:
+The package includes English (`en`), Japanese (`ja`), Simplified Chinese
+(`zh-cn`), and Spanish (`es`). Their JSON files provide examples of the complete
+shape and required placeholders.
 
-- `datatables-alteditor-lite/locales/en`
-- `datatables-alteditor-lite/locales/ja`
-- `datatables-alteditor-lite/locales/zh-cn`
-- `datatables-alteditor-lite/locales/es`
+To contribute another included language, copy `src/locales/en.json`, use a
+lowercase locale filename such as `pt-br.json`, set its `locale` property to the
+canonical BCP 47 identifier such as `pt-BR`, and translate every value. Keep the
+same keys and placeholders. The build validates the resource and generates every
+published format automatically; no source registration or configuration change is
+needed.
 
-All locales have identical recursive keys and placeholder tokens. Partial consumer
-overrides are deep-merged over English:
+## Application-provided languages
+
+Applications can provide partial language data directly in the options. The
+`locale` value is a BCP 47 identifier, and omitted text falls back to English:
 
 ```ts
-language: {
-  actions: { submit: 'Save' },
-  searchSelect: { noResults: 'Nothing found' },
-}
+const editor = new AltEditorLite(table, {
+  fields,
+  language: {
+    locale: 'fr-FR',
+    actions: {
+      cancel: 'Annuler',
+      submit: 'Enregistrer',
+    },
+  },
+});
 ```
 
-Dialog titles, action buttons, optional DataTables Buttons labels and tooltips,
-validation messages, and the selected-row count in Remove confirmation all use the
-resolved language. The Remove count template contains the `{count}` placeholder.
+No library rebuild is required.
 
-There is no `languageUrl` and the library never fetches locale JSON.
+For a separate JSON resource, await `loadEditorLanguage` before constructing the
+editor:
 
-Applications that implement their own dynamic locale loader can normalize a
-failure with the public `EditorLanguageLoadError`. The error is retryable and may
-retain the original `cause`; using it does not enable a library-managed remote
-loading mode.
+```ts
+import { AltEditorLite, loadEditorLanguage } from 'datatables-alteditor-lite';
 
-## Browser Global registry
+const language = await loadEditorLanguage('/languages/fr-FR.json');
+const editor = new AltEditorLite(table, { fields, language });
+```
 
-The core Browser Global exposes `registerLocale`, `getLocale`, and
-`getRegisteredLocaleNames`. Locale IIFEs register into that public registry and
-must load after the core. Loading a locale first throws a clear diagnostic; no
-queued second mode exists.
+This follows the same separation between implementation and language data used by
+[DataTables internationalisation](https://datatables.net/plug-ins/i18n/), while
+keeping the AltEditorLite constructor synchronous and predictable.
+
+The loader accepts partial JSON, validates known keys and placeholder tokens,
+canonicalizes the locale identifier, and merges the data with the English
+fallback. Network failures throw `EditorLanguageLoadError`. Invalid JSON or an
+invalid language shape is non-retryable.
+
+Templates must retain their placeholders. For example, `dialog.removeCount`
+contains `{count}`, `accessibility.searchSelectResults` contains `{count}`, and
+`accessibility.searchSelectSelection` contains `{label}`.
+
+## Browser Global usage
+
+The same loader is available to CDN and script-tag users:
+
+```js
+const language = await DataTablesAltEditorLite.loadEditorLanguage(
+  './languages/fr-FR.json',
+);
+const editor = new DataTablesAltEditorLite.AltEditorLite(table, {
+  fields,
+  language,
+});
+```
+
+Included JSON files are also addressable through npm CDNs. Pin the package version
+used by the main bundle in production:
+
+```js
+const language = await DataTablesAltEditorLite.loadEditorLanguage(
+  'https://cdn.jsdelivr.net/npm/datatables-alteditor-lite@<version>/locales/ja.json',
+);
+```
+
+Applications that want name-based lookup can register the result:
+
+```js
+DataTablesAltEditorLite.registerLocale(language);
+DataTablesAltEditorLite.getLocale('fr-fr'); // canonical lookup
+```
+
+Included Browser Global language bundles remain available for static script-tag
+setups and register themselves after the main bundle loads.
 
 Changing an active editor's language in place is not supported. Destroy and
-recreate the editor with the selected registered locale; the DataTables rows stay
-owned by the existing table.
+recreate the editor with the selected language; the existing DataTables rows stay
+owned by the table.

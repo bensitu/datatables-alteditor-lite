@@ -12,10 +12,10 @@ import {
 } from '../../src/index.js';
 
 import {
-  createContractTable,
-  destroyContractTables,
-  type ContractRow,
-} from './datatables-contract-fixture.js';
+  createTestTable,
+  destroyTestTables,
+  type TestRow,
+} from './datatables-test-fixture.js';
 
 interface CrudValues {
   readonly name: string;
@@ -96,7 +96,7 @@ afterEach(() => {
     editor.destroy();
   }
   activeEditors.clear();
-  destroyContractTables();
+  destroyTestTables();
 });
 
 function createDeferred<TValue>(): Deferred<TValue> {
@@ -118,15 +118,15 @@ function createDeferred<TValue>(): Deferred<TValue> {
 
 function createCrudEditor(
   tableId: string,
-  editorOptions: Omit<AltEditorLiteOptions<ContractRow, CrudValues>, 'fields'> = {},
+  editorOptions: Omit<AltEditorLiteOptions<TestRow, CrudValues>, 'fields'> = {},
   tableOptions: object = {},
 ): {
-  readonly api: ReturnType<typeof createContractTable>['api'];
-  readonly editor: AltEditorLite<ContractRow, CrudValues>;
+  readonly api: ReturnType<typeof createTestTable>['api'];
+  readonly editor: AltEditorLite<TestRow, CrudValues>;
   readonly tableElement: HTMLTableElement;
 } {
-  const { api, tableElement } = createContractTable(tableId, tableOptions);
-  const editor = new AltEditorLite<ContractRow, CrudValues>(api, {
+  const { api, tableElement } = createTestTable(tableId, tableOptions);
+  const editor = new AltEditorLite<TestRow, CrudValues>(api, {
     fields,
     ...editorOptions,
   });
@@ -160,13 +160,10 @@ function confirmRemove(): void {
 
 describe('AltEditorLite asynchronous Create', () => {
   it('waits for persistence before adding and draws before success', async () => {
-    const deferredRow = createDeferred<ContractRow>();
-    let operationContext: OperationContext<ContractRow> | undefined;
+    const deferredRow = createDeferred<TestRow>();
+    let operationContext: OperationContext<TestRow> | undefined;
     const createOperation = vi.fn(
-      (
-        _values: Readonly<Partial<CrudValues>>,
-        context: OperationContext<ContractRow>,
-      ) => {
+      (_values: Readonly<Partial<CrudValues>>, context: OperationContext<TestRow>) => {
         operationContext = context;
         return deferredRow.promise;
       },
@@ -240,7 +237,7 @@ describe('AltEditorLite asynchronous Create', () => {
   });
 
   it('aborts and ignores a pending Create when destroyed', async () => {
-    const deferredRow = createDeferred<ContractRow>();
+    const deferredRow = createDeferred<TestRow>();
     let operationSignal: AbortSignal | undefined;
     const { api, editor, tableElement } = createCrudEditor('destroy-create', {
       operations: {
@@ -281,13 +278,13 @@ describe('AltEditorLite Edit snapshots', () => {
       { ...fields[0], unique: true },
       fields[1],
     ] satisfies readonly FieldConfig<CrudValues>[];
-    const { api, tableElement } = createContractTable('local-unique');
+    const { api, tableElement } = createTestTable('local-unique');
     const createOperation = vi.fn((values: Readonly<Partial<CrudValues>>) => ({
       id: 'unique-created',
       name: values.name ?? '',
       rank: values.rank ?? 0,
     }));
-    const editor = new AltEditorLite<ContractRow, CrudValues>(api, {
+    const editor = new AltEditorLite<TestRow, CrudValues>(api, {
       fields: uniqueFields,
       operations: { create: createOperation },
     });
@@ -325,7 +322,7 @@ describe('AltEditorLite Edit snapshots', () => {
 
   it('updates the explicit snapshot after sort, search, paging, and redraw', async () => {
     const eventOrder: string[] = [];
-    let callbackOriginal: Readonly<ContractRow> | undefined;
+    let callbackOriginal: Readonly<TestRow> | undefined;
     const { api, editor, tableElement } = createCrudEditor('edit-operation', {
       operations: {
         update: (values, original, context) => {
@@ -417,8 +414,10 @@ describe('AltEditorLite Edit snapshots', () => {
       readonly rank?: number;
     }
 
-    const { api } = createContractTable('default-clear');
-    const editor = new AltEditorLite<ContractRow, ClearValues>(api, {
+    const { api } = createTestTable('default-clear', {
+      columns: [{ data: 'name' }, { data: 'rank', defaultContent: '' }],
+    });
+    const editor = new AltEditorLite<TestRow, ClearValues>(api, {
       fields: [{ label: 'Rank', name: 'rank', type: 'number' }],
     });
     activeEditors.add(editor);
@@ -435,8 +434,7 @@ describe('AltEditorLite Edit snapshots', () => {
 
   it('rejects an externally removed or replaced rowId target', async () => {
     const updateOperation = vi.fn(
-      (_values: Readonly<Partial<CrudValues>>, original: Readonly<ContractRow>) =>
-        original,
+      (_values: Readonly<Partial<CrudValues>>, original: Readonly<TestRow>) => original,
     );
     const { api, editor, tableElement } = createCrudEditor('stale-edit', {
       operations: { update: updateOperation },
@@ -484,7 +482,7 @@ describe('AltEditorLite Edit snapshots', () => {
   });
 
   it('aborts a pending Update when the dialog closes and ignores its result', async () => {
-    const deferredRow = createDeferred<ContractRow>();
+    const deferredRow = createDeferred<TestRow>();
     let operationSignal: AbortSignal | undefined;
     const { api, editor, tableElement } = createCrudEditor('abort-edit', {
       operations: {
@@ -523,10 +521,7 @@ describe('AltEditorLite Remove snapshots', () => {
   it('confirms without a form and removes only after async persistence', async () => {
     const deferredRemoval = createDeferred<undefined>();
     const removeOperation = vi.fn(
-      (
-        _rows: readonly Readonly<ContractRow>[],
-        context: OperationContext<ContractRow>,
-      ) => {
+      (_rows: readonly Readonly<TestRow>[], context: OperationContext<TestRow>) => {
         expect(context.operation).toBe('remove');
         return deferredRemoval.promise;
       },
@@ -669,12 +664,10 @@ describe('AltEditorLite Refresh and optional selection boundary', () => {
   it('uses public Ajax reload and rejects Refresh while a dialog is active', async () => {
     let ajaxRequestCount = 0;
     let completeRefreshRequest: (() => void) | undefined;
-    const ajaxRows = [
-      { id: 'ajax-a', name: 'Ajax Alpha', rank: 1 },
-    ] satisfies ContractRow[];
+    const ajaxRows = [{ id: 'ajax-a', name: 'Ajax Alpha', rank: 1 }] satisfies TestRow[];
     const ajax = (
       _request: unknown,
-      callback: (response: { readonly data: readonly ContractRow[] }) => void,
+      callback: (response: { readonly data: readonly TestRow[] }) => void,
     ): void => {
       ajaxRequestCount += 1;
       if (ajaxRequestCount === 1) {
@@ -721,7 +714,7 @@ describe('AltEditorLite Refresh and optional selection boundary', () => {
   it('normalizes a Refresh failure and completes its event sequence once', async () => {
     const ajax = (
       _request: unknown,
-      callback: (response: { readonly data: readonly ContractRow[] }) => void,
+      callback: (response: { readonly data: readonly TestRow[] }) => void,
     ): void => {
       callback({ data: [] });
     };
@@ -768,14 +761,20 @@ describe('AltEditorLite Refresh and optional selection boundary', () => {
   });
 
   it('requires Select only when no explicit selector is supplied', async () => {
-    const { editor } = createCrudEditor('no-select');
+    const unavailableMessage = 'Selection support is unavailable.';
+    const { editor } = createCrudEditor('no-select', {
+      language: { buttons: { selectUnavailable: unavailableMessage } },
+    });
 
-    await expect(editor.openEditDialog()).rejects.toThrow(
-      EditorSelectionUnavailableError,
-    );
-    await expect(editor.openRemoveDialog()).rejects.toThrow(
-      EditorSelectionUnavailableError,
-    );
+    const editRejection = editor.openEditDialog();
+    await expect(editRejection).rejects.toThrow(EditorSelectionUnavailableError);
+    await expect(editRejection).rejects.toMatchObject({ message: unavailableMessage });
+
+    const removeRejection = editor.openRemoveDialog();
+    await expect(removeRejection).rejects.toThrow(EditorSelectionUnavailableError);
+    await expect(removeRejection).rejects.toMatchObject({
+      message: unavailableMessage,
+    });
     expect(editor.getState().status).toBe('ready');
 
     await editor.openEditDialog('#row-c');

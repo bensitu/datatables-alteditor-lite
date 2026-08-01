@@ -1,12 +1,8 @@
----
-audience: public
-status: stable
----
-
 # Browser Global
 
-Load DataTables first, optional extensions second, AltEditorLite core third, and
-locale bundles last. No script requires jQuery.
+Load DataTables first, optional extensions second, the AltEditorLite browser
+bundle third, and any included language registration bundles last. No script
+requires jQuery.
 
 ```html
 <link rel="stylesheet" href="alt-editor-lite.css" />
@@ -17,7 +13,8 @@ locale bundles last. No script requires jQuery.
 <script src="locales/datatables-alteditor-lite.ja.js"></script>
 ```
 
-The constructor and locale registry are on `globalThis.DataTablesAltEditorLite`:
+The constructor, language loader, and language registry are on
+`globalThis.DataTablesAltEditorLite`:
 
 ```js
 const language = DataTablesAltEditorLite.getLocale('ja');
@@ -28,11 +25,24 @@ const editor = new DataTablesAltEditorLite.AltEditorLite(table, {
 ```
 
 Available locale artifacts use `en`, `ja`, `zh-cn`, and `es` filenames, with
-minified and unminified source-mapped variants.
+minified and unminified source-mapped variants. They are generated from the JSON
+resources in `src/locales/`.
 
-Evaluating the core before DataTables throws a load-order error. Evaluating a
-locale before the core also throws. These diagnostics are intentional and prevent
-silent partial initialization.
+CDN users can load a custom JSON resource without changing the library:
 
-The repository demo uses this exact public artifact sequence. Run it with
-`npm run build && npm run demo`.
+```js
+const language = await DataTablesAltEditorLite.loadEditorLanguage(
+  './languages/fr-FR.json',
+);
+const editor = new DataTablesAltEditorLite.AltEditorLite(table, {
+  fields,
+  language,
+});
+```
+
+Evaluating the main bundle before DataTables throws a load-order error. Evaluating
+an included language registration bundle before the main bundle also throws.
+These diagnostics prevent silent partial initialization.
+
+The repository demonstration loads the main bundle and JSON languages from built
+distribution files. GitHub Pages builds those files before deployment.

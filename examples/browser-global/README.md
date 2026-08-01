@@ -6,16 +6,17 @@
 <script src="dataTables.buttons.js"></script>
 <script src="dataTables.select.js"></script>
 <script src="dist/datatables-alteditor-lite.js"></script>
-<script src="dist/locales/datatables-alteditor-lite.ja.js"></script>
 <script src="app.js"></script>
 ```
 
 ```js
-const language = DataTablesAltEditorLite.getLocale('ja');
+const language = await DataTablesAltEditorLite.loadEditorLanguage('dist/locales/ja.json');
 const editor = new DataTablesAltEditorLite.AltEditorLite(table, {
   fields,
   language,
 });
 ```
 
-The core must load before locale IIFEs. None of these artifacts requires jQuery.
+An included registration bundle such as
+`dist/locales/datatables-alteditor-lite.ja.js` can be loaded after the main bundle
+instead of fetching JSON. None of these artifacts requires jQuery.

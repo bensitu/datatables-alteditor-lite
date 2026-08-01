@@ -1,12 +1,10 @@
 node_modules/
 dist/
+.pages/
 .work/
 artifacts/
 coverage/
 playwright-report/
 test-results/
 tmp/
-*.audit.md
-*.implementation-plan.md
-*.test-report.md
 .DS_Store

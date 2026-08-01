@@ -1,8 +1,3 @@
----
-audience: public
-status: stable
----
-
 # Events
 
 AltEditorLite publishes observation-only DOM `CustomEvent` objects from the owned

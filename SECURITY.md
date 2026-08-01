@@ -2,8 +2,8 @@
 
 ## Supported versions
 
-The latest 0.1.x release receives security fixes. Older pre-release revisions and
-unsupported DataTables major versions do not receive fixes. See the package
+The latest supported release receives security fixes. Unsupported DataTables major
+versions and older development revisions do not receive fixes. See the package
 metadata for the supported DataTables and Node ranges.
 
 ## Reporting a vulnerability

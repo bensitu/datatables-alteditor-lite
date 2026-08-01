@@ -202,10 +202,7 @@ export class EditorDestroyedError extends AltEditorLiteError {
 }
 
 /**
- * Indicates that an application-managed locale could not be loaded.
- *
- * AltEditorLite does not fetch locales itself. This public error gives locale
- * adapters a stable contract without introducing a remote-loading mode.
+ * Indicates that an editor language resource could not be loaded.
  */
 export class EditorLanguageLoadError extends AltEditorLiteError {
   /**
@@ -213,15 +210,17 @@ export class EditorLanguageLoadError extends AltEditorLiteError {
    *
    * @param message - Safe explanation of the failed language load.
    * @param cause - Optional original failure.
+   * @param retryable - Whether another request may succeed. Defaults to true.
    */
   public constructor(
     message = 'The requested editor language could not be loaded.',
     cause?: unknown,
+    retryable = true,
   ) {
     super({
       code: 'LANGUAGE_LOAD',
       message,
-      retryable: true,
+      retryable,
       ...(cause === undefined ? {} : { cause }),
     });
   }

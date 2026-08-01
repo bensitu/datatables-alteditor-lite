@@ -335,7 +335,7 @@ export class AltEditorLite<
   }
 
   /**
-   * Returns the current immutable-by-contract lifecycle state.
+   * Returns the current readonly lifecycle state.
    *
    * @returns Current editor state.
    */
@@ -396,7 +396,9 @@ export class AltEditorLite<
     rowSelector: RowSelector<TRow> | undefined,
   ): readonly number[] {
     if (rowSelector === undefined) {
-      return this.selectIntegration.selectedRowIndexes();
+      return this.selectIntegration.selectedRowIndexes(
+        this.language.buttons.selectUnavailable,
+      );
     }
 
     return this.table.rows(rowSelector).indexes().toArray();

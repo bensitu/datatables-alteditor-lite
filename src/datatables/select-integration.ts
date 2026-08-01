@@ -66,12 +66,13 @@ export class SelectIntegration<TRow extends object> {
   /**
    * Returns selected row indexes using the public Select selector modifier.
    *
+   * @param unavailableMessage - Localized explanation used when Select is absent.
    * @returns Selected DataTables row indexes.
    * @throws EditorSelectionUnavailableError when Select is absent.
    */
-  public selectedRowIndexes(): readonly number[] {
+  public selectedRowIndexes(unavailableMessage?: string): readonly number[] {
     if (!this.isAvailable) {
-      throw new EditorSelectionUnavailableError();
+      throw new EditorSelectionUnavailableError(unavailableMessage);
     }
 
     const selectCapableTable = this.table as unknown as SelectCapableTable;

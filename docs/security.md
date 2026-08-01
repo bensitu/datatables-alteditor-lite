@@ -1,8 +1,3 @@
----
-audience: public
-status: stable
----
-
 # Security
 
 AltEditorLite treats configured labels, descriptions, option labels, validation

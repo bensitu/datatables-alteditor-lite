@@ -2,19 +2,14 @@
 
 Thank you for helping improve `datatables-alteditor-lite`.
 
-## Development baseline
+## Development setup
 
-Use a Node.js version that satisfies:
-
-```text
-^20.19.0 || ^22.13.0 || >=24.0.0
-```
-
-Install from the committed lockfile and run the core quality gate:
+Use a Node.js version supported by `package.json`, install from the committed
+lockfile, and run the repository checks:
 
 ```bash
 npm ci
-npm run ci:core
+npm run check
 ```
 
 Do not use `--force` or `--legacy-peer-deps`.
@@ -36,31 +31,18 @@ Do not use `--force` or `--legacy-peer-deps`.
 
 ## Tests
 
-Every test must remain useful after the change that introduced it. Core unit,
-integration, browser, and type tests belong in this repository.
-
-`npm test` enforces two complementary coverage gates. The complete core runtime is
-measured across unit and integration tests at 90% statements, 85% branches, 90%
-functions, and 90% lines. Safety-critical snapshot, state, object-path, request,
-configuration, and normalization modules retain a separate 100% gate.
+Every test must remain useful after the change that introduced it. Unit,
+integration, browser, and public type tests should verify library behavior rather
+than third-party implementation details, documentation text, build configuration,
+or the test suite itself. Coverage is measured across the runtime source with
+repository-wide thresholds defined in `vitest.config.ts`.
 
 ## Distribution output
 
 Keep `dist/index.js` as readable, non-minified ESM with a source map. Browser
-Global core and locale bundles provide readable and `.min.js` variants with source
-maps. Do not silently change these stable output roles when adjusting the build.
-
-## Documentation governance
-
-The `docs/` directory is reserved for stable public documentation. Each Markdown
-file under `docs/` must begin with:
-
-```yaml
----
-audience: public
-status: stable
----
-```
+Global and language bundles provide readable and `.min.js` variants with source
+maps. Copy JSON language resources unchanged so they can be loaded directly by
+browsers and applications.
 
 ## Commits and pull requests
 

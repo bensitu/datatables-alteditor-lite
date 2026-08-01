@@ -1,4 +1,4 @@
-name: Core CI
+name: CI
 
 on:
   pull_request:
@@ -13,39 +13,31 @@ env:
   HUSKY: 0
 
 jobs:
-  format-lint-typecheck:
-    name: Format, lint, and typecheck (Node ${{ matrix.node-version }})
+  static-analysis:
+    name: Format and lint
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        node-version:
-          - '20.19.0'
-          - '22.13.0'
-          - '24.0.0'
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: '24.x'
           cache: npm
       - run: npm ci
       - run: npm run format:check
       - run: npm run lint
       - run: npm run lint:styles
-      - run: npm run typecheck
 
-  unit-integration:
-    name: Unit and baseline integration tests
+  tests:
+    name: Unit and integration tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: '24.0.0'
+          node-version: '24.x'
           cache: npm
       - run: npm ci
-      - run: npm run test
+      - run: npm run test:coverage
       - if: always()
         uses: actions/upload-artifact@v7
         with:
@@ -60,7 +52,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: '24.0.0'
+          node-version: '24.x'
           cache: npm
       - run: npm ci
       - run: npm run build
@@ -70,62 +62,29 @@ jobs:
           name: dist
           path: dist/
 
-  e2e-chromium:
-    name: E2E Chromium
+  browser-tests:
+    name: Browser tests (${{ matrix.browser }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        browser:
+          - chromium
+          - firefox
+          - webkit
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: '24.0.0'
+          node-version: '24.x'
           cache: npm
       - run: npm ci
       - run: npm run build
-      - run: npx playwright install --with-deps chromium
-      - run: npm run test:e2e -- --project=chromium
+      - run: npx playwright install --with-deps ${{ matrix.browser }}
+      - run: npm run test:e2e -- --project=${{ matrix.browser }}
       - if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: playwright-report-chromium
-          path: playwright-report/
-          if-no-files-found: ignore
-
-  e2e-firefox:
-    name: E2E Firefox
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '24.0.0'
-          cache: npm
-      - run: npm ci
-      - run: npm run build
-      - run: npx playwright install --with-deps firefox
-      - run: npm run test:e2e -- --project=firefox
-      - if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: playwright-report-firefox
-          path: playwright-report/
-          if-no-files-found: ignore
-
-  e2e-webkit:
-    name: E2E WebKit
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '24.0.0'
-          cache: npm
-      - run: npm ci
-      - run: npm run build
-      - run: npx playwright install --with-deps webkit
-      - run: npm run test:e2e -- --project=webkit
-      - if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: playwright-report-webkit
+          name: playwright-report-${{ matrix.browser }}
           path: playwright-report/
           if-no-files-found: ignore

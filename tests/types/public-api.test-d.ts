@@ -3,10 +3,13 @@ import { expectAssignable, expectNotAssignable, expectType } from 'tsd';
 import {
   AltEditorLite,
   EditorLanguageLoadError,
+  loadEditorLanguage,
+  registerLocale,
   type AltEditorLiteOptions,
   type AltEditorLiteLanguage,
   type ClientSideOperations,
   type EditorErrorEventDetail,
+  type EditorLanguageDefinition,
   type EditorOperations,
   type EditorSubmitEventDetail,
   type EditorSuccessEventDetail,
@@ -17,10 +20,10 @@ import {
   type OperationContext,
   type SearchSelectFieldConfig,
 } from '../../src/index.js';
-import enDefault, { en } from '../../src/locales/en.js';
-import { es } from '../../src/locales/es.js';
-import { ja } from '../../src/locales/ja.js';
-import { zhCn } from '../../src/locales/zh-cn.js';
+import en from '../../src/locales/en.json' with { type: 'json' };
+import es from '../../src/locales/es.json' with { type: 'json' };
+import ja from '../../src/locales/ja.json' with { type: 'json' };
+import zhCn from '../../src/locales/zh-cn.json' with { type: 'json' };
 
 import type { Api } from 'datatables.net';
 
@@ -265,11 +268,18 @@ expectNotAssignable<
   Parameters<NonNullable<NonNullable<typeof roleController>['setOptions']>>[0]
 >([{ label: 'Invalid', value: '7' }]);
 
-expectType<Readonly<AltEditorLiteLanguage>>(en);
-expectType<Readonly<AltEditorLiteLanguage>>(enDefault);
-expectType<Readonly<AltEditorLiteLanguage>>(ja);
-expectType<Readonly<AltEditorLiteLanguage>>(zhCn);
-expectType<Readonly<AltEditorLiteLanguage>>(es);
+expectAssignable<Readonly<AltEditorLiteLanguage>>(en);
+expectAssignable<Readonly<AltEditorLiteLanguage>>(ja);
+expectAssignable<Readonly<AltEditorLiteLanguage>>(zhCn);
+expectAssignable<Readonly<AltEditorLiteLanguage>>(es);
+const customLanguage = {
+  actions: { create: 'Créer' },
+  locale: 'fr-FR',
+} as const satisfies EditorLanguageDefinition;
+expectType<Readonly<AltEditorLiteLanguage>>(registerLocale(customLanguage));
+expectType<Promise<Readonly<AltEditorLiteLanguage>>>(
+  loadEditorLanguage('/languages/fr-FR.json'),
+);
 const languageLoadError = new EditorLanguageLoadError(
   'Locale failed.',
   new Error('Network unavailable.'),

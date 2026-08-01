@@ -1,0 +1,51 @@
+{
+  "locale": "zh-CN",
+  "actions": {
+    "create": "新建",
+    "edit": "编辑",
+    "remove": "删除",
+    "refresh": "刷新",
+    "submit": "提交",
+    "cancel": "取消",
+    "close": "关闭"
+  },
+  "dialog": {
+    "createTitle": "新建行",
+    "editTitle": "编辑行",
+    "removeTitle": "删除行",
+    "removeCount": "已选行数：{count}。",
+    "removeMessage": "请确认是否删除所选行。"
+  },
+  "buttons": {
+    "createUnavailable": "请配置新建操作以启用此操作。",
+    "selectUnavailable": "此操作需要 DataTables Select。",
+    "busy": "编辑器正在处理其他操作。",
+    "editSelection": "请选择且仅选择一行进行编辑。",
+    "removeSelection": "请至少选择一行进行删除。",
+    "initialize": "请先初始化 AltEditorLite 以使用此操作。"
+  },
+  "validation": {
+    "required": "此字段为必填项。",
+    "invalid": "请输入有效值。",
+    "unique": "当前已加载的表格数据中存在相同值。"
+  },
+  "searchSelect": {
+    "placeholder": "请选择",
+    "searchPlaceholder": "搜索选项",
+    "noResults": "没有匹配的选项",
+    "clear": "清除选择"
+  },
+  "accessibility": {
+    "searchSelectInstructions": "使用方向键浏览选项。",
+    "searchSelectResults": "有 {count} 个可用选项。",
+    "searchSelectSelection": "已选择 {label}。"
+  },
+  "errors": {
+    "generic": "无法完成操作。",
+    "fileCount": "选择的文件过多。",
+    "fileSize": "所选文件过大。",
+    "selectionRequired": "请至少选择一行。",
+    "singleSelectionRequired": "请仅选择一行。",
+    "targetUnavailable": "所选行已不可用。"
+  }
+}

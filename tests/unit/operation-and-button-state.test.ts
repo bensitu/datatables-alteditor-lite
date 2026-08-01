@@ -67,7 +67,7 @@ describe('operation configuration', () => {
     });
   });
 
-  it('exposes a retryable language-loader contract with an optional cause', () => {
+  it('exposes retryable language-load errors with an optional cause', () => {
     const defaultError = new EditorLanguageLoadError();
     const cause = new Error('Network unavailable.');
     const causedError = new EditorLanguageLoadError('Japanese failed to load.', cause);

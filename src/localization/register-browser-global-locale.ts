@@ -1,10 +1,12 @@
-import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
+import type {
+  AltEditorLiteLanguage,
+  EditorLanguageDefinition,
+} from '../core/alt-editor-lite-language.js';
 
 interface AltEditorLiteBrowserGlobal {
   readonly registerLocale?: (
-    localeName: string,
-    language: Readonly<AltEditorLiteLanguage>,
-  ) => void;
+    language: Readonly<EditorLanguageDefinition>,
+  ) => Readonly<AltEditorLiteLanguage>;
 }
 
 interface LocaleBrowserScope {
@@ -12,23 +14,21 @@ interface LocaleBrowserScope {
 }
 
 /**
- * Registers one locale against the already-loaded core Browser Global.
+ * Registers one locale against the already-loaded main browser bundle.
  *
- * @param localeName - Public locale registry name.
  * @param language - Complete translated language.
- * @throws Error when the core Browser Global has not been loaded first.
+ * @throws Error when the main browser bundle has not been loaded first.
  */
 export function registerBrowserGlobalLocale(
-  localeName: string,
   language: Readonly<AltEditorLiteLanguage>,
 ): void {
   const browserScope = globalThis as LocaleBrowserScope;
   const registerLocale = browserScope.DataTablesAltEditorLite?.registerLocale;
   if (registerLocale === undefined) {
     throw new Error(
-      'DataTablesAltEditorLite core must be loaded before a locale bundle.',
+      'The DataTablesAltEditorLite browser bundle must be loaded before a language bundle.',
     );
   }
 
-  registerLocale(localeName, language);
+  registerLocale(language);
 }

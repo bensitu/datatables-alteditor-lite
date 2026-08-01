@@ -213,7 +213,7 @@ interface BaseSearchSelectFieldConfig<
 /**
  * Local searchable single-select configuration.
  *
- * Manual values are intentionally limited to string-valued fields in 0.1.0.
+ * Manual values are intentionally limited to string-valued fields.
  */
 export type SearchSelectFieldConfig<
   TFormValues extends object,

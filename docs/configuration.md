@@ -1,8 +1,3 @@
----
-audience: public
-status: stable
----
-
 # Configuration
 
 Create an editor explicitly for one initialized DataTables API instance:
@@ -53,7 +48,9 @@ operations preserve the current form values and return the dialog to its open
 state. Remove always closes after success because its captured targets no longer
 exist.
 
-`language` is a nested partial override of the built-in English strings.
+`language` accepts complete language data or nested overrides of the built-in
+English strings. Applications can define it inline or await `loadEditorLanguage`
+for an external JSON resource before constructing the editor.
 
 ## Capabilities
 

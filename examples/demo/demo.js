@@ -1,5 +1,11 @@
-const { AltEditorLite, AltEditorLiteError, getLocale, getRegisteredLocaleNames } =
-  globalThis.DataTablesAltEditorLite;
+const {
+  AltEditorLite,
+  AltEditorLiteError,
+  getLocale,
+  getRegisteredLocaleNames,
+  loadEditorLanguage,
+  registerLocale,
+} = globalThis.DataTablesAltEditorLite;
 
 const offices = [
   { label: 'Tokyo', value: 10 },
@@ -7,6 +13,11 @@ const offices = [
   { label: 'New York', value: 30 },
   { disabled: true, label: 'Closed office', value: 40 },
 ];
+const languageFileByLocale = new Map([
+  ['ja', 'ja.json'],
+  ['zh-CN', 'zh-cn.json'],
+  ['es', 'es.json'],
+]);
 const initialRows = [
   {
     active: true,
@@ -87,7 +98,7 @@ const fieldConfigurations = [
     sortOptions: true,
     type: 'search-select',
   },
-  { defaultValue: 'public-demo', name: 'source', type: 'hidden' },
+  { defaultValue: 'distribution-example', name: 'source', type: 'hidden' },
 ];
 const eventNames = [
   'alteditor-lite:open',
@@ -102,7 +113,9 @@ const eventLog = document.querySelector('#event-log');
 const editorState = document.querySelector('#editor-state');
 const failNextButton = document.querySelector('#fail-next');
 const localeSelect = document.querySelector('#locale-select');
+const localeStatus = document.querySelector('#locale-status');
 const employeeTableElement = document.querySelector('#employees');
+let currentLocaleName = 'en';
 let currentEditor;
 let nextRowId = 4;
 let secondaryEditor;
@@ -166,8 +179,8 @@ function throwRequestedFailure() {
   failNextButton.textContent = 'Fail the next persistence request';
   delete failNextButton.dataset.armed;
   throw new AltEditorLiteError({
-    code: 'DEMO_FAILURE',
-    message: 'The requested demo failure occurred. Retry the operation.',
+    code: 'PERSISTENCE_FAILURE',
+    message: 'The simulated persistence request failed. Retry the operation.',
     retryable: true,
   });
 }
@@ -236,6 +249,21 @@ function createEditor(language) {
   });
 }
 
+async function getOrLoadLanguage(localeName) {
+  const registeredLanguage = getLocale(localeName);
+  if (registeredLanguage !== undefined) {
+    return registeredLanguage;
+  }
+
+  const languageFileName = languageFileByLocale.get(localeName);
+  if (languageFileName === undefined) {
+    throw new Error(`No language resource is configured for "${localeName}".`);
+  }
+
+  const resourceUrl = new URL(`../../dist/locales/${languageFileName}`, document.baseURI);
+  return registerLocale(await loadEditorLanguage(resourceUrl));
+}
+
 function updateState() {
   const state = currentEditor.getState();
   editorState.textContent =
@@ -265,12 +293,15 @@ for (const eventName of eventNames) {
   employeeTableElement.addEventListener(eventName, appendEvent);
 }
 
-currentEditor = createEditor(getLocale('en'));
+const englishLanguage = getLocale('en');
+if (englishLanguage === undefined) {
+  throw new Error('The built-in English language is unavailable.');
+}
+currentEditor = createEditor(englishLanguage);
 updateState();
 document.querySelector('#jquery-status').textContent =
   globalThis.jQuery === undefined ? 'not loaded' : 'unexpectedly present';
-document.querySelector('#locale-status').textContent =
-  getRegisteredLocaleNames().join(', ');
+localeStatus.textContent = getRegisteredLocaleNames().join(', ');
 
 failNextButton.addEventListener('click', () => {
   shouldFailNextOperation = true;
@@ -279,15 +310,26 @@ failNextButton.addEventListener('click', () => {
 });
 
 localeSelect.addEventListener('change', () => {
-  const language = getLocale(localeSelect.value);
-  if (language === undefined) {
-    return;
-  }
+  const requestedLocaleName = localeSelect.value;
+  localeSelect.disabled = true;
+  localeStatus.textContent = `Loading ${requestedLocaleName}…`;
 
-  currentEditor.destroy();
-  currentEditor = createEditor(language);
-  document.documentElement.lang = language.locale;
-  updateState();
+  void getOrLoadLanguage(requestedLocaleName)
+    .then((language) => {
+      currentEditor.destroy();
+      currentEditor = createEditor(language);
+      currentLocaleName = language.locale;
+      document.documentElement.lang = language.locale;
+      localeStatus.textContent = getRegisteredLocaleNames().join(', ');
+      updateState();
+    })
+    .catch(() => {
+      localeSelect.value = currentLocaleName;
+      localeStatus.textContent = 'Language resource unavailable';
+    })
+    .finally(() => {
+      localeSelect.disabled = false;
+    });
 });
 
 document.querySelector('#add-instance').addEventListener('click', (event) => {

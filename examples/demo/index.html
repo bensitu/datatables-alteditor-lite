@@ -3,20 +3,23 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta content="IE=edge" http-equiv="X-UA-Compatible" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' https://cdn.datatables.net; style-src 'self' https://cdn.datatables.net; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'"
+    />
     <meta
       name="description"
-      content="A live showcase of dependency-free CRUD editing for DataTables 3."
+      content="A live showcase of browser-native CRUD editing for DataTables 3."
     />
-    <title>DataTables AltEditorLite 0.1.0 demo</title>
+    <title>AltEditorLite demonstration</title>
     <link
       href="https://cdn.datatables.net/v/dt/dt-3.0.1/b-4.0.1/sl-4.0.0/datatables.min.css"
       rel="stylesheet"
       integrity="sha384-uXbAfES9n5YrNCdy3ViYN39cjPqno6hxcjNzT8mE1UB1u3/fel9ruy/MA2QKmIVM"
       crossorigin="anonymous"
     />
-    <link rel="stylesheet" href="/dist/alt-editor-lite.css" />
-    <link rel="stylesheet" href="/demo/demo.css" />
+    <link rel="stylesheet" href="../../dist/alt-editor-lite.css" />
+    <link rel="stylesheet" href="./demo.css" />
   </head>
   <body>
     <a class="demo-skip-link" href="#workbench">Skip to the live workbench</a>
@@ -26,30 +29,30 @@
         <span class="demo-brand__mark" aria-hidden="true">AEL</span>
         <span>AltEditorLite</span>
       </a>
-      <p><span aria-hidden="true">●</span> Public distribution demo · v0.1.0</p>
+      <p><span aria-hidden="true">●</span> Distribution example</p>
     </header>
 
     <main id="top">
       <section class="demo-hero" aria-labelledby="demo-title">
         <div class="demo-hero__copy">
-          <p class="demo-eyebrow">A small editor with a strict contract</p>
-          <h1 id="demo-title">Native DataTables editing, without the runtime baggage.</h1>
+          <p class="demo-eyebrow">Lightweight DataTables editing extension</p>
+          <h1 id="demo-title">Browser-native editing workflows for DataTables.</h1>
           <p class="demo-hero__lead">
-            Add typed Create, Edit, Remove, and Refresh workflows to DataTables 3 with
-            native browser UI, explicit persistence, and no jQuery runtime.
+            Add typed Create, Edit, Remove, and Refresh operations with native browser
+            controls, explicit persistence callbacks, and no jQuery runtime.
           </p>
           <div class="demo-hero__actions">
             <a class="demo-primary-link" href="#workbench">Try the live editor</a>
-            <span>Built artifacts only · strict CSP</span>
+            <span>Built distribution files · restrictive CSP</span>
           </div>
           <dl class="demo-proof" aria-label="Library highlights">
             <div>
               <dt>0</dt>
-              <dd>runtime dependencies</dd>
+              <dd>bundled dependencies</dd>
             </div>
             <div>
               <dt>4</dt>
-              <dd>complete locales</dd>
+              <dd>included language resources</dd>
             </div>
             <div>
               <dt>14</dt>
@@ -58,43 +61,39 @@
           </dl>
         </div>
 
-        <div
-          class="demo-contract-card"
-          role="group"
-          aria-label="AltEditorLite contract summary"
-        >
-          <div class="demo-contract-card__bar" aria-hidden="true">
-            <span class="demo-contract-card__dot"></span>
-            <span class="demo-contract-card__dot"></span>
-            <span class="demo-contract-card__dot"></span>
-            <strong>editor.contract.ts</strong>
+        <div class="demo-workflow-card" role="group" aria-label="Editing workflow">
+          <div class="demo-workflow-card__bar" aria-hidden="true">
+            <span class="demo-workflow-card__dot"></span>
+            <span class="demo-workflow-card__dot"></span>
+            <span class="demo-workflow-card__dot"></span>
+            <strong>Operation lifecycle</strong>
           </div>
-          <p class="demo-contract-card__label">One predictable mutation boundary</p>
+          <p class="demo-workflow-card__label">A predictable update sequence</p>
           <ol>
             <li>
-              <span class="demo-contract-card__step">01</span> Validate native and custom
-              rules
+              <span class="demo-workflow-card__marker" aria-hidden="true">✓</span>
+              Validate native and custom rules
             </li>
             <li>
-              <span class="demo-contract-card__step">02</span> Await your persistence
-              callback
+              <span class="demo-workflow-card__marker" aria-hidden="true">↗</span>
+              Await the persistence callback
             </li>
             <li>
-              <span class="demo-contract-card__step">03</span> Mutate DataTables only on
-              success
+              <span class="demo-workflow-card__marker" aria-hidden="true">＋</span>
+              Update DataTables only on success
             </li>
           </ol>
-          <p class="demo-contract-card__result">
+          <p class="demo-workflow-card__result">
             <span aria-hidden="true">✓</span> Stale and aborted results are ignored
           </p>
         </div>
       </section>
 
-      <section class="demo-value-grid" aria-label="Core library value">
+      <section class="demo-value-grid" aria-label="Key capabilities">
         <article>
           <span class="demo-value-grid__icon" aria-hidden="true">⌘</span>
           <div class="demo-value-grid__copy">
-            <h2>Native by default</h2>
+            <h2>Browser-native interface</h2>
             <p>
               <code>&lt;dialog&gt;</code>, browser validation, focus containment, no UI
               kit.
@@ -104,14 +103,14 @@
         <article>
           <span class="demo-value-grid__icon" aria-hidden="true">◇</span>
           <div class="demo-value-grid__copy">
-            <h2>Typed at the edge</h2>
+            <h2>Typed form values</h2>
             <p>Exact option values, safe nested paths, files, and local SearchSelect.</p>
           </div>
         </article>
         <article>
           <span class="demo-value-grid__icon" aria-hidden="true">↻</span>
           <div class="demo-value-grid__copy">
-            <h2>Async without surprises</h2>
+            <h2>Controlled asynchronous operations</h2>
             <p>
               Abort signals, target snapshots, retryable errors, non-optimistic writes.
             </p>
@@ -149,8 +148,8 @@
 
         <aside class="demo-controls" aria-labelledby="demo-controls-title">
           <div>
-            <p class="demo-eyebrow">Prove the boundaries</p>
-            <h2 id="demo-controls-title">Scenario controls</h2>
+            <p class="demo-eyebrow">Interactive options</p>
+            <h2 id="demo-controls-title">Example controls</h2>
             <p>
               Change language, force a persistence failure, or create another editor to
               exercise instance isolation.
@@ -193,8 +192,8 @@
       <section class="demo-events" aria-labelledby="event-log-title">
         <div class="demo-section-heading">
           <div>
-            <p class="demo-eyebrow">Observable, not invasive</p>
-            <h2 id="event-log-title">Public event stream</h2>
+            <p class="demo-eyebrow">Lifecycle events</p>
+            <h2 id="event-log-title">Event log</h2>
           </div>
           <p class="demo-section-heading__hint">
             Events stay on the owned table and never bubble.
@@ -228,7 +227,7 @@
 
     <footer class="demo-footer">
       <p class="demo-footer__copy">
-        Dependency-free editing for DataTables 3, built on public APIs.
+        Browser-native editing for DataTables 3, built on public APIs.
       </p>
       <a href="#top">Back to top</a>
     </footer>
@@ -238,11 +237,7 @@
       integrity="sha384-b9sLyS42cyAKVjjpDX2rmV6hiiLJYPbElLTFtzL/GYTl8p7k5nfyDWO4cSxENIn3"
       crossorigin="anonymous"
     ></script>
-    <script src="/dist/datatables-alteditor-lite.js"></script>
-    <script src="/dist/locales/datatables-alteditor-lite.en.js"></script>
-    <script src="/dist/locales/datatables-alteditor-lite.ja.js"></script>
-    <script src="/dist/locales/datatables-alteditor-lite.zh-cn.js"></script>
-    <script src="/dist/locales/datatables-alteditor-lite.es.js"></script>
-    <script src="/demo/demo.js"></script>
+    <script src="../../dist/datatables-alteditor-lite.js"></script>
+    <script src="./demo.js"></script>
   </body>
 </html>

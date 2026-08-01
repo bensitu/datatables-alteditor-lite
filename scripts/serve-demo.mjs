@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const demoRoot = resolve(workspaceRoot, 'examples/demo');
 const staticRoutes = [
-  { prefix: '/demo/', rootDirectory: demoRoot },
+  { prefix: '/examples/demo/', rootDirectory: demoRoot },
   { prefix: '/dist/', rootDirectory: resolve(workspaceRoot, 'dist') },
 ];
 const contentTypeByExtension = new Map([
@@ -34,14 +34,11 @@ function resolveWithin(rootDirectory, requestPath) {
 }
 
 function resolveStaticFile(urlPath) {
-  if (urlPath === '/') {
-    return resolve(demoRoot, 'index.html');
-  }
-
   for (const route of staticRoutes) {
     if (urlPath.startsWith(route.prefix)) {
       const routePath = urlPath.slice(route.prefix.length);
-      return resolveWithin(route.rootDirectory, routePath);
+      const filePath = routePath.length === 0 ? 'index.html' : routePath;
+      return resolveWithin(route.rootDirectory, filePath);
     }
   }
 
@@ -52,6 +49,11 @@ const server = createServer(async (request, response) => {
   try {
     const requestUrl = new URL(request.url ?? '/', `http://${hostName}`);
     const decodedPath = decodeURIComponent(requestUrl.pathname);
+    if (decodedPath === '/' || decodedPath === '/examples/demo') {
+      response.writeHead(302, { location: '/examples/demo/' });
+      response.end();
+      return;
+    }
     const filePath = resolveStaticFile(decodedPath);
     if (filePath === undefined) {
       response.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
@@ -85,7 +87,7 @@ const server = createServer(async (request, response) => {
 });
 
 server.listen(port, hostName, () => {
-  console.log(`AltEditorLite demo: http://${hostName}:${String(port)}/`);
+  console.log(`AltEditorLite demo: http://${hostName}:${String(port)}/examples/demo/`);
 });
 
 function closeServer() {
