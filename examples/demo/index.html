@@ -4,82 +4,215 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta content="IE=edge" http-equiv="X-UA-Compatible" />
+    <meta
+      name="description"
+      content="A live showcase of dependency-free CRUD editing for DataTables 3."
+    />
     <title>DataTables AltEditorLite 0.1.0 demo</title>
-    <link href="https://cdn.datatables.net/v/dt/dt-3.0.0/b-4.0.0/sl-4.0.0/datatables.min.css" rel="stylesheet" integrity="sha384-vtri3MDC9EdlORcbUT+75+1DS18TjVezVMqnmKG3PQbW8G7FUGqD5fCM9npdHJiP" crossorigin="anonymous">
+    <link
+      href="https://cdn.datatables.net/v/dt/dt-3.0.1/b-4.0.1/sl-4.0.0/datatables.min.css"
+      rel="stylesheet"
+      integrity="sha384-uXbAfES9n5YrNCdy3ViYN39cjPqno6hxcjNzT8mE1UB1u3/fel9ruy/MA2QKmIVM"
+      crossorigin="anonymous"
+    />
     <link rel="stylesheet" href="/dist/alt-editor-lite.css" />
-    <link rel="stylesheet" href="/examples/demo/demo.css" />
+    <link rel="stylesheet" href="/demo/demo.css" />
   </head>
   <body>
-    <main>
-      <header class="demo-hero">
-        <p class="demo-kicker">datatables-alteditor-lite 0.1.0</p>
-        <h1>Native DataTables editing, without jQuery</h1>
-        <p>
-          Create, edit, remove, refresh, search local options, and switch all four
-          published locales. This page loads only public distribution artifacts.
-        </p>
-      </header>
+    <a class="demo-skip-link" href="#workbench">Skip to the live workbench</a>
 
-      <section class="demo-controls" aria-labelledby="demo-controls-title">
-        <h2 id="demo-controls-title">Demo controls</h2>
-        <label>
-          Editor language
-          <select id="locale-select">
-            <option value="en">English</option>
-            <option value="ja">日本語</option>
-            <option value="zh-CN">简体中文</option>
-            <option value="es">Español</option>
-          </select>
-        </label>
-        <button id="fail-next" type="button">Fail the next persistence request</button>
-        <button id="add-instance" type="button">Initialize a second table</button>
-        <dl class="demo-status">
-          <div>
-            <dt>jQuery</dt>
-            <dd id="jquery-status">Checking…</dd>
-          </div>
-          <div>
-            <dt>Editor state</dt>
-            <dd id="editor-state">ready</dd>
-          </div>
-          <div>
-            <dt>Locale registry</dt>
-            <dd id="locale-status">Checking…</dd>
-          </div>
-        </dl>
-      </section>
+    <header class="demo-topbar">
+      <a class="demo-brand" href="#top" aria-label="AltEditorLite demo home">
+        <span class="demo-brand__mark" aria-hidden="true">AEL</span>
+        <span>AltEditorLite</span>
+      </a>
+      <p><span aria-hidden="true">●</span> Public distribution demo · v0.1.0</p>
+    </header>
 
-      <section class="demo-table-panel" aria-labelledby="employees-title">
-        <h2 id="employees-title">Employees</h2>
-        <p>
-          Select one row for Edit, or one or more rows for Remove. Office is a numeric
-          SearchSelect; the other controls cover the 0.1.0 field set.
-        </p>
-        <div class="demo-table-scroll">
-          <table id="employees">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Age</th>
-                <th>Role</th>
-                <th>Office</th>
-                <th>Active</th>
-                <th>Start date</th>
-              </tr>
-            </thead>
-          </table>
+    <main id="top">
+      <section class="demo-hero" aria-labelledby="demo-title">
+        <div class="demo-hero__copy">
+          <p class="demo-eyebrow">A small editor with a strict contract</p>
+          <h1 id="demo-title">Native DataTables editing, without the runtime baggage.</h1>
+          <p class="demo-hero__lead">
+            Add typed Create, Edit, Remove, and Refresh workflows to DataTables 3 with
+            native browser UI, explicit persistence, and no jQuery runtime.
+          </p>
+          <div class="demo-hero__actions">
+            <a class="demo-primary-link" href="#workbench">Try the live editor</a>
+            <span>Built artifacts only · strict CSP</span>
+          </div>
+          <dl class="demo-proof" aria-label="Library highlights">
+            <div>
+              <dt>0</dt>
+              <dd>runtime dependencies</dd>
+            </div>
+            <div>
+              <dt>4</dt>
+              <dd>complete locales</dd>
+            </div>
+            <div>
+              <dt>14</dt>
+              <dd>typed field modes</dd>
+            </div>
+          </dl>
+        </div>
+
+        <div
+          class="demo-contract-card"
+          role="group"
+          aria-label="AltEditorLite contract summary"
+        >
+          <div class="demo-contract-card__bar" aria-hidden="true">
+            <span class="demo-contract-card__dot"></span>
+            <span class="demo-contract-card__dot"></span>
+            <span class="demo-contract-card__dot"></span>
+            <strong>editor.contract.ts</strong>
+          </div>
+          <p class="demo-contract-card__label">One predictable mutation boundary</p>
+          <ol>
+            <li>
+              <span class="demo-contract-card__step">01</span> Validate native and custom
+              rules
+            </li>
+            <li>
+              <span class="demo-contract-card__step">02</span> Await your persistence
+              callback
+            </li>
+            <li>
+              <span class="demo-contract-card__step">03</span> Mutate DataTables only on
+              success
+            </li>
+          </ol>
+          <p class="demo-contract-card__result">
+            <span aria-hidden="true">✓</span> Stale and aborted results are ignored
+          </p>
         </div>
       </section>
 
+      <section class="demo-value-grid" aria-label="Core library value">
+        <article>
+          <span class="demo-value-grid__icon" aria-hidden="true">⌘</span>
+          <div class="demo-value-grid__copy">
+            <h2>Native by default</h2>
+            <p>
+              <code>&lt;dialog&gt;</code>, browser validation, focus containment, no UI
+              kit.
+            </p>
+          </div>
+        </article>
+        <article>
+          <span class="demo-value-grid__icon" aria-hidden="true">◇</span>
+          <div class="demo-value-grid__copy">
+            <h2>Typed at the edge</h2>
+            <p>Exact option values, safe nested paths, files, and local SearchSelect.</p>
+          </div>
+        </article>
+        <article>
+          <span class="demo-value-grid__icon" aria-hidden="true">↻</span>
+          <div class="demo-value-grid__copy">
+            <h2>Async without surprises</h2>
+            <p>
+              Abort signals, target snapshots, retryable errors, non-optimistic writes.
+            </p>
+          </div>
+        </article>
+      </section>
+
+      <div id="workbench" class="demo-workspace">
+        <section class="demo-table-panel" aria-labelledby="employees-title">
+          <div class="demo-section-heading">
+            <div>
+              <p class="demo-eyebrow">Live workbench</p>
+              <h2 id="employees-title">Employee directory</h2>
+            </div>
+            <p class="demo-section-heading__hint">
+              Select one row to edit, or multiple rows to remove.
+            </p>
+          </div>
+          <div class="demo-table-scroll">
+            <table id="employees">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Age</th>
+                  <th>Role</th>
+                  <th>Office</th>
+                  <th>Active</th>
+                  <th>Start date</th>
+                </tr>
+              </thead>
+            </table>
+          </div>
+        </section>
+
+        <aside class="demo-controls" aria-labelledby="demo-controls-title">
+          <div>
+            <p class="demo-eyebrow">Prove the boundaries</p>
+            <h2 id="demo-controls-title">Scenario controls</h2>
+            <p>
+              Change language, force a persistence failure, or create another editor to
+              exercise instance isolation.
+            </p>
+          </div>
+
+          <label class="demo-control-field">
+            <span>Editor language</span>
+            <select id="locale-select">
+              <option value="en">English</option>
+              <option value="ja">日本語</option>
+              <option value="zh-CN">简体中文</option>
+              <option value="es">Español</option>
+            </select>
+          </label>
+          <div class="demo-control-actions">
+            <button id="fail-next" class="demo-danger-button" type="button">
+              Fail the next persistence request
+            </button>
+            <button id="add-instance" type="button">Initialize a second table</button>
+          </div>
+
+          <dl class="demo-status" aria-label="Runtime status">
+            <div>
+              <dt>jQuery</dt>
+              <dd id="jquery-status">Checking…</dd>
+            </div>
+            <div>
+              <dt>Editor state</dt>
+              <dd id="editor-state">ready</dd>
+            </div>
+            <div>
+              <dt>Locale registry</dt>
+              <dd id="locale-status">Checking…</dd>
+            </div>
+          </dl>
+        </aside>
+      </div>
+
       <section class="demo-events" aria-labelledby="event-log-title">
-        <h2 id="event-log-title">Non-bubbling event log</h2>
-        <p>Only timestamps, operation names, phases, and bubbling state are shown.</p>
+        <div class="demo-section-heading">
+          <div>
+            <p class="demo-eyebrow">Observable, not invasive</p>
+            <h2 id="event-log-title">Public event stream</h2>
+          </div>
+          <p class="demo-section-heading__hint">
+            Events stay on the owned table and never bubble.
+          </p>
+        </div>
         <ol id="event-log" aria-live="polite"></ol>
       </section>
 
       <section id="secondary-host" class="demo-table-panel" hidden>
-        <h2>Second independent instance</h2>
+        <div class="demo-section-heading">
+          <div>
+            <p class="demo-eyebrow">Isolation check</p>
+            <h2>Second independent instance</h2>
+          </div>
+          <p class="demo-section-heading__hint">
+            Its state and fields are fully separate.
+          </p>
+        </div>
         <div class="demo-table-scroll">
           <table id="secondary-employees">
             <thead>
@@ -93,12 +226,23 @@
       </section>
     </main>
 
-    <script src="https://cdn.datatables.net/v/dt/dt-3.0.0/b-4.0.0/sl-4.0.0/datatables.min.js" integrity="sha384-ZQndwHXrzaDfda3mHERxJKfMSjmXje0Zo6lSciJjmYE66Ucr76PNpz1yG8svFquT" crossorigin="anonymous"></script>
+    <footer class="demo-footer">
+      <p class="demo-footer__copy">
+        Dependency-free editing for DataTables 3, built on public APIs.
+      </p>
+      <a href="#top">Back to top</a>
+    </footer>
+
+    <script
+      src="https://cdn.datatables.net/v/dt/dt-3.0.1/b-4.0.1/sl-4.0.0/datatables.min.js"
+      integrity="sha384-b9sLyS42cyAKVjjpDX2rmV6hiiLJYPbElLTFtzL/GYTl8p7k5nfyDWO4cSxENIn3"
+      crossorigin="anonymous"
+    ></script>
     <script src="/dist/datatables-alteditor-lite.js"></script>
     <script src="/dist/locales/datatables-alteditor-lite.en.js"></script>
     <script src="/dist/locales/datatables-alteditor-lite.ja.js"></script>
     <script src="/dist/locales/datatables-alteditor-lite.zh-cn.js"></script>
     <script src="/dist/locales/datatables-alteditor-lite.es.js"></script>
-    <script src="/examples/demo/demo.js"></script>
+    <script src="/demo/demo.js"></script>
   </body>
 </html>

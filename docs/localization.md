@@ -34,7 +34,16 @@ language: {
 }
 ```
 
+Dialog titles, action buttons, optional DataTables Buttons labels and tooltips,
+validation messages, and the selected-row count in Remove confirmation all use the
+resolved language. The Remove count template contains the `{count}` placeholder.
+
 There is no `languageUrl` and the library never fetches locale JSON.
+
+Applications that implement their own dynamic locale loader can normalize a
+failure with the public `EditorLanguageLoadError`. The error is retryable and may
+retain the original `cause`; using it does not enable a library-managed remote
+loading mode.
 
 ## Browser Global registry
 

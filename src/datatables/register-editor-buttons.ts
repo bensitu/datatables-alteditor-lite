@@ -1,5 +1,8 @@
+import { ENGLISH_LANGUAGE } from '../core/alt-editor-lite-language.js';
+
 import { EDITOR_INTEGRATION_UPDATE_EVENT } from './editor-integration-event.js';
 
+import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type { EditorInstanceLookup } from '../instance/editor-instance-store.js';
 import type { Api, DataTablesStatic } from 'datatables.net';
 
@@ -14,20 +17,25 @@ export type EditorButtonName =
  * Enablement and accessible explanation for all optional editor buttons.
  */
 export interface EditorButtonState {
+  readonly unavailableTitle: string;
   readonly create: {
     readonly enabled: boolean;
+    readonly text: string;
     readonly title: string;
   };
   readonly edit: {
     readonly enabled: boolean;
+    readonly text: string;
     readonly title: string;
   };
   readonly remove: {
     readonly enabled: boolean;
+    readonly text: string;
     readonly title: string;
   };
   readonly refresh: {
     readonly enabled: boolean;
+    readonly text: string;
     readonly title: string;
   };
 }
@@ -44,6 +52,8 @@ export interface EditorButtonStateInput {
   readonly isReady: boolean;
   /** Number of currently selected rows when Select is available. */
   readonly selectedRowCount: number;
+  /** Resolved language for the owning editor instance. */
+  readonly language: Readonly<AltEditorLiteLanguage>;
 }
 
 /**
@@ -55,38 +65,44 @@ export interface EditorButtonStateInput {
 export function createEditorButtonState(
   input: Readonly<EditorButtonStateInput>,
 ): EditorButtonState {
+  const { language } = input;
   return {
+    unavailableTitle: language.buttons.initialize,
     create: {
       enabled: input.isReady && input.hasCreate,
+      text: language.actions.create,
       title: !input.hasCreate
-        ? 'Configure a Create operation to enable this action.'
+        ? language.buttons.createUnavailable
         : input.isReady
-          ? 'Create a row.'
-          : 'The editor is busy.',
+          ? language.dialog.createTitle
+          : language.buttons.busy,
     },
     edit: {
       enabled: input.isReady && input.hasSelect && input.selectedRowCount === 1,
+      text: language.actions.edit,
       title: !input.hasSelect
-        ? 'DataTables Select is required for this button.'
+        ? language.buttons.selectUnavailable
         : input.selectedRowCount !== 1
-          ? 'Select exactly one row to edit.'
+          ? language.buttons.editSelection
           : input.isReady
-            ? 'Edit the selected row.'
-            : 'The editor is busy.',
+            ? language.dialog.editTitle
+            : language.buttons.busy,
     },
     refresh: {
       enabled: input.isReady,
-      title: input.isReady ? 'Refresh the table.' : 'The editor is busy.',
+      text: language.actions.refresh,
+      title: input.isReady ? language.actions.refresh : language.buttons.busy,
     },
     remove: {
       enabled: input.isReady && input.hasSelect && input.selectedRowCount > 0,
+      text: language.actions.remove,
       title: !input.hasSelect
-        ? 'DataTables Select is required for this button.'
+        ? language.buttons.selectUnavailable
         : input.selectedRowCount === 0
-          ? 'Select one or more rows to remove.'
+          ? language.buttons.removeSelection
           : input.isReady
-            ? 'Remove the selected rows.'
-            : 'The editor is busy.',
+            ? language.dialog.removeTitle
+            : language.buttons.busy,
     },
   };
 }
@@ -101,6 +117,7 @@ interface EditorButtonAccess {
 
 interface ButtonController {
   enable(isEnabled: boolean): void;
+  text(value: string): void;
 }
 
 interface ButtonNode {
@@ -179,20 +196,32 @@ function invokeEditor(
   void request.catch(() => undefined);
 }
 
-function unavailableButtonState(): EditorButtonState {
-  const unavailableTitle = 'Initialize AltEditorLite to use this action.';
+function unavailableButtonState(
+  previousState?: Readonly<EditorButtonState>,
+): EditorButtonState {
+  const fallbackState =
+    previousState ??
+    createEditorButtonState({
+      hasCreate: false,
+      hasSelect: false,
+      isReady: false,
+      language: ENGLISH_LANGUAGE,
+      selectedRowCount: 0,
+    });
+  const unavailableTitle = fallbackState.unavailableTitle;
   return {
-    create: { enabled: false, title: unavailableTitle },
-    edit: { enabled: false, title: unavailableTitle },
-    refresh: { enabled: false, title: unavailableTitle },
-    remove: { enabled: false, title: unavailableTitle },
+    unavailableTitle,
+    create: { ...fallbackState.create, enabled: false, title: unavailableTitle },
+    edit: { ...fallbackState.edit, enabled: false, title: unavailableTitle },
+    refresh: { ...fallbackState.refresh, enabled: false, title: unavailableTitle },
+    remove: { ...fallbackState.remove, enabled: false, title: unavailableTitle },
   };
 }
 
 function selectButtonState(
   state: Readonly<EditorButtonState>,
   operation: EditorButtonName,
-): Readonly<{ enabled: boolean; title: string }> {
+): Readonly<{ enabled: boolean; text: string; title: string }> {
   switch (operation) {
     case 'altEditorLiteCreate':
       return state.create;
@@ -221,13 +250,16 @@ function createButtonDefinition(
     enabled: false,
     init(this: ButtonController, table: Api<object>, buttonNode: ButtonNode): void {
       const tableElement = table.table().node();
+      let currentState = unavailableButtonState();
       const updateButton = (): void => {
         const editor = findEditor(table, instanceLookups);
-        const buttonState = selectButtonState(
-          editor?.getIntegrationButtonState() ?? unavailableButtonState(),
-          operation,
-        );
+        currentState =
+          editor === null
+            ? unavailableButtonState(currentState)
+            : editor.getIntegrationButtonState();
+        const buttonState = selectButtonState(currentState, operation);
         this.enable(buttonState.enabled);
+        this.text(buttonState.text);
         buttonNode.attr('aria-disabled', String(!buttonState.enabled));
         buttonNode.attr('title', buttonState.title);
       };

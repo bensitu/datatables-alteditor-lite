@@ -45,7 +45,6 @@ const coreEsmConfig: RolldownOptions = {
     dir: 'dist',
     entryFileNames: '[name].js',
     format: 'es',
-    minify: true,
     sourcemap: true,
   },
 };

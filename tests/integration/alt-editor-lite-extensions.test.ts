@@ -6,12 +6,15 @@ import {
   registerAltEditorLite,
   type FieldConfig,
 } from '../../src/index.js';
+import { zhCn } from '../../src/locales/zh-cn.js';
 
 import {
   createContractTable,
   destroyContractTables,
   type ContractRow,
 } from './datatables-contract-fixture.js';
+
+import type { PartialEditorLanguage } from '../../src/core/alt-editor-lite-language.js';
 
 interface ExtensionValues {
   readonly name: string;
@@ -110,7 +113,10 @@ afterEach(() => {
   destroyContractTables();
 });
 
-function createExtensionEditor(tableId: string): {
+function createExtensionEditor(
+  tableId: string,
+  language?: Readonly<PartialEditorLanguage>,
+): {
   readonly api: Api<ContractRow>;
   readonly editor: AltEditorLite<ContractRow, ExtensionValues>;
   readonly extensionApi: ExtensionsApi;
@@ -138,6 +144,7 @@ function createExtensionEditor(tableId: string): {
       }),
     },
     fields,
+    ...(language === undefined ? {} : { language }),
   });
   activeEditors.add(editor);
   return {
@@ -183,6 +190,39 @@ function buttonByText(tableElement: HTMLTableElement, text: string): HTMLButtonE
 }
 
 describe('optional Buttons and Select integration', () => {
+  it('localizes button labels, button explanations, and Remove target count', async () => {
+    const { editor, extensionApi, tableElement } = createExtensionEditor(
+      'localized-buttons',
+      zhCn,
+    );
+    const createButton = buttonByText(tableElement, '新建');
+    const editButton = buttonByText(tableElement, '编辑');
+    const removeButton = buttonByText(tableElement, '删除');
+    const refreshButton = buttonByText(tableElement, '刷新');
+
+    expect(createButton.title).toBe('新建行');
+    expect(editButton.title).toBe('请选择且仅选择一行进行编辑。');
+    expect(removeButton.title).toBe('请至少选择一行进行删除。');
+    expect(refreshButton.title).toBe('刷新');
+
+    extensionApi.row(0).select();
+    extensionApi.row(1).select();
+    removeButton.click();
+    await vi.waitFor(() => {
+      expect(editor.getState()).toMatchObject({ action: 'remove', status: 'open' });
+    });
+
+    expect(
+      document.querySelector('.dt-alteditor-lite-remove-confirmation__count')
+        ?.textContent,
+    ).toBe('已选行数：2。');
+    expect(
+      document.querySelector('.dt-alteditor-lite-remove-confirmation__warning')
+        ?.textContent,
+    ).toBe('请确认是否删除所选行。');
+    await editor.closeDialog();
+  });
+
   it('updates button enablement from editor state and row selection', async () => {
     const { editor, extensionApi, tableElement } = createExtensionEditor('button-state');
     const createButton = buttonByText(tableElement, 'Create');

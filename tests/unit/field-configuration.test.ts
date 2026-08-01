@@ -1,0 +1,125 @@
+import { describe, expect, it } from 'vitest';
+
+import { EditorConfigurationError } from '../../src/core/alt-editor-lite-error.js';
+import {
+  applyAllowedFieldAttributes,
+  assertAllowedFieldAttributes,
+} from '../../src/fields/field-attributes.js';
+import { validateFieldConfigurations } from '../../src/fields/validate-field-configurations.js';
+
+import type { FieldConfig } from '../../src/fields/field-config.js';
+
+interface ConfigurationValues {
+  readonly attachment: File | null;
+  readonly choice?: string;
+  readonly notes: string;
+  readonly secret: string;
+  readonly title: string;
+}
+
+function expectInvalidField(config: unknown): void {
+  expect(() => {
+    validateFieldConfigurations([config as FieldConfig<ConfigurationValues>]);
+  }).toThrow(EditorConfigurationError);
+}
+
+describe('field runtime configuration', () => {
+  it('accepts a representative valid field collection', () => {
+    expect(() => {
+      validateFieldConfigurations<ConfigurationValues>([
+        {
+          attributes: { autocomplete: 'off', placeholder: 'Title' },
+          label: 'Title',
+          name: 'title',
+          type: 'text',
+        },
+        { defaultValue: 'token', name: 'secret', type: 'hidden' },
+        { label: 'Notes', name: 'notes', rows: 3, type: 'textarea' },
+        {
+          label: 'Choice',
+          name: 'choice',
+          options: [{ label: 'First', value: 'first' }],
+          type: 'select',
+        },
+        {
+          label: 'Attachment',
+          maxFileBytes: 1024,
+          name: 'attachment',
+          type: 'file',
+        },
+      ]);
+    }).not.toThrow();
+  });
+
+  it('rejects duplicate paths and invalid visible or hidden labels', () => {
+    expect(() => {
+      validateFieldConfigurations<ConfigurationValues>([
+        { label: 'Title', name: 'title', type: 'text' },
+        { label: 'Duplicate', name: 'title', type: 'text' },
+      ]);
+    }).toThrow(EditorConfigurationError);
+    expectInvalidField({ label: 'Not allowed', name: 'secret', type: 'hidden' });
+    expectInvalidField({ label: '  ', name: 'title', type: 'text' });
+    expectInvalidField({ name: 'title', type: 'text' });
+  });
+
+  it('rejects empty choice lists for native select and radio fields', () => {
+    expectInvalidField({ label: 'Choice', name: 'choice', options: [], type: 'select' });
+    expectInvalidField({ label: 'Choice', name: 'choice', options: [], type: 'radio' });
+  });
+
+  it.each([0, -1, 1.5, Number.POSITIVE_INFINITY])(
+    'rejects invalid file byte limit %s',
+    (maxFileBytes) => {
+      expectInvalidField({
+        label: 'Attachment',
+        maxFileBytes,
+        name: 'attachment',
+        type: 'file',
+      });
+    },
+  );
+
+  it.each([0, -1, 1.5, Number.NaN])(
+    'rejects invalid multiple-file count limit %s',
+    (maxFileCount) => {
+      expectInvalidField({
+        label: 'Attachment',
+        maxFileCount,
+        multiple: true,
+        name: 'attachment',
+        type: 'file',
+      });
+    },
+  );
+
+  it.each([0, -1, 1.5])('rejects invalid textarea row count %s', (rows) => {
+    expectInvalidField({ label: 'Notes', name: 'notes', rows, type: 'textarea' });
+  });
+});
+
+describe('field attribute allowlist', () => {
+  it('applies allowlisted attributes case-insensitively', () => {
+    const inputElement = document.createElement('input');
+
+    applyAllowedFieldAttributes(inputElement, {
+      'ARIA-LABEL': 'Title',
+      placeholder: 'Enter a title',
+    });
+
+    expect(inputElement.getAttribute('aria-label')).toBe('Title');
+    expect(inputElement.placeholder).toBe('Enter a title');
+    expect(() => {
+      assertAllowedFieldAttributes(undefined);
+    }).not.toThrow();
+  });
+
+  it('rejects event handlers and attributes outside the allowlist', () => {
+    expect(() => {
+      assertAllowedFieldAttributes({ onclick: 'run()' });
+    }).toThrow(EditorConfigurationError);
+    expect(() => {
+      assertAllowedFieldAttributes({ style: 'display:none' });
+    }).toThrow(EditorConfigurationError);
+  });
+});

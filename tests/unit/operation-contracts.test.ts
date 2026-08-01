@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 
 import {
   EditorConfigurationError,
+  EditorLanguageLoadError,
   EditorSelectionCountError,
 } from '../../src/core/alt-editor-lite-error.js';
+import { ENGLISH_LANGUAGE } from '../../src/core/alt-editor-lite-language.js';
 import { validateOperationConfiguration } from '../../src/core/validate-operation-configuration.js';
 import { createEditorButtonState } from '../../src/datatables/register-editor-buttons.js';
 
@@ -64,6 +66,31 @@ describe('operation configuration', () => {
       retryable: true,
     });
   });
+
+  it('exposes a retryable language-loader contract with an optional cause', () => {
+    const defaultError = new EditorLanguageLoadError();
+    const cause = new Error('Network unavailable.');
+    const causedError = new EditorLanguageLoadError('Japanese failed to load.', cause);
+
+    expect(defaultError).toMatchObject({
+      code: 'LANGUAGE_LOAD',
+      retryable: true,
+    });
+    expect(causedError).toMatchObject({
+      cause,
+      code: 'LANGUAGE_LOAD',
+      message: 'Japanese failed to load.',
+      retryable: true,
+    });
+  });
+
+  it('retains a configuration error cause', () => {
+    const cause = new TypeError('Invalid option.');
+
+    expect(new EditorConfigurationError('Configuration failed.', cause).cause).toBe(
+      cause,
+    );
+  });
 });
 
 describe('editor button enablement', () => {
@@ -72,6 +99,7 @@ describe('editor button enablement', () => {
       hasCreate: false,
       hasSelect: false,
       isReady: true,
+      language: ENGLISH_LANGUAGE,
       selectedRowCount: 0,
     });
 
@@ -88,18 +116,21 @@ describe('editor button enablement', () => {
       hasCreate: true,
       hasSelect: true,
       isReady: true,
+      language: ENGLISH_LANGUAGE,
       selectedRowCount: 1,
     });
     const manySelected = createEditorButtonState({
       hasCreate: true,
       hasSelect: true,
       isReady: true,
+      language: ENGLISH_LANGUAGE,
       selectedRowCount: 2,
     });
     const noneSelected = createEditorButtonState({
       hasCreate: true,
       hasSelect: true,
       isReady: true,
+      language: ENGLISH_LANGUAGE,
       selectedRowCount: 0,
     });
 
@@ -118,6 +149,7 @@ describe('editor button enablement', () => {
       hasCreate: true,
       hasSelect: true,
       isReady: false,
+      language: ENGLISH_LANGUAGE,
       selectedRowCount: 1,
     });
 

@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.0] - 2026-07-31
+## [0.1.0] - 2026-08-02
 
 ### Added
 
@@ -29,3 +29,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   SearchSelect states.
 - Stable public documentation, public API examples, and a locally served Browser
   Global demo covering CRUD, optional extensions, locales, events, and failures.
+- Local uniqueness validation for values in currently loaded DataTables rows and a
+  public `EditorLanguageLoadError` contract for application-owned locale loaders.
+
+### Fixed
+
+- Localized Remove target counts and optional Buttons labels and tooltips across
+  all published locales.
+- Preserved explicit `undefined` clears in the built-in default Edit merge while
+  continuing to omit disabled fields and public callback values.
+- Kept the core ESM artifact readable and expanded coverage from a narrow critical
+  subset to the complete core runtime while retaining the 100% critical gate.
+- Updated the development and demo baseline to DataTables 3.0.1 and Buttons 4.0.1,
+  and repaired the demo asset routes, CDN policy, and presentation.

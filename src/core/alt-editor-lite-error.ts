@@ -202,6 +202,32 @@ export class EditorDestroyedError extends AltEditorLiteError {
 }
 
 /**
+ * Indicates that an application-managed locale could not be loaded.
+ *
+ * AltEditorLite does not fetch locales itself. This public error gives locale
+ * adapters a stable contract without introducing a remote-loading mode.
+ */
+export class EditorLanguageLoadError extends AltEditorLiteError {
+  /**
+   * Creates a language-load error without changing editor or table state.
+   *
+   * @param message - Safe explanation of the failed language load.
+   * @param cause - Optional original failure.
+   */
+  public constructor(
+    message = 'The requested editor language could not be loaded.',
+    cause?: unknown,
+  ) {
+    super({
+      code: 'LANGUAGE_LOAD',
+      message,
+      retryable: true,
+      ...(cause === undefined ? {} : { cause }),
+    });
+  }
+}
+
+/**
  * Indicates that selected files exceed a configured size or count budget.
  *
  * The dialog stays open, no DataTables mutation occurs, and the user can retry

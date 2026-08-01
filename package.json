@@ -58,7 +58,9 @@
     "lint": "eslint . --max-warnings 0",
     "lint:styles": "stylelint \"src/**/*.css\" \"examples/**/*.css\" --max-warnings 0",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run --coverage",
+    "test": "npm run test:coverage && npm run test:critical",
+    "test:coverage": "vitest run --config vitest.coverage.config.ts --coverage",
+    "test:critical": "vitest run --coverage",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:e2e": "playwright test",
     "test:types": "tsd",
@@ -66,7 +68,7 @@
     "build:css": "node scripts/build-css.mjs",
     "build:types": "tsc -p tsconfig.build.json --emitDeclarationOnly",
     "build": "npm run clean && npm run typecheck && npm run build:js && npm run build:css && npm run build:types",
-    "ci:core": "npm run format:check && npm run lint && npm run lint:styles && npm run typecheck && npm run test && npm run test:integration && npm run build && npm run test:types && npm run test:e2e"
+    "ci:core": "npm run format:check && npm run lint && npm run lint:styles && npm run typecheck && npm run test && npm run build && npm run test:types && npm run test:e2e"
   },
   "peerDependencies": {
     "datatables.net": ">=3.0.0 <4",
@@ -91,8 +93,8 @@
     "@types/jquery": "4.0.1",
     "@types/node": "25.4.0",
     "@vitest/coverage-v8": "4.1.10",
-    "datatables.net": "3.0.0",
-    "datatables.net-buttons": "4.0.0",
+    "datatables.net": "3.0.1",
+    "datatables.net-buttons": "4.0.1",
     "datatables.net-select": "4.0.0",
     "eslint": "10.8.0",
     "eslint-plugin-import-x": "4.17.1",

@@ -26,8 +26,12 @@ retrieves that instance; it never creates one.
 ## Options
 
 `fields` is the ordered list used to build Create and Edit forms. Only declared
-field paths can be written by the default Edit merge. Disabled fields and values
-normalized to `undefined` are omitted.
+field paths can be written by the default Edit merge. Disabled fields are omitted.
+Values normalized to `undefined` are omitted from the public values object. For
+the built-in default Edit merge only, an enabled field that normalizes to
+`undefined` is retained as an explicit clear; it is distinct from an omitted or
+disabled field. Custom Update callbacks that need an explicit empty value should
+configure a value such as `emptyValue: null`.
 
 `operations` provides synchronous or asynchronous persistence callbacks:
 
@@ -84,4 +88,5 @@ altEditorLiteRefresh
 
 Without Select, Create and Refresh buttons still work. Edit and Remove buttons are
 disabled with `aria-disabled` and a descriptive title. The instance APIs continue
-to support explicit DataTables row selectors.
+to support explicit DataTables row selectors. Button labels and descriptive titles
+come from the owning editor's resolved `language` object.

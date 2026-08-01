@@ -20,6 +20,7 @@ export default defineConfig({
         'src/search-select/search-select-keyboard.ts',
       ],
       reporter: ['text', 'json-summary', 'html'],
+      reportsDirectory: 'coverage/critical',
       thresholds: {
         branches: 100,
         functions: 100,

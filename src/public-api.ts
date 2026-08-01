@@ -17,6 +17,7 @@ export {
   EditorConfigurationError,
   EditorDestroyedError,
   EditorFileLimitError,
+  EditorLanguageLoadError,
   EditorOperationBusyError,
   EditorSelectionCountError,
   EditorSelectionUnavailableError,

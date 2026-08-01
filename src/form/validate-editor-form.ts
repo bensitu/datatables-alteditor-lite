@@ -11,18 +11,25 @@ export interface FormValidationResult {
   readonly fieldErrors: Readonly<Record<string, string>>;
 }
 
+/** Internal callback for table-scoped local uniqueness checks. */
+export type LocalUniqueValidator<TFormValues extends object> = (
+  values: Readonly<EditorValues<TFormValues>>,
+) => Readonly<Record<string, string>>;
+
 /**
  * Runs native validation first, then custom validators concurrently.
  *
  * @param controllers - Ordered form controllers.
  * @param collectValues - Lazy collection performed only after native validity.
  * @param signal - Validation request signal.
+ * @param validateUnique - Optional table-scoped local uniqueness check.
  * @returns Stable field-error mapping.
  */
 export async function validateEditorForm<TFormValues extends object>(
   controllers: readonly ManagedFieldController<TFormValues>[],
   collectValues: () => Promise<Readonly<EditorValues<TFormValues>>>,
   signal: AbortSignal,
+  validateUnique?: LocalUniqueValidator<TFormValues>,
 ): Promise<FormValidationResult> {
   const fieldErrors: Record<string, string> = {};
 
@@ -55,6 +62,14 @@ export async function validateEditorForm<TFormValues extends object>(
     if (!customResult.result.valid) {
       fieldErrors[customResult.name] =
         customResult.result.message ?? 'Enter a valid value.';
+    }
+  }
+
+  if (validateUnique !== undefined) {
+    for (const [fieldName, message] of Object.entries(validateUnique(values))) {
+      if (!Object.hasOwn(fieldErrors, fieldName)) {
+        fieldErrors[fieldName] = message;
+      }
     }
   }
 

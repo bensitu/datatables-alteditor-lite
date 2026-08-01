@@ -22,6 +22,7 @@ import {
   deleteEditorInstance,
   storeEditorInstance,
 } from '../instance/editor-instance-store.js';
+import { getPathValue } from '../object-path/get-path-value.js';
 
 import {
   EditorConfigurationError,
@@ -406,7 +407,12 @@ export class AltEditorLite<
     sourceValues?: Readonly<object>,
   ): void {
     this.transitionTo({ action, status: 'opening' });
-    const form = buildEditorForm(this.options.fields, this.instanceId, this.language);
+    const form = buildEditorForm(
+      this.options.fields,
+      this.instanceId,
+      this.language,
+      (values) => this.validateLocalUniqueness(action, values),
+    );
     this.activeForm = form;
 
     if (sourceValues !== undefined) {
@@ -651,7 +657,8 @@ export class AltEditorLite<
         return;
       }
 
-      const values = await form.collect();
+      const collectedForm = await form.collectWithMetadata();
+      const values = collectedForm.values;
       if (!this.ownsOperation(request)) {
         return;
       }
@@ -683,7 +690,12 @@ export class AltEditorLite<
         capture,
         this.language.errors.targetUnavailable,
       );
-      const row = await this.updateRow(values, capture, request);
+      const row = await this.updateRow(
+        values,
+        capture,
+        request,
+        collectedForm.fieldValues,
+      );
       if (!this.ownsOperation(request)) {
         return;
       }
@@ -729,6 +741,7 @@ export class AltEditorLite<
     values: Readonly<EditorValues<TFormValues>>,
     capture: EditTargetCapture<TRow>,
     request: OwnedOperationRequest,
+    collectedFieldValues: ReadonlyMap<string, unknown>,
   ): Promise<TRow> {
     if (this.options.operations?.update !== undefined) {
       const rowCandidate: unknown = await this.options.operations.update(
@@ -759,6 +772,7 @@ export class AltEditorLite<
       capture.snapshot.original,
       values,
       this.declaredFieldPaths,
+      collectedFieldValues,
     );
   }
 
@@ -1040,8 +1054,39 @@ export class AltEditorLite<
       hasCreate,
       hasSelect,
       isReady,
+      language: this.language,
       selectedRowCount,
     });
+  }
+
+  private validateLocalUniqueness(
+    action: Extract<DialogAction, 'create' | 'edit'>,
+    values: Readonly<EditorValues<TFormValues>>,
+  ): Readonly<Record<string, string>> {
+    const rows = this.table.rows().data().toArray();
+    const excludedRow = action === 'edit' ? this.editTargetCapture?.sourceRow : undefined;
+    const fieldErrors: Record<string, string> = {};
+
+    for (const field of this.options.fields) {
+      if (field.unique !== true) {
+        continue;
+      }
+
+      const candidateValue = getPathValue(values, field.name);
+      if (candidateValue === undefined) {
+        continue;
+      }
+
+      const hasDuplicate = rows.some(
+        (row) =>
+          row !== excludedRow && Object.is(getPathValue(row, field.name), candidateValue),
+      );
+      if (hasDuplicate) {
+        fieldErrors[field.name] = this.language.validation.unique;
+      }
+    }
+
+    return fieldErrors;
   }
 
   private transitionTo(nextState: EditorState): void {

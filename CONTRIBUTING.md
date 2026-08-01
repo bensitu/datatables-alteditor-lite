@@ -39,6 +39,17 @@ Do not use `--force` or `--legacy-peer-deps`.
 Every test must remain useful after the change that introduced it. Core unit,
 integration, browser, and type tests belong in this repository.
 
+`npm test` enforces two complementary coverage gates. The complete core runtime is
+measured across unit and integration tests at 90% statements, 85% branches, 90%
+functions, and 90% lines. Safety-critical snapshot, state, object-path, request,
+configuration, and normalization modules retain a separate 100% gate.
+
+## Distribution output
+
+Keep `dist/index.js` as readable, non-minified ESM with a source map. Browser
+Global core and locale bundles provide readable and `.min.js` variants with source
+maps. Do not silently change these stable output roles when adjusting the build.
+
 ## Documentation governance
 
 The `docs/` directory is reserved for stable public documentation. Each Markdown

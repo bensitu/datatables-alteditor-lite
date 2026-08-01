@@ -7,6 +7,8 @@ npm run build
 npm run demo
 ```
 
-Open `http://127.0.0.1:4173/`. The server exposes only the demo, built `dist/`
-artifacts, and the three declared DataTables peer packages. It applies a strict
-same-origin Content Security Policy and does not use a CDN or jQuery.
+Open `http://127.0.0.1:4173/`. The server exposes only the demo and built `dist/`
+artifacts. DataTables 3.0.1, Buttons 4.0.1, and Select 4.0.0 load from the official
+DataTables CDN with SHA-384 integrity metadata. The Content Security Policy allows
+that exact CDN origin for scripts and styles; the runtime still does not load
+jQuery.

@@ -61,6 +61,8 @@ export interface BaseFieldConfig<TFormValues extends object, TValue = unknown> {
   readonly onChange?: FieldChangeCallback<TFormValues, TValue>;
   /** Validator invoked after native constraint validation. */
   readonly validate?: FieldValidator<TFormValues, TValue>;
+  /** Whether the normalized value must be distinct in currently loaded rows. */
+  readonly unique?: boolean;
 }
 
 /**

@@ -63,10 +63,17 @@ If identity cannot be proven, `EditorTargetUnavailableError` is displayed and no
 persistence callback or table mutation occurs. Identity is checked again after an
 asynchronous callback before mutation.
 
+This policy intentionally fails closed. Without a configured public `rowId`, an
+external deletion or row rebuild can invalidate a captured index even when another
+row now has similar data. Configure a stable `rowId` when Edit or Remove must
+tolerate unrelated external table changes; AltEditorLite never retargets by value.
+
 The `original` callback argument is a frozen shallow copy captured before opening.
 The default update implementation copies only configured and collected field
 paths. Edited nested branches become new plain objects, unrelated properties are
-preserved, and the original row is not mutated.
+preserved, and the original row is not mutated. An enabled field explicitly
+cleared to normalized `undefined` clears that property in the replacement row;
+disabled or unrendered fields remain untouched.
 
 ## Remove
 

@@ -18,12 +18,21 @@ export const es: Readonly<AltEditorLiteLanguage> = {
     createTitle: 'Crear fila',
     editTitle: 'Editar fila',
     removeTitle: 'Eliminar filas',
+    removeCount: 'Filas seleccionadas: {count}.',
     removeMessage: 'Confirma que deseas eliminar las filas seleccionadas.',
+  },
+  buttons: {
+    createUnavailable: 'Configura una operación de creación para habilitar esta acción.',
+    selectUnavailable: 'Esta acción requiere DataTables Select.',
+    busy: 'El editor está ocupado.',
+    editSelection: 'Selecciona exactamente una fila para editarla.',
+    removeSelection: 'Selecciona una o más filas para eliminarlas.',
+    initialize: 'Inicializa AltEditorLite para usar esta acción.',
   },
   validation: {
     required: 'Este campo es obligatorio.',
     invalid: 'Introduce un valor válido.',
-    unique: 'Introduce un valor único.',
+    unique: 'El mismo valor ya existe en los datos cargados actualmente.',
   },
   searchSelect: {
     placeholder: 'Selecciona una opción',

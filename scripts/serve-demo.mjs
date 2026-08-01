@@ -8,18 +8,6 @@ const demoRoot = resolve(workspaceRoot, 'examples/demo');
 const staticRoutes = [
   { prefix: '/demo/', rootDirectory: demoRoot },
   { prefix: '/dist/', rootDirectory: resolve(workspaceRoot, 'dist') },
-  {
-    prefix: '/vendor/datatables/',
-    rootDirectory: resolve(workspaceRoot, 'node_modules/datatables.net/js'),
-  },
-  {
-    prefix: '/vendor/buttons/',
-    rootDirectory: resolve(workspaceRoot, 'node_modules/datatables.net-buttons/js'),
-  },
-  {
-    prefix: '/vendor/select/',
-    rootDirectory: resolve(workspaceRoot, 'node_modules/datatables.net-select/js'),
-  },
 ];
 const contentTypeByExtension = new Map([
   ['.css', 'text/css; charset=utf-8'],
@@ -84,7 +72,7 @@ const server = createServer(async (request, response) => {
     response.writeHead(200, {
       'cache-control': 'no-store',
       'content-security-policy':
-        "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
+        "default-src 'self'; script-src 'self' https://cdn.datatables.net; style-src 'self' https://cdn.datatables.net; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
       'content-type': contentType,
       'x-content-type-options': 'nosniff',
     });

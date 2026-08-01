@@ -8,7 +8,9 @@ import { ENGLISH_LANGUAGE } from '../../src/core/alt-editor-lite-language.js';
 import { buildEditorForm } from '../../src/form/build-editor-form.js';
 
 import type { FieldChangeContext, FieldConfig } from '../../src/fields/field-config.js';
+import type { FieldValidationResult } from '../../src/fields/field-controller.js';
 import type { FormController } from '../../src/form/form-controller.js';
+import type { LocalUniqueValidator } from '../../src/form/validate-editor-form.js';
 
 interface FormValues {
   readonly profile: {
@@ -151,8 +153,10 @@ afterEach(() => {
   document.body.replaceChildren();
 });
 
-function createForm(): FormController<FormValues> {
-  activeForm = buildEditorForm(fields, 'form-test', ENGLISH_LANGUAGE);
+function createForm(
+  validateUnique?: LocalUniqueValidator<FormValues>,
+): FormController<FormValues> {
+  activeForm = buildEditorForm(fields, 'form-test', ENGLISH_LANGUAGE, validateUnique);
   document.body.append(activeForm.element);
   return activeForm;
 }
@@ -284,6 +288,125 @@ describe('FormController', () => {
     expect(checkboxElement?.checked).toBe(false);
     await expect(form.collect()).resolves.toMatchObject({
       active: false,
+    });
+  });
+
+  it('validates one field through native, custom, and local unique rules', async () => {
+    const form = createForm((values) =>
+      values.profile?.name === 'duplicate'
+        ? { 'profile.name': 'Name already exists.' }
+        : {},
+    );
+    const nameField = form.getField('profile.name');
+
+    await expect(nameField?.validate()).resolves.toMatchObject({ valid: false });
+    nameField?.setValue('blocked');
+    await expect(nameField?.validate()).resolves.toEqual({
+      message: 'This name is blocked.',
+      valid: false,
+    });
+    nameField?.setValue('duplicate');
+    await expect(nameField?.validate()).resolves.toEqual({
+      message: 'Name already exists.',
+      valid: false,
+    });
+    nameField?.setValue('available');
+    await expect(nameField?.validate()).resolves.toEqual({ valid: true });
+  });
+
+  it('caches field facades and removes explicitly destroyed fields', async () => {
+    const form = createForm();
+    const nameField = form.getField('profile.name');
+
+    expect(form.getField('profile.name')).toBe(nameField);
+    nameField?.setValue('Temporary');
+    nameField?.showError('Temporary error.');
+    expect(nameField?.element.querySelector('[aria-invalid="true"]')).not.toBeNull();
+    nameField?.clearError();
+    nameField?.focus();
+    expect(document.activeElement).toBe(nameField?.element.querySelector('input'));
+    nameField?.setDisabled(true);
+    await expect(form.collect()).resolves.not.toHaveProperty('profile');
+    nameField?.setDisabled(false);
+
+    nameField?.destroy();
+    nameField?.destroy();
+    expect(form.getField('profile.name')).toBeNull();
+  });
+
+  it('reports field change callback failures and clears submission-only errors', async () => {
+    const form = createForm();
+    const inputElement = form.getField('profile.name')?.element.querySelector('input');
+    const submissionError = form.element.querySelector<HTMLElement>(
+      '.dt-alteditor-lite-form__submission-error',
+    );
+    changeCallback.mockImplementationOnce(() => {
+      throw new Error('Consumer failure.');
+    });
+    inputElement?.dispatchEvent(new Event('input', { bubbles: true }));
+
+    await vi.waitFor(() => {
+      expect(submissionError?.textContent).toBe('A field change callback failed.');
+    });
+    form.clearErrors();
+    expect(submissionError?.hidden).toBe(true);
+
+    form.showSubmissionError(
+      new AltEditorLiteError({ code: 'FORM', message: 'Form failed.' }),
+    );
+    expect(submissionError?.textContent).toBe('Form failed.');
+    form.clearErrors();
+
+    changeCallback.mockImplementationOnce(() => {
+      throw new AltEditorLiteError({ code: 'CHANGE', message: 'Change failed.' });
+    });
+    inputElement?.dispatchEvent(new Event('input', { bubbles: true }));
+    await vi.waitFor(() => {
+      expect(submissionError?.textContent).toBe('Change failed.');
+    });
+  });
+
+  it('discards a validation result superseded by a newer request', async () => {
+    let validationCount = 0;
+    let releaseFirstValidation: ((result: FieldValidationResult) => void) | undefined;
+    const firstValidation = new Promise<FieldValidationResult>((resolve) => {
+      releaseFirstValidation = resolve;
+    });
+    const concurrentFields = [
+      {
+        defaultValue: 'Ready',
+        label: 'Name',
+        name: 'profile.name',
+        type: 'text',
+        validate: () => {
+          validationCount += 1;
+          return validationCount === 1 ? firstValidation : { valid: true };
+        },
+      },
+    ] satisfies readonly FieldConfig<FormValues>[];
+    activeForm = buildEditorForm(
+      concurrentFields,
+      'concurrent-validation',
+      ENGLISH_LANGUAGE,
+    );
+    document.body.append(activeForm.element);
+
+    const supersededValidation = activeForm.validate();
+    await vi.waitFor(() => {
+      expect(validationCount).toBe(1);
+    });
+    await expect(activeForm.validate()).resolves.toEqual({
+      fieldErrors: {},
+      valid: true,
+    });
+    if (releaseFirstValidation === undefined) {
+      throw new Error('Expected a pending validation request.');
+    }
+    releaseFirstValidation({ valid: true });
+
+    await expect(supersededValidation).resolves.toEqual({
+      fieldErrors: {},
+      valid: false,
     });
   });
 });

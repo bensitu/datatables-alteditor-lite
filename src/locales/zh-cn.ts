@@ -18,12 +18,21 @@ export const zhCn: Readonly<AltEditorLiteLanguage> = {
     createTitle: '新建行',
     editTitle: '编辑行',
     removeTitle: '删除行',
+    removeCount: '已选行数：{count}。',
     removeMessage: '请确认是否删除所选行。',
+  },
+  buttons: {
+    createUnavailable: '请配置新建操作以启用此操作。',
+    selectUnavailable: '此操作需要 DataTables Select。',
+    busy: '编辑器正在处理其他操作。',
+    editSelection: '请选择且仅选择一行进行编辑。',
+    removeSelection: '请至少选择一行进行删除。',
+    initialize: '请先初始化 AltEditorLite 以使用此操作。',
   },
   validation: {
     required: '此字段为必填项。',
     invalid: '请输入有效值。',
-    unique: '请输入唯一值。',
+    unique: '当前已加载的表格数据中存在相同值。',
   },
   searchSelect: {
     placeholder: '请选择',

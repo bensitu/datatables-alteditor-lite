@@ -46,18 +46,23 @@ function setImmutablePath(
  * @param original - Row snapshot captured before the Edit dialog opened.
  * @param values - Enabled values collected from the Edit form.
  * @param declaredFieldPaths - Validated configured field paths.
+ * @param collectedFieldValues - Explicit participating fields, including clears.
  * @returns A complete replacement row.
  */
 export function mergeDeclaredFieldValues<TRow extends object, TFormValues extends object>(
   original: Readonly<TRow>,
   values: Readonly<EditorValues<TFormValues>>,
   declaredFieldPaths: readonly string[],
+  collectedFieldValues?: ReadonlyMap<string, unknown>,
 ): TRow {
   let updatedRow: Readonly<Record<string, unknown>> = { ...original };
 
   for (const fieldPath of declaredFieldPaths) {
-    const fieldValue = getPathValue(values, fieldPath);
-    if (fieldValue === undefined) {
+    const isExplicitlyCollected = collectedFieldValues?.has(fieldPath) ?? false;
+    const fieldValue = isExplicitlyCollected
+      ? collectedFieldValues?.get(fieldPath)
+      : getPathValue(values, fieldPath);
+    if (fieldValue === undefined && !isExplicitlyCollected) {
       continue;
     }
 

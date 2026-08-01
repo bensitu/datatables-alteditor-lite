@@ -17,6 +17,10 @@ test('runs CRUD, typed SearchSelect, refresh, and public events without jQuery',
   await expect(page.getByRole('heading', { level: 1 })).toContainText(
     'Native DataTables editing',
   );
+  await expect(page.locator('.demo-value-grid article')).toHaveCount(3);
+  await expect(page.locator('.demo-contract-card')).toContainText(
+    'Mutate DataTables only on success',
+  );
   await expect(page.locator('#jquery-status')).toHaveText('not loaded');
   await expect(page.locator('#locale-status')).toHaveText('en, ja, zh-CN, es');
   await expect(page.getByRole('button', { name: 'Create' })).toBeEnabled();
@@ -55,7 +59,9 @@ test('runs CRUD, typed SearchSelect, refresh, and public events without jQuery',
 
   await dialog.getByRole('button', { name: 'Submit' }).click();
   await expect(dialog).toBeVisible();
-  await expect(dialog.getByText('This email is already registered.')).toBeVisible();
+  await expect(
+    dialog.getByText('The same value exists in the currently loaded table data.'),
+  ).toBeVisible();
   await expect(dialog.getByLabel('Email')).toHaveAttribute('aria-invalid', 'true');
 
   await dialog.getByLabel('Email').fill('keyboard@example.test');
@@ -150,6 +156,10 @@ test('meets CSP, accessibility, reduced-motion, and narrow high-zoom smoke gates
   await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
   const response = await page.goto(demoUrl);
   expect(response?.headers()['content-security-policy']).toContain("script-src 'self'");
+  expect(response?.headers()['content-security-policy']).toContain(
+    'https://cdn.datatables.net',
+  );
+  await expect(page.locator('script[src*="dt-3.0.1"][src*="b-4.0.1"]')).toHaveCount(1);
   await expect(
     page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches),
   ).resolves.toBe(true);

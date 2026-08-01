@@ -14,6 +14,15 @@ npm install datatables.net@^3 datatables-alteditor-lite
 npm install datatables.net-buttons@^4 datatables.net-select@^4
 ```
 
+DataTables' published TypeScript declarations reference jQuery types for its
+optional compatibility API. Projects that type-check dependencies with
+`skipLibCheck: false` must also install the type-only package; it does not add a
+runtime dependency:
+
+```bash
+npm install --save-dev @types/jquery
+```
+
 Import DataTables, the auto-registering ESM entry, and the stylesheet:
 
 ```ts
@@ -76,6 +85,10 @@ The package targets modern evergreen browsers with native `<dialog>`, including
 the Chromium, Firefox, and WebKit versions exercised by the release test suite.
 The published Node engine range applies to installation, builds, and server-side
 tooling; the runtime itself is browser code.
+
+The repository's current compatibility baseline is DataTables 3.0.1, Buttons
+4.0.1, and Select 4.0.0. The public peer ranges accept compatible releases across
+the same major versions.
 
 See [Fields](fields.md), [Operations](operations.md),
 [Localization](localization.md), and [Browser Global](browser-global.md).

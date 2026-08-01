@@ -13,6 +13,7 @@ synchronous client-side mappings or asynchronous persistence operations.
 - Native `<dialog>` with keyboard focus containment and restoration
 - Safe nested field paths with prototype-pollution protection
 - Native constraints followed by asynchronous custom field validation
+- Optional local uniqueness checks against the rows currently loaded by DataTables
 - Hidden, text, email, password, number, date, time, datetime-local, textarea,
   checkbox, radio, select, SearchSelect, and single/multiple file fields
 - Local single-value SearchSelect with exact string/number identity, dynamic
@@ -25,7 +26,8 @@ synchronous client-side mappings or asynchronous persistence operations.
   `AbortSignal`
 - Edit and Remove target snapshots that survive selection changes and redraws
 - Explicit DataTables row selectors with optional Select integration
-- Optional Buttons definitions with lifecycle-aware enablement
+- Optional Buttons definitions with localized labels, titles, and lifecycle-aware
+  enablement
 - Ajax-aware and local-table Refresh
 - ESM and Browser Global registration without optional DataTables runtime imports
 - Browser Global locale registry and minified/source-mapped locale bundles
@@ -180,7 +182,8 @@ See [Events](docs/events.md) for the discriminated detail types.
 
 ## Public demo
 
-The Browser Global demo uses the built `dist/` files and local DataTables peers;
+The Browser Global demo uses the built `dist/` files and official CDN builds for
+DataTables and its optional peers:
 
 ```bash
 npm run build

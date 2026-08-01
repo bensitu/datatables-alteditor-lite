@@ -254,7 +254,7 @@ test('always confirms Remove and restores focus after keyboard activation', asyn
   const dialog = page.locator('dialog');
   await expect(dialog).toBeVisible();
   await expect(dialog.locator('.dt-alteditor-lite-form')).toHaveCount(0);
-  await expect(dialog).toContainText('1 row selected');
+  await expect(dialog).toContainText('Selected rows: 1.');
   await expect(page.getByRole('button', { name: 'Cancel' })).toBeFocused();
   await page.keyboard.press('Tab');
   await expect(page.getByRole('button', { exact: true, name: 'Remove' })).toBeFocused();

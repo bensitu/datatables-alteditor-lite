@@ -44,7 +44,7 @@ const fields = [
     required: true,
     type: 'number',
   },
-] satisfies readonly FieldConfig<CrudValues>[];
+] as const satisfies readonly FieldConfig<CrudValues>[];
 
 const activeEditors = new Set<DestroyableEditor>();
 let originalShowModalDescriptor: PropertyDescriptor | undefined;
@@ -276,6 +276,53 @@ describe('AltEditorLite asynchronous Create', () => {
 });
 
 describe('AltEditorLite Edit snapshots', () => {
+  it('rejects duplicate loaded values while excluding the current Edit row', async () => {
+    const uniqueFields = [
+      { ...fields[0], unique: true },
+      fields[1],
+    ] satisfies readonly FieldConfig<CrudValues>[];
+    const { api, tableElement } = createContractTable('local-unique');
+    const createOperation = vi.fn((values: Readonly<Partial<CrudValues>>) => ({
+      id: 'unique-created',
+      name: values.name ?? '',
+      rank: values.rank ?? 0,
+    }));
+    const editor = new AltEditorLite<ContractRow, CrudValues>(api, {
+      fields: uniqueFields,
+      operations: { create: createOperation },
+    });
+    activeEditors.add(editor);
+
+    await editor.openCreateDialog();
+    editor.getField<string>('name')?.setValue('Alpha');
+    editor.getField<number>('rank')?.setValue(10);
+    submitForm();
+    await vi.waitFor(() => {
+      expect(editor.getState().status).toBe('open');
+    });
+    expect(createOperation).not.toHaveBeenCalled();
+    expect(
+      tableElement.ownerDocument.querySelector('.dt-alteditor-lite-field__error')
+        ?.textContent,
+    ).toBe(ENGLISH_LANGUAGE.validation.unique);
+    await editor.closeDialog();
+
+    await editor.openEditDialog('#row-a');
+    submitForm();
+    await vi.waitFor(() => {
+      expect(editor.getState().status).toBe('ready');
+    });
+    expect(api.row('#row-a').data().name).toBe('Alpha');
+
+    await editor.openEditDialog('#row-b');
+    editor.getField<string>('name')?.setValue('Alpha');
+    submitForm();
+    await vi.waitFor(() => {
+      expect(editor.getState().status).toBe('open');
+    });
+    expect(api.row('#row-b').data().name).toBe('Beta');
+  });
+
   it('updates the explicit snapshot after sort, search, paging, and redraw', async () => {
     const eventOrder: string[] = [];
     let callbackOriginal: Readonly<ContractRow> | undefined;
@@ -363,6 +410,27 @@ describe('AltEditorLite Edit snapshots', () => {
       rank: 3,
     });
     expect(liveOriginal.name).toBe('Gamma');
+  });
+
+  it('clears an optional field through the built-in declared-field merge', async () => {
+    interface ClearValues {
+      readonly rank?: number;
+    }
+
+    const { api } = createContractTable('default-clear');
+    const editor = new AltEditorLite<ContractRow, ClearValues>(api, {
+      fields: [{ label: 'Rank', name: 'rank', type: 'number' }],
+    });
+    activeEditors.add(editor);
+
+    await editor.openEditDialog('#row-a');
+    editor.getField<number | undefined>('rank')?.setValue(undefined);
+    submitForm();
+    await vi.waitFor(() => {
+      expect(editor.getState().status).toBe('ready');
+    });
+
+    expect(api.row('#row-a').data()).toHaveProperty('rank', undefined);
   });
 
   it('rejects an externally removed or replaced rowId target', async () => {
@@ -485,7 +553,7 @@ describe('AltEditorLite Remove snapshots', () => {
     expect(document.querySelector('.dt-alteditor-lite-form')).toBeNull();
     expect(
       document.querySelector('.dt-alteditor-lite-remove-confirmation')?.textContent,
-    ).toContain('2 rows selected');
+    ).toContain('Selected rows: 2.');
     confirmRemove();
     await vi.waitFor(() => {
       expect(removeOperation).toHaveBeenCalledOnce();

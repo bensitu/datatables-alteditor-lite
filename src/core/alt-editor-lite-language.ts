@@ -24,7 +24,17 @@ export interface AltEditorLiteLanguage {
     readonly createTitle: string;
     readonly editTitle: string;
     readonly removeTitle: string;
+    readonly removeCount: string;
     readonly removeMessage: string;
+  };
+  /** Explanations used by optional DataTables Buttons integration. */
+  readonly buttons: {
+    readonly createUnavailable: string;
+    readonly selectUnavailable: string;
+    readonly busy: string;
+    readonly editSelection: string;
+    readonly removeSelection: string;
+    readonly initialize: string;
   };
   /** Native and custom validation fallbacks. */
   readonly validation: {
@@ -79,12 +89,21 @@ export const ENGLISH_LANGUAGE: Readonly<AltEditorLiteLanguage> = {
     createTitle: 'Create row',
     editTitle: 'Edit row',
     removeTitle: 'Remove rows',
+    removeCount: 'Selected rows: {count}.',
     removeMessage: 'Confirm that the selected rows should be removed.',
+  },
+  buttons: {
+    createUnavailable: 'Configure a Create operation to enable this action.',
+    selectUnavailable: 'DataTables Select is required for this action.',
+    busy: 'The editor is busy.',
+    editSelection: 'Select exactly one row to edit.',
+    removeSelection: 'Select one or more rows to remove.',
+    initialize: 'Initialize AltEditorLite to use this action.',
   },
   validation: {
     required: 'This field is required.',
     invalid: 'Enter a valid value.',
-    unique: 'Enter a unique value.',
+    unique: 'The same value exists in the currently loaded table data.',
   },
   searchSelect: {
     placeholder: 'Select an option',
@@ -120,6 +139,7 @@ export function resolveLanguage(
     locale: language?.locale ?? ENGLISH_LANGUAGE.locale,
     actions: { ...ENGLISH_LANGUAGE.actions, ...language?.actions },
     dialog: { ...ENGLISH_LANGUAGE.dialog, ...language?.dialog },
+    buttons: { ...ENGLISH_LANGUAGE.buttons, ...language?.buttons },
     validation: { ...ENGLISH_LANGUAGE.validation, ...language?.validation },
     searchSelect: {
       ...ENGLISH_LANGUAGE.searchSelect,

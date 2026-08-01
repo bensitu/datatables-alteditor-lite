@@ -18,12 +18,21 @@ export const ja: Readonly<AltEditorLiteLanguage> = {
     createTitle: '行を作成',
     editTitle: '行を編集',
     removeTitle: '行を削除',
+    removeCount: '選択した行: {count} 件。',
     removeMessage: '選択した行を削除してもよろしいですか。',
+  },
+  buttons: {
+    createUnavailable: '作成操作を設定すると、この操作を使用できます。',
+    selectUnavailable: 'この操作には DataTables Select が必要です。',
+    busy: 'エディターは処理中です。',
+    editSelection: '編集する行を 1 行だけ選択してください。',
+    removeSelection: '削除する行を 1 行以上選択してください。',
+    initialize: 'この操作を使用するには AltEditorLite を初期化してください。',
   },
   validation: {
     required: 'この項目は必須です。',
     invalid: '有効な値を入力してください。',
-    unique: '重複しない値を入力してください。',
+    unique: '現在読み込まれているテーブルデータに同じ値があります。',
   },
   searchSelect: {
     placeholder: 'オプションを選択',

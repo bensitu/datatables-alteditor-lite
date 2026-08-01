@@ -62,7 +62,7 @@ test('loads after globalThis.DataTable without introducing jQuery', async ({ pag
 
   expect(baselineState).toEqual({
     dataTableType: 'function',
-    dataTableVersion: '3.0.0',
+    dataTableVersion: '3.0.1',
     hasJQuery: false,
   });
 

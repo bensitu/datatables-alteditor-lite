@@ -2,6 +2,7 @@ import { expectAssignable, expectNotAssignable, expectType } from 'tsd';
 
 import {
   AltEditorLite,
+  EditorLanguageLoadError,
   type AltEditorLiteOptions,
   type AltEditorLiteLanguage,
   type ClientSideOperations,
@@ -72,6 +73,7 @@ const editor = new AltEditorLite<Row, FormValues>(table, {
       label: 'Email',
       name: 'contact.email',
       type: 'email',
+      unique: true,
     },
     {
       emptyValue: null,
@@ -268,6 +270,12 @@ expectType<Readonly<AltEditorLiteLanguage>>(enDefault);
 expectType<Readonly<AltEditorLiteLanguage>>(ja);
 expectType<Readonly<AltEditorLiteLanguage>>(zhCn);
 expectType<Readonly<AltEditorLiteLanguage>>(es);
+const languageLoadError = new EditorLanguageLoadError(
+  'Locale failed.',
+  new Error('Network unavailable.'),
+);
+expectType<string | undefined>(languageLoadError.code);
+expectType<boolean>(languageLoadError.retryable);
 const singleFile = {
   label: 'Attachment',
   name: 'attachment',

@@ -24,6 +24,27 @@ Disabled fields are omitted from collection. Readonly fields remain collectible.
 `editable: false` omits the field from Create and Edit forms. Consumer labels,
 descriptions, options, and error messages are rendered as text, never as HTML.
 
+## Local uniqueness
+
+Set `unique: true` on a field to reject a value already present in the rows
+currently loaded by the owned DataTables instance:
+
+```ts
+{
+  label: 'Email',
+  name: 'email',
+  type: 'email',
+  unique: true,
+}
+```
+
+Edit excludes its captured source row, so keeping the current value is valid. The
+comparison preserves JavaScript value identity semantics: numeric `1` and string
+`'1'` are different. This is a fast local usability check, not a persistence
+guarantee. Server-side, paged, filtered, unloaded, or concurrently changing data
+can contain values the browser cannot see, so the persistence layer must enforce
+the final uniqueness constraint.
+
 ## SearchSelect
 
 SearchSelect is a local, single-value combobox. It has no remote data source,

@@ -5,9 +5,17 @@ import {
 import { RequestSequence } from '../core/request-sequence.js';
 import { createFieldController } from '../fields/create-field-controller.js';
 
-import { collectFormValues } from './collect-form-values.js';
+import {
+  collectFormState,
+  collectFormValues,
+  type CollectedFormState,
+} from './collect-form-values.js';
 import { populateFormValues } from './populate-form-values.js';
-import { type FormValidationResult, validateEditorForm } from './validate-editor-form.js';
+import {
+  type FormValidationResult,
+  type LocalUniqueValidator,
+  validateEditorForm,
+} from './validate-editor-form.js';
 
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type { DeepPartial, EditorValues } from '../core/editor-values.js';
@@ -83,6 +91,7 @@ export class EditorFormController<
     fields: readonly FieldConfig<TFormValues>[],
     instanceId: string,
     language: Readonly<AltEditorLiteLanguage>,
+    private readonly validateUnique?: LocalUniqueValidator<TFormValues>,
   ) {
     this.element = document.createElement('form');
     this.element.className = 'dt-alteditor-lite-form';
@@ -146,6 +155,12 @@ export class EditorFormController<
     );
   }
 
+  /** Collects values with internal metadata for the built-in Update path. */
+  public async collectWithMetadata(): Promise<CollectedFormState<TFormValues>> {
+    this.assertActive();
+    return await collectFormState(this.controllers, this.lifecycleAbortController.signal);
+  }
+
   /** Runs native and custom validation. */
   public async validate(): Promise<FormValidationResult> {
     this.assertActive();
@@ -163,6 +178,7 @@ export class EditorFormController<
       this.controllers,
       async () => await collectFormValues(this.controllers, signal),
       signal,
+      this.validateUnique,
     );
 
     if (!this.validationSequence.isCurrent(requestSequence) || signal.aborted) {
@@ -369,6 +385,14 @@ export class EditorFormController<
 
     if (!customResult.valid) {
       controller.showError(customResult.message ?? 'Enter a valid value.');
+      return customResult;
+    }
+
+    const uniqueMessage = this.validateUnique?.(values)[controller.name];
+    if (uniqueMessage !== undefined) {
+      const uniqueResult = { message: uniqueMessage, valid: false } as const;
+      controller.showError(uniqueMessage);
+      return uniqueResult;
     }
 
     return customResult;

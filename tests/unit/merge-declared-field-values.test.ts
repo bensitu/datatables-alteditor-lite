@@ -71,6 +71,29 @@ describe('declared field merge', () => {
     expect(original.profile).toBeInstanceOf(Date);
   });
 
+  it('applies an explicitly collected clear without clearing omitted fields', () => {
+    const original: MergeRow = {
+      id: 'row-a',
+      profile: {
+        email: 'before@example.test',
+        name: 'Before',
+      },
+      untouched: { marker: 'same-reference' },
+    };
+    const result = mergeDeclaredFieldValues<MergeRow, MergeValues>(
+      original,
+      {},
+      ['profile.email', 'profile.name'],
+      new Map([['profile.name', undefined]]),
+    );
+
+    expect(result.profile).toEqual({
+      email: 'before@example.test',
+      name: undefined,
+    });
+    expect(result.untouched).toBe(original.untouched);
+  });
+
   it('replaces scalar, null, and array branches and accepts null-prototype records', () => {
     const nullPrototypeProfile = Object.assign(Object.create(null) as object, {
       preserved: 'value',

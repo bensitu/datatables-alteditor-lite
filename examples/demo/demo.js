@@ -49,6 +49,7 @@ const fieldConfigurations = [
     name: 'email',
     required: true,
     type: 'email',
+    unique: true,
   },
   {
     attributes: { max: '120', min: '16' },
@@ -163,6 +164,7 @@ function throwRequestedFailure() {
 
   shouldFailNextOperation = false;
   failNextButton.textContent = 'Fail the next persistence request';
+  delete failNextButton.dataset.armed;
   throw new AltEditorLiteError({
     code: 'DEMO_FAILURE',
     message: 'The requested demo failure occurred. Retry the operation.',
@@ -238,6 +240,7 @@ function updateState() {
   const state = currentEditor.getState();
   editorState.textContent =
     'action' in state ? `${state.status}:${state.action}` : state.status;
+  editorState.dataset.state = state.status;
 }
 
 function appendEvent(event) {
@@ -272,6 +275,7 @@ document.querySelector('#locale-status').textContent =
 failNextButton.addEventListener('click', () => {
   shouldFailNextOperation = true;
   failNextButton.textContent = 'Next request will fail';
+  failNextButton.dataset.armed = 'true';
 });
 
 localeSelect.addEventListener('change', () => {

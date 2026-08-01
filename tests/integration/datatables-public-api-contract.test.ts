@@ -51,7 +51,7 @@ describe('DataTables public API contracts', () => {
     const { api, tableElement } = createContractTable();
     const initialization = readPropertyRecord(api.init());
 
-    expect(DataTable.version).toBe('3.0.0');
+    expect(DataTable.version).toBe('3.0.1');
     expect(initialization['rowId']).toBe('id');
     expect(initialization['pageLength']).toBe(2);
     expect(api.table().node()).toBe(tableElement);
