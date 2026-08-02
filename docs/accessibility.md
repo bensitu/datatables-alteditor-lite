@@ -6,7 +6,11 @@ dialogs, and closing restores a connected opening control or falls back to the
 table. Busy operations expose `aria-busy` and make owned form controls inert.
 
 Field errors have stable IDs, use `aria-invalid`, and remain associated through
-`aria-describedby`. Remove always has a destructive confirmation step.
+`aria-describedby`. Field-level feedback uses polite live regions to avoid a burst
+of interrupting alerts when several constraints fail together. The modal exposes
+`aria-modal`, responds to viewport and virtual-keyboard size changes, and restores
+temporary table focusability after closing. Remove always has a destructive
+confirmation step.
 
 ## SearchSelect keyboard behavior
 

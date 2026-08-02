@@ -10,7 +10,9 @@ default Edit merge writes only declared safe paths into new plain nested objects
 
 Operation errors expose only validated own properties. Unknown exceptions use a
 localized generic message; raw stacks and arbitrary serialized values are not
-rendered. File count and byte budgets are checked before data URL conversion.
+rendered. Untrusted displayed messages are length-bounded. External language
+requests have timeout and response-size limits. File count and byte budgets are
+checked before data URL conversion.
 
 These boundaries do not replace server controls. Servers must authenticate and
 authorize every operation, validate all values and files, enforce uniqueness, and

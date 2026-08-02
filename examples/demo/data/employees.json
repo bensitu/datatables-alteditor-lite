@@ -1,0 +1,57 @@
+[
+  {
+    "active": true,
+    "age": 34,
+    "email": "aiko@example.test",
+    "id": 1,
+    "name": "Aiko Tanaka",
+    "notes": "Works across product and accessibility.",
+    "officeId": 10,
+    "role": "designer",
+    "startDate": "2022-04-01"
+  },
+  {
+    "active": true,
+    "age": 41,
+    "email": "lucas@example.test",
+    "id": 2,
+    "name": "Lucas Martín",
+    "notes": "Leads the platform team.",
+    "officeId": 20,
+    "role": "manager",
+    "startDate": "2020-09-14"
+  },
+  {
+    "active": false,
+    "age": 29,
+    "email": "mei@example.test",
+    "id": 3,
+    "name": "Mei Chen",
+    "notes": "Maintains the local search experience.",
+    "officeId": 30,
+    "role": "developer",
+    "startDate": "2024-01-08"
+  },
+  {
+    "active": true,
+    "age": 30,
+    "email": "john@example.test",
+    "id": 4,
+    "name": "John Doe",
+    "notes": "New employee.",
+    "officeId": 40,
+    "role": "developer",
+    "startDate": "2024-01-09"
+  },
+  {
+    "active": true,
+    "age": 45,
+    "email": "jane@example.test",
+    "id": 5,
+    "name": "Jane Smith",
+    "notes": "Senior developer.",
+    "officeId": 50,
+    "role": "manager",
+    "startDate": "2019-06-15"
+  }
+]

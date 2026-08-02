@@ -152,8 +152,8 @@
             <p class="demo-eyebrow">Interactive options</p>
             <h2 id="demo-controls-title">Example controls</h2>
             <p>
-              Change language, force a persistence failure, or create another editor to
-              exercise instance isolation.
+              Change language, force a persistence failure, or open a second workflow that
+              demonstrates the remaining native field types.
             </p>
           </div>
 
@@ -170,8 +170,12 @@
             <button id="fail-next" class="demo-danger-button" type="button">
               Fail the next persistence request
             </button>
-            <button id="add-instance" type="button">Initialize a second table</button>
+            <button id="show-field-gallery" type="button">
+              Explore more field types
+            </button>
           </div>
+
+          <p id="demo-runtime-error" class="demo-runtime-error" role="alert" hidden></p>
 
           <dl class="demo-status" aria-label="Runtime status">
             <div>
@@ -203,22 +207,26 @@
         <ol id="event-log" aria-live="polite"></ol>
       </section>
 
-      <section id="secondary-host" class="demo-table-panel" hidden>
+      <section id="field-gallery" class="demo-table-panel" hidden>
         <div class="demo-section-heading">
           <div>
-            <p class="demo-eyebrow">Isolation check</p>
-            <h2>Second independent instance</h2>
+            <p class="demo-eyebrow">Field type gallery</p>
+            <h2>Synchronous workflow editor</h2>
           </div>
           <p class="demo-section-heading__hint">
-            Its state and fields are fully separate.
+            Create or select a row and edit password, time, datetime-local, radio, file,
+            and hidden fields using a client-side mapping.
           </p>
         </div>
         <div class="demo-table-scroll">
-          <table id="secondary-employees">
+          <table id="workflows">
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Office</th>
+                <th>Workflow</th>
+                <th>Contact</th>
+                <th>Support window</th>
+                <th>Review</th>
+                <th>Attachment</th>
               </tr>
             </thead>
           </table>

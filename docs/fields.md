@@ -12,12 +12,19 @@ Supported field types are:
 | `checkbox`                                                                | `boolean`                                                                       |
 | `radio`, `select`                                                         | exact configured `string \| number`, or `undefined`                             |
 | `search-select`                                                           | exact configured `string \| number`, manual string when enabled, or `undefined` |
-| `file`                                                                    | `File`, data URL, or the configured multiple-value array                        |
+| `file`                                                                    | `File \| null`, data URL or `null`, or the configured multiple-value array      |
 | `hidden`                                                                  | `string`                                                                        |
 
 Disabled fields are omitted from collection. Readonly fields remain collectible.
 `editable: false` omits the field from Create and Edit forms. Consumer labels,
 descriptions, options, and error messages are rendered as text, never as HTML.
+Configured defaults are checked when the editor is constructed so values that
+cannot be represented by their field type fail before a dialog opens.
+
+The `attributes` option accepts only attributes applicable to the configured
+control. For example, `min`, `max`, and `step` are accepted for number and temporal
+inputs, while a radio field rejects unrelated attributes such as `placeholder`.
+Event handlers, styles, and arbitrary data attributes are not applied.
 
 ## Local uniqueness
 

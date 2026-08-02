@@ -1,3 +1,27 @@
+const runtimeErrorElement = document.querySelector('#demo-runtime-error');
+
+function failDemoInitialization(message) {
+  if (runtimeErrorElement !== null) {
+    runtimeErrorElement.textContent = message;
+    runtimeErrorElement.hidden = false;
+  }
+  throw new Error(message);
+}
+
+const altEditorLiteRuntime = globalThis.DataTablesAltEditorLite;
+if (
+  typeof globalThis.DataTable !== 'function' ||
+  typeof globalThis.DataTable.Api !== 'function' ||
+  typeof globalThis.DataTable.version !== 'string' ||
+  typeof altEditorLiteRuntime !== 'object' ||
+  altEditorLiteRuntime === null ||
+  typeof altEditorLiteRuntime.AltEditorLite !== 'function'
+) {
+  failDemoInitialization(
+    'The demonstration could not start because a required script did not load.',
+  );
+}
+
 const {
   AltEditorLite,
   AltEditorLiteError,
@@ -5,7 +29,7 @@ const {
   getRegisteredLocaleNames,
   loadEditorLanguage,
   registerLocale,
-} = globalThis.DataTablesAltEditorLite;
+} = altEditorLiteRuntime;
 
 const offices = [
   { label: 'Tokyo', value: 10 },
@@ -27,63 +51,6 @@ const languageFileByLocale = new Map([
   ['zh-CN', 'zh-cn.json'],
   ['es', 'es.json'],
 ]);
-const initialRows = [
-  {
-    active: true,
-    age: 34,
-    email: 'aiko@example.test',
-    id: 1,
-    name: 'Aiko Tanaka',
-    notes: 'Works across product and accessibility.',
-    officeId: 10,
-    role: 'designer',
-    startDate: '2022-04-01',
-  },
-  {
-    active: true,
-    age: 41,
-    email: 'lucas@example.test',
-    id: 2,
-    name: 'Lucas Martín',
-    notes: 'Leads the platform team.',
-    officeId: 20,
-    role: 'manager',
-    startDate: '2020-09-14',
-  },
-  {
-    active: false,
-    age: 29,
-    email: 'mei@example.test',
-    id: 3,
-    name: 'Mei Chen',
-    notes: 'Maintains the local search experience.',
-    officeId: 30,
-    role: 'developer',
-    startDate: '2024-01-08',
-  },
-  {
-    active: true,
-    age: 30,
-    email: 'john@example.test',
-    id: 4,
-    name: 'John Doe',
-    notes: 'New employee.',
-    officeId: 40,
-    role: 'developer',
-    startDate: '2024-01-09',
-  },
-  {
-    active: true,
-    age: 45,
-    email: 'jane@example.test',
-    id: 5,
-    name: 'Jane Smith',
-    notes: 'Senior developer.',
-    officeId: 50,
-    role: 'manager',
-    startDate: '2019-06-15',
-  },
-];
 const fieldConfigurations = [
   { label: 'Name', name: 'name', required: true, type: 'text' },
   {
@@ -148,11 +115,16 @@ const localeStatus = document.querySelector('#locale-status');
 const employeeTableElement = document.querySelector('#employees');
 let currentLocaleName = 'en';
 let currentEditor;
-let nextRowId = 6;
-let secondaryEditor;
+let fieldGalleryEditor;
+let nextRowId = 1000;
+let nextWorkflowId = 2;
 let shouldFailNextOperation = false;
 
 const table = new DataTable('#employees', {
+  ajax: {
+    dataSrc: '',
+    url: './data/employees.json',
+  },
   columns: [
     { data: 'name' },
     { data: 'email' },
@@ -172,7 +144,6 @@ const table = new DataTable('#employees', {
     },
     { data: 'startDate' },
   ],
-  data: initialRows,
   layout: {
     topStart: {
       buttons: [
@@ -363,37 +334,125 @@ localeSelect.addEventListener('change', () => {
     });
 });
 
-document.querySelector('#add-instance').addEventListener('click', (event) => {
-  if (secondaryEditor !== undefined) {
+document.querySelector('#show-field-gallery').addEventListener('click', (event) => {
+  if (fieldGalleryEditor !== undefined) {
     return;
   }
 
-  const secondaryHost = document.querySelector('#secondary-host');
-  secondaryHost.hidden = false;
-  const secondaryTable = new DataTable('#secondary-employees', {
-    columns: [{ data: 'name' }, { data: 'officeId' }],
-    data: [{ id: 'secondary-1', name: 'Independent row', officeId: 10 }],
-    rowId: 'id',
+  const fieldGallery = document.querySelector('#field-gallery');
+  fieldGallery.hidden = false;
+  const workflowTable = new DataTable('#workflows', {
+    columns: [
+      { data: 'title' },
+      { data: 'contactMethod' },
+      { data: 'supportWindow' },
+      {
+        data: 'reviewAt',
+        render(value) {
+          return value.replace('T', ' ');
+        },
+      },
+      { data: 'attachmentName' },
+    ],
+    data: [
+      {
+        attachmentName: 'None',
+        contactMethod: 'email',
+        id: 1,
+        reviewAt: '2026-08-10T09:30',
+        supportWindow: '10:00',
+        title: 'Accessibility review',
+      },
+    ],
+    layout: {
+      topStart: {
+        buttons: [
+          'altEditorLiteCreate',
+          'altEditorLiteEdit',
+          'altEditorLiteRemove',
+          'altEditorLiteRefresh',
+        ],
+      },
+    },
+    rowId: (row) => `workflow-${String(row.id)}`,
+    select: { style: 'single' },
   });
-  secondaryEditor = new AltEditorLite(secondaryTable, {
+  fieldGalleryEditor = new AltEditorLite(workflowTable, {
     clientSide: {
       createRow(values) {
         return {
-          id: crypto.randomUUID(),
-          name: values.name ?? '',
-          officeId: values.officeId ?? 10,
+          attachmentName: values.attachment?.name ?? 'None',
+          contactMethod: values.contactMethod ?? 'email',
+          id: nextWorkflowId++,
+          reviewAt: values.reviewAt ?? '',
+          supportWindow: values.supportWindow ?? '',
+          title: values.title ?? '',
+        };
+      },
+      updateRow(original, values) {
+        return {
+          ...original,
+          attachmentName: values.attachment?.name ?? original.attachmentName,
+          contactMethod: values.contactMethod ?? original.contactMethod,
+          reviewAt: values.reviewAt ?? original.reviewAt,
+          supportWindow: values.supportWindow ?? original.supportWindow,
+          title: values.title ?? original.title,
         };
       },
     },
     fields: [
-      { label: 'Name', name: 'name', required: true, type: 'text' },
       {
-        label: 'Office',
-        name: 'officeId',
-        options: offices,
-        type: 'search-select',
+        label: 'Workflow title',
+        name: 'title',
+        required: true,
+        type: 'text',
       },
+      {
+        defaultValue: '',
+        description: 'Collected for the callback but not stored by this example.',
+        label: 'Temporary access code',
+        name: 'accessCode',
+        required: true,
+        type: 'password',
+      },
+      {
+        label: 'Support window',
+        name: 'supportWindow',
+        required: true,
+        type: 'time',
+      },
+      {
+        label: 'Review date and time',
+        name: 'reviewAt',
+        required: true,
+        type: 'datetime-local',
+      },
+      {
+        label: 'Preferred contact',
+        name: 'contactMethod',
+        options: [
+          { label: 'Email', value: 'email' },
+          { label: 'Phone', value: 'phone' },
+          { label: 'Video call', value: 'video' },
+        ],
+        required: true,
+        type: 'radio',
+      },
+      {
+        accept: '.pdf,image/*',
+        defaultValue: null,
+        description: 'Maximum file size: 1 MiB.',
+        label: 'Reference file',
+        maxFileBytes: 1048576,
+        name: 'attachment',
+        type: 'file',
+      },
+      { defaultValue: 'field-gallery', name: 'source', type: 'hidden' },
     ],
   });
-  event.currentTarget.disabled = true;
+  if (event.currentTarget instanceof HTMLButtonElement) {
+    event.currentTarget.disabled = true;
+    event.currentTarget.textContent = 'Field type gallery initialized';
+  }
+  fieldGallery.scrollIntoView({ behavior: 'smooth', block: 'start' });
 });

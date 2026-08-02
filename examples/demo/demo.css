@@ -447,6 +447,21 @@ main > * {
   gap: 0.625rem;
 }
 
+.demo-runtime-error {
+  padding: 0.75rem;
+  margin: 0;
+  color: var(--demo-accent-strong);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  background: var(--demo-accent-soft);
+  border: 1px solid var(--demo-accent);
+  border-radius: 0.5rem;
+}
+
+#field-gallery {
+  scroll-margin-block-start: 1rem;
+}
+
 .dt-search input,
 .dt-length select {
   min-height: 2.25rem;

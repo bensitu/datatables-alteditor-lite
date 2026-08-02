@@ -1,45 +1,59 @@
 # datatables-alteditor-lite
 
 `datatables-alteditor-lite` is an independent, lightweight editing extension for
-DataTables 3.x. It uses TypeScript and native browser APIs, with no jQuery or UI
-framework runtime.
+DataTables 3. It provides Create, Edit, Remove, and Refresh workflows using
+TypeScript, native browser controls, and the public DataTables API. It has no
+jQuery or UI-framework runtime dependency.
 
-It provides Create, Edit, Remove, and Refresh with
-synchronous client-side mappings or asynchronous persistence operations.
+[Live demo](https://bensitu.github.io/datatables-alteditor-lite/examples/demo/) ·
+[Getting started](docs/getting-started.md) ·
+[Configuration](docs/configuration.md) · [Fields](docs/fields.md) ·
+[Operations](docs/operations.md) · [Localization](docs/localization.md)
 
-## Features
+## Highlights
 
-- One editor instance per DataTables table
-- Native `<dialog>` with keyboard focus containment and restoration
-- Safe nested field paths with prototype-pollution protection
-- Native constraints followed by asynchronous custom field validation
-- Optional local uniqueness checks against the rows currently loaded by DataTables
-- Hidden, text, email, password, number, date, time, datetime-local, textarea,
-  checkbox, radio, select, SearchSelect, and single/multiple file fields
-- Local single-value SearchSelect with exact string/number identity, dynamic
-  options, keyboard/IME support, clear, sorting, and optional manual strings
-- Exact number, typed option, and file value normalization
-- English fallback with nested overrides, independently loadable JSON language
-  resources, and ESM modules for English, Japanese, Simplified Chinese, and Spanish
-- Non-bubbling DOM `CustomEvent` lifecycle notifications
-- Non-optimistic asynchronous Create, Update, and Remove operations with
-  `AbortSignal`
-- Edit and Remove target snapshots that survive selection changes and redraws
-- Explicit DataTables row selectors with optional Select integration
-- Optional Buttons definitions with localized labels, titles, and lifecycle-aware
-  enablement
-- Ajax-aware and local-table Refresh
-- ESM and Browser Global registration without optional DataTables runtime imports
-- Browser Global language registry and optional registration bundles
-- Responsive light/dark CSS with reduced-motion and high-zoom support
+- Native `<dialog>` forms with focus containment, restoration, responsive layout,
+  and accessible validation feedback
+- Create, Edit, Remove, and Ajax-aware or local Refresh operations
+- Non-optimistic asynchronous persistence with `AbortSignal`
+- Stable Edit and Remove target snapshots that fail closed when row identity
+  changes
+- Text, email, password, number, date, time, datetime-local, textarea, checkbox,
+  radio, select, local SearchSelect, file, and hidden fields
+- Typed option identity, safe nested field paths, custom validation, and optional
+  local uniqueness checks
+- Optional DataTables Buttons and Select integration
+- External JSON languages, inline overrides, and included English, Japanese,
+  Simplified Chinese, and Spanish resources
+- ESM and Browser Global distributions with responsive light and dark CSS
 
-## ESM usage
+## Installation
 
-Importing the package registers the retrieval-only DataTables API method. Instances
-are still created explicitly.
+Install the core packages:
+
+```bash
+npm install datatables.net datatables-alteditor-lite
+```
+
+Install Buttons and Select when the registered editor buttons and selection-based
+targeting are needed:
+
+```bash
+npm install datatables.net-buttons datatables.net-select
+```
+
+The package peer ranges accept compatible DataTables 3, Buttons 4, and Select 4
+releases rather than one fixed patch version.
+
+## Quick start
+
+Import optional extensions before AltEditorLite so their integrations are
+available during registration:
 
 ```ts
 import DataTable from 'datatables.net';
+import 'datatables.net-buttons';
+import 'datatables.net-select';
 import { AltEditorLite, type EditorValues } from 'datatables-alteditor-lite';
 import 'datatables-alteditor-lite/style.css';
 
@@ -57,25 +71,21 @@ interface UserForm {
 const table = new DataTable<UserRow>('#users', {
   columns: [{ data: 'name' }, { data: 'rank' }],
   data: [],
+  layout: {
+    topStart: {
+      buttons: [
+        'altEditorLiteCreate',
+        'altEditorLiteEdit',
+        'altEditorLiteRemove',
+        'altEditorLiteRefresh',
+      ],
+    },
+  },
   rowId: 'id',
+  select: { style: 'multi' },
 });
 
 const editor = new AltEditorLite<UserRow, UserForm>(table, {
-  fields: [
-    {
-      label: 'Name',
-      name: 'name',
-      required: true,
-      type: 'text',
-    },
-    {
-      attributes: { min: '1' },
-      label: 'Rank',
-      name: 'rank',
-      required: true,
-      type: 'number',
-    },
-  ],
   clientSide: {
     createRow(values: Readonly<EditorValues<UserForm>>): UserRow {
       return {
@@ -85,141 +95,159 @@ const editor = new AltEditorLite<UserRow, UserForm>(table, {
       };
     },
   },
-});
-
-document.querySelector('#create-user')?.addEventListener('click', () => {
-  void editor.openCreateDialog();
-});
-
-document.querySelector('#edit-user')?.addEventListener('click', () => {
-  void editor.openEditDialog('#user-42');
-});
-
-document.querySelector('#remove-user')?.addEventListener('click', () => {
-  void editor.openRemoveDialog('#user-42');
+  fields: [
+    { label: 'Name', name: 'name', required: true, type: 'text' },
+    {
+      attributes: { min: '1' },
+      label: 'Rank',
+      name: 'rank',
+      required: true,
+      type: 'number',
+    },
+  ],
 });
 ```
 
-The getter never creates an instance:
+Create requires either `clientSide.createRow` or `operations.create`. Edit safely
+merges declared fields by default, and Remove operates locally unless a persistence
+callback is supplied.
+
+Use explicit DataTables row selectors when Select is not installed:
+
+```ts
+await editor.openEditDialog('#user-42');
+await editor.openRemoveDialog(['#user-42', '#user-43']);
+```
+
+The registered API method only retrieves an existing instance:
 
 ```ts
 table.altEditorLite<UserForm>(); // AltEditorLite<UserRow, UserForm> | null
 ```
 
-Call `editor.destroy()` before replacing the DataTables table or creating another
-editor for the same table.
+Call `editor.destroy()` before replacing the table or creating another editor for
+the same table element.
 
-For remote persistence, use `operations.create`, `operations.update`, and
-`operations.remove`. DataTables changes only after the callback succeeds. See
-[Operations](docs/operations.md), [Configuration](docs/configuration.md), and
-[Fields](docs/fields.md).
+## Persistence operations
 
-Buttons and Select remain optional peer dependencies. If Buttons is loaded before
-AltEditorLite registration, these definitions are available:
+Remote callbacks receive the complete operation context and may be synchronous or
+asynchronous. DataTables is changed only after a callback succeeds.
 
-```text
-altEditorLiteCreate
-altEditorLiteEdit
-altEditorLiteRemove
-altEditorLiteRefresh
+```ts
+const editor = new AltEditorLite<UserRow, UserForm>(table, {
+  fields,
+  operations: {
+    async create(values, context) {
+      return await createUser(values, context.signal);
+    },
+    async update(values, original, context) {
+      return await updateUser(original.id, values, context.signal);
+    },
+    async remove(rows, context) {
+      await removeUsers(
+        rows.map((row) => row.id),
+        context.signal,
+      );
+    },
+  },
+});
 ```
 
-Edit and Remove can always use an explicit row selector. Omitting the selector
-requires Select.
+Throw `AltEditorLiteError` for safe user-facing messages, field errors, and retry
+behavior. Unknown exceptions are replaced with the localized generic error. See
+[Operations](docs/operations.md) for cancellation and snapshot semantics.
+
+## Localization
+
+Included languages can be imported without registering source files manually:
+
+```ts
+import ja from 'datatables-alteditor-lite/locales/ja';
+
+const editor = new AltEditorLite(table, { fields, language: ja });
+```
+
+Applications and CDN users can load their own partial JSON resource without
+modifying or rebuilding the library:
+
+```ts
+import { loadEditorLanguage } from 'datatables-alteditor-lite';
+
+const language = await loadEditorLanguage('/languages/fr-FR.json');
+const editor = new AltEditorLite(table, { fields, language });
+```
+
+See [Localization](docs/localization.md) for the resource shape, placeholders, and
+Browser Global registry.
 
 ## Browser Global usage
 
-Load DataTables first, followed by the stylesheet and AltEditorLite bundle:
+Load DataTables and optional extensions first, followed by AltEditorLite:
 
 ```html
 <link rel="stylesheet" href="alt-editor-lite.css" />
 <script src="dataTables.js"></script>
+<script src="dataTables.buttons.js"></script>
+<script src="dataTables.select.js"></script>
 <script src="datatables-alteditor-lite.js"></script>
 ```
 
-The constructor is available as
-`DataTablesAltEditorLite.AltEditorLite`. Repeated evaluation of the browser bundle
-does not register the DataTables method again.
+The public API is available at `globalThis.DataTablesAltEditorLite`. Included
+language registration bundles load after the main bundle; external JSON languages
+use `DataTablesAltEditorLite.loadEditorLanguage(...)`.
 
-Language registration bundles load after the main browser bundle:
-
-```html
-<script src="datatables-alteditor-lite.js"></script>
-<script src="locales/datatables-alteditor-lite.ja.js"></script>
-```
-
-```js
-const language = DataTablesAltEditorLite.getLocale('ja');
-```
-
-Applications can also load their own JSON language resource without modifying or
-rebuilding AltEditorLite:
-
-```js
-const language = await DataTablesAltEditorLite.loadEditorLanguage(
-  './languages/fr-FR.json',
-);
-```
-
-See [Localization](docs/localization.md) and
-[Browser Global](docs/browser-global.md) for all published paths and load order.
+See [Browser Global](docs/browser-global.md) for load order and published paths.
 
 ## Events
 
-Listen directly on `table.table().node()`. Events do not bubble and cannot cancel
-operations.
+Listen directly on the owned table element. Events are observation-only, do not
+bubble, and cannot cancel an operation.
 
 ```ts
-const tableElement = table.table().node();
-
-tableElement.addEventListener('alteditor-lite:success', (event) => {
-  if (event instanceof CustomEvent) {
-    console.log(event.detail.operation);
-  }
-});
+table
+  .table()
+  .node()
+  .addEventListener('alteditor-lite:success', (event) => {
+    if (event instanceof CustomEvent) {
+      console.log(event.detail.operation);
+    }
+  });
 ```
 
-The Create, Edit, and Remove sequence is:
+Create, Edit, and Remove follow `open → submit → success | error → close` when the
+dialog closes. Refresh publishes start and complete phases. See
+[Events](docs/events.md) for detail types and ordering.
 
-```text
-open → submit → success | error → close (when closed)
-```
+## Demo and development
 
-Refresh publishes `refresh(start) → success | error → refresh(complete)`.
-`alteditor-lite:destroy` is emitted once after owned resources are cleaned up.
-See [Events](docs/events.md) for the discriminated detail types.
+The [live demo](https://bensitu.github.io/datatables-alteditor-lite/examples/demo/)
+uses the Browser Global distribution, the official DataTables CDN, an Ajax JSON
+data source, asynchronous persistence, external languages, and a separate field
+type gallery.
 
-## Demonstration
-
-The static example uses built distribution files and the official DataTables CDN.
-Build it before opening `examples/demo/index.html` with a local static server:
-
-```bash
-npm run build
-```
-
-`npm run demo` is available as a local preview helper. The GitHub Pages workflow
-builds `dist/` and publishes only the example and its required distribution files.
-The page demonstrates CRUD, optional Buttons and Select integration, typed
-SearchSelect, external JSON languages, asynchronous failures, events, and multiple
-independent instances.
-
-## Buy Me A Coffee
-
-[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://buymeacoffee.com/bensitu){:target="_blank"}
-
-## Development
-
-Use a supported Node.js version and install the exact dependency graph:
+For a local repository preview:
 
 ```bash
 npm ci
+npm run build
+npm run demo
 ```
 
-Run the repository checks:
+Run the complete repository checks with:
 
 ```bash
 npm run check
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for repository conventions.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for repository conventions and
+[SECURITY.md](SECURITY.md) for private vulnerability reporting.
+
+## Project status and attribution
+
+The public API is at version `0.1.0`. This project is independent and is not
+affiliated with or endorsed by the DataTables publisher. DataTables and its
+extensions remain separate dependencies distributed under their own terms.
+
+## License
+
+[MIT](LICENSE) © Ben Situ.

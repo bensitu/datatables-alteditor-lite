@@ -72,7 +72,9 @@ keeping the AltEditorLite constructor synchronous and predictable.
 The loader accepts partial JSON, validates known keys and placeholder tokens,
 canonicalizes the locale identifier, and merges the data with the English
 fallback. Network failures throw `EditorLanguageLoadError`. Invalid JSON or an
-invalid language shape is non-retryable.
+invalid language shape is non-retryable. Requests time out after 10 seconds and
+responses are limited to 64 KiB. A caller-provided `AbortSignal` is forwarded and
+can cancel the request earlier.
 
 Templates must retain their placeholders. For example, `dialog.removeCount`
 contains `{count}`, `accessibility.searchSelectResults` contains `{count}`, and
@@ -83,8 +85,10 @@ contains `{count}`, `accessibility.searchSelectResults` contains `{count}`, and
 The same loader is available to CDN and script-tag users:
 
 ```js
+const abortController = new AbortController();
 const language = await DataTablesAltEditorLite.loadEditorLanguage(
   './languages/fr-FR.json',
+  { signal: abortController.signal },
 );
 const editor = new DataTablesAltEditorLite.AltEditorLite(table, {
   fields,

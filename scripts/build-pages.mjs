@@ -6,7 +6,13 @@ const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const outputDirectory = resolve(projectRoot, '.pages');
 const distributionDirectory = resolve(projectRoot, 'dist');
 const demoDirectory = resolve(projectRoot, 'examples/demo');
-const demoFileNames = ['demo.css', 'demo.js', 'index.html'];
+const demoAssetPaths = [
+  'data/employees.json',
+  'demo.css',
+  'demo.js',
+  'favicon.ico',
+  'index.html',
+];
 if (dirname(outputDirectory) !== projectRoot) {
   throw new Error('Refusing to replace a Pages directory outside the project root.');
 }
@@ -14,6 +20,7 @@ if (dirname(outputDirectory) !== projectRoot) {
 await rm(outputDirectory, { force: true, recursive: true });
 await Promise.all([
   mkdir(resolve(outputDirectory, 'dist/locales'), { recursive: true }),
+  mkdir(resolve(outputDirectory, 'examples/demo/data'), { recursive: true }),
   mkdir(resolve(outputDirectory, 'examples/demo'), { recursive: true }),
 ]);
 const localeFileNames = (await readdir(resolve(distributionDirectory, 'locales')))
@@ -28,10 +35,10 @@ await Promise.all([
     resolve(distributionDirectory, 'datatables-alteditor-lite.js'),
     resolve(outputDirectory, 'dist/datatables-alteditor-lite.js'),
   ),
-  ...demoFileNames.map((fileName) =>
+  ...demoAssetPaths.map((assetPath) =>
     copyFile(
-      resolve(demoDirectory, fileName),
-      resolve(outputDirectory, 'examples/demo', fileName),
+      resolve(demoDirectory, assetPath),
+      resolve(outputDirectory, 'examples/demo', assetPath),
     ),
   ),
   ...localeFileNames.map((fileName) =>
