@@ -193,6 +193,10 @@ function invokeEditor(
       break;
   }
 
+  // Invalid actions are disabled before invocation, while operation failures are
+  // presented by the editor and published through its error event. Observing the
+  // terminal promise prevents a void DataTables Buttons callback from creating an
+  // unhandled rejection after that reporting has already completed.
   void request.catch(() => undefined);
 }
 

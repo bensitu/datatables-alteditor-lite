@@ -2,6 +2,15 @@
   "name": "datatables-alteditor-lite",
   "version": "0.1.0",
   "description": "A lightweight native editing extension for DataTables 3.x.",
+  "author": "Ben Situ",
+  "homepage": "https://bensitu.github.io/datatables-alteditor-lite/",
+  "bugs": {
+    "url": "https://github.com/bensitu/datatables-alteditor-lite/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bensitu/datatables-alteditor-lite.git"
+  },
   "keywords": [
     "datatables",
     "data-table",

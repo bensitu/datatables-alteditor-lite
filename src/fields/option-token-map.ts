@@ -7,6 +7,8 @@ function optionIdentity(value: string | number): string {
     return `string:${value}`;
   }
 
+  // Object.is semantics keep -0 distinct from 0, matching option validation and
+  // round trips instead of silently selecting a different numeric value.
   return `number:${Object.is(value, -0) ? '-0' : String(value)}`;
 }
 
