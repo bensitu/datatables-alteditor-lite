@@ -170,7 +170,7 @@ test('registers locale bundles through the public core registry', async ({ page 
   });
 
   expect(localeState).toEqual({
-    createLabel: '作成',
+    createLabel: '新規',
     hasJQuery: false,
     locale: 'ja',
     names: ['en', 'ja'],

@@ -204,6 +204,10 @@ The page demonstrates CRUD, optional Buttons and Select integration, typed
 SearchSelect, external JSON languages, asynchronous failures, events, and multiple
 independent instances.
 
+## Buy Me A Coffee
+
+[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://buymeacoffee.com/bensitu){:target="_blank"}
+
 ## Development
 
 Use a supported Node.js version and install the exact dependency graph:
