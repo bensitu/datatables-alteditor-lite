@@ -34,6 +34,7 @@ describe('field value normalization', () => {
     const tokenMap = new OptionTokenMap<string | number>([
       { label: 'Numeric', value: 1 },
       { label: 'String', value: '1' },
+      { label: 'Negative zero', value: -0 },
     ]);
 
     expect(tokenMap.valueForToken('option-0')).toBe(1);
@@ -41,6 +42,8 @@ describe('field value normalization', () => {
     expect(tokenMap.valueForToken('missing')).toBeUndefined();
     expect(tokenMap.tokenForValue(1)).toBe('option-0');
     expect(tokenMap.tokenForValue('1')).toBe('option-1');
+    expect(tokenMap.tokenForValue(-0)).toBe('option-2');
+    expect(tokenMap.tokenForValue(0)).toBeUndefined();
     expect(tokenMap.tokenForValue(2)).toBeUndefined();
   });
 

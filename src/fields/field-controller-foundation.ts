@@ -36,8 +36,11 @@ export interface NativeControllerArguments<TFormValues extends object, TValue> {
   readonly fieldId: string;
   readonly adapter: NativeControlAdapter<TValue>;
   readonly invalidMessage: string;
+  readonly requiredMessage: string;
   readonly onUserChange: () => void;
   readonly changeEvent?: 'change' | 'input';
+  readonly controlContainer?: HTMLElement;
+  readonly labelPlacement?: 'before-control' | 'after-control';
 }
 
 function addConsumerClasses(element: HTMLElement, className: string): void {
@@ -68,7 +71,7 @@ export function createNativeControlController<TFormValues extends object, TValue
   errorElement.className = 'dt-alteditor-lite-field__error';
   errorElement.id = errorId;
   errorElement.hidden = true;
-  errorElement.setAttribute('role', 'alert');
+  errorElement.setAttribute('aria-live', 'polite');
 
   control.id = fieldId;
   control.classList.add('dt-alteditor-lite-field__control');
@@ -78,15 +81,29 @@ export function createNativeControlController<TFormValues extends object, TValue
   adapter.setReadOnly(config.readonly ?? false);
   applyAllowedFieldAttributes(control, config.attributes);
 
-  if (config.label !== undefined) {
+  const controlContainer = controllerArguments.controlContainer ?? control;
+  if (
+    config.label !== undefined &&
+    controllerArguments.labelPlacement === 'after-control'
+  ) {
+    const labelElement = document.createElement('label');
+    const labelTextElement = document.createElement('span');
+    labelElement.className = 'dt-alteditor-lite-checkbox';
+    labelElement.htmlFor = fieldId;
+    labelTextElement.className = 'dt-alteditor-lite-field__label';
+    labelTextElement.textContent = config.label;
+    labelElement.append(control, labelTextElement);
+    fieldElement.append(labelElement);
+  } else if (config.label !== undefined) {
     const labelElement = document.createElement('label');
     labelElement.className = 'dt-alteditor-lite-field__label';
     labelElement.htmlFor = fieldId;
     labelElement.textContent = config.label;
     fieldElement.append(labelElement);
+    fieldElement.append(controlContainer);
+  } else {
+    fieldElement.append(controlContainer);
   }
-
-  fieldElement.append(control);
 
   if (config.description !== undefined) {
     const descriptionElement = document.createElement('div');
@@ -136,8 +153,8 @@ export function createNativeControlController<TFormValues extends object, TValue
         valid: false,
         message:
           validationResult.message ??
-          (control.validationMessage.length > 0
-            ? control.validationMessage
+          (control.validity.valueMissing
+            ? controllerArguments.requiredMessage
             : controllerArguments.invalidMessage),
       };
     },

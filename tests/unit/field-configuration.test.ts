@@ -96,6 +96,23 @@ describe('field runtime configuration', () => {
   it.each([0, -1, 1.5])('rejects invalid textarea row count %s', (rows) => {
     expectInvalidField({ label: 'Notes', name: 'notes', rows, type: 'textarea' });
   });
+
+  it('rejects default values that cannot be represented by their fields', () => {
+    expectInvalidField({ defaultValue: 1, label: 'Title', name: 'title', type: 'text' });
+    expectInvalidField({
+      defaultValue: 'missing',
+      label: 'Choice',
+      name: 'choice',
+      options: [{ label: 'First', value: 'first' }],
+      type: 'select',
+    });
+    expectInvalidField({
+      defaultValue: new File(['data'], 'example.txt'),
+      label: 'Attachment',
+      name: 'attachment',
+      type: 'file',
+    });
+  });
 });
 
 describe('field attribute allowlist', () => {
@@ -110,16 +127,19 @@ describe('field attribute allowlist', () => {
     expect(inputElement.getAttribute('aria-label')).toBe('Title');
     expect(inputElement.placeholder).toBe('Enter a title');
     expect(() => {
-      assertAllowedFieldAttributes(undefined);
+      assertAllowedFieldAttributes(undefined, 'text');
     }).not.toThrow();
   });
 
-  it('rejects event handlers and attributes outside the allowlist', () => {
+  it('rejects event handlers, unrelated attributes, and invalid control attributes', () => {
     expect(() => {
-      assertAllowedFieldAttributes({ onclick: 'run()' });
+      assertAllowedFieldAttributes({ onclick: 'run()' }, 'text');
     }).toThrow(EditorConfigurationError);
     expect(() => {
-      assertAllowedFieldAttributes({ style: 'display:none' });
+      assertAllowedFieldAttributes({ style: 'display:none' }, 'text');
+    }).toThrow(EditorConfigurationError);
+    expect(() => {
+      assertAllowedFieldAttributes({ placeholder: 'Not applicable' }, 'radio');
     }).toThrow(EditorConfigurationError);
   });
 });

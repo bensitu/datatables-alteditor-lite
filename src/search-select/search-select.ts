@@ -45,6 +45,32 @@ export interface SearchSelectArguments<TValue extends string | number> {
   readonly sortOptions: boolean;
 }
 
+type DocumentPointerDownSubscriber = (event: PointerEvent) => void;
+
+const documentPointerDownSubscribers = new Set<DocumentPointerDownSubscriber>();
+
+function dispatchDocumentPointerDown(event: PointerEvent): void {
+  for (const subscriber of [...documentPointerDownSubscribers]) {
+    subscriber(event);
+  }
+}
+
+function subscribeToDocumentPointerDown(
+  subscriber: DocumentPointerDownSubscriber,
+): () => void {
+  if (documentPointerDownSubscribers.size === 0) {
+    document.addEventListener('pointerdown', dispatchDocumentPointerDown);
+  }
+  documentPointerDownSubscribers.add(subscriber);
+
+  return () => {
+    documentPointerDownSubscribers.delete(subscriber);
+    if (documentPointerDownSubscribers.size === 0) {
+      document.removeEventListener('pointerdown', dispatchDocumentPointerDown);
+    }
+  };
+}
+
 function isNavigationKey(key: string): key is SearchSelectNavigationKey {
   return key === 'ArrowDown' || key === 'ArrowUp' || key === 'Home' || key === 'End';
 }
@@ -120,6 +146,8 @@ export class SearchSelect<TValue extends string | number> {
 
   private readonly debounceMs: number;
 
+  private readonly unsubscribeDocumentPointerDown: () => void;
+
   private selectedToken: string | undefined;
 
   private tokenMap: OptionTokenMap<TValue>;
@@ -186,7 +214,9 @@ export class SearchSelect<TValue extends string | number> {
     this.clearButtonElement.addEventListener('mousedown', this.handleClearMouseDown);
     this.clearButtonElement.addEventListener('click', this.handleClearClick);
     this.listboxElement.addEventListener('mousedown', this.handleOptionMouseDown);
-    document.addEventListener('pointerdown', this.handleDocumentPointerDown);
+    this.unsubscribeDocumentPointerDown = subscribeToDocumentPointerDown(
+      this.handleDocumentPointerDown,
+    );
   }
 
   /** Reads the exact selected option value or committed manual string. */
@@ -314,7 +344,7 @@ export class SearchSelect<TValue extends string | number> {
     this.clearButtonElement.removeEventListener('mousedown', this.handleClearMouseDown);
     this.clearButtonElement.removeEventListener('click', this.handleClearClick);
     this.listboxElement.removeEventListener('mousedown', this.handleOptionMouseDown);
-    document.removeEventListener('pointerdown', this.handleDocumentPointerDown);
+    this.unsubscribeDocumentPointerDown();
   }
 
   private readonly handleBlur = (event: FocusEvent): void => {

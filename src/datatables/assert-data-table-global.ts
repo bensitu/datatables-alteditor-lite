@@ -17,7 +17,18 @@ export interface DataTableGlobalScopeWithConstructor {
 export function hasDataTableGlobal(
   runtimeScope: object,
 ): runtimeScope is DataTableGlobalScopeWithConstructor {
-  return 'DataTable' in runtimeScope && typeof runtimeScope.DataTable === 'function';
+  if (!('DataTable' in runtimeScope) || typeof runtimeScope.DataTable !== 'function') {
+    return false;
+  }
+
+  const dataTableCandidate = runtimeScope.DataTable as unknown as {
+    readonly Api?: unknown;
+    readonly version?: unknown;
+  };
+  return (
+    typeof dataTableCandidate.Api === 'function' &&
+    typeof dataTableCandidate.version === 'string'
+  );
 }
 
 /**

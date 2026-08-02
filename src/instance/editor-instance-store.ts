@@ -1,6 +1,6 @@
 import { EditorAlreadyInitializedError } from '../core/alt-editor-lite-error.js';
 
-const editorByTableElement = new WeakMap<HTMLTableElement, unknown>();
+const editorByTableElement = new WeakMap<HTMLTableElement, object>();
 
 /**
  * Opaque instance lookup shared by idempotent registration records.
@@ -35,8 +35,7 @@ export function storeEditorInstance(
  * @returns The active editor, or null when the table has none.
  */
 export function getEditorInstance(tableElement: HTMLTableElement): object | null {
-  const editor = editorByTableElement.get(tableElement);
-  return typeof editor === 'object' && editor !== null ? editor : null;
+  return editorByTableElement.get(tableElement) ?? null;
 }
 
 /**

@@ -1,18 +1,45 @@
 const FOCUSABLE_SELECTOR = [
+  'a[href]',
+  'area[href]',
+  'audio[controls]',
   'button:not([disabled])',
+  '[contenteditable]:not([contenteditable="false"])',
+  'details > summary:first-of-type',
+  'embed',
+  'iframe',
   'input:not([type="hidden"]):not([disabled])',
+  'object',
   'select:not([disabled])',
   'textarea:not([disabled])',
-  '[href]',
   '[tabindex]:not([tabindex="-1"])',
+  'video[controls]',
 ].join(',');
 
 function isFocusable(element: HTMLElement): boolean {
-  return (
-    element.hidden === false &&
-    element.closest('[hidden]') === null &&
-    element.getAttribute('aria-hidden') !== 'true'
-  );
+  for (
+    let currentElement: HTMLElement | null = element;
+    currentElement !== null;
+    currentElement = currentElement.parentElement
+  ) {
+    if (
+      currentElement.hidden === true ||
+      currentElement.inert ||
+      currentElement.getAttribute('aria-hidden') === 'true'
+    ) {
+      return false;
+    }
+
+    const computedStyle = getComputedStyle(currentElement);
+    if (
+      computedStyle.display === 'none' ||
+      computedStyle.visibility === 'hidden' ||
+      computedStyle.visibility === 'collapse'
+    ) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 /**
@@ -65,7 +92,11 @@ export class DialogFocusScope {
         ? invalidElement
         : invalidElement?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
     const initialControl =
-      invalidControl ??
+      (invalidControl !== null &&
+      invalidControl !== undefined &&
+      isFocusable(invalidControl)
+        ? invalidControl
+        : undefined) ??
       [...contentElement.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)].find(
         isFocusable,
       ) ??
@@ -99,10 +130,17 @@ export class DialogFocusScope {
         this.restoreTarget?.isConnected === true ? this.restoreTarget : this.tableElement;
 
       if (restoreTarget === this.tableElement) {
+        const previousTabIndex = this.tableElement.getAttribute('tabindex');
         this.tableElement.setAttribute('tabindex', '-1');
+        restoreTarget.focus();
+        if (previousTabIndex === null) {
+          this.tableElement.removeAttribute('tabindex');
+        } else {
+          this.tableElement.setAttribute('tabindex', previousTabIndex);
+        }
+      } else {
+        restoreTarget.focus();
       }
-
-      restoreTarget.focus();
     }
 
     this.restoreTarget = null;

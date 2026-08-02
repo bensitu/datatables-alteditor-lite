@@ -10,6 +10,97 @@ import {
 } from '../core/alt-editor-lite-language.js';
 
 const placeholderPattern = /\{[^{}]+\}/gu;
+const LANGUAGE_REQUEST_TIMEOUT_MS = 10_000;
+const MAX_LANGUAGE_RESOURCE_BYTES = 64 * 1024;
+
+interface LanguageRequestLifetime {
+  readonly signal: AbortSignal;
+  readonly timedOut: () => boolean;
+  dispose(): void;
+}
+
+function createLanguageRequestLifetime(
+  resource: RequestInfo | URL,
+  requestInit: RequestInit | undefined,
+): LanguageRequestLifetime {
+  const requestController = new AbortController();
+  const callerSignal =
+    requestInit?.signal ??
+    (typeof Request !== 'undefined' && resource instanceof Request
+      ? resource.signal
+      : undefined);
+  let didTimeOut = false;
+
+  const forwardCallerAbort = (): void => {
+    requestController.abort(callerSignal?.reason);
+  };
+  if (callerSignal?.aborted === true) {
+    forwardCallerAbort();
+  } else {
+    callerSignal?.addEventListener('abort', forwardCallerAbort, { once: true });
+  }
+
+  const timeoutId = globalThis.setTimeout(() => {
+    didTimeOut = true;
+    requestController.abort();
+  }, LANGUAGE_REQUEST_TIMEOUT_MS);
+
+  return {
+    signal: requestController.signal,
+    timedOut: () => didTimeOut,
+    dispose: () => {
+      globalThis.clearTimeout(timeoutId);
+      callerSignal?.removeEventListener('abort', forwardCallerAbort);
+    },
+  };
+}
+
+async function readLimitedResponseText(response: Response): Promise<string> {
+  const contentLength = response.headers.get('content-length');
+  if (
+    contentLength !== null &&
+    Number.isFinite(Number(contentLength)) &&
+    Number(contentLength) > MAX_LANGUAGE_RESOURCE_BYTES
+  ) {
+    throw new EditorLanguageLoadError(
+      'The editor language response exceeds the supported size.',
+      undefined,
+      false,
+    );
+  }
+
+  if (response.body === null) {
+    return '';
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let byteCount = 0;
+  let responseText = '';
+
+  try {
+    let chunk = await reader.read();
+    while (!chunk.done) {
+      byteCount += chunk.value.byteLength;
+      if (byteCount > MAX_LANGUAGE_RESOURCE_BYTES) {
+        const resourceSizeError = new EditorLanguageLoadError(
+          'The editor language response exceeds the supported size.',
+          undefined,
+          false,
+        );
+        await reader.cancel(resourceSizeError).catch(() => undefined);
+        throw resourceSizeError;
+      }
+      responseText += decoder.decode(chunk.value, { stream: true });
+      chunk = await reader.read();
+    }
+
+    responseText += decoder.decode();
+    return responseText;
+  } finally {
+    reader.releaseLock();
+  }
+}
 
 function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -130,41 +221,63 @@ export async function loadEditorLanguage(
   resource: RequestInfo | URL,
   requestInit?: RequestInit,
 ): Promise<Readonly<AltEditorLiteLanguage>> {
-  let response: Response;
+  const requestLifetime = createLanguageRequestLifetime(resource, requestInit);
   try {
-    response = await fetch(resource, requestInit);
-  } catch (cause: unknown) {
-    throw new EditorLanguageLoadError(undefined, cause);
-  }
+    let response: Response;
+    try {
+      response = await fetch(resource, {
+        ...requestInit,
+        signal: requestLifetime.signal,
+      });
+    } catch (cause: unknown) {
+      throw new EditorLanguageLoadError(
+        requestLifetime.timedOut() ? 'The editor language request timed out.' : undefined,
+        cause,
+      );
+    }
 
-  if (!response.ok) {
-    const isRetryable =
-      response.status === 408 || response.status === 429 || response.status >= 500;
-    throw new EditorLanguageLoadError(
-      `The editor language request failed with HTTP status ${String(response.status)}.`,
-      undefined,
-      isRetryable,
-    );
-  }
+    if (!response.ok) {
+      const isRetryable =
+        response.status === 408 || response.status === 429 || response.status >= 500;
+      throw new EditorLanguageLoadError(
+        `The editor language request failed with HTTP status ${String(response.status)}.`,
+        undefined,
+        isRetryable,
+      );
+    }
 
-  let languageData: unknown;
-  try {
-    languageData = await response.json();
-  } catch (cause: unknown) {
-    throw new EditorLanguageLoadError(
-      'The editor language response is not valid JSON.',
-      cause,
-      false,
-    );
-  }
+    let languageData: unknown;
+    try {
+      languageData = JSON.parse(await readLimitedResponseText(response)) as unknown;
+    } catch (cause: unknown) {
+      if (cause instanceof EditorLanguageLoadError) {
+        throw cause;
+      }
+      if (requestLifetime.signal.aborted) {
+        throw new EditorLanguageLoadError(
+          requestLifetime.timedOut()
+            ? 'The editor language request timed out.'
+            : undefined,
+          cause,
+        );
+      }
+      throw new EditorLanguageLoadError(
+        'The editor language response is not valid JSON.',
+        cause,
+        false,
+      );
+    }
 
-  try {
-    return resolveEditorLanguageResource(languageData);
-  } catch (cause: unknown) {
-    throw new EditorLanguageLoadError(
-      'The editor language response has an invalid structure.',
-      cause,
-      false,
-    );
+    try {
+      return resolveEditorLanguageResource(languageData);
+    } catch (cause: unknown) {
+      throw new EditorLanguageLoadError(
+        'The editor language response has an invalid structure.',
+        cause,
+        false,
+      );
+    }
+  } finally {
+    requestLifetime.dispose();
   }
 }

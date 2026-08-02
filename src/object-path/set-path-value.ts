@@ -38,8 +38,9 @@ export function setPathValue(
     currentValues = nestedValues;
   }
 
-  const finalFieldPathSegment = fieldPathSegments.reduce(
-    (_previousSegment, fieldPathSegment) => fieldPathSegment,
-  );
+  const finalFieldPathSegment = fieldPathSegments.at(-1);
+  if (finalFieldPathSegment === undefined) {
+    throw new TypeError('A field path must contain at least one segment.');
+  }
   currentValues[finalFieldPathSegment] = fieldValue;
 }

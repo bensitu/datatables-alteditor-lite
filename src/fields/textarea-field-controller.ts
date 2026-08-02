@@ -21,6 +21,7 @@ export function createTextareaFieldController<TFormValues extends object>(
   config: TextareaFieldConfig<TFormValues>,
   fieldId: string,
   invalidMessage: string,
+  requiredMessage: string,
   onUserChange: () => void,
 ): ManagedFieldController<TFormValues> {
   const textareaElement = document.createElement('textarea');
@@ -46,9 +47,7 @@ export function createTextareaFieldController<TFormValues extends object>(
       textareaElement.readOnly = isReadOnly;
     },
     validateNative: () =>
-      textareaElement.checkValidity()
-        ? { valid: true }
-        : { valid: false, message: textareaElement.validationMessage },
+      textareaElement.checkValidity() ? { valid: true } : { valid: false },
   };
 
   return createNativeControlController({
@@ -57,6 +56,7 @@ export function createTextareaFieldController<TFormValues extends object>(
     fieldId,
     invalidMessage,
     onUserChange,
+    requiredMessage,
     changeEvent: 'input',
   });
 }

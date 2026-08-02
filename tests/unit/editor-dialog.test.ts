@@ -110,8 +110,7 @@ describe('EditorDialog', () => {
     controller.destroy();
   });
 
-  it('defers Escape handling and rechecks busy ownership', () => {
-    vi.useFakeTimers();
+  it('defers Escape handling and rechecks dialog ownership', async () => {
     const { controller, dialogElement } = createDialog();
     const onRequestClose = vi.fn();
     const contentElement = document.createElement('div');
@@ -123,16 +122,63 @@ describe('EditorDialog', () => {
     const firstCancelEvent = new Event('cancel', { cancelable: true });
     dialogElement.dispatchEvent(firstCancelEvent);
     controller.setBusy(true);
-    vi.runAllTimers();
+    await Promise.resolve();
     expect(firstCancelEvent.defaultPrevented).toBe(true);
     expect(onRequestClose).not.toHaveBeenCalled();
 
     controller.setBusy(false);
     const secondCancelEvent = new Event('cancel', { cancelable: true });
     dialogElement.dispatchEvent(secondCancelEvent);
-    vi.runAllTimers();
+    await Promise.resolve();
     expect(onRequestClose).toHaveBeenCalledWith('escape');
+
+    const staleClose = vi.fn();
+    controller.close();
+    controller.openConfirmation(document.createElement('div'), 'First', 'Confirm', {
+      onRequestClose: staleClose,
+      onSubmit: vi.fn(),
+    });
+    dialogElement.dispatchEvent(new Event('cancel', { cancelable: true }));
+    controller.close();
+    controller.openConfirmation(document.createElement('div'), 'Second', 'Confirm', {
+      onRequestClose: vi.fn(),
+      onSubmit: vi.fn(),
+    });
+    await Promise.resolve();
+    expect(staleClose).not.toHaveBeenCalled();
     controller.destroy();
+  });
+
+  it('updates the dialog height while the viewport changes', () => {
+    const { controller, dialogElement } = createDialog();
+    let viewportHeight = 900;
+    Object.defineProperty(document.documentElement, 'clientHeight', {
+      configurable: true,
+      get: () => viewportHeight,
+    });
+
+    controller.openConfirmation(document.createElement('div'), 'Remove', 'Confirm', {
+      onRequestClose: vi.fn(),
+      onSubmit: vi.fn(),
+    });
+    expect(
+      dialogElement.style.getPropertyValue('--dt-alteditor-lite-dialog-max-height'),
+    ).toBe('868px');
+
+    viewportHeight = 600;
+    window.dispatchEvent(new Event('resize'));
+    expect(
+      dialogElement.style.getPropertyValue('--dt-alteditor-lite-dialog-max-height'),
+    ).toBe('568px');
+
+    controller.close();
+    viewportHeight = 500;
+    window.dispatchEvent(new Event('resize'));
+    expect(
+      dialogElement.style.getPropertyValue('--dt-alteditor-lite-dialog-max-height'),
+    ).toBe('568px');
+    controller.destroy();
+    Reflect.deleteProperty(document.documentElement, 'clientHeight');
   });
 
   it('submits confirmations, blocks backdrop dismissal, and destroys idempotently', () => {

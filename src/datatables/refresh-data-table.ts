@@ -22,6 +22,10 @@ export async function refreshDataTable<TRow extends object>(
   table: Api<TRow>,
   signal: AbortSignal,
 ): Promise<void> {
+  if (signal.aborted) {
+    return;
+  }
+
   if (!hasAjaxSource(table)) {
     table.draw(false);
     return;

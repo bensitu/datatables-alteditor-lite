@@ -24,3 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Responsive light and dark styles with reduced-motion and high-zoom support.
 - Public documentation and a GitHub Pages-ready demonstration of the distribution
   files, optional extensions, localization, events, and error handling.
+
+### Fixed
+
+- Applied localized required-field messages consistently across every field type and
+  restored compact, semantic checkbox presentation.
+- Hardened external language loading, asynchronous validation cancellation, dialog
+  focus management, and instance identity across multiple bundle formats.

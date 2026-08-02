@@ -11,6 +11,7 @@ interface ValidationValues {
 }
 
 function createValidationController(input: {
+  readonly customValidator?: ManagedFieldController<ValidationValues>['validateCustom'];
   readonly isDisabled?: boolean;
   readonly name: 'first' | 'second';
   readonly nativeResult?: FieldValidationResult;
@@ -29,7 +30,9 @@ function createValidationController(input: {
     setDisabled: vi.fn(),
     setValue: vi.fn(),
     showError: vi.fn(),
-    validateCustom: vi.fn(() => Promise.resolve(input.customResult ?? { valid: true })),
+    validateCustom:
+      input.customValidator ??
+      vi.fn(() => Promise.resolve(input.customResult ?? { valid: true })),
     validateNative: vi.fn(() => input.nativeResult ?? { valid: true }),
   };
 }
@@ -81,5 +84,41 @@ describe('validateEditorForm', () => {
       },
       valid: false,
     });
+  });
+
+  it('aborts peer validators when one validator rejects', async () => {
+    const validatorFailure = new Error('Validator service failed.');
+    let peerSignal: AbortSignal | undefined;
+    const peerValidator: ManagedFieldController<ValidationValues>['validateCustom'] = (
+      _values,
+      signal,
+    ) =>
+      new Promise<FieldValidationResult>((_resolve, reject) => {
+        peerSignal = signal;
+        signal.addEventListener(
+          'abort',
+          () => {
+            reject(new DOMException('Peer validation was aborted.', 'AbortError'));
+          },
+          { once: true },
+        );
+      });
+    const failingController = createValidationController({
+      customValidator: vi.fn(() => Promise.reject(validatorFailure)),
+      name: 'first',
+    });
+    const peerController = createValidationController({
+      customValidator: vi.fn(peerValidator),
+      name: 'second',
+    });
+
+    await expect(
+      validateEditorForm(
+        [failingController, peerController],
+        () => Promise.resolve({ first: 'one', second: 'two' }),
+        new AbortController().signal,
+      ),
+    ).rejects.toBe(validatorFailure);
+    expect(peerSignal?.aborted).toBe(true);
   });
 });

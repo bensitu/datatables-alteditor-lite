@@ -7,14 +7,24 @@ import {
 
 describe('browser-global DataTables boundary', () => {
   it('accepts a callable DataTables constructor', () => {
+    const dataTable = Object.assign(() => undefined, {
+      version: '3.0.1',
+    });
+    Object.defineProperty(dataTable, 'Api', {
+      value: () => undefined,
+    });
     const runtimeScope = {
-      DataTable: () => undefined,
+      DataTable: dataTable,
     };
 
     expect(hasDataTableGlobal(runtimeScope)).toBe(true);
     expect(() => {
       assertDataTableGlobal(runtimeScope);
     }).not.toThrow();
+  });
+
+  it('rejects an unrelated function using the DataTable name', () => {
+    expect(hasDataTableGlobal({ DataTable: () => undefined })).toBe(false);
   });
 
   it('rejects a missing DataTables constructor with a stable loading-order error', () => {

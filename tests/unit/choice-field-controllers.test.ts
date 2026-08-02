@@ -40,7 +40,13 @@ function createRadio(
   onUserChange = vi.fn(),
 ): ManagedFieldController<ChoiceValues> {
   return ownController(
-    createRadioFieldController(config, 'choice-radio', 'Choose an option.', onUserChange),
+    createRadioFieldController(
+      config,
+      'choice-radio',
+      'Choose an option.',
+      'Choose an option.',
+      onUserChange,
+    ),
   );
 }
 
@@ -49,7 +55,13 @@ function createSelect(
   onUserChange = vi.fn(),
 ): ManagedFieldController<ChoiceValues> {
   return ownController(
-    createSelectFieldController(config, 'role-select', 'Choose a role.', onUserChange),
+    createSelectFieldController(
+      config,
+      'role-select',
+      'Choose a role.',
+      'Choose a role.',
+      onUserChange,
+    ),
   );
 }
 

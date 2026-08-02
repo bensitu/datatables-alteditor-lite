@@ -1,6 +1,7 @@
 import DataTable, { type Api } from 'datatables.net';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
+import { hasSelectIntegration } from '../../src/datatables/select-integration.js';
 import {
   AltEditorLite,
   registerAltEditorLite,
@@ -190,6 +191,15 @@ function buttonByText(tableElement: HTMLTableElement, text: string): HTMLButtonE
 }
 
 describe('optional Buttons and Select integration', () => {
+  it('detects Select through its API even when the table is empty', () => {
+    const { api } = createTestTable('empty-select-table', {
+      data: [],
+      select: true,
+    });
+
+    expect(hasSelectIntegration(api)).toBe(true);
+  });
+
   it('localizes button labels, button explanations, and Remove target count', async () => {
     const { editor, extensionApi, tableElement } = createExtensionEditor(
       'localized-buttons',

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { EditorConfigurationError } from '../../src/core/alt-editor-lite-error.js';
 import {
@@ -18,6 +18,7 @@ import {
   isComposingEnter,
   resolveSearchSelectActiveIndex,
 } from '../../src/search-select/search-select-keyboard.js';
+import { SearchSelect } from '../../src/search-select/search-select.js';
 
 import type { AltEditorLiteLanguage } from '../../src/core/alt-editor-lite-language.js';
 
@@ -105,6 +106,49 @@ describe('SearchSelect keyboard state', () => {
     expect(isComposingEnter(true, 'Enter')).toBe(true);
     expect(isComposingEnter(true, 'ArrowDown')).toBe(false);
     expect(isComposingEnter(false, 'Enter')).toBe(false);
+  });
+});
+
+describe('SearchSelect document events', () => {
+  it('shares one outside-pointer listener across active instances', () => {
+    const addEventListener = vi.spyOn(document, 'addEventListener');
+    const removeEventListener = vi.spyOn(document, 'removeEventListener');
+    const createSearchSelect = (fieldId: string): SearchSelect<string> =>
+      new SearchSelect({
+        allowClear: true,
+        allowManualValue: false,
+        debounceMs: 0,
+        fieldId,
+        locale: 'en',
+        messages: {
+          clear: 'Clear',
+          instructions: 'Choose an option.',
+          noResults: 'No results',
+          placeholder: 'Select',
+          results: '{count} results',
+          searchPlaceholder: 'Search',
+          selection: '{label} selected',
+        },
+        onCommit: vi.fn(),
+        options: [{ label: 'First', value: 'first' }],
+        searchThreshold: 0,
+        sortOptions: false,
+      });
+
+    const first = createSearchSelect('first');
+    const second = createSearchSelect('second');
+    expect(
+      addEventListener.mock.calls.filter(([eventName]) => eventName === 'pointerdown'),
+    ).toHaveLength(1);
+
+    first.destroy();
+    expect(
+      removeEventListener.mock.calls.filter(([eventName]) => eventName === 'pointerdown'),
+    ).toHaveLength(0);
+    second.destroy();
+    expect(
+      removeEventListener.mock.calls.filter(([eventName]) => eventName === 'pointerdown'),
+    ).toHaveLength(1);
   });
 });
 

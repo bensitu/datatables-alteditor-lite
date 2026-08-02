@@ -37,6 +37,7 @@ function createController(
     config,
     `file-${config.name}`,
     'Invalid file selection.',
+    'Select a file.',
     budgetMessages,
     vi.fn(),
   );

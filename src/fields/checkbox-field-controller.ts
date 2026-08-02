@@ -21,6 +21,7 @@ export function createCheckboxFieldController<TFormValues extends object>(
   config: CheckboxFieldConfig<TFormValues>,
   fieldId: string,
   invalidMessage: string,
+  requiredMessage: string,
   onUserChange: () => void,
 ): ManagedFieldController<TFormValues> {
   const inputElement = document.createElement('input');
@@ -52,9 +53,7 @@ export function createCheckboxFieldController<TFormValues extends object>(
       inputElement.setAttribute('aria-readonly', String(nextReadOnly));
     },
     validateNative: () =>
-      inputElement.checkValidity()
-        ? { valid: true }
-        : { valid: false, message: inputElement.validationMessage },
+      inputElement.checkValidity() ? { valid: true } : { valid: false },
     destroy: () => {
       inputElement.removeEventListener('click', preventReadOnlyMutation);
     },
@@ -65,6 +64,8 @@ export function createCheckboxFieldController<TFormValues extends object>(
     config,
     fieldId,
     invalidMessage,
+    labelPlacement: 'after-control',
     onUserChange,
+    requiredMessage,
   });
 }

@@ -7,6 +7,74 @@ import { assertUniqueOptionValues } from './option-token-map.js';
 
 import type { FieldConfig } from './field-config.js';
 
+function hasConfiguredOption(
+  options: readonly { readonly value: string | number }[],
+  value: unknown,
+): boolean {
+  return options.some((option) => Object.is(option.value, value));
+}
+
+function assertValidDefaultValue<TFormValues extends object>(
+  config: FieldConfig<TFormValues>,
+): void {
+  if (!Object.hasOwn(config, 'defaultValue')) {
+    return;
+  }
+
+  const defaultValue: unknown = config.defaultValue;
+  let isValid: boolean;
+  switch (config.type) {
+    case 'checkbox': {
+      isValid = typeof defaultValue === 'boolean';
+      break;
+    }
+    case 'number': {
+      isValid =
+        (typeof defaultValue === 'number' && Number.isFinite(defaultValue)) ||
+        (config.emptyValue === null && defaultValue === null) ||
+        (config.emptyValue !== null && defaultValue === undefined);
+      break;
+    }
+    case 'radio':
+    case 'select': {
+      isValid =
+        defaultValue === undefined || hasConfiguredOption(config.options, defaultValue);
+      break;
+    }
+    case 'search-select': {
+      isValid =
+        defaultValue === undefined ||
+        hasConfiguredOption(config.options, defaultValue) ||
+        (config.allowManualValue === true && typeof defaultValue === 'string');
+      break;
+    }
+    case 'file': {
+      isValid =
+        config.multiple === true
+          ? Array.isArray(defaultValue) && defaultValue.length === 0
+          : defaultValue === null;
+      break;
+    }
+    case 'date':
+    case 'datetime-local':
+    case 'email':
+    case 'hidden':
+    case 'password':
+    case 'text':
+    case 'textarea':
+    case 'time': {
+      isValid = typeof defaultValue === 'string';
+      break;
+    }
+  }
+
+  if (!isValid) {
+    throw new EditorConfigurationError(
+      `defaultValue for field "${config.name}" is not valid for a ${config.type} field.`,
+    );
+  }
+}
+
 function assertPositiveLimit(
   limit: number | undefined,
   propertyName: string,
@@ -57,7 +125,8 @@ export function validateFieldConfigurations<TFormValues extends object>(
       );
     }
     configuredNames.add(config.name);
-    assertAllowedFieldAttributes(config.attributes);
+    assertAllowedFieldAttributes(config.attributes, config.type);
+    assertValidDefaultValue(config);
 
     if (config.type === 'hidden') {
       if (Object.hasOwn(config, 'label')) {

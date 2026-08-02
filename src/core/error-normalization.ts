@@ -9,6 +9,15 @@ interface OperationErrorLike {
   readonly retryable?: boolean;
 }
 
+const MAX_OPERATION_ERROR_MESSAGE_LENGTH = 2000;
+const MAX_FIELD_ERROR_MESSAGE_LENGTH = 1000;
+
+function truncateUiMessage(message: string, maximumLength: number): string {
+  return message.length <= maximumLength
+    ? message
+    : `${message.slice(0, maximumLength - 1)}…`;
+}
+
 function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
   return typeof value === 'object' && value !== null;
 }
@@ -47,7 +56,16 @@ function isOperationErrorLike(value: unknown): value is OperationErrorLike {
   }
 
   try {
-    if (value instanceof Error || !Object.hasOwn(value, 'message')) {
+    if (!Object.hasOwn(value, 'message')) {
+      return false;
+    }
+
+    if (
+      value instanceof Error &&
+      !Object.hasOwn(value, 'code') &&
+      !Object.hasOwn(value, 'fieldErrors') &&
+      !Object.hasOwn(value, 'retryable')
+    ) {
       return false;
     }
 
@@ -108,12 +126,19 @@ export function normalizeOperationError(
   }
 
   if (isOperationErrorLike(rawError)) {
+    const fieldErrors =
+      rawError.fieldErrors === undefined
+        ? undefined
+        : Object.fromEntries(
+            Object.entries(rawError.fieldErrors).map(([fieldName, message]) => [
+              fieldName,
+              truncateUiMessage(message, MAX_FIELD_ERROR_MESSAGE_LENGTH),
+            ]),
+          );
     return new AltEditorLiteError({
-      message: rawError.message,
+      message: truncateUiMessage(rawError.message, MAX_OPERATION_ERROR_MESSAGE_LENGTH),
       ...(rawError.code === undefined ? {} : { code: rawError.code }),
-      ...(rawError.fieldErrors === undefined
-        ? {}
-        : { fieldErrors: rawError.fieldErrors }),
+      ...(fieldErrors === undefined ? {} : { fieldErrors }),
       ...(rawError.retryable === undefined ? {} : { retryable: rawError.retryable }),
       cause: rawError,
     });

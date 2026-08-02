@@ -31,6 +31,8 @@ export class EditorDialog {
 
   private isSubmitAvailable = true;
 
+  private attachedVisualViewport: VisualViewport | undefined;
+
   /**
    * Creates and attaches one reusable native dialog element.
    *
@@ -118,6 +120,7 @@ export class EditorDialog {
     positionDialog(this.template.dialogElement);
     this.focusScope.captureRestoreTarget();
     this.template.dialogElement.showModal();
+    this.attachViewportListeners();
     this.focusScope.activate(contentElement);
   }
 
@@ -174,6 +177,7 @@ export class EditorDialog {
    * Closes the native dialog and restores the opening trigger.
    */
   public close(): void {
+    this.detachViewportListeners();
     this.detachForm();
     this.template.submitButton.removeEventListener('click', this.handleConfirmation);
     this.setBusy(false);
@@ -198,6 +202,7 @@ export class EditorDialog {
     }
 
     this.isDestroyed = true;
+    this.detachViewportListeners();
     this.detachForm();
     this.template.submitButton.removeEventListener('click', this.handleConfirmation);
 
@@ -218,6 +223,24 @@ export class EditorDialog {
     this.formElement?.removeEventListener('submit', this.handleSubmit);
     this.formElement = undefined;
   }
+
+  private attachViewportListeners(): void {
+    window.addEventListener('resize', this.handleViewportChange);
+    this.attachedVisualViewport = window.visualViewport ?? undefined;
+    this.attachedVisualViewport?.addEventListener('resize', this.handleViewportChange);
+  }
+
+  private detachViewportListeners(): void {
+    window.removeEventListener('resize', this.handleViewportChange);
+    this.attachedVisualViewport?.removeEventListener('resize', this.handleViewportChange);
+    this.attachedVisualViewport = undefined;
+  }
+
+  private readonly handleViewportChange = (): void => {
+    if (!this.isDestroyed && this.template.dialogElement.open) {
+      positionDialog(this.template.dialogElement);
+    }
+  };
 
   private readonly handleSubmit = (event: SubmitEvent): void => {
     event.preventDefault();
@@ -240,12 +263,18 @@ export class EditorDialog {
 
   private readonly handleNativeCancel = (event: Event): void => {
     event.preventDefault();
-    if (!this.isBusy) {
-      window.setTimeout(() => {
-        if (!this.isBusy) {
-          this.callbacks?.onRequestClose('escape');
+    const currentCallbacks = this.callbacks;
+    if (!this.isBusy && currentCallbacks !== undefined) {
+      queueMicrotask(() => {
+        if (
+          !this.isDestroyed &&
+          !this.isBusy &&
+          this.template.dialogElement.open &&
+          this.callbacks === currentCallbacks
+        ) {
+          currentCallbacks.onRequestClose('escape');
         }
-      }, 0);
+      });
     }
   };
 

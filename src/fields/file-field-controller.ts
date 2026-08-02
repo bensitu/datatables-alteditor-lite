@@ -35,6 +35,7 @@ function createTypedFileController<TFormValues extends object, TValue>(
   config: VisibleFieldConfig<TFormValues, TValue> & FileProperties,
   fieldId: string,
   invalidMessage: string,
+  requiredMessage: string,
   budgetMessages: Readonly<FileBudgetMessages>,
   onUserChange: () => void,
   readValue: (
@@ -63,7 +64,7 @@ function createTypedFileController<TFormValues extends object, TValue>(
 
   const validateSelection = (): FieldValidationResult => {
     if (!inputElement.checkValidity()) {
-      return { valid: false, message: inputElement.validationMessage };
+      return { valid: false };
     }
 
     try {
@@ -137,6 +138,7 @@ function createTypedFileController<TFormValues extends object, TValue>(
     fieldId,
     invalidMessage,
     onUserChange,
+    requiredMessage,
   });
 }
 
@@ -144,6 +146,7 @@ function createSingleFileController<TFormValues extends object>(
   config: Extract<SingleFileFieldConfig<TFormValues>, { readonly encoding?: 'file' }>,
   fieldId: string,
   invalidMessage: string,
+  requiredMessage: string,
   budgetMessages: Readonly<FileBudgetMessages>,
   onUserChange: () => void,
 ): ManagedFieldController<TFormValues> {
@@ -151,6 +154,7 @@ function createSingleFileController<TFormValues extends object>(
     config,
     fieldId,
     invalidMessage,
+    requiredMessage,
     budgetMessages,
     onUserChange,
     (files) => files[0] ?? null,
@@ -161,6 +165,7 @@ function createSingleDataUrlController<TFormValues extends object>(
   config: Extract<SingleFileFieldConfig<TFormValues>, { readonly encoding: 'data-url' }>,
   fieldId: string,
   invalidMessage: string,
+  requiredMessage: string,
   budgetMessages: Readonly<FileBudgetMessages>,
   onUserChange: () => void,
 ): ManagedFieldController<TFormValues> {
@@ -168,6 +173,7 @@ function createSingleDataUrlController<TFormValues extends object>(
     config,
     fieldId,
     invalidMessage,
+    requiredMessage,
     budgetMessages,
     onUserChange,
     async (files, signal) => {
@@ -181,6 +187,7 @@ function createMultipleFileController<TFormValues extends object>(
   config: Extract<MultipleFileFieldConfig<TFormValues>, { readonly encoding?: 'file' }>,
   fieldId: string,
   invalidMessage: string,
+  requiredMessage: string,
   budgetMessages: Readonly<FileBudgetMessages>,
   onUserChange: () => void,
 ): ManagedFieldController<TFormValues> {
@@ -188,6 +195,7 @@ function createMultipleFileController<TFormValues extends object>(
     config,
     fieldId,
     invalidMessage,
+    requiredMessage,
     budgetMessages,
     onUserChange,
     (files) => files,
@@ -201,6 +209,7 @@ function createMultipleDataUrlController<TFormValues extends object>(
   >,
   fieldId: string,
   invalidMessage: string,
+  requiredMessage: string,
   budgetMessages: Readonly<FileBudgetMessages>,
   onUserChange: () => void,
 ): ManagedFieldController<TFormValues> {
@@ -208,6 +217,7 @@ function createMultipleDataUrlController<TFormValues extends object>(
     config,
     fieldId,
     invalidMessage,
+    requiredMessage,
     budgetMessages,
     onUserChange,
     async (files, signal) => await readFilesAsDataUrls(files, signal),
@@ -228,6 +238,7 @@ export function createFileFieldController<TFormValues extends object>(
   config: FileFieldConfig<TFormValues>,
   fieldId: string,
   invalidMessage: string,
+  requiredMessage: string,
   budgetMessages: Readonly<FileBudgetMessages>,
   onUserChange: () => void,
 ): ManagedFieldController<TFormValues> {
@@ -237,6 +248,7 @@ export function createFileFieldController<TFormValues extends object>(
           config,
           fieldId,
           invalidMessage,
+          requiredMessage,
           budgetMessages,
           onUserChange,
         )
@@ -244,6 +256,7 @@ export function createFileFieldController<TFormValues extends object>(
           config,
           fieldId,
           invalidMessage,
+          requiredMessage,
           budgetMessages,
           onUserChange,
         );
@@ -254,6 +267,7 @@ export function createFileFieldController<TFormValues extends object>(
         config,
         fieldId,
         invalidMessage,
+        requiredMessage,
         budgetMessages,
         onUserChange,
       )
@@ -261,6 +275,7 @@ export function createFileFieldController<TFormValues extends object>(
         config,
         fieldId,
         invalidMessage,
+        requiredMessage,
         budgetMessages,
         onUserChange,
       );

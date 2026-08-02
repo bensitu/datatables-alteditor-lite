@@ -25,6 +25,7 @@ export function createSelectFieldController<
   config: SelectFieldConfig<TFormValues, TValue>,
   fieldId: string,
   invalidMessage: string,
+  requiredMessage: string,
   onUserChange: () => void,
 ): ManagedFieldController<TFormValues> {
   const selectElement = document.createElement('select');
@@ -96,9 +97,7 @@ export function createSelectFieldController<
       selectElement.setAttribute('aria-readonly', String(nextReadOnly));
     },
     validateNative: () =>
-      selectElement.checkValidity()
-        ? { valid: true }
-        : { valid: false, message: selectElement.validationMessage },
+      selectElement.checkValidity() ? { valid: true } : { valid: false },
     destroy: () => {
       selectElement.removeEventListener('pointerdown', preventReadOnlyInteraction);
       selectElement.removeEventListener('keydown', preventReadOnlyInteraction);
@@ -112,5 +111,6 @@ export function createSelectFieldController<
     fieldId,
     invalidMessage,
     onUserChange,
+    requiredMessage,
   });
 }

@@ -27,6 +27,7 @@ export function createRadioFieldController<
   config: RadioFieldConfig<TFormValues, TValue>,
   fieldId: string,
   invalidMessage: string,
+  requiredMessage: string,
   onUserChange: () => void,
 ): ManagedFieldController<TFormValues> {
   const fieldElement = document.createElement('div');
@@ -52,7 +53,7 @@ export function createRadioFieldController<
   errorElement.className = 'dt-alteditor-lite-field__error';
   errorElement.id = errorId;
   errorElement.hidden = true;
-  errorElement.setAttribute('role', 'alert');
+  errorElement.setAttribute('aria-live', 'polite');
 
   if (config.className !== undefined) {
     for (const classToken of config.className.split(/\s+/u)) {
@@ -158,7 +159,7 @@ export function createRadioFieldController<
       const isValid =
         config.required !== true ||
         inputElements.some((inputElement) => inputElement.checked);
-      return isValid ? { valid: true } : { valid: false, message: invalidMessage };
+      return isValid ? { valid: true } : { valid: false, message: requiredMessage };
     },
     validateCustom: async (
       values: Readonly<EditorValues<TFormValues>>,

@@ -6,6 +6,7 @@ import { getLocale, registerLocale } from '../../src/localization/locale-registr
 import type { EditorLanguageLoadError } from '../../src/core/alt-editor-lite-error.js';
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllGlobals();
 });
 
@@ -26,7 +27,11 @@ describe('external editor language resources', () => {
 
     const language = await loadEditorLanguage('/languages/fr-FR.json', requestInit);
 
-    expect(fetchMock).toHaveBeenCalledWith('/languages/fr-FR.json', requestInit);
+    expect(fetchMock).toHaveBeenCalledOnce();
+    const fetchCall = fetchMock.mock.calls[0];
+    expect(fetchCall?.[0]).toBe('/languages/fr-FR.json');
+    expect(fetchCall?.[1]?.credentials).toBe(requestInit.credentials);
+    expect(fetchCall?.[1]?.signal).toBeInstanceOf(AbortSignal);
     expect(language).toMatchObject({
       actions: { cancel: 'Cancel', create: 'Créer' },
       locale: 'fr-FR',
@@ -97,6 +102,42 @@ describe('external editor language resources', () => {
         retryable: true,
       }),
     );
+  });
+
+  it('limits response size and aborts requests that exceed the default timeout', async () => {
+    const oversizedFetch = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(new Response('x'.repeat(70 * 1024), { status: 200 }));
+    vi.stubGlobal('fetch', oversizedFetch);
+
+    await expect(loadEditorLanguage('/oversized')).rejects.toMatchObject({
+      code: 'LANGUAGE_LOAD',
+      message: 'The editor language response exceeds the supported size.',
+      retryable: false,
+    });
+
+    vi.useFakeTimers();
+    const pendingFetch = vi.fn<typeof fetch>().mockImplementation(
+      async (_resource, requestInit) =>
+        await new Promise<Response>((_resolve, reject) => {
+          requestInit?.signal?.addEventListener(
+            'abort',
+            () => {
+              reject(new DOMException('Request aborted.', 'AbortError'));
+            },
+            { once: true },
+          );
+        }),
+    );
+    vi.stubGlobal('fetch', pendingFetch);
+    const timeoutResult = expect(loadEditorLanguage('/slow')).rejects.toMatchObject({
+      code: 'LANGUAGE_LOAD',
+      message: 'The editor language request timed out.',
+      retryable: true,
+    });
+
+    await vi.advanceTimersByTimeAsync(10_000);
+    await timeoutResult;
   });
 
   it('registers application languages by canonical BCP 47 identifier', () => {

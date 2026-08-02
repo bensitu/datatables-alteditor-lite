@@ -665,6 +665,7 @@ export class AltEditorLite<
         return;
       }
 
+      // Confirm ownership immediately before exposing the captured row to listeners.
       resolveEditTarget(
         this.table,
         this.tableElement,
@@ -686,6 +687,7 @@ export class AltEditorLite<
         return;
       }
 
+      // A submit listener can redraw or replace rows, so validate again afterward.
       resolveEditTarget(
         this.table,
         this.tableElement,
@@ -702,6 +704,7 @@ export class AltEditorLite<
         return;
       }
 
+      // Persistence can be asynchronous; resolve only now to avoid updating a new row.
       const rowIndex = resolveEditTarget(
         this.table,
         this.tableElement,
@@ -790,6 +793,7 @@ export class AltEditorLite<
 
     const request = this.setSubmitting('remove');
     try {
+      // Confirm ownership immediately before exposing captured rows to listeners.
       resolveRemoveTargets(
         this.table,
         this.tableElement,
@@ -810,6 +814,7 @@ export class AltEditorLite<
         return;
       }
 
+      // A submit listener can redraw or replace rows, so validate again afterward.
       resolveRemoveTargets(
         this.table,
         this.tableElement,
@@ -826,6 +831,7 @@ export class AltEditorLite<
         return;
       }
 
+      // Persistence can be asynchronous; resolve only now to avoid removing new rows.
       const rowIndexes = resolveRemoveTargets(
         this.table,
         this.tableElement,

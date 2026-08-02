@@ -40,6 +40,7 @@ export function createFieldController<TFormValues extends object>(
         config,
         fieldId,
         language.validation.invalid,
+        language.validation.required,
         onUserChange,
       );
     case 'number':
@@ -47,6 +48,7 @@ export function createFieldController<TFormValues extends object>(
         config,
         fieldId,
         language.validation.invalid,
+        language.validation.required,
         onUserChange,
       );
     case 'textarea':
@@ -54,6 +56,7 @@ export function createFieldController<TFormValues extends object>(
         config,
         fieldId,
         language.validation.invalid,
+        language.validation.required,
         onUserChange,
       );
     case 'checkbox':
@@ -61,6 +64,7 @@ export function createFieldController<TFormValues extends object>(
         config,
         fieldId,
         language.validation.invalid,
+        language.validation.required,
         onUserChange,
       );
     case 'radio':
@@ -68,6 +72,7 @@ export function createFieldController<TFormValues extends object>(
         config,
         fieldId,
         language.validation.invalid,
+        language.validation.required,
         onUserChange,
       );
     case 'select':
@@ -75,6 +80,7 @@ export function createFieldController<TFormValues extends object>(
         config,
         fieldId,
         language.validation.invalid,
+        language.validation.required,
         onUserChange,
       );
     case 'search-select':
@@ -84,6 +90,7 @@ export function createFieldController<TFormValues extends object>(
         config,
         fieldId,
         language.validation.invalid,
+        language.validation.required,
         {
           fileCount: language.errors.fileCount,
           fileSize: language.errors.fileSize,

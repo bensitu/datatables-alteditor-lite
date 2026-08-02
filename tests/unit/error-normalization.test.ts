@@ -81,6 +81,36 @@ describe('operation error normalization', () => {
     });
   });
 
+  it('accepts structured Error subclasses and bounds untrusted UI text', () => {
+    class StructuredOperationError extends Error {
+      public readonly code = 'REMOTE_VALIDATION';
+
+      public readonly fieldErrors = { name: 'x'.repeat(1200) };
+
+      public readonly retryable = true;
+    }
+
+    const rawError = new StructuredOperationError('x'.repeat(2200));
+    const normalized = normalizeOperationError(
+      rawError,
+      activeSignal(),
+      ENGLISH_LANGUAGE,
+    );
+
+    expect(normalized).toMatchObject({
+      cause: rawError,
+      code: 'REMOTE_VALIDATION',
+      retryable: true,
+    });
+    if (!(normalized instanceof AltEditorLiteError)) {
+      throw new Error('Expected a public normalized error.');
+    }
+    expect(normalized.message).toHaveLength(2000);
+    expect(normalized.message.endsWith('…')).toBe(true);
+    expect(normalized.fieldErrors?.['name']).toHaveLength(1000);
+    expect(normalized.fieldErrors?.['name']?.endsWith('…')).toBe(true);
+  });
+
   it.each([
     null,
     'raw secret',

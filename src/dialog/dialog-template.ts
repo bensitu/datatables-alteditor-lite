@@ -36,6 +36,7 @@ export function createDialogTemplate(
   dialogElement.className = 'dt-alteditor-lite-dialog';
   dialogElement.id = `${instanceId}-dialog`;
   dialogElement.setAttribute('aria-labelledby', `${instanceId}-dialog-title`);
+  dialogElement.setAttribute('aria-modal', 'true');
   surfaceElement.className = 'dt-alteditor-lite-dialog__surface';
   headerElement.className = 'dt-alteditor-lite-dialog__header';
   titleElement.className = 'dt-alteditor-lite-dialog__title';

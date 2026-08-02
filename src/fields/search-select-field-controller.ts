@@ -82,9 +82,11 @@ export function createSearchSelectFieldController<TFormValues extends object>(
   >({
     adapter,
     config: foundationConfig,
+    controlContainer: searchSelect.element,
     fieldId,
     invalidMessage: language.validation.invalid,
     onUserChange: () => undefined,
+    requiredMessage: language.validation.required,
   });
   const describedBy = searchSelect.inputElement.getAttribute('aria-describedby');
   searchSelect.inputElement.setAttribute(
@@ -94,8 +96,6 @@ export function createSearchSelectFieldController<TFormValues extends object>(
       : `${describedBy} ${searchSelect.instructionsId}`,
   );
 
-  nativeController.element.insertBefore(searchSelect.element, searchSelect.inputElement);
-  searchSelect.element.prepend(searchSelect.inputElement);
   searchSelect.setDisabled(config.disabled ?? false);
 
   return {

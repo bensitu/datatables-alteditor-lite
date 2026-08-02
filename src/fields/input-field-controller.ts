@@ -40,6 +40,7 @@ function isTrimEnabled<TFormValues extends object>(
  * @param config - String input configuration.
  * @param fieldId - Instance-scoped control identifier.
  * @param invalidMessage - English or overridden validation fallback.
+ * @param requiredMessage - Localized required-value message.
  * @param onUserChange - Form-owned change notification.
  * @returns Managed field controller.
  */
@@ -47,6 +48,7 @@ export function createInputFieldController<TFormValues extends object>(
   config: StringInputConfig<TFormValues>,
   fieldId: string,
   invalidMessage: string,
+  requiredMessage: string,
   onUserChange: () => void,
 ): ManagedFieldController<TFormValues> {
   const inputElement = document.createElement('input');
@@ -69,9 +71,7 @@ export function createInputFieldController<TFormValues extends object>(
       inputElement.readOnly = isReadOnly;
     },
     validateNative: () =>
-      inputElement.checkValidity()
-        ? { valid: true }
-        : { valid: false, message: inputElement.validationMessage },
+      inputElement.checkValidity() ? { valid: true } : { valid: false },
   };
 
   return createNativeControlController({
@@ -79,6 +79,7 @@ export function createInputFieldController<TFormValues extends object>(
     config,
     fieldId,
     invalidMessage,
+    requiredMessage,
     onUserChange,
     changeEvent: 'input',
   });
@@ -88,6 +89,7 @@ function createUndefinedNumberController<TFormValues extends object>(
   config: Extract<NumberFieldConfig<TFormValues>, { readonly emptyValue?: undefined }>,
   fieldId: string,
   invalidMessage: string,
+  requiredMessage: string,
   onUserChange: () => void,
 ): ManagedFieldController<TFormValues> {
   const inputElement = document.createElement('input');
@@ -130,10 +132,6 @@ function createUndefinedNumberController<TFormValues extends object>(
       ) {
         return {
           valid: false,
-          message:
-            inputElement.validationMessage.length > 0
-              ? inputElement.validationMessage
-              : invalidMessage,
         };
       }
 
@@ -146,6 +144,7 @@ function createUndefinedNumberController<TFormValues extends object>(
     config,
     fieldId,
     invalidMessage,
+    requiredMessage,
     onUserChange,
     changeEvent: 'input',
   });
@@ -155,6 +154,7 @@ function createNullNumberController<TFormValues extends object>(
   config: Extract<NumberFieldConfig<TFormValues>, { readonly emptyValue: null }>,
   fieldId: string,
   invalidMessage: string,
+  requiredMessage: string,
   onUserChange: () => void,
 ): ManagedFieldController<TFormValues> {
   const inputElement = document.createElement('input');
@@ -197,10 +197,6 @@ function createNullNumberController<TFormValues extends object>(
       ) {
         return {
           valid: false,
-          message:
-            inputElement.validationMessage.length > 0
-              ? inputElement.validationMessage
-              : invalidMessage,
         };
       }
 
@@ -213,6 +209,7 @@ function createNullNumberController<TFormValues extends object>(
     config,
     fieldId,
     invalidMessage,
+    requiredMessage,
     onUserChange,
     changeEvent: 'input',
   });
@@ -224,6 +221,7 @@ function createNullNumberController<TFormValues extends object>(
  * @param config - Number field configuration.
  * @param fieldId - Instance-scoped control identifier.
  * @param invalidMessage - English or overridden validation fallback.
+ * @param requiredMessage - Localized required-value message.
  * @param onUserChange - Form-owned change notification.
  * @returns Managed field controller.
  */
@@ -231,11 +229,24 @@ export function createNumberFieldController<TFormValues extends object>(
   config: NumberFieldConfig<TFormValues>,
   fieldId: string,
   invalidMessage: string,
+  requiredMessage: string,
   onUserChange: () => void,
 ): ManagedFieldController<TFormValues> {
   if (config.emptyValue === null) {
-    return createNullNumberController(config, fieldId, invalidMessage, onUserChange);
+    return createNullNumberController(
+      config,
+      fieldId,
+      invalidMessage,
+      requiredMessage,
+      onUserChange,
+    );
   }
 
-  return createUndefinedNumberController(config, fieldId, invalidMessage, onUserChange);
+  return createUndefinedNumberController(
+    config,
+    fieldId,
+    invalidMessage,
+    requiredMessage,
+    onUserChange,
+  );
 }

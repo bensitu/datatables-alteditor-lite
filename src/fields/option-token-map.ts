@@ -35,6 +35,8 @@ export function assertUniqueOptionValues<TValue extends string | number>(
 export class OptionTokenMap<TValue extends string | number> {
   private readonly optionByToken = new Map<string, SelectOption<TValue>>();
 
+  private readonly tokenByOptionIdentity = new Map<string, string>();
+
   /**
    * Creates stable tokens in source option order.
    *
@@ -44,7 +46,9 @@ export class OptionTokenMap<TValue extends string | number> {
     assertUniqueOptionValues(options);
 
     for (const [optionIndex, option] of options.entries()) {
-      this.optionByToken.set(`option-${String(optionIndex)}`, option);
+      const token = `option-${String(optionIndex)}`;
+      this.optionByToken.set(token, option);
+      this.tokenByOptionIdentity.set(optionIdentity(option.value), token);
     }
   }
 
@@ -84,12 +88,6 @@ export class OptionTokenMap<TValue extends string | number> {
    * @returns Matching token, or undefined when no option matches.
    */
   public tokenForValue(value: TValue): string | undefined {
-    for (const [token, option] of this.optionByToken) {
-      if (Object.is(option.value, value)) {
-        return token;
-      }
-    }
-
-    return undefined;
+    return this.tokenByOptionIdentity.get(optionIdentity(value));
   }
 }

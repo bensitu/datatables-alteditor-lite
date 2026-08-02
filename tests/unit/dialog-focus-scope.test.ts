@@ -13,6 +13,7 @@ function createScope(): {
 } {
   const tableElement = document.createElement('table');
   const dialogElement = document.createElement('dialog');
+  dialogElement.open = true;
   document.body.append(tableElement, dialogElement);
   return {
     dialogElement,
@@ -65,11 +66,15 @@ describe('DialogFocusScope', () => {
     const contentElement = document.createElement('div');
     const hiddenButton = document.createElement('button');
     const ariaHiddenButton = document.createElement('button');
+    const cssHiddenContainer = document.createElement('div');
+    const cssHiddenButton = document.createElement('button');
     const cancelButton = document.createElement('button');
     hiddenButton.hidden = true;
     ariaHiddenButton.setAttribute('aria-hidden', 'true');
+    cssHiddenContainer.style.display = 'none';
+    cssHiddenContainer.append(cssHiddenButton);
     cancelButton.className = 'dt-alteditor-lite-dialog__button--cancel';
-    contentElement.append(hiddenButton, ariaHiddenButton);
+    contentElement.append(hiddenButton, ariaHiddenButton, cssHiddenContainer);
     dialogElement.append(contentElement, cancelButton);
 
     scope.focusInitial(contentElement);
@@ -135,7 +140,7 @@ describe('DialogFocusScope', () => {
     expect(document.activeElement).toBe(dialogElement);
 
     scope.deactivate(true);
-    expect(tableElement.getAttribute('tabindex')).toBe('-1');
+    expect(tableElement.getAttribute('tabindex')).toBeNull();
     expect(document.activeElement).toBe(tableElement);
   });
 });
