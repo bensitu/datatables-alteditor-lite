@@ -140,7 +140,12 @@ describe('DialogFocusScope', () => {
     expect(document.activeElement).toBe(dialogElement);
 
     scope.deactivate(true);
-    expect(tableElement.getAttribute('tabindex')).toBeNull();
+    expect(tableElement.getAttribute('tabindex')).toBe('-1');
     expect(document.activeElement).toBe(tableElement);
+
+    const nextTarget = document.createElement('button');
+    document.body.append(nextTarget);
+    nextTarget.focus();
+    expect(tableElement.getAttribute('tabindex')).toBeNull();
   });
 });

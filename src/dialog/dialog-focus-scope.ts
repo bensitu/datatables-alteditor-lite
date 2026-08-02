@@ -50,6 +50,8 @@ export class DialogFocusScope {
 
   private isActive = false;
 
+  private ownsTemporaryTableTabIndex = false;
+
   /**
    * @param dialogElement - Native dialog whose focus is scoped.
    * @param tableElement - Table used when the original trigger disappears.
@@ -130,14 +132,7 @@ export class DialogFocusScope {
         this.restoreTarget?.isConnected === true ? this.restoreTarget : this.tableElement;
 
       if (restoreTarget === this.tableElement) {
-        const previousTabIndex = this.tableElement.getAttribute('tabindex');
-        this.tableElement.setAttribute('tabindex', '-1');
-        restoreTarget.focus();
-        if (previousTabIndex === null) {
-          this.tableElement.removeAttribute('tabindex');
-        } else {
-          this.tableElement.setAttribute('tabindex', previousTabIndex);
-        }
+        this.focusTableFallback();
       } else {
         restoreTarget.focus();
       }
@@ -151,8 +146,34 @@ export class DialogFocusScope {
    */
   public destroy(): void {
     this.deactivate(false);
+    this.restoreTableFocusability();
     this.restoreTarget = null;
   }
+
+  private focusTableFallback(): void {
+    if (this.tableElement.getAttribute('tabindex') === null) {
+      this.tableElement.setAttribute('tabindex', '-1');
+      this.ownsTemporaryTableTabIndex = true;
+      this.tableElement.addEventListener('blur', this.restoreTableFocusability);
+    }
+
+    this.tableElement.focus();
+    if (document.activeElement !== this.tableElement) {
+      this.restoreTableFocusability();
+    }
+  }
+
+  private readonly restoreTableFocusability = (): void => {
+    if (!this.ownsTemporaryTableTabIndex) {
+      return;
+    }
+
+    this.ownsTemporaryTableTabIndex = false;
+    this.tableElement.removeEventListener('blur', this.restoreTableFocusability);
+    if (this.tableElement.getAttribute('tabindex') === '-1') {
+      this.tableElement.removeAttribute('tabindex');
+    }
+  };
 
   private readonly handleKeyDown = (event: KeyboardEvent): void => {
     if (event.key !== 'Tab') {
