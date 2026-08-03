@@ -248,6 +248,10 @@ The public API is at version `0.1.0`. This project is independent and is not
 affiliated with or endorsed by the DataTables publisher. DataTables and its
 extensions remain separate dependencies distributed under their own terms.
 
+## Buy Me A Coffee
+
+[!["Buy Me A Coffee"](https://cdn.buymeacoffee.com/buttons/v2/arial-yellow.png)](https://www.buymeacoffee.com/bensitu)
+
 ## License
 
 [MIT](LICENSE) © Ben Situ.
