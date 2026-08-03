@@ -1,0 +1,191 @@
+name: Publish npm package
+
+run-name: Publish ${{ inputs.version }} to npm with tag ${{ inputs.npm_tag }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Package semantic version to publish; an optional v prefix is accepted
+        required: true
+        type: string
+      npm_tag:
+        description: npm distribution tag
+        required: true
+        default: latest
+        type: choice
+        options:
+          - latest
+          - next
+          - beta
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: npm-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish release artifact
+    runs-on: ubuntu-latest
+    environment: npm
+    env:
+      EXPECTED_PACKAGE_NAME: datatables-alteditor-lite
+      NPM_CONFIG_IGNORE_SCRIPTS: true
+    steps:
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24.x'
+          package-manager-cache: false
+          registry-url: https://registry.npmjs.org
+
+      - name: Use npm with trusted publishing support
+        run: npm install --global npm@^11.5.1
+
+      - name: Validate requested version and npm tag
+        shell: bash
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          REQUESTED_NPM_TAG: ${{ inputs.npm_tag }}
+          REQUESTED_VERSION: ${{ inputs.version }}
+        run: |
+          VERSION="${REQUESTED_VERSION#v}"
+          NPM_TAG="${REQUESTED_NPM_TAG}"
+
+          if [[ ! "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
+            echo "Version must be a semantic version. Prefix with v is optional." >&2
+            exit 1
+          fi
+
+          if [[ "${GITHUB_REF_TYPE}" != "branch" || "${GITHUB_REF_NAME}" != "${DEFAULT_BRANCH}" ]]; then
+            echo "npm publishing must run from ${DEFAULT_BRANCH}. Current ref: ${GITHUB_REF}." >&2
+            exit 1
+          fi
+
+          case "${NPM_TAG}" in
+            latest | next | beta) ;;
+            *)
+              echo "Unsupported npm distribution tag: ${NPM_TAG}." >&2
+              exit 1
+              ;;
+          esac
+
+          if [[ "${VERSION}" == *-* && "${NPM_TAG}" == "latest" ]]; then
+            echo "A prerelease version cannot be published with the latest tag." >&2
+            exit 1
+          fi
+
+          {
+            echo "VERSION=${VERSION}"
+            echo "TAG_NAME=v${VERSION}"
+            echo "NPM_TAG=${NPM_TAG}"
+          } >> "${GITHUB_ENV}"
+
+      - name: Download published release artifact
+        shell: bash
+        env:
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          RELEASE_STATE="$(
+            gh release view "${TAG_NAME}" \
+              --json isDraft,isPrerelease \
+              --jq '[.isDraft, .isPrerelease] | @tsv'
+          )"
+          read -r IS_DRAFT IS_PRERELEASE <<< "${RELEASE_STATE}"
+
+          if [[ "${IS_DRAFT}" != "false" ]]; then
+            echo "Release ${TAG_NAME} must be published before publishing to npm." >&2
+            exit 1
+          fi
+
+          EXPECTED_PRERELEASE=false
+          if [[ "${VERSION}" == *-* ]]; then
+            EXPECTED_PRERELEASE=true
+          fi
+          if [[ "${IS_PRERELEASE}" != "${EXPECTED_PRERELEASE}" ]]; then
+            echo "Release ${TAG_NAME} prerelease state does not match its semantic version." >&2
+            exit 1
+          fi
+
+          ARTIFACT_DIRECTORY="${RUNNER_TEMP}/release-artifact"
+          mkdir -p "${ARTIFACT_DIRECTORY}"
+          gh release download "${TAG_NAME}" \
+            --dir "${ARTIFACT_DIRECTORY}" \
+            --pattern '*.tgz' \
+            --pattern '*.sha256'
+
+          shopt -s nullglob
+          PACKAGE_TARBALLS=("${ARTIFACT_DIRECTORY}"/*.tgz)
+          PACKAGE_CHECKSUMS=("${ARTIFACT_DIRECTORY}"/*.sha256)
+          if [[ "${#PACKAGE_TARBALLS[@]}" -ne 1 || "${#PACKAGE_CHECKSUMS[@]}" -ne 1 ]]; then
+            echo "Release ${TAG_NAME} must contain exactly one package and one checksum." >&2
+            exit 1
+          fi
+
+          (
+            cd "${ARTIFACT_DIRECTORY}"
+            sha256sum -c "$(basename "${PACKAGE_CHECKSUMS[0]}")"
+          )
+          echo "PACKAGE_TARBALL=${PACKAGE_TARBALLS[0]}" >> "${GITHUB_ENV}"
+
+      - name: Validate release artifact metadata
+        shell: bash
+        run: |
+          PACKAGE_JSON_PATH="${RUNNER_TEMP}/package-from-tarball.json"
+          tar -xOf "${PACKAGE_TARBALL}" package/package.json > "${PACKAGE_JSON_PATH}"
+          PACKAGE_NAME="$(node -e '
+            const fs = require("node:fs");
+            const packageJson = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+            process.stdout.write(String(packageJson.name ?? ""));
+          ' "${PACKAGE_JSON_PATH}")"
+          PACKAGE_VERSION="$(node -e '
+            const fs = require("node:fs");
+            const packageJson = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+            process.stdout.write(String(packageJson.version ?? ""));
+          ' "${PACKAGE_JSON_PATH}")"
+
+          if [[ "${PACKAGE_NAME}" != "${EXPECTED_PACKAGE_NAME}" ]]; then
+            echo "Package artifact name (${PACKAGE_NAME}) must be ${EXPECTED_PACKAGE_NAME}." >&2
+            exit 1
+          fi
+          if [[ "${PACKAGE_VERSION}" != "${VERSION}" ]]; then
+            echo "Package artifact version (${PACKAGE_VERSION}) must match requested version (${VERSION})." >&2
+            exit 1
+          fi
+
+          echo "PACKAGE_NAME=${PACKAGE_NAME}" >> "${GITHUB_ENV}"
+          echo "PACKAGE_VERSION=${PACKAGE_VERSION}" >> "${GITHUB_ENV}"
+
+      - name: Check npm version availability
+        shell: bash
+        run: |
+          NPM_VIEW_LOG="${RUNNER_TEMP}/npm-view.log"
+          if npm view "${PACKAGE_NAME}@${PACKAGE_VERSION}" version \
+            --registry https://registry.npmjs.org >"${NPM_VIEW_LOG}" 2>&1; then
+            echo "${PACKAGE_NAME}@${PACKAGE_VERSION} already exists on npm." >&2
+            exit 1
+          fi
+
+          if ! grep -q 'E404' "${NPM_VIEW_LOG}"; then
+            cat "${NPM_VIEW_LOG}" >&2
+            echo "Unable to confirm npm version availability." >&2
+            exit 1
+          fi
+
+      - name: Publish release artifact to npm
+        shell: bash
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          npm publish "${PACKAGE_TARBALL}" \
+            --access public \
+            --provenance \
+            --tag "${NPM_TAG}"
+
+          echo "Published ${PACKAGE_NAME}@${PACKAGE_VERSION} with npm tag ${NPM_TAG}." \
+            >> "${GITHUB_STEP_SUMMARY}"

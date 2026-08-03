@@ -1,0 +1,168 @@
+name: Draft GitHub release
+
+run-name: Draft release ${{ inputs.version }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Semantic version to release; an optional v prefix is accepted
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+env:
+  EXPECTED_PACKAGE_NAME: datatables-alteditor-lite
+  HUSKY: 0
+
+concurrency:
+  group: draft-release
+  cancel-in-progress: false
+
+jobs:
+  draft-release:
+    name: Create tag and draft release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24.x'
+          cache: npm
+
+      - name: Validate requested version
+        shell: bash
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED_VERSION: ${{ inputs.version }}
+        run: |
+          VERSION="${REQUESTED_VERSION#v}"
+
+          if [[ ! "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
+            echo "Version must be a semantic version. Prefix with v is optional." >&2
+            exit 1
+          fi
+
+          PACKAGE_VERSION="$(node -p "require('./package.json').version")"
+          PACKAGE_NAME="$(node -p "require('./package.json').name")"
+          if [[ "${PACKAGE_NAME}" != "${EXPECTED_PACKAGE_NAME}" ]]; then
+            echo "package.json name (${PACKAGE_NAME}) must be ${EXPECTED_PACKAGE_NAME}." >&2
+            exit 1
+          fi
+          if [[ "${PACKAGE_VERSION}" != "${VERSION}" ]]; then
+            echo "package.json version (${PACKAGE_VERSION}) must match requested version (${VERSION})." >&2
+            exit 1
+          fi
+
+          if [[ "${GITHUB_REF_TYPE}" != "branch" || "${GITHUB_REF_NAME}" != "${DEFAULT_BRANCH}" ]]; then
+            echo "Draft releases must be created from ${DEFAULT_BRANCH}. Current ref: ${GITHUB_REF}." >&2
+            exit 1
+          fi
+
+          TAG_NAME="v${VERSION}"
+          if git rev-parse --verify --quiet "refs/tags/${TAG_NAME}" >/dev/null; then
+            echo "Tag ${TAG_NAME} already exists." >&2
+            exit 1
+          fi
+
+          if gh release view "${TAG_NAME}" >/dev/null 2>&1; then
+            echo "Release ${TAG_NAME} already exists." >&2
+            exit 1
+          fi
+
+          {
+            echo "PACKAGE_NAME=${PACKAGE_NAME}"
+            echo "VERSION=${VERSION}"
+            echo "TAG_NAME=${TAG_NAME}"
+          } >> "${GITHUB_ENV}"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install browser test dependencies
+        run: npx --no-install playwright install --with-deps chromium firefox webkit
+
+      - name: Verify release source
+        run: npm run check
+
+      - name: Pack release artifact
+        shell: bash
+        run: |
+          PACKAGE_TARBALL="${PACKAGE_NAME}-${VERSION}.tgz"
+          if [[ -e "${PACKAGE_TARBALL}" ]]; then
+            echo "Refusing to replace existing package artifact ${PACKAGE_TARBALL}." >&2
+            exit 1
+          fi
+
+          npm pack
+
+          if [[ ! -f "${PACKAGE_TARBALL}" ]]; then
+            echo "npm pack did not produce the expected package artifact." >&2
+            exit 1
+          fi
+
+          PACKAGE_CHECKSUM="${PACKAGE_TARBALL}.sha256"
+          sha256sum "${PACKAGE_TARBALL}" > "${PACKAGE_CHECKSUM}"
+
+          {
+            echo "PACKAGE_TARBALL=${PACKAGE_TARBALL}"
+            echo "PACKAGE_CHECKSUM=${PACKAGE_CHECKSUM}"
+          } >> "${GITHUB_ENV}"
+
+      - name: Extract changelog notes
+        shell: bash
+        run: |
+          awk -v heading="## [${VERSION}]" '
+            { sub(/\r$/, "") }
+            index($0, heading) == 1 { capture = 1; next }
+            capture && /^## \[/ { exit }
+            capture { print }
+          ' CHANGELOG.md > release-notes.md
+
+          if [[ ! -s release-notes.md ]]; then
+            echo "CHANGELOG.md does not contain notes for ${VERSION}." >&2
+            exit 1
+          fi
+
+      - name: Create release tag
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "${TAG_NAME}" -m "Release ${TAG_NAME}"
+          git push origin "${TAG_NAME}"
+
+      - name: Create draft release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          RELEASE_ARGUMENTS=(
+            "${TAG_NAME}"
+            "${PACKAGE_TARBALL}"
+            "${PACKAGE_CHECKSUM}"
+            --draft
+            --fail-on-no-commits
+            --notes-file release-notes.md
+            --target "${GITHUB_SHA}"
+            --title "${TAG_NAME}"
+            --verify-tag
+          )
+          if [[ "${VERSION}" == *-* ]]; then
+            RELEASE_ARGUMENTS+=(--prerelease)
+          fi
+
+          if ! gh release create "${RELEASE_ARGUMENTS[@]}"; then
+            gh release delete "${TAG_NAME}" --yes >/dev/null 2>&1 || true
+            git push --delete origin "${TAG_NAME}" || true
+            git tag -d "${TAG_NAME}" || true
+            exit 1
+          fi
