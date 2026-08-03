@@ -132,6 +132,8 @@ export class SearchSelect<TValue extends string | number> {
 
   private readonly optionElementByToken = new Map<string, HTMLDivElement>();
 
+  private readonly optionElementCacheByToken = new Map<string, HTMLDivElement>();
+
   private readonly resultStatusElement: HTMLDivElement;
 
   private readonly shouldAllowClear: boolean;
@@ -287,6 +289,9 @@ export class SearchSelect<TValue extends string | number> {
         : this.tokenMap.valueForToken(this.selectedToken);
     const nextTokenMap = new OptionTokenMap(options);
     this.tokenMap = nextTokenMap;
+    this.optionElementByToken.clear();
+    this.optionElementCacheByToken.clear();
+    this.listboxElement.replaceChildren();
 
     if (previousSelectedValue !== undefined) {
       const nextToken = nextTokenMap.tokenForValue(previousSelectedValue);
@@ -345,6 +350,9 @@ export class SearchSelect<TValue extends string | number> {
     this.clearButtonElement.removeEventListener('click', this.handleClearClick);
     this.listboxElement.removeEventListener('mousedown', this.handleOptionMouseDown);
     this.unsubscribeDocumentPointerDown();
+    this.optionElementByToken.clear();
+    this.optionElementCacheByToken.clear();
+    this.listboxElement.replaceChildren();
   }
 
   private readonly handleBlur = (event: FocusEvent): void => {
@@ -579,33 +587,41 @@ export class SearchSelect<TValue extends string | number> {
       this.shouldSortOptions,
     );
     this.optionElementByToken.clear();
-    this.listboxElement.replaceChildren();
+    const optionFragment = document.createDocumentFragment();
 
     for (const { option, token } of this.filteredEntries) {
-      const optionElement = document.createElement('div');
-      optionElement.className = 'dt-alteditor-lite-search-select__option';
-      optionElement.dataset['optionToken'] = token;
-      optionElement.id = `${this.listboxId}-${token}`;
+      let optionElement = this.optionElementCacheByToken.get(token);
+      if (optionElement === undefined) {
+        optionElement = document.createElement('div');
+        optionElement.className = 'dt-alteditor-lite-search-select__option';
+        optionElement.dataset['optionToken'] = token;
+        optionElement.id = `${this.listboxId}-${token}`;
+        optionElement.tabIndex = -1;
+        this.optionElementCacheByToken.set(token, optionElement);
+      }
+
       optionElement.textContent = option.label;
-      optionElement.tabIndex = -1;
       updateSearchSelectOptionAria(
         optionElement,
         token === this.selectedToken,
         option.disabled ?? false,
       );
       this.optionElementByToken.set(token, optionElement);
-      this.listboxElement.append(optionElement);
+      optionFragment.append(optionElement);
     }
 
     if (this.filteredEntries.length === 0) {
       const noResultsElement = document.createElement('div');
       noResultsElement.className = 'dt-alteditor-lite-search-select__no-results';
       noResultsElement.textContent = this.messages.noResults;
-      this.listboxElement.append(noResultsElement);
+      optionFragment.append(noResultsElement);
+      this.listboxElement.replaceChildren(optionFragment);
       this.resultStatusElement.textContent = this.messages.noResults;
       this.setActiveToken(undefined);
       return;
     }
+
+    this.listboxElement.replaceChildren(optionFragment);
 
     this.resultStatusElement.textContent = formatAnnouncement(this.messages.results, {
       count: String(this.filteredEntries.length),

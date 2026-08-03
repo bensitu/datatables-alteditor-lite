@@ -150,6 +150,51 @@ describe('SearchSelect document events', () => {
       removeEventListener.mock.calls.filter(([eventName]) => eventName === 'pointerdown'),
     ).toHaveLength(1);
   });
+
+  it('reuses option elements while local filters change', () => {
+    const searchSelect = new SearchSelect({
+      allowClear: true,
+      allowManualValue: false,
+      debounceMs: 0,
+      fieldId: 'reused-options',
+      locale: 'en',
+      messages: {
+        clear: 'Clear',
+        instructions: 'Choose an option.',
+        noResults: 'No results',
+        placeholder: 'Select',
+        results: '{count} results',
+        searchPlaceholder: 'Search',
+        selection: '{label} selected',
+      },
+      onCommit: vi.fn(),
+      options: [
+        { label: 'Alpha', value: 'alpha' },
+        { label: 'Bravo', value: 'bravo' },
+      ],
+      searchThreshold: 0,
+      sortOptions: false,
+    });
+    document.body.append(searchSelect.element);
+    searchSelect.inputElement.focus();
+    const initialAlphaOption = searchSelect.listboxElement.querySelector(
+      '[data-option-token="option-0"]',
+    );
+
+    searchSelect.inputElement.value = 'alpha';
+    searchSelect.inputElement.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(
+      searchSelect.listboxElement.querySelector('[data-option-token="option-0"]'),
+    ).toBe(initialAlphaOption);
+
+    searchSelect.inputElement.value = '';
+    searchSelect.inputElement.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(
+      searchSelect.listboxElement.querySelector('[data-option-token="option-0"]'),
+    ).toBe(initialAlphaOption);
+    searchSelect.destroy();
+    searchSelect.element.remove();
+  });
 });
 
 describe('locale data', () => {

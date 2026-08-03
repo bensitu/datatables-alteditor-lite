@@ -15,7 +15,41 @@ const FOCUSABLE_SELECTOR = [
   'video[controls]',
 ].join(',');
 
-function isFocusable(element: HTMLElement): boolean {
+const FOCUS_RELEVANT_ATTRIBUTES = [
+  'aria-hidden',
+  'class',
+  'contenteditable',
+  'controls',
+  'disabled',
+  'hidden',
+  'href',
+  'inert',
+  'open',
+  'style',
+  'tabindex',
+  'type',
+] as const;
+
+const SEARCH_SELECT_LISTBOX_SELECTOR = '.dt-alteditor-lite-search-select__listbox';
+
+function computedStyleFor(
+  element: HTMLElement,
+  computedStyleByElement: WeakMap<HTMLElement, CSSStyleDeclaration>,
+): CSSStyleDeclaration {
+  const existingStyle = computedStyleByElement.get(element);
+  if (existingStyle !== undefined) {
+    return existingStyle;
+  }
+
+  const computedStyle = getComputedStyle(element);
+  computedStyleByElement.set(element, computedStyle);
+  return computedStyle;
+}
+
+function isFocusable(
+  element: HTMLElement,
+  computedStyleByElement: WeakMap<HTMLElement, CSSStyleDeclaration>,
+): boolean {
   for (
     let currentElement: HTMLElement | null = element;
     currentElement !== null;
@@ -29,7 +63,7 @@ function isFocusable(element: HTMLElement): boolean {
       return false;
     }
 
-    const computedStyle = getComputedStyle(currentElement);
+    const computedStyle = computedStyleFor(currentElement, computedStyleByElement);
     if (
       computedStyle.display === 'none' ||
       computedStyle.visibility === 'hidden' ||
@@ -46,6 +80,10 @@ function isFocusable(element: HTMLElement): boolean {
  * Owns keyboard focus entry, containment, and restoration for one dialog.
  */
 export class DialogFocusScope {
+  private focusableElementsCache: readonly HTMLElement[] | undefined;
+
+  private focusMutationObserver: MutationObserver | undefined;
+
   private restoreTarget: HTMLElement | null = null;
 
   private isActive = false;
@@ -76,7 +114,17 @@ export class DialogFocusScope {
    */
   public activate(contentElement: HTMLElement): void {
     this.isActive = true;
+    this.focusableElementsCache = undefined;
+    this.focusMutationObserver?.disconnect();
+    this.focusMutationObserver = new MutationObserver(this.handleFocusMutations);
+    this.focusMutationObserver.observe(this.dialogElement, {
+      attributeFilter: [...FOCUS_RELEVANT_ATTRIBUTES],
+      attributes: true,
+      childList: true,
+      subtree: true,
+    });
     this.dialogElement.addEventListener('keydown', this.handleKeyDown);
+    this.getFocusableElements();
     this.focusInitial(contentElement);
   }
 
@@ -86,6 +134,7 @@ export class DialogFocusScope {
    * @param contentElement - Current form or confirmation content.
    */
   public focusInitial(contentElement: HTMLElement): void {
+    const computedStyleByElement = new WeakMap<HTMLElement, CSSStyleDeclaration>();
     const invalidElement = contentElement.querySelector<HTMLElement>(
       '[aria-invalid="true"]',
     );
@@ -96,11 +145,11 @@ export class DialogFocusScope {
     const initialControl =
       (invalidControl !== null &&
       invalidControl !== undefined &&
-      isFocusable(invalidControl)
+      isFocusable(invalidControl, computedStyleByElement)
         ? invalidControl
         : undefined) ??
       [...contentElement.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)].find(
-        isFocusable,
+        (element) => isFocusable(element, computedStyleByElement),
       ) ??
       this.dialogElement.querySelector<HTMLButtonElement>(
         '.dt-alteditor-lite-dialog__button--cancel:not([disabled])',
@@ -126,6 +175,9 @@ export class DialogFocusScope {
 
     this.isActive = false;
     this.dialogElement.removeEventListener('keydown', this.handleKeyDown);
+    this.focusMutationObserver?.disconnect();
+    this.focusMutationObserver = undefined;
+    this.focusableElementsCache = undefined;
 
     if (shouldRestore) {
       const restoreTarget =
@@ -180,9 +232,8 @@ export class DialogFocusScope {
       return;
     }
 
-    const focusableElements = [
-      ...this.dialogElement.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
-    ].filter(isFocusable);
+    this.applyPendingFocusMutations();
+    const focusableElements = this.getFocusableElements();
 
     if (focusableElements.length === 0) {
       event.preventDefault();
@@ -208,4 +259,37 @@ export class DialogFocusScope {
       firstElement?.focus();
     }
   };
+
+  private readonly handleFocusMutations = (
+    mutationRecords: readonly MutationRecord[],
+  ): void => {
+    if (mutationRecords.some((record) => this.affectsFocusableElements(record))) {
+      this.focusableElementsCache = undefined;
+    }
+  };
+
+  private affectsFocusableElements(mutationRecord: MutationRecord): boolean {
+    const mutationTarget = mutationRecord.target;
+    return !(
+      mutationTarget instanceof Element &&
+      mutationTarget.closest(SEARCH_SELECT_LISTBOX_SELECTOR) !== null
+    );
+  }
+
+  private applyPendingFocusMutations(): void {
+    const pendingMutations = this.focusMutationObserver?.takeRecords() ?? [];
+    this.handleFocusMutations(pendingMutations);
+  }
+
+  private getFocusableElements(): readonly HTMLElement[] {
+    if (this.focusableElementsCache !== undefined) {
+      return this.focusableElementsCache;
+    }
+
+    const computedStyleByElement = new WeakMap<HTMLElement, CSSStyleDeclaration>();
+    this.focusableElementsCache = [
+      ...this.dialogElement.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
+    ].filter((element) => isFocusable(element, computedStyleByElement));
+    return this.focusableElementsCache;
+  }
 }

@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { DialogFocusScope } from '../../src/dialog/dialog-focus-scope.js';
 
@@ -119,6 +119,47 @@ describe('DialogFocusScope', () => {
     });
     dialogElement.dispatchEvent(escapeEvent);
     expect(escapeEvent.defaultPrevented).toBe(false);
+  });
+
+  it('reuses focus endpoints and refreshes them after relevant DOM changes', async () => {
+    const { dialogElement, scope } = createScope();
+    const contentElement = document.createElement('div');
+    const firstButton = document.createElement('button');
+    const secondButton = document.createElement('button');
+    contentElement.append(firstButton, secondButton);
+    dialogElement.append(contentElement);
+    const querySelectorAll = vi.spyOn(dialogElement, 'querySelectorAll');
+    scope.activate(contentElement);
+
+    secondButton.focus();
+    dialogElement.dispatchEvent(
+      new KeyboardEvent('keydown', { bubbles: true, cancelable: true, key: 'Tab' }),
+    );
+    firstButton.focus();
+    dialogElement.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        bubbles: true,
+        cancelable: true,
+        key: 'Tab',
+        shiftKey: true,
+      }),
+    );
+    expect(querySelectorAll).toHaveBeenCalledOnce();
+
+    const lastButton = document.createElement('button');
+    contentElement.append(lastButton);
+    await Promise.resolve();
+    lastButton.focus();
+    const nextTab = new KeyboardEvent('keydown', {
+      bubbles: true,
+      cancelable: true,
+      key: 'Tab',
+    });
+    dialogElement.dispatchEvent(nextTab);
+    expect(nextTab.defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(firstButton);
+    expect(querySelectorAll).toHaveBeenCalledTimes(2);
+    scope.destroy();
   });
 
   it('contains focus when no controls exist and restores to the table fallback', () => {
