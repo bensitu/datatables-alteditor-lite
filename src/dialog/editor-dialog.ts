@@ -48,7 +48,6 @@ export class EditorDialog {
     this.template = createDialogTemplate(instanceId, language);
     this.focusScope = new DialogFocusScope(this.template.dialogElement, tableElement);
     this.template.dialogElement.addEventListener('cancel', this.handleNativeCancel);
-    this.template.dialogElement.addEventListener('click', this.handleBackdropClick);
     this.template.cancelButton.addEventListener('click', this.handleCancelClick);
     document.body.append(this.template.dialogElement);
   }
@@ -213,7 +212,6 @@ export class EditorDialog {
     this.focusScope.deactivate(true);
     this.focusScope.destroy();
     this.template.dialogElement.removeEventListener('cancel', this.handleNativeCancel);
-    this.template.dialogElement.removeEventListener('click', this.handleBackdropClick);
     this.template.cancelButton.removeEventListener('click', this.handleCancelClick);
     this.template.dialogElement.remove();
     this.callbacks = undefined;
@@ -275,12 +273,6 @@ export class EditorDialog {
           currentCallbacks.onRequestClose('escape');
         }
       });
-    }
-  };
-
-  private readonly handleBackdropClick = (event: MouseEvent): void => {
-    if (event.target === this.template.dialogElement) {
-      event.preventDefault();
     }
   };
 }

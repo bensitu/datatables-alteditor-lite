@@ -181,12 +181,10 @@ describe('EditorDialog', () => {
     Reflect.deleteProperty(document.documentElement, 'clientHeight');
   });
 
-  it('submits confirmations, blocks backdrop dismissal, and destroys idempotently', () => {
+  it('submits confirmations and destroys idempotently', () => {
     const { controller, dialogElement } = createDialog();
     const contentElement = document.createElement('div');
-    const childElement = document.createElement('span');
     const onSubmit = vi.fn();
-    contentElement.append(childElement);
     controller.openConfirmation(contentElement, 'Remove people', 'Remove', {
       onRequestClose: vi.fn(),
       onSubmit,
@@ -202,16 +200,6 @@ describe('EditorDialog', () => {
     controller.setSubmitAvailable(false);
     submitButton.click();
     expect(onSubmit).toHaveBeenCalledOnce();
-
-    const childClick = new MouseEvent('click', { bubbles: true, cancelable: true });
-    childElement.dispatchEvent(childClick);
-    expect(childClick.defaultPrevented).toBe(false);
-    const backdropClick = new MouseEvent('click', {
-      bubbles: true,
-      cancelable: true,
-    });
-    dialogElement.dispatchEvent(backdropClick);
-    expect(backdropClick.defaultPrevented).toBe(true);
 
     controller.destroy();
     expect(dialogElement.isConnected).toBe(false);

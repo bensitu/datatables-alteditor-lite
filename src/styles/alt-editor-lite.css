@@ -6,7 +6,7 @@
   --dt-alteditor-lite-overlay-color: rgb(0 0 0 / 45%);
   --dt-alteditor-lite-surface-color: Canvas;
   --dt-alteditor-lite-text-color: CanvasText;
-  --dt-alteditor-lite-border-color: color-mix(in srgb, CanvasText 25%, transparent);
+  --dt-alteditor-lite-border-color: rgb(127 127 127 / 40%);
   --dt-alteditor-lite-focus-color: Highlight;
   --dt-alteditor-lite-primary-color: #005a9e;
   --dt-alteditor-lite-primary-text-color: #fff;
@@ -16,13 +16,19 @@
   --dt-alteditor-lite-search-select-max-height: 16rem;
 }
 
+@supports (color: color-mix(in srgb, black, white)) {
+  :root {
+    --dt-alteditor-lite-border-color: color-mix(in srgb, CanvasText 25%, transparent);
+  }
+}
+
 .dt-alteditor-lite-dialog {
   width: min(
     calc(100% - (2 * var(--dt-alteditor-lite-spacing))),
     var(--dt-alteditor-lite-dialog-width)
   );
   max-width: none;
-  max-height: var(--dt-alteditor-lite-dialog-max-height, calc(100dvh - 2rem));
+  max-height: var(--dt-alteditor-lite-dialog-max-height, calc(100vh - 2rem));
   padding: 0;
   overflow: hidden;
   color: var(--dt-alteditor-lite-text-color);
@@ -30,6 +36,12 @@
   background: var(--dt-alteditor-lite-surface-color);
   border: 1px solid var(--dt-alteditor-lite-border-color);
   border-radius: var(--dt-alteditor-lite-border-radius);
+}
+
+@supports (height: 100dvh) {
+  .dt-alteditor-lite-dialog {
+    max-height: var(--dt-alteditor-lite-dialog-max-height, calc(100dvh - 2rem));
+  }
 }
 
 .dt-alteditor-lite-dialog::backdrop {
@@ -324,7 +336,7 @@ textarea.dt-alteditor-lite-field__control {
 @media (width <= 30rem) {
   .dt-alteditor-lite-dialog {
     width: calc(100% - 1rem);
-    max-height: calc(100dvh - 1rem);
+    max-height: calc(100vh - 1rem);
   }
 
   .dt-alteditor-lite-dialog__header,
@@ -343,7 +355,17 @@ textarea.dt-alteditor-lite-field__control {
   }
 
   .dt-alteditor-lite-search-select__listbox {
-    max-height: min(12rem, 40dvh);
+    max-height: min(12rem, 40vh);
+  }
+
+  @supports (height: 100dvh) {
+    .dt-alteditor-lite-dialog {
+      max-height: calc(100dvh - 1rem);
+    }
+
+    .dt-alteditor-lite-search-select__listbox {
+      max-height: min(12rem, 40dvh);
+    }
   }
 }
 

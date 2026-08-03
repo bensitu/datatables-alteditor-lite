@@ -81,6 +81,20 @@ the Chromium, Firefox, and WebKit versions exercised by the release test suite.
 The published Node engine range applies to installation, builds, and server-side
 tooling; the runtime itself is browser code.
 
+The browser runtime requires these native platform capabilities:
+
+| Capability                              | Used for                              |
+| --------------------------------------- | ------------------------------------- |
+| `<dialog>` and `::backdrop`             | Modal rendering and focus containment |
+| `AbortController` and `AbortSignal.any` | Operation and validation cancellation |
+| `Object.hasOwn`                         | Safe form-value path traversal        |
+| ES modules and modern `CustomEvent`     | Package loading and lifecycle events  |
+
+No compatibility polyfills are bundled. Applications that support older browser
+engines must provide these capabilities before initializing the editor. The CSS
+includes viewport-unit and color fallbacks for engines that lack `dvh` or
+`color-mix()` while supporting the required JavaScript APIs.
+
 The package metadata defines the supported DataTables, Buttons, and Select peer
 ranges. Development uses compatible releases resolved by the lockfile without
 requiring one exact patch version at runtime.

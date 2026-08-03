@@ -18,6 +18,9 @@ Supported field types are:
 Disabled fields are omitted from collection. Readonly fields remain collectible.
 `editable: false` omits the field from Create and Edit forms. Consumer labels,
 descriptions, options, and error messages are rendered as text, never as HTML.
+Readonly controls remain focusable for accessibility and prevent normal user
+interaction; this is a presentation constraint, not an authorization boundary.
+Validate and authorize submitted values in the persistence layer.
 Configured defaults are checked when the editor is constructed so values that
 cannot be represented by their field type fail before a dialog opens.
 

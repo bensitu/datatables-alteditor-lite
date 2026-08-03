@@ -349,7 +349,7 @@ document.querySelector('#show-field-gallery').addEventListener('click', (event) 
       {
         data: 'reviewAt',
         render(value) {
-          return value.replace('T', ' ');
+          return typeof value === 'string' ? value.replace('T', ' ') : '';
         },
       },
       { data: 'attachmentName' },
