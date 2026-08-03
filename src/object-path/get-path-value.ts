@@ -6,19 +6,19 @@ export type PathValueLookup =
   | { readonly found: false; readonly value: undefined };
 
 /**
- * Looks up an own-property-only value while preserving presence information.
+ * Looks up an own-property-only value from prevalidated path segments.
  *
- * @param sourceValues - Object that owns the form values.
- * @param fieldPath - Validated dot-separated field path.
+ * @param sourceValues - Object that owns the values.
+ * @param fieldPathSegments - Path segments previously returned by parseFieldPath.
  * @returns The path presence and its value, including an explicit undefined.
  */
-export function lookupPathValue(
+export function lookupPathSegments(
   sourceValues: object,
-  fieldPath: string,
+  fieldPathSegments: readonly string[],
 ): PathValueLookup {
   let currentValue: unknown = sourceValues;
 
-  for (const fieldPathSegment of parseFieldPath(fieldPath)) {
+  for (const fieldPathSegment of fieldPathSegments) {
     if (
       typeof currentValue !== 'object' ||
       currentValue === null ||
@@ -31,6 +31,20 @@ export function lookupPathValue(
   }
 
   return { found: true, value: currentValue };
+}
+
+/**
+ * Looks up an own-property-only value while preserving presence information.
+ *
+ * @param sourceValues - Object that owns the form values.
+ * @param fieldPath - Validated dot-separated field path.
+ * @returns The path presence and its value, including an explicit undefined.
+ */
+export function lookupPathValue(
+  sourceValues: object,
+  fieldPath: string,
+): PathValueLookup {
+  return lookupPathSegments(sourceValues, parseFieldPath(fieldPath));
 }
 
 /**

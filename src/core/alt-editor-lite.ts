@@ -22,7 +22,8 @@ import {
   deleteEditorInstance,
   storeEditorInstance,
 } from '../instance/editor-instance-store.js';
-import { getPathValue } from '../object-path/get-path-value.js';
+import { parseFieldPath } from '../object-path/field-path.js';
+import { lookupPathSegments } from '../object-path/get-path-value.js';
 
 import {
   AltEditorLiteError,
@@ -61,6 +62,11 @@ interface OwnedOperationRequest {
   readonly abortController: AbortController;
   readonly operation: EditorOperation;
   readonly sequence: number;
+}
+
+interface UniqueFieldLookup {
+  readonly name: string;
+  readonly pathSegments: readonly string[];
 }
 
 function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
@@ -116,6 +122,8 @@ export class AltEditorLite<
 
   private readonly tableElement: HTMLTableElement;
 
+  private readonly uniqueFieldLookups: readonly UniqueFieldLookup[];
+
   private activeForm: EditorFormController<TFormValues> | undefined;
 
   private activeOperationRequest: OwnedOperationRequest | undefined;
@@ -141,6 +149,14 @@ export class AltEditorLite<
     validateFieldConfigurations(options.fields);
     validateOperationConfiguration(options);
     this.declaredFieldPaths = Object.freeze(options.fields.map((field) => field.name));
+    this.uniqueFieldLookups = Object.freeze(
+      options.fields
+        .filter((field) => field.unique === true)
+        .map((field) => ({
+          name: field.name,
+          pathSegments: parseFieldPath(field.name),
+        })),
+    );
     this.language = resolveLanguage(options.language);
     this.tableElement = table.table().node();
     storeEditorInstance(this.tableElement, this);
@@ -1108,28 +1124,34 @@ export class AltEditorLite<
     action: Extract<DialogAction, 'create' | 'edit'>,
     values: Readonly<EditorValues<TFormValues>>,
   ): Readonly<Record<string, string>> {
-    const rows = this.table.rows().data().toArray();
     const excludedRow = action === 'edit' ? this.editTargetCapture?.sourceRow : undefined;
     const fieldErrors: Record<string, string> = {};
 
-    for (const field of this.options.fields) {
-      if (field.unique !== true) {
-        continue;
-      }
+    const candidates = this.uniqueFieldLookups.flatMap((field) => {
+      const value = lookupPathSegments(values, field.pathSegments).value;
+      return value === undefined ? [] : [{ ...field, value }];
+    });
 
-      const candidateValue = getPathValue(values, field.name);
-      if (candidateValue === undefined) {
-        continue;
-      }
+    this.table
+      .rows()
+      .data()
+      .each((row) => {
+        if (row === excludedRow) {
+          return;
+        }
 
-      const hasDuplicate = rows.some(
-        (row) =>
-          row !== excludedRow && Object.is(getPathValue(row, field.name), candidateValue),
-      );
-      if (hasDuplicate) {
-        fieldErrors[field.name] = this.language.validation.unique;
-      }
-    }
+        for (const candidate of candidates) {
+          if (
+            fieldErrors[candidate.name] === undefined &&
+            Object.is(
+              lookupPathSegments(row, candidate.pathSegments).value,
+              candidate.value,
+            )
+          ) {
+            fieldErrors[candidate.name] = this.language.validation.unique;
+          }
+        }
+      });
 
     return fieldErrors;
   }
