@@ -99,7 +99,7 @@ The package metadata defines the supported DataTables, Buttons, and Select peer
 ranges. Development uses compatible releases resolved by the lockfile without
 requiring one exact patch version at runtime.
 
-See [Fields](fields.md), [Operations](operations.md),
-[Localization](localization.md), and [Browser Global](browser-global.md). A working
-Browser Global configuration is available in the
+See [API reference](api-reference.md), [Fields](fields.md),
+[Operations](operations.md), [Localization](localization.md), and
+[Browser Global](browser-global.md). A working Browser Global configuration is available in the
 [live demo](https://bensitu.github.io/datatables-alteditor-lite/examples/demo/).

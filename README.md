@@ -8,7 +8,8 @@ jQuery or UI-framework runtime dependency.
 [Live demo](https://bensitu.github.io/datatables-alteditor-lite/examples/demo/) ·
 [Getting started](docs/getting-started.md) ·
 [Configuration](docs/configuration.md) · [Fields](docs/fields.md) ·
-[Operations](docs/operations.md) · [Localization](docs/localization.md)
+[Operations](docs/operations.md) · [API reference](docs/api-reference.md) ·
+[Localization](docs/localization.md)
 
 ## Highlights
 
