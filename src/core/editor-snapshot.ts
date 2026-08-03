@@ -2,7 +2,7 @@
  * Immutable identity captured for one Edit target before its dialog opens.
  */
 export interface EditTargetSnapshot<TRow extends object> {
-  /** Stable DataTables internal row index at capture time. */
+  /** Stable DataTables row index at capture time. */
   readonly rowIndex: number;
   /** Public DataTables row id when one is configured. */
   readonly rowId: string | undefined;
@@ -16,7 +16,7 @@ export interface EditTargetSnapshot<TRow extends object> {
  * Immutable identities captured for every Remove target before confirmation.
  */
 export interface RemoveTargetSnapshot<TRow extends object> {
-  /** Stable DataTables internal indexes in capture order. */
+  /** Stable DataTables row indexes in capture order. */
   readonly rowIndexes: readonly number[];
   /** Public row ids aligned with `rowIndexes`. */
   readonly rowIds: readonly (string | undefined)[];
