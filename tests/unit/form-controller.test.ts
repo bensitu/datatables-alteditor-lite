@@ -201,6 +201,17 @@ describe('FormController', () => {
     expect(await Promise.resolve(form.getField('role')?.getValue())).toBe(1);
   });
 
+  it('applies explicit undefined values without clearing absent defaults', async () => {
+    const form = createForm();
+
+    form.populate({});
+    expect(await Promise.resolve(form.getField('role')?.getValue())).toBe(2);
+
+    form.populate({ role: undefined } as unknown as Partial<FormValues>);
+    expect(await Promise.resolve(form.getField('role')?.getValue())).toBeUndefined();
+    await expect(form.collect()).resolves.not.toHaveProperty('role');
+  });
+
   it('runs native constraints before custom validation and focuses errors', async () => {
     const form = createForm();
     const nameField = form.getField('profile.name');

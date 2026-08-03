@@ -91,6 +91,7 @@ describe('declared field merge', () => {
       email: 'before@example.test',
       name: undefined,
     });
+    expect(Object.hasOwn(result.profile, 'name')).toBe(true);
     expect(result.untouched).toBe(original.untouched);
   });
 

@@ -1,4 +1,4 @@
-import { getPathValue } from '../object-path/get-path-value.js';
+import { lookupPathValue } from '../object-path/get-path-value.js';
 
 import type { ManagedFieldController } from '../fields/managed-field-controller.js';
 
@@ -13,9 +13,9 @@ export function populateFormValues<TFormValues extends object>(
   values: Readonly<object>,
 ): void {
   for (const controller of controllers) {
-    const fieldValue = getPathValue(values, controller.name);
-    if (fieldValue !== undefined) {
-      controller.setValue(fieldValue);
+    const pathLookup = lookupPathValue(values, controller.name);
+    if (pathLookup.found) {
+      controller.setValue(pathLookup.value);
     }
   }
 }

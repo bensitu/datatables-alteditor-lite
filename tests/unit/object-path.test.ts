@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { EditorConfigurationError } from '../../src/core/alt-editor-lite-error.js';
 import { parseFieldPath } from '../../src/object-path/field-path.js';
-import { getPathValue } from '../../src/object-path/get-path-value.js';
+import { getPathValue, lookupPathValue } from '../../src/object-path/get-path-value.js';
 import { setPathValue } from '../../src/object-path/set-path-value.js';
 
 describe('safe object paths', () => {
@@ -42,6 +42,19 @@ describe('safe object paths', () => {
     expect(getPathValue(values, 'profile.missing')).toBeUndefined();
     expect(getPathValue(values, 'profile.scalar.value')).toBeUndefined();
     expect(getPathValue({ profile: null }, 'profile.value')).toBeUndefined();
+  });
+
+  it('distinguishes an explicit undefined value from an absent path', () => {
+    const values = { profile: { name: undefined } };
+
+    expect(lookupPathValue(values, 'profile.name')).toEqual({
+      found: true,
+      value: undefined,
+    });
+    expect(lookupPathValue(values, 'profile.missing')).toEqual({
+      found: false,
+      value: undefined,
+    });
   });
 
   it('creates only plain objects and preserves existing plain records', () => {
