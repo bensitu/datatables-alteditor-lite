@@ -76,12 +76,13 @@ function assertValidDefaultValue<TFormValues extends object>(
 }
 
 function assertPositiveLimit(
-  limit: number | undefined,
+  limit: number | null | undefined,
   propertyName: string,
   fieldName: string,
 ): void {
   if (
     limit !== undefined &&
+    limit !== null &&
     (!Number.isFinite(limit) || limit <= 0 || !Number.isInteger(limit))
   ) {
     throw new EditorConfigurationError(

@@ -25,6 +25,7 @@ import {
 import { getPathValue } from '../object-path/get-path-value.js';
 
 import {
+  AltEditorLiteError,
   EditorConfigurationError,
   EditorDestroyedError,
   EditorOperationBusyError,
@@ -83,7 +84,11 @@ function assertCompleteRow(
   rowCandidate: unknown,
   callbackName: string,
 ): asserts rowCandidate is object {
-  if (typeof rowCandidate !== 'object' || rowCandidate === null) {
+  if (
+    typeof rowCandidate !== 'object' ||
+    rowCandidate === null ||
+    Array.isArray(rowCandidate)
+  ) {
     throw new EditorConfigurationError(
       `${callbackName} must return a complete row object.`,
     );
@@ -409,19 +414,21 @@ export class AltEditorLite<
     sourceValues?: Readonly<object>,
   ): void {
     this.transitionTo({ action, status: 'opening' });
-    const form = buildEditorForm(
-      this.options.fields,
-      this.instanceId,
-      this.language,
-      (values) => this.validateLocalUniqueness(action, values),
-    );
-    this.activeForm = form;
-
-    if (sourceValues !== undefined) {
-      form.populateFromSource(sourceValues);
-    }
+    let form: EditorFormController<TFormValues> | undefined;
 
     try {
+      form = buildEditorForm(
+        this.options.fields,
+        this.instanceId,
+        this.language,
+        (values) => this.validateLocalUniqueness(action, values),
+      );
+      this.activeForm = form;
+
+      if (sourceValues !== undefined) {
+        form.populateFromSource(sourceValues);
+      }
+
       this.dialog.openForm(
         form.element,
         action === 'create'
@@ -437,11 +444,36 @@ export class AltEditorLite<
           },
         },
       );
-    } catch (error: unknown) {
-      form.destroy();
+    } catch (rawError: unknown) {
+      this.dialog.close();
+      form?.destroy();
       this.activeForm = undefined;
       this.transitionTo({ status: 'ready' });
-      throw error;
+      const normalizedError = normalizeOperationError(
+        rawError,
+        new AbortController().signal,
+        this.language,
+      );
+      const openingError =
+        normalizedError instanceof InternalOperationAbort
+          ? new AltEditorLiteError({
+              cause: rawError,
+              code: 'UNKNOWN',
+              message: this.language.errors.generic,
+              retryable: false,
+            })
+          : normalizedError;
+      dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:error'>(
+        this.tableElement,
+        'alteditor-lite:error',
+        {
+          editor: this,
+          error: openingError,
+          operation: action,
+          type: 'error',
+        },
+      );
+      throw rawError;
     }
 
     this.transitionTo({ action, status: 'open' });

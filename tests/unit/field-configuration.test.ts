@@ -12,6 +12,7 @@ import type { FieldConfig } from '../../src/fields/field-config.js';
 interface ConfigurationValues {
   readonly attachment: File | null;
   readonly choice?: string;
+  readonly encodedAttachments: readonly string[];
   readonly notes: string;
   readonly secret: string;
   readonly title: string;
@@ -45,6 +46,15 @@ describe('field runtime configuration', () => {
           label: 'Attachment',
           maxFileBytes: 1024,
           name: 'attachment',
+          type: 'file',
+        },
+        {
+          encoding: 'data-url',
+          label: 'Encoded attachments',
+          maxFileBytes: null,
+          maxFileCount: null,
+          multiple: true,
+          name: 'encodedAttachments',
           type: 'file',
         },
       ]);

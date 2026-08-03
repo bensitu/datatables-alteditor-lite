@@ -4,7 +4,13 @@ import {
   createNativeControlController,
   type NativeControlAdapter,
 } from './field-controller-foundation.js';
-import { type FileBudgetMessages, validateFileBudget } from './file-budget.js';
+import {
+  DEFAULT_DATA_URL_MAX_FILE_BYTES,
+  DEFAULT_DATA_URL_MAX_FILE_COUNT,
+  type FileBudget,
+  type FileBudgetMessages,
+  validateFileBudget,
+} from './file-budget.js';
 import { readFileAsDataUrl, readFilesAsDataUrls } from './read-file-data-url.js';
 
 import type {
@@ -18,9 +24,32 @@ import type { ManagedFieldController } from './managed-field-controller.js';
 
 interface FileProperties {
   readonly accept?: string;
-  readonly maxFileBytes?: number;
-  readonly maxFileCount?: number;
+  readonly encoding?: 'data-url' | 'file';
+  readonly maxFileBytes?: number | null;
+  readonly maxFileCount?: number | null;
   readonly multiple?: boolean;
+}
+
+function resolveFileBudget(config: Readonly<FileProperties>): FileBudget {
+  const defaultMaxFileBytes =
+    config.encoding === 'data-url' ? DEFAULT_DATA_URL_MAX_FILE_BYTES : undefined;
+  const defaultMaxFileCount =
+    config.encoding === 'data-url' && config.multiple === true
+      ? DEFAULT_DATA_URL_MAX_FILE_COUNT
+      : undefined;
+  const maxFileBytes =
+    config.maxFileBytes === null
+      ? undefined
+      : (config.maxFileBytes ?? defaultMaxFileBytes);
+  const maxFileCount =
+    config.maxFileCount === null
+      ? undefined
+      : (config.maxFileCount ?? defaultMaxFileCount);
+
+  return {
+    ...(maxFileBytes === undefined ? {} : { maxFileBytes }),
+    ...(maxFileCount === undefined ? {} : { maxFileCount }),
+  };
 }
 
 function selectedFiles(inputElement: HTMLInputElement): readonly File[] {
@@ -45,6 +74,7 @@ function createTypedFileController<TFormValues extends object, TValue>(
 ): ManagedFieldController<TFormValues> {
   const inputElement = document.createElement('input');
   const lifecycleAbortController = new AbortController();
+  const fileBudget = resolveFileBudget(config);
   let isReadOnly = false;
 
   inputElement.type = 'file';
@@ -68,18 +98,7 @@ function createTypedFileController<TFormValues extends object, TValue>(
     }
 
     try {
-      validateFileBudget(
-        selectedFiles(inputElement),
-        {
-          ...(config.maxFileBytes === undefined
-            ? {}
-            : { maxFileBytes: config.maxFileBytes }),
-          ...(config.maxFileCount === undefined
-            ? {}
-            : { maxFileCount: config.maxFileCount }),
-        },
-        budgetMessages,
-      );
+      validateFileBudget(selectedFiles(inputElement), fileBudget, budgetMessages);
       return { valid: true };
     } catch (error: unknown) {
       return {
@@ -93,18 +112,7 @@ function createTypedFileController<TFormValues extends object, TValue>(
     control: inputElement,
     readValue: (signal?: AbortSignal) => {
       const selection = selectedFiles(inputElement);
-      validateFileBudget(
-        selection,
-        {
-          ...(config.maxFileBytes === undefined
-            ? {}
-            : { maxFileBytes: config.maxFileBytes }),
-          ...(config.maxFileCount === undefined
-            ? {}
-            : { maxFileCount: config.maxFileCount }),
-        },
-        budgetMessages,
-      );
+      validateFileBudget(selection, fileBudget, budgetMessages);
       const readSignal =
         signal === undefined
           ? lifecycleAbortController.signal

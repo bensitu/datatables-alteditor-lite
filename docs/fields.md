@@ -21,6 +21,12 @@ descriptions, options, and error messages are rendered as text, never as HTML.
 Configured defaults are checked when the editor is constructed so values that
 cannot be represented by their field type fail before a dialog opens.
 
+Edit source values are also checked against the configured field type. A mismatch
+such as `null` for a text field rejects that open request, publishes
+`alteditor-lite:error`, and returns the editor to `ready`; values are not silently
+coerced. Normalize nullable domain values before supplying them to DataTables when
+the corresponding form field uses a non-nullable value type.
+
 The `attributes` option accepts only attributes applicable to the configured
 control. For example, `min`, `max`, and `step` are accepted for number and temporal
 inputs, while a radio field rejects unrelated attributes such as `placeholder`.
@@ -93,6 +99,16 @@ field clears and runs its normal `onChange` callback with a non-error state.
 
 ## Files
 
-Configure `maxFileBytes` and, for multiple files, `maxFileCount`. Budgets are
-checked before data URL reads. Browser validation and file filters are usability
-features; a server must independently validate content, size, and media type.
+File fields return `File` objects by default, so the library does not read their
+content and does not impose a default budget. Explicit `maxFileBytes` and, for
+multiple files, `maxFileCount` limits still apply.
+
+With `encoding: 'data-url'`, AltEditorLite reads the selected content into browser
+memory. It therefore defaults to 5 MiB per file and at most five files for a
+multiple field. Set a positive `maxFileBytes` or `maxFileCount` to replace the
+corresponding default, or set it to `null` to disable that default explicitly.
+Budgets are checked before any data URL read.
+
+Browser validation and file filters are usability features; a server must
+independently validate content, size, and media type. Disabling or substantially
+raising a data URL budget can exhaust browser memory and should be deliberate.

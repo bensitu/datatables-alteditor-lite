@@ -104,26 +104,31 @@ export class EditorFormController<
     this.submissionErrorElement.setAttribute('role', 'alert');
     this.element.append(this.submissionErrorElement);
 
-    for (const [fieldIndex, config] of fields.entries()) {
-      if (config.editable === false) {
-        continue;
-      }
+    try {
+      for (const [fieldIndex, config] of fields.entries()) {
+        if (config.editable === false) {
+          continue;
+        }
 
-      const controller = createFieldController(
-        config,
-        `${instanceId}-field-${String(fieldIndex)}`,
-        language,
-        () => {
-          this.notifyFieldChange(config.name);
-        },
-      );
-      this.controllers.push(controller);
-      this.controllerByName.set(config.name, controller);
-      this.element.append(controller.element);
+        const controller = createFieldController(
+          config,
+          `${instanceId}-field-${String(fieldIndex)}`,
+          language,
+          () => {
+            this.notifyFieldChange(config.name);
+          },
+        );
+        this.controllers.push(controller);
+        this.controllerByName.set(config.name, controller);
+        this.element.append(controller.element);
 
-      if (Object.hasOwn(config, 'defaultValue')) {
-        controller.setValue(config.defaultValue);
+        if (Object.hasOwn(config, 'defaultValue')) {
+          controller.setValue(config.defaultValue);
+        }
       }
+    } catch (error: unknown) {
+      this.destroy();
+      throw error;
     }
   }
 

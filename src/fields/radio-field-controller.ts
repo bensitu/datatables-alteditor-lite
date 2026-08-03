@@ -36,6 +36,7 @@ export function createRadioFieldController<
   const errorElement = document.createElement('div');
   const tokenMap = new OptionTokenMap(config.options);
   const inputElements: HTMLInputElement[] = [];
+  const descriptionId = `${fieldId}-description`;
   const errorId = `${fieldId}-error`;
   const isReadOnly = config.readonly ?? false;
   let isDestroyed = false;
@@ -49,7 +50,10 @@ export function createRadioFieldController<
   groupElement.className = 'dt-alteditor-lite-radio';
   groupElement.setAttribute('role', 'radiogroup');
   groupElement.setAttribute('aria-labelledby', labelElement.id);
-  groupElement.setAttribute('aria-describedby', errorId);
+  groupElement.setAttribute(
+    'aria-describedby',
+    config.description === undefined ? errorId : `${descriptionId} ${errorId}`,
+  );
   errorElement.className = 'dt-alteditor-lite-field__error';
   errorElement.id = errorId;
   errorElement.hidden = true;
@@ -98,6 +102,7 @@ export function createRadioFieldController<
   if (config.description !== undefined) {
     const descriptionElement = document.createElement('div');
     descriptionElement.className = 'dt-alteditor-lite-field__description';
+    descriptionElement.id = descriptionId;
     descriptionElement.textContent = config.description;
     fieldElement.append(descriptionElement);
   }

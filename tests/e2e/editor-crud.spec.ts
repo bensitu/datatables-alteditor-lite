@@ -48,6 +48,7 @@ async function createCrudFixture(page: Page): Promise<void> {
       globalThis.updateCalls = 0;
       globalThis.removeCalls = 0;
       globalThis.holdNextUpdate = false;
+      globalThis.releaseRemove = undefined;
       globalThis.releaseUpdate = undefined;
       globalThis.shouldFailUpdate = false;
       globalThis.tableApi = new DataTable('#editor-table', {
@@ -113,8 +114,9 @@ async function createCrudFixture(page: Page): Promise<void> {
             remove: async () => {
               globalThis.removeCalls += 1;
               await new Promise(resolve => {
-                globalThis.setTimeout(resolve, 80);
+                globalThis.releaseRemove = resolve;
               });
+              globalThis.releaseRemove = undefined;
             }
           }
         }
@@ -261,6 +263,12 @@ test('always confirms Remove and restores focus after keyboard activation', asyn
   await page.keyboard.press('Enter');
 
   await expect(dialog).toHaveAttribute('aria-busy', 'true');
+  await page.evaluate(() => {
+    const runtimeScope = globalThis as typeof globalThis & {
+      releaseRemove?: () => void;
+    };
+    runtimeScope.releaseRemove?.();
+  });
   await expect(dialog).not.toBeVisible();
   await expect(removeButton).toBeFocused();
   await expect(page.locator('#row-b')).toHaveCount(0);

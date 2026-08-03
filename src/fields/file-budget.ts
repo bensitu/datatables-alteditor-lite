@@ -1,5 +1,11 @@
 import { EditorFileLimitError } from '../core/alt-editor-lite-error.js';
 
+/** Default per-file limit applied before a data URL read. */
+export const DEFAULT_DATA_URL_MAX_FILE_BYTES = 5 * 1024 * 1024;
+
+/** Default selection limit applied before multiple data URL reads. */
+export const DEFAULT_DATA_URL_MAX_FILE_COUNT = 5;
+
 /**
  * File selection budgets checked before content is read.
  */

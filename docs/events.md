@@ -37,9 +37,13 @@ success | error
 close (when the dialog actually closes)
 ```
 
+If Create or Edit form construction or source-value population fails, the editor
+cleans up and returns to `ready`, then publishes `error` without a preceding
+`open` or a following `close` event.
+
 `submit` occurs after validation, collection, and target validation but before the
 persistence callback. `success` occurs after DataTables mutation and draw.
-`error` occurs after safe UI mapping without an AltEditorLite table mutation.
+`error` occurs after safe normalization without an AltEditorLite table mutation.
 `close` occurs after dialog cleanup, focus restoration, and snapshot release.
 
 Refresh publishes:

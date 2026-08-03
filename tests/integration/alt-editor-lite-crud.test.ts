@@ -4,6 +4,7 @@ import {
   AltEditorLite,
   AltEditorLiteError,
   ENGLISH_LANGUAGE,
+  EditorConfigurationError,
   EditorOperationBusyError,
   EditorSelectionUnavailableError,
   type AltEditorLiteOptions,
@@ -157,6 +158,59 @@ function confirmRemove(): void {
   }
   confirmButton.click();
 }
+
+describe('AltEditorLite form opening', () => {
+  it('recovers and publishes an error when source values cannot populate a field', async () => {
+    const invalidRow = {
+      id: 'row-null',
+      name: null,
+      rank: 1,
+    } as unknown as TestRow;
+    const { editor, tableElement } = createCrudEditor(
+      'invalid-edit-source',
+      {
+        clientSide: {
+          createRow: (values) => ({
+            id: 'created-after-error',
+            name: values.name ?? '',
+            rank: values.rank ?? 0,
+          }),
+          updateRow: (original, values) => ({
+            ...original,
+            ...values,
+          }),
+        },
+      },
+      { data: [invalidRow] },
+    );
+    const errorListener = vi.fn();
+    tableElement.addEventListener('alteditor-lite:error', errorListener);
+
+    await expect(editor.openEditDialog('#row-null')).rejects.toThrow(
+      EditorConfigurationError,
+    );
+
+    expect(editor.getState()).toEqual({ status: 'ready' });
+    expect(document.querySelector('.dt-alteditor-lite-form')).toBeNull();
+    expect(errorListener).toHaveBeenCalledOnce();
+    const errorEvent = errorListener.mock.calls[0]?.[0] as
+      CustomEvent<unknown> | undefined;
+    expect(errorEvent?.detail).toMatchObject({
+      editor,
+      error: {
+        code: 'CONFIGURATION',
+        message: 'Field "name" requires a string value.',
+      },
+      operation: 'edit',
+      type: 'error',
+    });
+
+    await expect(editor.openCreateDialog()).resolves.toBeUndefined();
+    expect(editor.getState()).toEqual({ action: 'create', status: 'open' });
+    await editor.closeDialog();
+    expect(editor.getState()).toEqual({ status: 'ready' });
+  });
+});
 
 describe('AltEditorLite asynchronous Create', () => {
   it('waits for persistence before adding and draws before success', async () => {

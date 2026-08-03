@@ -31,3 +31,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   restored compact, semantic checkbox presentation.
 - Hardened external language loading, asynchronous validation cancellation, dialog
   focus management, and instance identity across multiple bundle formats.
+- Recovered cleanly from form construction and source-population failures, rejected
+  array-valued row callback results, and exposed opening failures through the error
+  event.
+- Associated radio descriptions with their accessible group and added conservative,
+  overridable budgets for file fields that encode content as data URLs.

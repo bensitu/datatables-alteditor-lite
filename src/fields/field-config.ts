@@ -242,7 +242,8 @@ export type FileEncoding = 'file' | 'data-url';
 interface BaseFileProperties {
   readonly type: 'file';
   readonly accept?: string;
-  readonly maxFileBytes?: number;
+  /** Positive per-file byte limit, or null to disable the data URL default. */
+  readonly maxFileBytes?: number | null;
 }
 
 /**
@@ -268,13 +269,15 @@ export type MultipleFileFieldConfig<TFormValues extends object> =
       BaseFileProperties & {
         readonly multiple: true;
         readonly encoding?: 'file';
-        readonly maxFileCount?: number;
+        /** Positive selection limit, or null to disable the data URL default. */
+        readonly maxFileCount?: number | null;
       })
   | (VisibleFieldConfig<TFormValues, readonly string[]> &
       BaseFileProperties & {
         readonly multiple: true;
         readonly encoding: 'data-url';
-        readonly maxFileCount?: number;
+        /** Positive selection limit, or null to disable the data URL default. */
+        readonly maxFileCount?: number | null;
       });
 
 /** Any supported file-field configuration. */

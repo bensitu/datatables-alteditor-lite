@@ -94,9 +94,17 @@ describe('radio field controller', () => {
       validate: validationCallback,
     });
     const signal = new AbortController().signal;
+    const groupElement = controller.element.querySelector('[role="radiogroup"]');
+    const descriptionElement = controller.element.querySelector(
+      '.dt-alteditor-lite-field__description',
+    );
 
     expect(controller.element.classList.contains('consumer-field')).toBe(true);
     expect(controller.element.textContent).toContain('Choose carefully.');
+    expect(descriptionElement?.id).toBe('choice-radio-description');
+    expect(groupElement?.getAttribute('aria-describedby')).toBe(
+      'choice-radio-description choice-radio-error',
+    );
     expect(controller.getValue()).toBeUndefined();
     expect(controller.validateNative()).toEqual({
       message: 'Choose an option.',

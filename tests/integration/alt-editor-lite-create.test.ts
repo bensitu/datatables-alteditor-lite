@@ -313,6 +313,32 @@ describe('AltEditorLite synchronous Create', () => {
     expect(api.rows().count()).toBe(5);
   });
 
+  it('rejects an array returned as a row without mutating DataTables', async () => {
+    const arrayCreateRow = (() => []) as unknown as (
+      values: Readonly<Partial<CreateValues>>,
+    ) => TestRow;
+    const { api, editor, tableElement } = createEditor(
+      'array-row-callback',
+      arrayCreateRow,
+    );
+    const errorListener = vi.fn();
+    tableElement.addEventListener('alteditor-lite:error', errorListener);
+
+    await editor.openCreateDialog();
+    editor.getField<string>('name')?.setValue('Invalid');
+    editor.getField<number>('rank')?.setValue(6);
+    submitOpenDialog();
+
+    await vi.waitFor(() => {
+      expect(errorListener).toHaveBeenCalledOnce();
+    });
+    expect(editor.getState()).toMatchObject({ action: 'create', status: 'open' });
+    expect(api.rows().count()).toBe(5);
+    expect(
+      document.querySelector('.dt-alteditor-lite-dialog__errors')?.textContent,
+    ).toContain('must return a complete row object');
+  });
+
   it('honors closeOnSuccess false', async () => {
     const { api, editor } = createEditor(
       'stay-open',

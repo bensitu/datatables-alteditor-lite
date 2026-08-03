@@ -20,6 +20,8 @@ const budgetMessages = {
   fileCount: 'Too many files.',
   fileSize: 'File too large.',
 };
+const defaultDataUrlMaxFileBytes = 5 * 1024 * 1024;
+const defaultDataUrlMaxFileCount = 5;
 const activeControllers = new Set<ManagedFieldController<FileValues>>();
 
 afterEach(() => {
@@ -159,6 +161,75 @@ describe('file field controller', () => {
     expect(() => countController.getValue()).toThrow(
       new EditorFileLimitError('Too many files.'),
     );
+  });
+
+  it('applies default budgets only when file content is encoded', () => {
+    const encodedSingleController = createController({
+      encoding: 'data-url',
+      label: 'Encoded attachment',
+      name: 'encodedAttachment',
+      type: 'file',
+    });
+    const encodedMultipleController = createController({
+      encoding: 'data-url',
+      label: 'Encoded attachments',
+      multiple: true,
+      name: 'encodedAttachments',
+      type: 'file',
+    });
+    const fileController = createController({
+      label: 'Attachments',
+      multiple: true,
+      name: 'attachments',
+      type: 'file',
+    });
+    const oversizedFile = new File([], 'oversized.bin');
+    Object.defineProperty(oversizedFile, 'size', {
+      configurable: true,
+      value: defaultDataUrlMaxFileBytes + 1,
+    });
+    const manyFiles = Array.from(
+      { length: defaultDataUrlMaxFileCount + 1 },
+      (_, index) => new File([], `file-${String(index)}.bin`),
+    );
+
+    setSelectedFiles(getInput(encodedSingleController), [oversizedFile]);
+    setSelectedFiles(getInput(encodedMultipleController), manyFiles);
+    setSelectedFiles(getInput(fileController), [...manyFiles, oversizedFile]);
+
+    expect(encodedSingleController.validateNative()).toEqual({
+      message: 'File too large.',
+      valid: false,
+    });
+    expect(encodedMultipleController.validateNative()).toEqual({
+      message: 'Too many files.',
+      valid: false,
+    });
+    expect(fileController.validateNative()).toEqual({ valid: true });
+  });
+
+  it('allows data URL defaults to be explicitly disabled', () => {
+    const controller = createController({
+      encoding: 'data-url',
+      label: 'Encoded attachments',
+      maxFileBytes: null,
+      maxFileCount: null,
+      multiple: true,
+      name: 'encodedAttachments',
+      type: 'file',
+    });
+    const oversizedFile = new File([], 'oversized.bin');
+    Object.defineProperty(oversizedFile, 'size', {
+      configurable: true,
+      value: defaultDataUrlMaxFileBytes + 1,
+    });
+    const files = Array.from(
+      { length: defaultDataUrlMaxFileCount + 1 },
+      () => oversizedFile,
+    );
+    setSelectedFiles(getInput(controller), files);
+
+    expect(controller.validateNative()).toEqual({ valid: true });
   });
 
   it('accepts only empty programmatic values and blocks readonly interaction', () => {

@@ -1,4 +1,3 @@
-export {};
 export { AltEditorLite } from './core/alt-editor-lite.js';
 export {
   ENGLISH_LANGUAGE,
