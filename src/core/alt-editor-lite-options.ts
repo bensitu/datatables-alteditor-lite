@@ -17,7 +17,7 @@ export interface OperationContext<TRow extends object> {
 }
 
 /**
- * Optional synchronous or asynchronous persistence operations.
+ * Optional synchronous or asynchronous editor operations.
  */
 export interface EditorOperations<TRow extends object, TFormValues extends object> {
   /**
@@ -50,6 +50,13 @@ export interface EditorOperations<TRow extends object, TFormValues extends objec
     rows: readonly Readonly<TRow>[],
     context: OperationContext<TRow>,
   ): void | Promise<void>;
+  /**
+   * Refreshes data through a consumer-owned, optionally cancellable operation.
+   *
+   * When configured, this callback replaces the default `ajax.reload` or local
+   * draw behavior and owns any resulting DataTables mutation.
+   */
+  refresh?(context: OperationContext<TRow>): void | Promise<void>;
 }
 
 /**
@@ -80,7 +87,7 @@ export interface AltEditorLiteOptions<
   /** Ordered field definitions used by Create and Edit forms. */
   readonly fields: readonly FieldConfig<TFormValues>[];
   /**
-   * Persistence operations.
+   * Asynchronous editor operations.
    *
    * A capability cannot also define the matching `clientSide` mapper.
    */

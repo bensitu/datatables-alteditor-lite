@@ -19,6 +19,10 @@ const editor = new AltEditorLite<UserRow, UserForm>(table, {
         context.signal,
       );
     },
+    async refresh(context) {
+      const rows = await loadUsers(context.signal);
+      context.table.clear().rows.add(rows).draw(false);
+    },
   },
 });
 ```
@@ -87,8 +91,16 @@ removes the captured rows locally after confirmation.
 ## Refresh
 
 `refreshTable()` does not open a dialog and is mutually exclusive with dialog
-operations. Ajax tables wait for the public reload callback; local tables redraw
-without resetting paging.
+operations. By default, Ajax tables wait for the public reload callback and local
+tables redraw without resetting paging. DataTables does not expose an
+`AbortSignal` parameter for `ajax.reload()`, so aborting editor ownership cannot
+guarantee cancellation of that transport.
+
+Configure `operations.refresh(context)` when network-level cancellation is
+required. The callback receives the owned signal and DataTables API, replaces the
+default refresh behavior, and is responsible for applying its result through
+public DataTables methods. Aborted or superseded callback results do not publish
+AltEditorLite success events.
 
 ## Errors and retry
 

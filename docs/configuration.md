@@ -33,6 +33,7 @@ configure a value such as `emptyValue: null`.
 - `create(values, context)` returns one complete row.
 - `update(values, original, context)` returns one complete replacement row.
 - `remove(rows, context)` resolves after persistence succeeds.
+- `refresh(context)` optionally replaces the default table refresh behavior.
 
 `clientSide` provides synchronous mappings:
 
@@ -66,8 +67,8 @@ Edit resolves its implementation in this order:
 Remove uses `operations.remove` when configured and otherwise removes the captured
 rows locally after confirmation.
 
-Refresh uses the public `ajax.reload` API for Ajax tables and `draw(false)` for
-local tables.
+Refresh uses `operations.refresh` when configured. Otherwise, it uses the public
+`ajax.reload` API for Ajax tables and `draw(false)` for local tables.
 
 ## Optional extensions
 

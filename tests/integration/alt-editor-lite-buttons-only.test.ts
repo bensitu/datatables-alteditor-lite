@@ -160,4 +160,42 @@ describe('Buttons without Select', () => {
     });
     expect(editor.getState().status).toBe('ready');
   });
+
+  it('forwards Refresh cancellation to a consumer-owned operation', async () => {
+    const { api } = createTestTable('cancellable-refresh');
+    let refreshSignal: AbortSignal | undefined;
+    let reportStarted: (() => void) | undefined;
+    const started = new Promise<void>((resolve) => {
+      reportStarted = resolve;
+    });
+    const refresh = vi.fn(
+      async (context: { readonly signal: AbortSignal }): Promise<void> => {
+        refreshSignal = context.signal;
+        reportStarted?.();
+        await new Promise<void>((resolve) => {
+          context.signal.addEventListener(
+            'abort',
+            () => {
+              resolve();
+            },
+            { once: true },
+          );
+        });
+      },
+    );
+    const editor = new AltEditorLite<TestRow, ButtonOnlyValues>(api, {
+      fields,
+      operations: { refresh },
+    });
+    activeEditor = editor;
+
+    const refreshRequest = editor.refreshTable();
+    await started;
+    expect(editor.getState().status).toBe('refreshing');
+    editor.destroy();
+    await refreshRequest;
+
+    expect(refresh).toHaveBeenCalledOnce();
+    expect(refreshSignal?.aborted).toBe(true);
+  });
 });

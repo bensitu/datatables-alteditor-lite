@@ -115,6 +115,11 @@ const operations: EditorOperations<Row, FormValues> = {
     expectType<readonly Readonly<Row>[]>(rows);
     expectType<OperationContext<Row>>(context);
   },
+  refresh: async (context) => {
+    expectType<OperationContext<Row>>(context);
+    expectType<'create' | 'edit' | 'remove' | 'refresh'>(context.operation);
+    await Promise.resolve();
+  },
   update: (values, original, context) => {
     expectType<Readonly<EditorValues<FormValues>>>(values);
     expectType<Readonly<Row>>(original);

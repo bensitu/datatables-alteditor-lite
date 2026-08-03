@@ -295,7 +295,8 @@ export class AltEditorLite<
   /**
    * Refreshes the table without opening a dialog.
    *
-   * Ajax-backed tables use `ajax.reload`; other tables use `draw(false)`.
+   * `operations.refresh` takes precedence. Otherwise, Ajax-backed tables use
+   * `ajax.reload` and other tables use `draw(false)`.
    * Refresh is mutually exclusive with every dialog lifecycle.
    *
    * @returns A promise settled after the current public refresh completes.
@@ -975,7 +976,11 @@ export class AltEditorLite<
     }
 
     try {
-      await refreshDataTable(this.table, request.abortController.signal);
+      if (this.options.operations?.refresh === undefined) {
+        await refreshDataTable(this.table, request.abortController.signal);
+      } else {
+        await this.options.operations.refresh(this.operationContext(request));
+      }
       if (!this.ownsOperation(request)) {
         return;
       }
