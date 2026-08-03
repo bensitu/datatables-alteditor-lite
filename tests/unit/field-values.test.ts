@@ -21,6 +21,10 @@ describe('field value normalization', () => {
       valid: true,
       value: null,
     });
+    expect(normalizeNumberValue('   ', undefined)).toEqual({
+      valid: true,
+      value: undefined,
+    });
     expect(normalizeNumberValue('12.5', undefined)).toEqual({
       valid: true,
       value: 12.5,

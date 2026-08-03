@@ -86,6 +86,24 @@ export type EditorLanguageDefinition = Omit<PartialEditorLanguage, 'locale'> & {
  */
 export const ENGLISH_LANGUAGE: Readonly<AltEditorLiteLanguage> = englishLanguage;
 
+function mergeDefinedLanguageText<TSection extends Readonly<Record<string, string>>>(
+  fallback: TSection,
+  overrides: Readonly<Partial<TSection>> | undefined,
+): TSection {
+  const merged = { ...fallback };
+
+  if (overrides !== undefined) {
+    for (const key of Object.keys(fallback) as (keyof TSection)[]) {
+      const value = overrides[key];
+      if (value !== undefined) {
+        merged[key] = value;
+      }
+    }
+  }
+
+  return merged;
+}
+
 /**
  * Merges nested language overrides with the complete English fallback.
  *
@@ -97,18 +115,21 @@ export function resolveLanguage(
 ): Readonly<AltEditorLiteLanguage> {
   return {
     locale: language?.locale ?? ENGLISH_LANGUAGE.locale,
-    actions: { ...ENGLISH_LANGUAGE.actions, ...language?.actions },
-    dialog: { ...ENGLISH_LANGUAGE.dialog, ...language?.dialog },
-    buttons: { ...ENGLISH_LANGUAGE.buttons, ...language?.buttons },
-    validation: { ...ENGLISH_LANGUAGE.validation, ...language?.validation },
-    searchSelect: {
-      ...ENGLISH_LANGUAGE.searchSelect,
-      ...language?.searchSelect,
-    },
-    accessibility: {
-      ...ENGLISH_LANGUAGE.accessibility,
-      ...language?.accessibility,
-    },
-    errors: { ...ENGLISH_LANGUAGE.errors, ...language?.errors },
+    actions: mergeDefinedLanguageText(ENGLISH_LANGUAGE.actions, language?.actions),
+    dialog: mergeDefinedLanguageText(ENGLISH_LANGUAGE.dialog, language?.dialog),
+    buttons: mergeDefinedLanguageText(ENGLISH_LANGUAGE.buttons, language?.buttons),
+    validation: mergeDefinedLanguageText(
+      ENGLISH_LANGUAGE.validation,
+      language?.validation,
+    ),
+    searchSelect: mergeDefinedLanguageText(
+      ENGLISH_LANGUAGE.searchSelect,
+      language?.searchSelect,
+    ),
+    accessibility: mergeDefinedLanguageText(
+      ENGLISH_LANGUAGE.accessibility,
+      language?.accessibility,
+    ),
+    errors: mergeDefinedLanguageText(ENGLISH_LANGUAGE.errors, language?.errors),
   };
 }

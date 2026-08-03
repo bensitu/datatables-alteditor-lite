@@ -74,7 +74,8 @@ canonicalizes the locale identifier, and merges the data with the English
 fallback. Network failures throw `EditorLanguageLoadError`. Invalid JSON or an
 invalid language shape is non-retryable. Requests time out after 10 seconds and
 responses are limited to 64 KiB. A caller-provided `AbortSignal` is forwarded and
-can cancel the request earlier.
+can cancel the request earlier. When a response includes a `Content-Type` header,
+it must identify `application/json` or an `application/*+json` media type.
 
 Templates must retain their placeholders. For example, `dialog.removeCount`
 contains `{count}`, `accessibility.searchSelectResults` contains `{count}`, and

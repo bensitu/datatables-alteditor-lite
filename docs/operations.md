@@ -106,10 +106,10 @@ throw new AltEditorLiteError({
 });
 ```
 
-A plain object can also use the validated `message`, `code`, `fieldErrors`, and
-`retryable` properties. Ordinary `Error`, `TypeError`, and unknown values are shown
-with the localized generic message; raw messages, stacks, and serialized values
-are not exposed.
+Ordinary `Error`, `TypeError`, plain objects, and other unknown values are shown
+with the localized generic message; raw messages, stacks, response bodies, and
+serialized values are not exposed. Convert only text that is safe for end users
+into an `AltEditorLiteError`.
 
 Only errors marked retryable keep the primary action enabled. Retrying creates a
 new request identity and a new signal. Cancellation does not publish a normal

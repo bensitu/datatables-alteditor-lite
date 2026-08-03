@@ -61,14 +61,19 @@ describe('external editor language resources', () => {
   it('reports invalid JSON and invalid placeholders as non-retryable', async () => {
     const fetchMock = vi
       .fn<typeof fetch>()
-      .mockResolvedValueOnce(new Response('{', { status: 200 }))
+      .mockResolvedValueOnce(
+        new Response('{', {
+          headers: { 'content-type': 'application/json; charset=utf-8' },
+          status: 200,
+        }),
+      )
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
             dialog: { removeCount: 'Selected rows.' },
             locale: 'en-GB',
           }),
-          { status: 200 },
+          { headers: { 'content-type': 'application/json' }, status: 200 },
         ),
       );
     vi.stubGlobal('fetch', fetchMock);
@@ -79,6 +84,22 @@ describe('external editor language resources', () => {
     });
     await expect(loadEditorLanguage('/invalid-language')).rejects.toMatchObject({
       code: 'LANGUAGE_LOAD',
+      retryable: false,
+    });
+  });
+
+  it('rejects a successful response with a non-JSON media type', async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response('<html lang="en"></html>', {
+        headers: { 'content-type': 'text/html; charset=utf-8' },
+        status: 200,
+      }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(loadEditorLanguage('/unexpected-content')).rejects.toMatchObject({
+      code: 'LANGUAGE_LOAD',
+      message: 'The editor language response must use a JSON media type.',
       retryable: false,
     });
   });
@@ -105,9 +126,12 @@ describe('external editor language resources', () => {
   });
 
   it('limits response size and aborts requests that exceed the default timeout', async () => {
-    const oversizedFetch = vi
-      .fn<typeof fetch>()
-      .mockResolvedValue(new Response('x'.repeat(70 * 1024), { status: 200 }));
+    const oversizedFetch = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response('x'.repeat(70 * 1024), {
+        headers: { 'content-type': 'application/json' },
+        status: 200,
+      }),
+    );
     vi.stubGlobal('fetch', oversizedFetch);
 
     await expect(loadEditorLanguage('/oversized')).rejects.toMatchObject({

@@ -106,6 +106,17 @@ function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+function isJsonMediaType(contentType: string): boolean {
+  const [mediaType = ''] = contentType.split(';', 1);
+  const normalizedMediaType = mediaType.trim().toLowerCase();
+
+  return (
+    normalizedMediaType === 'application/json' ||
+    (normalizedMediaType.startsWith('application/') &&
+      normalizedMediaType.endsWith('+json'))
+  );
+}
+
 function messagePlaceholders(message: string): readonly string[] {
   return [...message.matchAll(placeholderPattern)]
     .map(([placeholder]) => placeholder)
@@ -243,6 +254,15 @@ export async function loadEditorLanguage(
         `The editor language request failed with HTTP status ${String(response.status)}.`,
         undefined,
         isRetryable,
+      );
+    }
+
+    const contentType = response.headers.get('content-type');
+    if (contentType !== null && !isJsonMediaType(contentType)) {
+      throw new EditorLanguageLoadError(
+        'The editor language response must use a JSON media type.',
+        undefined,
+        false,
       );
     }
 

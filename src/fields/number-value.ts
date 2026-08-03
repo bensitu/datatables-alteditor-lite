@@ -16,7 +16,7 @@ export function normalizeNumberValue(
   inputValue: string,
   emptyValue: null | undefined,
 ): NumberNormalizationResult {
-  if (inputValue.length === 0) {
+  if (inputValue.trim().length === 0) {
     return { valid: true, value: emptyValue };
   }
 

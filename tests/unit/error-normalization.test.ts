@@ -41,74 +41,36 @@ describe('operation error normalization', () => {
     ).toBeInstanceOf(InternalOperationAbort);
   });
 
-  it('accepts only a fully validated own-property error shape', () => {
-    const rawError = {
-      code: 'CONFLICT',
-      fieldErrors: {
-        name: 'Already used.',
-      },
-      message: 'Resolve the conflict.',
-      retryable: true,
-    };
-    const normalized = normalizeOperationError(
-      rawError,
-      activeSignal(),
-      ENGLISH_LANGUAGE,
-    );
-
-    expect(normalized).toBeInstanceOf(AltEditorLiteError);
-    expect(normalized).toMatchObject({
-      cause: rawError,
-      code: 'CONFLICT',
-      fieldErrors: { name: 'Already used.' },
-      message: 'Resolve the conflict.',
-      retryable: true,
-    });
-  });
-
-  it('supports the minimal operation error shape', () => {
-    const rawError = { message: 'Operation refused.' };
-    const normalized = normalizeOperationError(
-      rawError,
-      activeSignal(),
-      ENGLISH_LANGUAGE,
-    );
-
-    expect(normalized).toMatchObject({
-      cause: rawError,
-      message: 'Operation refused.',
-      retryable: false,
-    });
-  });
-
-  it('accepts structured Error subclasses and bounds untrusted UI text', () => {
+  it('does not expose messages from structured objects or Error subclasses', () => {
     class StructuredOperationError extends Error {
       public readonly code = 'REMOTE_VALIDATION';
 
-      public readonly fieldErrors = { name: 'x'.repeat(1200) };
+      public readonly fieldErrors = { name: 'Remote field detail.' };
 
       public readonly retryable = true;
     }
 
-    const rawError = new StructuredOperationError('x'.repeat(2200));
-    const normalized = normalizeOperationError(
-      rawError,
-      activeSignal(),
-      ENGLISH_LANGUAGE,
-    );
+    const rawErrors = [
+      { message: 'Remote response detail.' },
+      {
+        code: 'CONFLICT',
+        fieldErrors: { name: 'Remote field detail.' },
+        message: 'Remote response detail.',
+        retryable: true,
+      },
+      new StructuredOperationError('Remote exception detail.'),
+    ];
 
-    expect(normalized).toMatchObject({
-      cause: rawError,
-      code: 'REMOTE_VALIDATION',
-      retryable: true,
-    });
-    if (!(normalized instanceof AltEditorLiteError)) {
-      throw new Error('Expected a public normalized error.');
+    for (const rawError of rawErrors) {
+      expect(
+        normalizeOperationError(rawError, activeSignal(), ENGLISH_LANGUAGE),
+      ).toMatchObject({
+        cause: rawError,
+        code: 'UNKNOWN',
+        message: ENGLISH_LANGUAGE.errors.generic,
+        retryable: false,
+      });
     }
-    expect(normalized.message).toHaveLength(2000);
-    expect(normalized.message.endsWith('…')).toBe(true);
-    expect(normalized.fieldErrors?.['name']).toHaveLength(1000);
-    expect(normalized.fieldErrors?.['name']?.endsWith('…')).toBe(true);
   });
 
   it.each([

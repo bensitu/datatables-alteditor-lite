@@ -189,6 +189,20 @@ describe('locale data', () => {
     });
   });
 
+  it('retains fallback text when runtime overrides contain undefined', () => {
+    const languageWithUndefined = {
+      actions: { create: undefined },
+      locale: 'en-GB',
+      searchSelect: { noResults: undefined },
+    } as unknown as Parameters<typeof resolveLanguage>[0];
+
+    expect(resolveLanguage(languageWithUndefined)).toMatchObject({
+      actions: { create: 'Create' },
+      locale: 'en-GB',
+      searchSelect: { noResults: 'No matching options' },
+    });
+  });
+
   it('supports canonical public locale lookup', () => {
     const registeredJapanese = registerLocale(ja);
     registerLocale(zhCn);
