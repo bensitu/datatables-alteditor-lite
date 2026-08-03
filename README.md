@@ -1,5 +1,9 @@
 # datatables-alteditor-lite
 
+[![npm](https://img.shields.io/npm/l/datatables-alteditor-lite.svg)](https://github.com/bensitu/datatables-alteditor-lite)
+[![npm](https://img.shields.io/npm/v/datatables-alteditor-lite.svg)](https://www.npmjs.com/package/datatables-alteditor-lite)
+[![](https://data.jsdelivr.com/v1/package/npm/datatables-alteditor-lite/badge)](https://www.jsdelivr.com/package/npm/datatables-alteditor-lite)
+
 `datatables-alteditor-lite` is an independent, lightweight editing extension for
 DataTables 3. It provides Create, Edit, Remove, and Refresh workflows using
 TypeScript, native browser controls, and the public DataTables API. It has no
