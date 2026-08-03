@@ -245,7 +245,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for repository conventions and
 
 ## Project status and attribution
 
-The public API is at version `0.1.0`. This project is independent and is not
+The public API is at version `0.1.1`. This project is independent and is not
 affiliated with or endorsed by the DataTables publisher. DataTables and its
 extensions remain separate dependencies distributed under their own terms.
 

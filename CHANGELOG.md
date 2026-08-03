@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] - 2026-08-03
+
+### Added
+
+- Optional consumer-owned Refresh operations with cancellation signals for
+  applications that require network-level request cancellation.
+- A public API reference and explicit browser capability requirements.
+
+### Changed
+
+- Reused SearchSelect option elements during filtering and cached dialog focus
+  targets until relevant content changes.
+- Reduced local uniqueness validation overhead by avoiding full row-array copies
+  and repeated field-path parsing.
+- Added CSS fallbacks for dynamic viewport units and mixed system colors.
+
+### Fixed
+
+- Replaced unknown callback failures with localized generic messages while
+  preserving explicitly constructed `AltEditorLiteError` instances.
+- Preserved explicit `undefined` field values when reopening Edit forms.
+- Ignored undefined inline language overrides, rejected non-JSON language
+  responses with declared media types, and treated whitespace-only number values
+  as empty.
+- Removed an ineffective dialog backdrop handler and made the demonstration's
+  date-time renderer tolerate missing values.
+
 ## [0.1.0] - 2026-08-02
 
 ### Added
