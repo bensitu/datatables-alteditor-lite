@@ -40,6 +40,14 @@
     "searchSelectResults": "Hay {count} opciones disponibles.",
     "searchSelectSelection": "Se ha seleccionado {label}."
   },
+  "inline": {
+    "unavailable": "La edición en línea no está disponible para esta celda.",
+    "unsupportedField": "Este campo no admite edición en línea.",
+    "saving": "Guardando el cambio.",
+    "targetUnavailable": "La celda editada ya no está disponible.",
+    "editStarted": "Se inició la edición de la celda.",
+    "editCancelled": "Se canceló la edición de la celda."
+  },
   "errors": {
     "generic": "No se pudo completar la operación.",
     "fileCount": "Se seleccionaron demasiados archivos.",

@@ -21,9 +21,14 @@ function isAltEditorLiteError(error: unknown): error is AltEditorLiteError {
 /**
  * Internal cancellation marker that must never be displayed or published.
  */
-export class InternalOperationAbort {
+export class InternalOperationAbort extends Error {
   /** Stable internal discriminator. */
   public readonly type = 'operation-abort';
+
+  public constructor() {
+    super('The owned operation was aborted.');
+    this.name = 'InternalOperationAbort';
+  }
 }
 
 /**

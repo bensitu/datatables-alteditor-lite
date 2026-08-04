@@ -9,6 +9,7 @@ import {
   type AltEditorLiteLanguage,
   type ClientSideOperations,
   type EditorErrorEventDetail,
+  type EditorHooks,
   type EditorLanguageDefinition,
   type EditorOperations,
   type EditorSubmitEventDetail,
@@ -17,6 +18,8 @@ import {
   type FieldConfig,
   type FieldPath,
   type FieldValue,
+  type InlineEditorOptions,
+  type InlineEditState,
   type OperationContext,
   type SearchSelectFieldConfig,
 } from '../../src/index.js';
@@ -96,6 +99,39 @@ expectType<Promise<void>>(editor.openEditDialog(0));
 expectType<Promise<void>>(editor.openRemoveDialog(['#row-a', '#row-b']));
 expectType<Promise<void>>(editor.refreshTable());
 expectType<Promise<void>>(editor.closeDialog());
+expectType<Promise<void>>(editor.openInlineEdit('#row', 0));
+expectType<Promise<void>>(editor.submitInlineEdit());
+expectType<Promise<void>>(editor.cancelInlineEdit());
+expectType<Readonly<InlineEditState>>(editor.getInlineState());
+expectType<boolean>(editor.isInlineEditing());
+
+expectAssignable<InlineEditorOptions<Row, FormValues>>({
+  columns: {
+    contact: 'contact.email',
+    disabled: false,
+  },
+  enabled: true,
+});
+expectNotAssignable<InlineEditorOptions<Row, FormValues>>({
+  columns: { contact: 'contact.missing' },
+});
+expectNotAssignable<AltEditorLiteOptions<Row, FormValues>>({
+  fields: [],
+  inline: { fields: ['contact.email'] },
+});
+
+expectAssignable<EditorHooks<Row, FormValues>>({
+  beforeSubmit: (_values, context) => {
+    expectType<'dialog' | 'inline' | 'api'>(context.mode);
+    expectType<Readonly<import('../../src/index.js').EditorOperationTarget> | undefined>(
+      context.target,
+    );
+    return false;
+  },
+});
+expectNotAssignable<EditorHooks<Row, FormValues>>({
+  beforeSubmit: () => ({ rank: 4 }),
+});
 
 const operations: EditorOperations<Row, FormValues> = {
   create: async (values, context) => {
@@ -105,6 +141,7 @@ const operations: EditorOperations<Row, FormValues> = {
     expectType<Api<Row>>(context.table);
     expectType<AbortSignal>(context.signal);
     expectType<'create' | 'edit' | 'remove' | 'refresh'>(context.operation);
+    expectType<'dialog' | 'inline' | 'api'>(context.mode);
     return {
       id: 'created',
       profile: { email: values.contact?.email ?? '' },
@@ -179,6 +216,7 @@ if (successDetail.operation === 'create') {
 
 declare const errorDetail: EditorErrorEventDetail<Row, FormValues>;
 expectType<'create' | 'edit' | 'remove' | 'refresh'>(errorDetail.operation);
+expectType<'dialog' | 'inline' | 'api'>(errorDetail.mode);
 
 expectAssignable<FieldPath<FormValues>>('contact.email');
 expectAssignable<FieldPath<FormValues>>('attachment');

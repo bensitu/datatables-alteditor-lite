@@ -63,6 +63,8 @@ export interface BaseFieldConfig<TFormValues extends object, TValue = unknown> {
   readonly validate?: FieldValidator<TFormValues, TValue>;
   /** Whether the normalized value must be distinct in currently loaded rows. */
   readonly unique?: boolean;
+  /** Allows this field to participate in single-cell inline editing. */
+  readonly inlineEdit?: boolean;
 }
 
 /**

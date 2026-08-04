@@ -17,6 +17,10 @@ import { createRemoveConfirmation } from '../dialog/create-remove-confirmation.j
 import { EditorDialog } from '../dialog/editor-dialog.js';
 import { validateFieldConfigurations } from '../fields/validate-field-configurations.js';
 import { buildEditorForm } from '../form/build-editor-form.js';
+import { createInlineColumnMappings } from '../inline/inline-column-mapping.js';
+import { InlineEditController } from '../inline/inline-edit-controller.js';
+import { resolveInlineOptions } from '../inline/inline-edit-options.js';
+import { validateInlineConfiguration } from '../inline/validate-inline-configuration.js';
 import { createInstanceId } from '../instance/create-instance-id.js';
 import {
   deleteEditorInstance,
@@ -36,33 +40,42 @@ import {
   resolveLanguage,
   type AltEditorLiteLanguage,
 } from './alt-editor-lite-language.js';
+import { DrawOwnership } from './editing/draw-ownership.js';
+import { EditOperationRunner } from './editing/edit-operation-runner.js';
+import {
+  InteractionCoordinator,
+  type InteractionToken,
+} from './editing/interaction-coordinator.js';
+import { OperationOwner, type OwnedOperationRequest } from './editing/operation-owner.js';
 import { dispatchEditorEvent, type EditorCloseReason } from './editor-event.js';
 import { assertEditorStateTransition } from './editor-state-transition.js';
 import {
   InternalOperationAbort,
   normalizeOperationError,
 } from './error-normalization.js';
-import { mergeDeclaredFieldValues } from './merge-declared-field-values.js';
-import { RequestSequence } from './request-sequence.js';
+import { freezeEditorValues } from './freeze-editor-values.js';
+import { validateHooksConfiguration } from './validate-hooks-configuration.js';
 import { validateOperationConfiguration } from './validate-operation-configuration.js';
 
 import type {
+  AfterSuccessContext,
   AltEditorLiteOptions,
+  BeforeOpenContext,
+  EditorErrorHookContext,
   OperationContext,
 } from './alt-editor-lite-options.js';
-import type { DialogAction, EditorOperation } from './editor-operation.js';
+import type {
+  DialogAction,
+  EditorOperation,
+  EditorOperationTarget,
+} from './editor-operation.js';
 import type { EditorState } from './editor-state.js';
 import type { DeepPartial, EditorValues } from './editor-values.js';
 import type { FieldController } from '../fields/field-controller.js';
 import type { EditorFormController } from '../form/form-controller.js';
+import type { InlineEditState } from '../inline/inline-edit-state.js';
 import type { FieldPath } from '../object-path/field-path.js';
-import type { Api, RowSelector } from 'datatables.net';
-
-interface OwnedOperationRequest {
-  readonly abortController: AbortController;
-  readonly operation: EditorOperation;
-  readonly sequence: number;
-}
+import type { Api, ColumnSelector, RowSelector } from 'datatables.net';
 
 interface UniqueFieldLookup {
   readonly name: string;
@@ -108,15 +121,21 @@ export class AltEditorLite<
   TRow extends object,
   TFormValues extends object = DeepPartial<TRow>,
 > {
-  private readonly declaredFieldPaths: readonly string[];
-
   private readonly dialog: EditorDialog;
 
   private readonly instanceId = createInstanceId();
 
   private readonly language: Readonly<AltEditorLiteLanguage>;
 
-  private readonly requestSequence = new RequestSequence();
+  private readonly inlineController: InlineEditController<TRow, TFormValues>;
+
+  private readonly interactionCoordinator = new InteractionCoordinator();
+
+  private readonly operationOwner = new OperationOwner();
+
+  private readonly drawOwnership: DrawOwnership<TRow>;
+
+  private readonly editOperationRunner: EditOperationRunner<TRow, TFormValues>;
 
   private readonly selectIntegration: SelectIntegration<TRow>;
 
@@ -126,7 +145,11 @@ export class AltEditorLite<
 
   private activeForm: EditorFormController<TFormValues> | undefined;
 
-  private activeOperationRequest: OwnedOperationRequest | undefined;
+  private dialogInteractionToken: InteractionToken | undefined;
+
+  private refreshInteractionToken: InteractionToken | undefined;
+
+  private activeOpenAbortController: AbortController | undefined;
 
   private editTargetCapture: EditTargetCapture<TRow> | undefined;
 
@@ -148,7 +171,8 @@ export class AltEditorLite<
   ) {
     validateFieldConfigurations(options.fields);
     validateOperationConfiguration(options);
-    this.declaredFieldPaths = Object.freeze(options.fields.map((field) => field.name));
+    validateHooksConfiguration(options);
+    validateInlineConfiguration(table, options);
     this.uniqueFieldLookups = Object.freeze(
       options.fields
         .filter((field) => field.unique === true)
@@ -159,12 +183,49 @@ export class AltEditorLite<
     );
     this.language = resolveLanguage(options.language);
     this.tableElement = table.table().node();
+    this.drawOwnership = new DrawOwnership(table);
+    this.editOperationRunner = new EditOperationRunner(
+      table,
+      this.operationOwner,
+      this.language,
+      options.operations,
+      options.clientSide,
+    );
     storeEditorInstance(this.tableElement, this);
 
     try {
       this.dialog = new EditorDialog(this.tableElement, this.instanceId, this.language);
       this.selectIntegration = new SelectIntegration(this.table, () => {
         dispatchEditorIntegrationUpdate(this.tableElement);
+      });
+      const inlineOptions = resolveInlineOptions(options.inline);
+      const inlineMappings = createInlineColumnMappings(
+        table,
+        options.fields,
+        inlineOptions,
+      );
+      this.inlineController = new InlineEditController({
+        drawOwnership: this.drawOwnership,
+        editOperationRunner: this.editOperationRunner,
+        editor: this,
+        editorOptions: options,
+        fields: options.fields,
+        instanceId: this.instanceId,
+        interactionCoordinator: this.interactionCoordinator,
+        language: this.language,
+        mappings: inlineMappings,
+        notifyIntegration: () => {
+          dispatchEditorIntegrationUpdate(this.tableElement);
+        },
+        operationOwner: this.operationOwner,
+        options: inlineOptions,
+        reportError: (error, context, publishEvent) => {
+          this.reportOperationError(error, context, publishEvent);
+        },
+        table,
+        tableElement: this.tableElement,
+        validateUnique: (values, excludedRow) =>
+          this.validateLocalUniquenessForRow(values, excludedRow),
       });
     } catch (error: unknown) {
       deleteEditorInstance(this.tableElement, this);
@@ -184,20 +245,25 @@ export class AltEditorLite<
    * @throws EditorConfigurationError when Create has no configured owner.
    * @throws EditorOperationBusyError unless the editor is ready.
    */
-  public openCreateDialog(): Promise<void> {
+  public async openCreateDialog(): Promise<void> {
     try {
       this.assertActive();
       this.assertReady();
+      this.acquireDialogInteraction();
       if (!this.hasCreateCapability()) {
         throw new EditorConfigurationError(
           'Create requires operations.create or clientSide.createRow.',
         );
       }
 
+      if (!(await this.runDialogBeforeOpen('create'))) {
+        this.releaseDialogInteraction();
+        return;
+      }
       this.openFormDialog('create');
-      return Promise.resolve();
     } catch (error: unknown) {
-      return Promise.reject(normalizeRejectedReason(error));
+      this.releaseDialogInteraction();
+      throw normalizeRejectedReason(error);
     }
   }
 
@@ -208,10 +274,11 @@ export class AltEditorLite<
    * resolve exactly one row.
    * @returns A promise resolved after the snapshot is populated and focused.
    */
-  public openEditDialog(rowSelector?: RowSelector<TRow>): Promise<void> {
+  public async openEditDialog(rowSelector?: RowSelector<TRow>): Promise<void> {
     try {
       this.assertActive();
       this.assertReady();
+      this.acquireDialogInteraction();
       const rowIndexes = this.resolveRequestedRowIndexes(rowSelector);
       if (rowIndexes.length !== 1) {
         throw new EditorSelectionCountError(
@@ -235,16 +302,33 @@ export class AltEditorLite<
         rowIndex,
         this.language.errors.targetUnavailable,
       );
+      const target = this.createDialogEditTarget(this.editTargetCapture);
+      if (
+        !(await this.runDialogBeforeOpen(
+          'edit',
+          this.editTargetCapture.snapshot.original,
+          target,
+        ))
+      ) {
+        this.editTargetCapture = undefined;
+        this.releaseDialogInteraction();
+        return;
+      }
+      resolveEditTarget(
+        this.table,
+        this.tableElement,
+        this.editTargetCapture,
+        this.language.errors.targetUnavailable,
+      );
       try {
         this.openFormDialog('edit', this.editTargetCapture.snapshot.original);
       } catch (error: unknown) {
         this.editTargetCapture = undefined;
         throw error;
       }
-
-      return Promise.resolve();
     } catch (error: unknown) {
-      return Promise.reject(normalizeRejectedReason(error));
+      this.releaseDialogInteraction();
+      throw normalizeRejectedReason(error);
     }
   }
 
@@ -255,10 +339,11 @@ export class AltEditorLite<
    * resolve one or more rows.
    * @returns A promise resolved after confirmation is open and focused.
    */
-  public openRemoveDialog(rowSelectors?: RowSelector<TRow>): Promise<void> {
+  public async openRemoveDialog(rowSelectors?: RowSelector<TRow>): Promise<void> {
     try {
       this.assertActive();
       this.assertReady();
+      this.acquireDialogInteraction();
       const rowIndexes = this.resolveRequestedRowIndexes(rowSelectors);
       if (rowIndexes.length === 0) {
         throw new EditorSelectionCountError(
@@ -271,6 +356,17 @@ export class AltEditorLite<
       this.removeTargetCapture = captureRemoveTargets(
         this.table,
         rowIndexes,
+        this.language.errors.targetUnavailable,
+      );
+      if (!(await this.runDialogBeforeOpen('remove'))) {
+        this.removeTargetCapture = undefined;
+        this.releaseDialogInteraction();
+        return;
+      }
+      resolveRemoveTargets(
+        this.table,
+        this.tableElement,
+        this.removeTargetCapture,
         this.language.errors.targetUnavailable,
       );
       this.transitionTo({ action: 'remove', status: 'opening' });
@@ -302,9 +398,9 @@ export class AltEditorLite<
 
       this.transitionTo({ action: 'remove', status: 'open' });
       this.dispatchOpenEvent('remove');
-      return Promise.resolve();
     } catch (error: unknown) {
-      return Promise.reject(normalizeRejectedReason(error));
+      this.releaseDialogInteraction();
+      throw normalizeRejectedReason(error);
     }
   }
 
@@ -321,8 +417,10 @@ export class AltEditorLite<
     try {
       this.assertActive();
       this.assertReady();
+      this.refreshInteractionToken = this.interactionCoordinator.acquire('refresh');
       return this.runRefresh();
     } catch (error: unknown) {
+      this.releaseRefreshInteraction();
       return Promise.reject(normalizeRejectedReason(error));
     }
   }
@@ -366,6 +464,51 @@ export class AltEditorLite<
     return this.state;
   }
 
+  /** Opens one eligible cell through unique public DataTables selectors. */
+  public openInlineEdit(
+    rowSelector: RowSelector<TRow>,
+    columnSelector: ColumnSelector,
+  ): Promise<void> {
+    try {
+      this.assertActive();
+      return this.inlineController.open(rowSelector, columnSelector);
+    } catch (error: unknown) {
+      return Promise.reject(normalizeRejectedReason(error));
+    }
+  }
+
+  /** Validates and submits the active inline candidate. */
+  public submitInlineEdit(): Promise<void> {
+    try {
+      this.assertActive();
+      return this.inlineController.submit();
+    } catch (error: unknown) {
+      return Promise.reject(normalizeRejectedReason(error));
+    }
+  }
+
+  /** Cancels the active inline session and safely restores cell content. */
+  public cancelInlineEdit(): Promise<void> {
+    try {
+      this.assertActive();
+      return this.inlineController.cancel('api');
+    } catch (error: unknown) {
+      return Promise.reject(normalizeRejectedReason(error));
+    }
+  }
+
+  /** Returns the independent inline presentation state. */
+  public getInlineState(): Readonly<InlineEditState> {
+    this.assertActive();
+    return this.inlineController.getState();
+  }
+
+  /** Returns whether inline activation, validation, or submission is active. */
+  public isInlineEditing(): boolean {
+    this.assertActive();
+    return this.inlineController.isEditing();
+  }
+
   /**
    * Aborts owned work, removes DOM and listeners, releases the table, and emits
    * destroy once.
@@ -375,7 +518,11 @@ export class AltEditorLite<
       return;
     }
 
-    this.abortActiveOperation();
+    this.interactionCoordinator.destroy();
+    this.activeOpenAbortController?.abort();
+    this.operationOwner.destroy();
+    this.drawOwnership.destroy();
+    this.inlineController.destroy();
     this.activeForm?.destroy();
     this.activeForm = undefined;
     this.editTargetCapture = undefined;
@@ -390,6 +537,7 @@ export class AltEditorLite<
       'alteditor-lite:destroy',
       {
         editor: this,
+        mode: 'api',
         type: 'destroy',
       },
     );
@@ -402,8 +550,83 @@ export class AltEditorLite<
   }
 
   private assertReady(): void {
-    if (this.state.status !== 'ready') {
+    if (
+      this.state.status !== 'ready' ||
+      this.interactionCoordinator.current() !== 'none'
+    ) {
       throw new EditorOperationBusyError();
+    }
+  }
+
+  private acquireDialogInteraction(): void {
+    this.dialogInteractionToken = this.interactionCoordinator.acquire('dialog');
+    dispatchEditorIntegrationUpdate(this.tableElement);
+  }
+
+  private releaseDialogInteraction(): void {
+    if (this.dialogInteractionToken !== undefined) {
+      this.interactionCoordinator.release(this.dialogInteractionToken);
+      this.dialogInteractionToken = undefined;
+      dispatchEditorIntegrationUpdate(this.tableElement);
+    }
+  }
+
+  private releaseRefreshInteraction(): void {
+    if (this.refreshInteractionToken !== undefined) {
+      this.interactionCoordinator.release(this.refreshInteractionToken);
+      this.refreshInteractionToken = undefined;
+      dispatchEditorIntegrationUpdate(this.tableElement);
+    }
+  }
+
+  private async runDialogBeforeOpen(
+    operation: DialogAction,
+    row?: Readonly<TRow>,
+    target?: Readonly<EditorOperationTarget>,
+  ): Promise<boolean> {
+    const hook = this.options.hooks?.beforeOpen;
+    if (hook === undefined) {
+      return true;
+    }
+
+    const abortController = new AbortController();
+    this.activeOpenAbortController = abortController;
+    const context: BeforeOpenContext<TRow, TFormValues> = Object.freeze({
+      mode: 'dialog',
+      operation,
+      signal: abortController.signal,
+      table: this.table,
+      ...(row === undefined ? {} : { row }),
+      ...(target === undefined ? {} : { target }),
+    });
+    try {
+      const shouldOpen = await Promise.resolve(hook(context));
+      abortController.signal.throwIfAborted();
+      return shouldOpen !== false;
+    } catch (rawError: unknown) {
+      const error = normalizeOperationError(
+        rawError,
+        abortController.signal,
+        this.language,
+      );
+      if (!(error instanceof InternalOperationAbort)) {
+        this.reportOperationError(
+          error,
+          {
+            committed: false,
+            mode: 'dialog',
+            operation,
+            phase: 'open',
+            ...(target === undefined ? {} : { target }),
+          },
+          true,
+        );
+      }
+      throw error;
+    } finally {
+      if (this.activeOpenAbortController === abortController) {
+        this.activeOpenAbortController = undefined;
+      }
     }
   }
 
@@ -480,15 +703,15 @@ export class AltEditorLite<
               retryable: false,
             })
           : normalizedError;
-      dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:error'>(
-        this.tableElement,
-        'alteditor-lite:error',
+      this.reportOperationError(
+        openingError,
         {
-          editor: this,
-          error: openingError,
+          committed: false,
+          mode: 'dialog',
           operation: action,
-          type: 'error',
+          phase: 'open',
         },
+        true,
       );
       throw rawError;
     }
@@ -503,6 +726,7 @@ export class AltEditorLite<
       'alteditor-lite:open',
       {
         editor: this,
+        mode: 'dialog',
         operation: action,
         type: 'open',
       },
@@ -528,52 +752,40 @@ export class AltEditorLite<
   }
 
   private beginOperation(operation: EditorOperation): OwnedOperationRequest {
-    const request: OwnedOperationRequest = {
-      abortController: new AbortController(),
+    return this.operationOwner.begin(
       operation,
-      sequence: this.requestSequence.next(),
-    };
-    this.activeOperationRequest = request;
-    return request;
-  }
-
-  private ownsOperation(request: OwnedOperationRequest): boolean {
-    return (
-      this.state.status !== 'destroyed' &&
-      this.activeOperationRequest === request &&
-      this.requestSequence.isCurrent(request.sequence) &&
-      !request.abortController.signal.aborted
+      operation === 'refresh' ? 'api' : 'dialog',
     );
   }
 
+  private ownsOperation(request: OwnedOperationRequest): boolean {
+    return this.operationOwner.owns(request);
+  }
+
   private releaseOperation(request: OwnedOperationRequest): void {
-    if (this.activeOperationRequest === request) {
-      this.activeOperationRequest = undefined;
-    }
+    this.operationOwner.complete(request);
   }
 
   private abortActiveOperation(): void {
-    this.activeOperationRequest?.abortController.abort();
-    this.activeOperationRequest = undefined;
-    this.requestSequence.invalidate();
+    this.operationOwner.abort();
   }
 
   private operationContext(request: OwnedOperationRequest): OperationContext<TRow> {
-    return Object.freeze({
-      operation: request.operation,
-      signal: request.abortController.signal,
-      table: this.table,
-    });
+    return this.operationOwner.context(this.table, request);
   }
 
   private setSubmitting(action: DialogAction): OwnedOperationRequest {
+    this.setDialogSubmitting(action);
+    return this.beginOperation(action);
+  }
+
+  private setDialogSubmitting(action: DialogAction): void {
     this.transitionTo({ action, status: 'submitting' });
     this.activeForm?.setBusy(true);
     this.dialog.setSubmitAvailable(true);
     this.dialog.setBusy(true);
     this.activeForm?.clearErrors();
     this.dialog.clearError();
-    return this.beginOperation(action);
   }
 
   private restoreOpenAfterValidation(
@@ -599,6 +811,7 @@ export class AltEditorLite<
     }
 
     const request = this.setSubmitting('create');
+    let phase: EditorErrorHookContext['phase'] = 'validation';
     try {
       const validationResult = await form.validate();
       if (!this.ownsOperation(request)) {
@@ -609,9 +822,26 @@ export class AltEditorLite<
         return;
       }
 
-      const values = await form.collect();
+      const values = freezeEditorValues<TFormValues>(await form.collect());
       if (!this.ownsOperation(request)) {
         return;
+      }
+
+      phase = 'submit';
+      if (this.options.hooks?.beforeSubmit !== undefined) {
+        const shouldContinue = await Promise.resolve(
+          this.options.hooks.beforeSubmit(
+            values,
+            this.operationOwner.context(this.table, request),
+          ),
+        );
+        if (!this.ownsOperation(request)) {
+          return;
+        }
+        if (shouldContinue === false) {
+          this.restoreOpenAfterValidation('create', request, form);
+          return;
+        }
       }
 
       dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:submit'>(
@@ -619,6 +849,7 @@ export class AltEditorLite<
         'alteditor-lite:submit',
         {
           editor: this,
+          mode: 'dialog',
           operation: 'create',
           type: 'submit',
           values,
@@ -628,6 +859,7 @@ export class AltEditorLite<
         return;
       }
 
+      phase = 'persistence';
       const row = await this.createRow(values, request);
       if (!this.ownsOperation(request)) {
         return;
@@ -639,6 +871,7 @@ export class AltEditorLite<
         'alteditor-lite:success',
         {
           editor: this,
+          mode: 'dialog',
           operation: 'create',
           row,
           type: 'success',
@@ -650,8 +883,15 @@ export class AltEditorLite<
       }
 
       this.completeSuccessfulFormOperation('create', request, form);
+      await this.runAfterSuccessHook({
+        mode: 'dialog',
+        operation: 'create',
+        row,
+        table: this.table,
+        values,
+      });
     } catch (error: unknown) {
-      this.handleDialogOperationFailure('create', request, error, form);
+      this.handleDialogOperationFailure('create', request, error, form, phase);
     }
   }
 
@@ -697,137 +937,145 @@ export class AltEditorLite<
       return;
     }
 
-    const request = this.setSubmitting('edit');
-    try {
-      const validationResult = await form.validate();
-      if (!this.ownsOperation(request)) {
-        return;
-      }
-      if (!validationResult.valid) {
-        this.restoreOpenAfterValidation('edit', request, form);
-        return;
-      }
-
-      const collectedForm = await form.collectWithMetadata();
-      const values = collectedForm.values;
-      if (!this.ownsOperation(request)) {
-        return;
-      }
-
-      // Confirm ownership immediately before exposing the captured row to listeners.
-      resolveEditTarget(
-        this.table,
-        this.tableElement,
-        capture,
-        this.language.errors.targetUnavailable,
-      );
-      dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:submit'>(
-        this.tableElement,
-        'alteditor-lite:submit',
-        {
-          editor: this,
-          operation: 'edit',
-          original: capture.snapshot.original,
-          type: 'submit',
-          values,
+    const target = this.createDialogEditTarget(capture);
+    await this.editOperationRunner.run({
+      ...(this.options.hooks?.afterSuccess === undefined
+        ? {}
+        : {
+            afterSuccess: async (context) => {
+              await Promise.resolve(this.options.hooks?.afterSuccess?.(context));
+            },
+          }),
+      ...(this.options.hooks?.beforeSubmit === undefined
+        ? {}
+        : {
+            beforeSubmit: async (transaction, context) => {
+              const shouldContinue = await Promise.resolve(
+                this.options.hooks?.beforeSubmit?.(transaction.values, {
+                  ...context,
+                  original: transaction.original,
+                }),
+              );
+              return shouldContinue !== false;
+            },
+          }),
+      commit: async (row, rowIndex, request) => {
+        this.table.row(rowIndex).data(row);
+        await this.drawOwnership.runWithDraw(
+          'dialog-edit-success',
+          request.abortController.signal,
+          () => {
+            this.table.draw(false);
+          },
+        );
+        if (!(this.options.closeOnSuccess ?? true)) {
+          this.editTargetCapture = captureEditTarget(
+            this.table,
+            rowIndex,
+            this.language.errors.targetUnavailable,
+          );
+        }
+        return Object.freeze({ row, rowIndex });
+      },
+      dispatchSubmit: (transaction) => {
+        dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:submit'>(
+          this.tableElement,
+          'alteditor-lite:submit',
+          {
+            editor: this,
+            mode: 'dialog',
+            operation: 'edit',
+            original: transaction.original,
+            type: 'submit',
+            values: transaction.values,
+          },
+        );
+      },
+      dispatchSuccess: (transaction, result) => {
+        dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:success'>(
+          this.tableElement,
+          'alteditor-lite:success',
+          {
+            editor: this,
+            mode: 'dialog',
+            operation: 'edit',
+            original: transaction.original,
+            row: result.row,
+            type: 'success',
+            values: transaction.values,
+          },
+        );
+      },
+      mode: 'dialog',
+      original: capture.snapshot.original,
+      presentation: {
+        completeSuccess: () => {
+          this.completeSuccessfulEditPresentation(form);
+          return Promise.resolve();
         },
-      );
-      if (!this.ownsOperation(request)) {
-        return;
-      }
-
-      // A submit listener can redraw or replace rows, so validate again afterward.
-      resolveEditTarget(
-        this.table,
-        this.tableElement,
-        capture,
-        this.language.errors.targetUnavailable,
-      );
-      const row = await this.updateRow(
-        values,
-        capture,
-        request,
-        collectedForm.fieldValues,
-      );
-      if (!this.ownsOperation(request)) {
-        return;
-      }
-
-      // Persistence can be asynchronous; resolve only now to avoid updating a new row.
-      const rowIndex = resolveEditTarget(
-        this.table,
-        this.tableElement,
-        capture,
-        this.language.errors.targetUnavailable,
-      );
-      this.table.row(rowIndex).data(row).draw(false);
-      if (!(this.options.closeOnSuccess ?? true)) {
-        this.editTargetCapture = captureEditTarget(
+        restoreAfterOperationFailure: () => undefined,
+        restoreAfterValidationFailure: () => {
+          form.setBusy(false);
+          this.dialog.setBusy(false);
+          this.dialog.setSubmitAvailable(true);
+          this.transitionTo({ action: 'edit', status: 'open' });
+          this.dialog.focusInvalidField();
+        },
+        setBusy: (isBusy) => {
+          form.setBusy(isBusy);
+          this.dialog.setBusy(isBusy);
+        },
+        showOperationError: (error) => {
+          form.showSubmissionError(error);
+          this.dialog.showError(error.message);
+          this.dialog.setSubmitAvailable(error.retryable);
+          this.transitionTo({
+            action: 'edit',
+            status: 'open',
+            submissionError: error,
+          });
+        },
+        startValidation: () => {
+          this.setDialogSubmitting('edit');
+        },
+        validate: async (signal) => {
+          const validationResult = await form.validate();
+          signal.throwIfAborted();
+          if (!validationResult.valid) {
+            return {
+              error: new AltEditorLiteError({
+                code: 'VALIDATION',
+                fieldErrors: validationResult.fieldErrors,
+                message: this.language.validation.invalid,
+                retryable: true,
+              }),
+              valid: false,
+            };
+          }
+          const collectedForm = await form.collectWithMetadata();
+          signal.throwIfAborted();
+          return {
+            changedFields: [
+              ...collectedForm.fieldValues.keys(),
+            ] as FieldPath<TFormValues>[],
+            collectedFieldValues: collectedForm.fieldValues,
+            valid: true,
+            values: collectedForm.values,
+          };
+        },
+      },
+      reportError: (error, context, publishEvent) => {
+        this.reportOperationError(error, context, publishEvent);
+      },
+      revalidateTarget: () =>
+        resolveEditTarget(
           this.table,
-          rowIndex,
+          this.tableElement,
+          capture,
           this.language.errors.targetUnavailable,
-        );
-      }
-
-      dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:success'>(
-        this.tableElement,
-        'alteditor-lite:success',
-        {
-          editor: this,
-          operation: 'edit',
-          original: capture.snapshot.original,
-          row,
-          type: 'success',
-          values,
-        },
-      );
-      if (!this.ownsOperation(request)) {
-        return;
-      }
-
-      this.completeSuccessfulFormOperation('edit', request, form);
-    } catch (error: unknown) {
-      this.handleDialogOperationFailure('edit', request, error, form);
-    }
-  }
-
-  private async updateRow(
-    values: Readonly<EditorValues<TFormValues>>,
-    capture: EditTargetCapture<TRow>,
-    request: OwnedOperationRequest,
-    collectedFieldValues: ReadonlyMap<string, unknown>,
-  ): Promise<TRow> {
-    if (this.options.operations?.update !== undefined) {
-      const rowCandidate: unknown = await this.options.operations.update(
-        values,
-        capture.snapshot.original,
-        this.operationContext(request),
-      );
-      assertCompleteRow(rowCandidate, 'operations.update');
-      return rowCandidate as TRow;
-    }
-
-    if (this.options.clientSide?.updateRow !== undefined) {
-      const rowCandidate: unknown = this.options.clientSide.updateRow(
-        capture.snapshot.original,
-        values,
-      );
-      if (isPromiseLike(rowCandidate)) {
-        throw new EditorConfigurationError(
-          'clientSide.updateRow must return synchronously.',
-        );
-      }
-
-      assertCompleteRow(rowCandidate, 'clientSide.updateRow');
-      return rowCandidate as TRow;
-    }
-
-    return mergeDeclaredFieldValues(
-      capture.snapshot.original,
-      values,
-      this.declaredFieldPaths,
-      collectedFieldValues,
-    );
+        ),
+      target,
+    });
   }
 
   private async submitRemove(): Promise<void> {
@@ -841,6 +1089,7 @@ export class AltEditorLite<
     }
 
     const request = this.setSubmitting('remove');
+    let phase: EditorErrorHookContext['phase'] = 'submit';
     try {
       // Confirm ownership immediately before exposing captured rows to listeners.
       resolveRemoveTargets(
@@ -854,6 +1103,7 @@ export class AltEditorLite<
         'alteditor-lite:submit',
         {
           editor: this,
+          mode: 'dialog',
           operation: 'remove',
           rows: capture.snapshot.originals,
           type: 'submit',
@@ -870,6 +1120,7 @@ export class AltEditorLite<
         capture,
         this.language.errors.targetUnavailable,
       );
+      phase = 'persistence';
       if (this.options.operations?.remove !== undefined) {
         await this.options.operations.remove(
           capture.snapshot.originals,
@@ -896,6 +1147,7 @@ export class AltEditorLite<
         'alteditor-lite:success',
         {
           editor: this,
+          mode: 'dialog',
           operation: 'remove',
           rows: capture.snapshot.originals,
           type: 'success',
@@ -907,8 +1159,14 @@ export class AltEditorLite<
 
       this.releaseOperation(request);
       this.closeAfterSuccess('remove');
+      await this.runAfterSuccessHook({
+        mode: 'dialog',
+        operation: 'remove',
+        rows: capture.snapshot.originals,
+        table: this.table,
+      });
     } catch (error: unknown) {
-      this.handleDialogOperationFailure('remove', request, error);
+      this.handleDialogOperationFailure('remove', request, error, undefined, phase);
     }
   }
 
@@ -917,6 +1175,7 @@ export class AltEditorLite<
     request: OwnedOperationRequest,
     rawError: unknown,
     form?: EditorFormController<TFormValues>,
+    phase: EditorErrorHookContext['phase'] = 'persistence',
   ): void {
     if (!this.ownsOperation(request)) {
       return;
@@ -945,15 +1204,15 @@ export class AltEditorLite<
       status: 'open',
       submissionError: operationError,
     });
-    dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:error'>(
-      this.tableElement,
-      'alteditor-lite:error',
+    this.reportOperationError(
+      operationError,
       {
-        editor: this,
-        error: operationError,
+        committed: false,
+        mode: 'dialog',
         operation: action,
-        type: 'error',
+        phase,
       },
+      true,
     );
   }
 
@@ -974,14 +1233,119 @@ export class AltEditorLite<
     this.transitionTo({ action, status: 'open' });
   }
 
+  private completeSuccessfulEditPresentation(
+    form: EditorFormController<TFormValues>,
+  ): void {
+    if (this.options.closeOnSuccess ?? true) {
+      this.closeAfterSuccess('edit');
+      return;
+    }
+
+    form.setBusy(false);
+    this.dialog.setBusy(false);
+    this.dialog.setSubmitAvailable(true);
+    this.transitionTo({ action: 'edit', status: 'open' });
+  }
+
+  private createDialogEditTarget(
+    capture: EditTargetCapture<TRow>,
+  ): Readonly<EditorOperationTarget> {
+    return Object.freeze({
+      fieldNames: Object.freeze(
+        this.options.fields
+          .filter((field) => field.editable !== false && field.disabled !== true)
+          .map((field) => field.name),
+      ),
+      rowIndex: capture.snapshot.rowIndex,
+      ...(capture.snapshot.rowId === undefined ? {} : { rowId: capture.snapshot.rowId }),
+    });
+  }
+
+  private reportOperationError(
+    error: AltEditorLiteError,
+    context: EditorErrorHookContext,
+    publishEvent: boolean,
+  ): void {
+    try {
+      this.options.hooks?.onError?.(error, context);
+    } catch (hookError: unknown) {
+      console.warn('AltEditorLite onError callback failed.', hookError);
+    }
+
+    if (!publishEvent || this.state.status === 'destroyed') {
+      return;
+    }
+    const inlineTarget =
+      context.mode === 'inline' &&
+      context.target?.columnIndex !== undefined &&
+      context.target.fieldNames[0] !== undefined
+        ? {
+            columnIndex: context.target.columnIndex,
+            fieldName: context.target.fieldNames[0],
+            rowIndex: context.target.rowIndex,
+            ...(context.target.rowId === undefined
+              ? {}
+              : { rowId: context.target.rowId }),
+            ...(context.target.columnName === undefined
+              ? {}
+              : { columnName: context.target.columnName }),
+          }
+        : undefined;
+    dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:error'>(
+      this.tableElement,
+      'alteditor-lite:error',
+      {
+        editor: this,
+        error,
+        mode: context.mode,
+        operation: context.operation,
+        ...(inlineTarget === undefined ? {} : { target: inlineTarget }),
+        type: 'error',
+      },
+    );
+  }
+
+  private async runAfterSuccessHook(
+    context: AfterSuccessContext<TRow, TFormValues>,
+  ): Promise<void> {
+    const hook = this.options.hooks?.afterSuccess;
+    if (hook === undefined || this.state.status === 'destroyed') {
+      return;
+    }
+    try {
+      await Promise.resolve(hook(context));
+    } catch (rawError: unknown) {
+      const error = normalizeOperationError(
+        rawError,
+        new AbortController().signal,
+        this.language,
+      );
+      if (!(error instanceof InternalOperationAbort)) {
+        this.reportOperationError(
+          error,
+          {
+            committed: true,
+            mode: context.mode,
+            operation: context.operation,
+            phase: 'afterSuccess',
+            ...(context.target === undefined ? {} : { target: context.target }),
+          },
+          false,
+        );
+      }
+    }
+  }
+
   private async runRefresh(): Promise<void> {
     this.transitionTo({ status: 'refreshing' });
     const request = this.beginOperation('refresh');
+    let didSucceed = false;
     dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:refresh'>(
       this.tableElement,
       'alteditor-lite:refresh',
       {
         editor: this,
+        mode: 'api',
         operation: 'refresh',
         phase: 'start',
         type: 'refresh',
@@ -1000,12 +1364,14 @@ export class AltEditorLite<
       if (!this.ownsOperation(request)) {
         return;
       }
+      didSucceed = true;
 
       dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:success'>(
         this.tableElement,
         'alteditor-lite:success',
         {
           editor: this,
+          mode: 'api',
           operation: 'refresh',
           type: 'success',
         },
@@ -1025,19 +1391,20 @@ export class AltEditorLite<
       );
       if (operationError instanceof InternalOperationAbort) {
         this.releaseOperation(request);
+        this.releaseRefreshInteraction();
         this.transitionTo({ status: 'ready' });
         return;
       }
 
-      dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:error'>(
-        this.tableElement,
-        'alteditor-lite:error',
+      this.reportOperationError(
+        operationError,
         {
-          editor: this,
-          error: operationError,
+          committed: false,
+          mode: 'api',
           operation: 'refresh',
-          type: 'error',
+          phase: 'persistence',
         },
+        true,
       );
       if (!this.ownsOperation(request)) {
         return;
@@ -1045,17 +1412,26 @@ export class AltEditorLite<
     }
 
     this.releaseOperation(request);
+    this.releaseRefreshInteraction();
     this.transitionTo({ status: 'ready' });
     dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:refresh'>(
       this.tableElement,
       'alteditor-lite:refresh',
       {
         editor: this,
+        mode: 'api',
         operation: 'refresh',
         phase: 'complete',
         type: 'refresh',
       },
     );
+    if (didSucceed) {
+      await this.runAfterSuccessHook({
+        mode: 'api',
+        operation: 'refresh',
+        table: this.table,
+      });
+    }
   }
 
   private closeAfterSuccess(action: DialogAction): void {
@@ -1070,6 +1446,10 @@ export class AltEditorLite<
   private closeDialogNow(reason: Exclude<EditorCloseReason, 'success'>): void {
     this.assertActive();
     if (this.state.status === 'ready') {
+      if (this.dialogInteractionToken !== undefined) {
+        this.activeOpenAbortController?.abort();
+        this.releaseDialogInteraction();
+      }
       return;
     }
     if (this.state.status !== 'open' && this.state.status !== 'submitting') {
@@ -1090,12 +1470,14 @@ export class AltEditorLite<
     this.activeForm = undefined;
     this.editTargetCapture = undefined;
     this.removeTargetCapture = undefined;
+    this.releaseDialogInteraction();
     this.transitionTo({ status: 'ready' });
     dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:close'>(
       this.tableElement,
       'alteditor-lite:close',
       {
         editor: this,
+        mode: 'dialog',
         operation: action,
         reason,
         type: 'close',
@@ -1104,7 +1486,8 @@ export class AltEditorLite<
   }
 
   private getIntegrationButtonState(): EditorButtonState {
-    const isReady = this.state.status === 'ready';
+    const isReady =
+      this.state.status === 'ready' && this.interactionCoordinator.current() === 'none';
     const hasSelect = this.selectIntegration.available();
     const selectedRowCount = hasSelect
       ? this.selectIntegration.selectedRowIndexes().length
@@ -1125,6 +1508,13 @@ export class AltEditorLite<
     values: Readonly<EditorValues<TFormValues>>,
   ): Readonly<Record<string, string>> {
     const excludedRow = action === 'edit' ? this.editTargetCapture?.sourceRow : undefined;
+    return this.validateLocalUniquenessForRow(values, excludedRow);
+  }
+
+  private validateLocalUniquenessForRow(
+    values: Readonly<EditorValues<TFormValues>>,
+    excludedRow: TRow | undefined,
+  ): Readonly<Record<string, string>> {
     const fieldErrors: Record<string, string> = {};
 
     const candidates = this.uniqueFieldLookups.flatMap((field) => {

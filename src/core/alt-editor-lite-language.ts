@@ -57,6 +57,15 @@ export interface AltEditorLiteLanguage {
     readonly searchSelectResults: string;
     readonly searchSelectSelection: string;
   };
+  /** Text announced or displayed by inline cell editing. */
+  readonly inline: {
+    readonly unavailable: string;
+    readonly unsupportedField: string;
+    readonly saving: string;
+    readonly targetUnavailable: string;
+    readonly editStarted: string;
+    readonly editCancelled: string;
+  };
   /** Operation-level error fallbacks. */
   readonly errors: {
     readonly generic: string;
@@ -130,6 +139,7 @@ export function resolveLanguage(
       ENGLISH_LANGUAGE.accessibility,
       language?.accessibility,
     ),
+    inline: mergeDefinedLanguageText(ENGLISH_LANGUAGE.inline, language?.inline),
     errors: mergeDefinedLanguageText(ENGLISH_LANGUAGE.errors, language?.errors),
   };
 }

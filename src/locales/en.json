@@ -40,6 +40,14 @@
     "searchSelectResults": "{count} options available.",
     "searchSelectSelection": "{label} selected."
   },
+  "inline": {
+    "unavailable": "Inline editing is not available for this cell.",
+    "unsupportedField": "This field does not support inline editing.",
+    "saving": "Saving change.",
+    "targetUnavailable": "The edited cell is no longer available.",
+    "editStarted": "Cell editing started.",
+    "editCancelled": "Cell editing cancelled."
+  },
   "errors": {
     "generic": "The operation could not be completed.",
     "fileCount": "Too many files were selected.",

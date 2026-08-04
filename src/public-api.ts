@@ -26,8 +26,13 @@ export {
   type AltEditorLiteErrorOptions,
 } from './core/alt-editor-lite-error.js';
 export type {
+  AfterSuccessContext,
   AltEditorLiteOptions,
+  BeforeOpenContext,
+  BeforeSubmitContext,
   ClientSideOperations,
+  EditorErrorHookContext,
+  EditorHooks,
   EditorOperations,
   OperationContext,
 } from './core/alt-editor-lite-options.js';
@@ -42,6 +47,7 @@ export type {
   EditorErrorEventDetail,
   EditorEventDetailMap,
   EditorEventName,
+  InlineEventTarget,
   EditorOpenEventDetail,
   EditorRefreshSuccessEventDetail,
   EditorRemoveSubmitEventDetail,
@@ -50,7 +56,12 @@ export type {
   EditorSubmitEventDetail,
   EditorSuccessEventDetail,
 } from './core/editor-event.js';
-export type { DialogAction, EditorOperation } from './core/editor-operation.js';
+export type {
+  DialogAction,
+  EditorOperation,
+  EditorOperationMode,
+  EditorOperationTarget,
+} from './core/editor-operation.js';
 export type { EditTargetSnapshot, RemoveTargetSnapshot } from './core/editor-snapshot.js';
 export type { EditorState } from './core/editor-state.js';
 export type { BuiltinValue, DeepPartial, EditorValues } from './core/editor-values.js';
@@ -90,3 +101,5 @@ export type { FieldValue, MaybePromise } from './fields/field-value.js';
 export type { FormController } from './form/form-controller.js';
 export type { FormValidationResult } from './form/validate-editor-form.js';
 export type { FieldPath } from './object-path/field-path.js';
+export type { InlineEditorOptions } from './inline/inline-edit-options.js';
+export type { InlineEditState, InlineTargetSummary } from './inline/inline-edit-state.js';

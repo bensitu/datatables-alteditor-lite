@@ -40,6 +40,14 @@
     "searchSelectResults": "有 {count} 个可用选项。",
     "searchSelectSelection": "已选择 {label}。"
   },
+  "inline": {
+    "unavailable": "此单元格不可进行行内编辑。",
+    "unsupportedField": "此字段不支持行内编辑。",
+    "saving": "正在保存更改。",
+    "targetUnavailable": "正在编辑的单元格已不可用。",
+    "editStarted": "已开始编辑单元格。",
+    "editCancelled": "已取消编辑单元格。"
+  },
   "errors": {
     "generic": "无法完成操作。",
     "fileCount": "选择的文件过多。",

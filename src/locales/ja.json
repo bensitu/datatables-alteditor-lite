@@ -40,6 +40,14 @@
     "searchSelectResults": "{count} 件のオプションがあります。",
     "searchSelectSelection": "{label} を選択しました。"
   },
+  "inline": {
+    "unavailable": "このセルではインライン編集を利用できません。",
+    "unsupportedField": "このフィールドはインライン編集に対応していません。",
+    "saving": "変更を保存しています。",
+    "targetUnavailable": "編集中のセルは利用できなくなりました。",
+    "editStarted": "セルの編集を開始しました。",
+    "editCancelled": "セルの編集をキャンセルしました。"
+  },
   "errors": {
     "generic": "操作を完了できませんでした。",
     "fileCount": "選択したファイルが多すぎます。",

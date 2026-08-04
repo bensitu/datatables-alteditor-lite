@@ -15,6 +15,7 @@ export default defineConfig({
         'src/fields/**/*.ts',
         'src/form/**/*.ts',
         'src/instance/**/*.ts',
+        'src/inline/**/*.ts',
         'src/localization/**/*.ts',
         'src/object-path/*.ts',
         'src/search-select/**/*.ts',
