@@ -46,6 +46,11 @@ const offices = [
   { label: 'Seoul', value: 120 },
   { disabled: true, label: 'Closed office', value: 130 },
 ];
+const workflowPriorities = [
+  { label: 'Normal', value: 'normal' },
+  { label: 'High', value: 'high' },
+  { label: 'Urgent', value: 'urgent' },
+];
 const languageFileByLocale = new Map([
   ['ja', 'ja.json'],
   ['zh-CN', 'zh-cn.json'],
@@ -124,6 +129,35 @@ let fieldGalleryEditor;
 let nextRowId = 1000;
 let nextWorkflowId = 2;
 let shouldFailNextOperation = false;
+
+function escapeHtmlAttribute(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;');
+}
+
+function renderPriorityControl(priority, type) {
+  if (type !== 'display') {
+    return priority;
+  }
+  const options = workflowPriorities
+    .map(({ label, value }) => {
+      const selected = priority === value ? ' selected' : '';
+      return `<option value="${escapeHtmlAttribute(value)}"${selected}>${escapeHtmlAttribute(label)}</option>`;
+    })
+    .join('');
+  return `<select class="demo-rendered-control" aria-label="Rendered priority" disabled>${options}</select>`;
+}
+
+function renderSupportWindowControl(supportWindow, type) {
+  if (type !== 'display') {
+    return supportWindow;
+  }
+  return `<input class="demo-rendered-control" aria-label="Rendered support window" type="time" value="${escapeHtmlAttribute(supportWindow)}" disabled>`;
+}
 
 const table = new DataTable('#employees', {
   ajax: {
@@ -357,22 +391,41 @@ document.querySelector('#show-field-gallery').addEventListener('click', (event) 
   fieldGallery.hidden = false;
   const workflowTable = new DataTable('#workflows', {
     columns: [
-      { data: 'title' },
-      { data: 'contactMethod' },
-      { data: 'supportWindow' },
+      { data: 'title', name: 'title' },
+      { data: 'priority', name: 'priority' },
+      { data: 'contactMethod', name: 'contactMethod' },
+      { data: 'supportWindow', name: 'supportWindow' },
       {
         data: 'reviewAt',
-        render(value) {
+        name: 'reviewAt',
+      },
+      { data: 'attachmentName', name: 'attachmentName' },
+    ],
+    columnDefs: [
+      {
+        render: renderPriorityControl,
+        targets: 1,
+      },
+      {
+        render: renderSupportWindowControl,
+        targets: 3,
+      },
+      {
+        render(value, type) {
+          if (type !== 'display') {
+            return value;
+          }
           return typeof value === 'string' ? value.replace('T', ' ') : '';
         },
+        targets: 4,
       },
-      { data: 'attachmentName' },
     ],
     data: [
       {
         attachmentName: 'None',
         contactMethod: 'email',
         id: 1,
+        priority: 'normal',
         reviewAt: '2026-08-10T09:30',
         supportWindow: '10:00',
         title: 'Accessibility review',
@@ -398,6 +451,7 @@ document.querySelector('#show-field-gallery').addEventListener('click', (event) 
           attachmentName: values.attachment?.name ?? 'None',
           contactMethod: values.contactMethod ?? 'email',
           id: nextWorkflowId++,
+          priority: values.priority ?? 'normal',
           reviewAt: values.reviewAt ?? '',
           supportWindow: values.supportWindow ?? '',
           title: values.title ?? '',
@@ -408,6 +462,7 @@ document.querySelector('#show-field-gallery').addEventListener('click', (event) 
           ...original,
           attachmentName: values.attachment?.name ?? original.attachmentName,
           contactMethod: values.contactMethod ?? original.contactMethod,
+          priority: values.priority ?? original.priority,
           reviewAt: values.reviewAt ?? original.reviewAt,
           supportWindow: values.supportWindow ?? original.supportWindow,
           title: values.title ?? original.title,
@@ -416,10 +471,19 @@ document.querySelector('#show-field-gallery').addEventListener('click', (event) 
     },
     fields: [
       {
+        inlineEdit: true,
         label: 'Workflow title',
         name: 'title',
         required: true,
         type: 'text',
+      },
+      {
+        inlineEdit: true,
+        label: 'Priority',
+        name: 'priority',
+        options: workflowPriorities,
+        required: true,
+        type: 'select',
       },
       {
         defaultValue: '',
@@ -430,12 +494,14 @@ document.querySelector('#show-field-gallery').addEventListener('click', (event) 
         type: 'password',
       },
       {
+        inlineEdit: true,
         label: 'Support window',
         name: 'supportWindow',
         required: true,
         type: 'time',
       },
       {
+        inlineEdit: true,
         label: 'Review date and time',
         name: 'reviewAt',
         required: true,
@@ -463,7 +529,37 @@ document.querySelector('#show-field-gallery').addEventListener('click', (event) 
       },
       { defaultValue: 'field-gallery', name: 'source', type: 'hidden' },
     ],
+    inline: { enabled: true },
   });
+  workflowTable.row('#workflow-1').select();
+
+  const workflowInlineStatus = document.querySelector('#workflow-inline-status');
+  async function openSelectedWorkflowInline(columnName) {
+    const selectedIndexes = workflowTable.rows({ selected: true }).indexes().toArray();
+    if (selectedIndexes.length !== 1) {
+      workflowInlineStatus.textContent =
+        'Select exactly one workflow before opening inline editing.';
+      return;
+    }
+    try {
+      await fieldGalleryEditor.openInlineEdit(selectedIndexes[0], `${columnName}:name`);
+      workflowInlineStatus.textContent =
+        'Inline editing replaces the rendered display control and commits through the shared update workflow.';
+    } catch {
+      workflowInlineStatus.textContent = 'Inline editing is unavailable for this cell.';
+    }
+  }
+
+  document
+    .querySelector('#edit-workflow-priority-inline')
+    .addEventListener('click', () => {
+      void openSelectedWorkflowInline('priority');
+    });
+  document
+    .querySelector('#edit-workflow-support-inline')
+    .addEventListener('click', () => {
+      void openSelectedWorkflowInline('supportWindow');
+    });
   if (event.currentTarget instanceof HTMLButtonElement) {
     event.currentTarget.disabled = true;
     event.currentTarget.textContent = 'Field type gallery initialized';

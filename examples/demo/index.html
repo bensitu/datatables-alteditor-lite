@@ -97,7 +97,7 @@
           <div class="demo-value-grid__copy">
             <h2>Browser-native interface</h2>
             <p>
-              <code>&lt;dialog&gt;</code>, browser validation, focus containment, no UI
+              Native dialog and inline controls, browser validation, managed focus, no UI
               kit.
             </p>
           </div>
@@ -172,7 +172,7 @@
               Fail the next persistence request
             </button>
             <button id="show-field-gallery" type="button">
-              Explore more field types
+              Explore editing modes and field types
             </button>
           </div>
 
@@ -215,8 +215,9 @@
             <h2>Synchronous workflow editor</h2>
           </div>
           <p class="demo-section-heading__hint">
-            Create or select a row and edit password, time, datetime-local, radio, file,
-            and hidden fields using a client-side mapping.
+            The table renders a display-only select and time input through
+            <code>columnDefs</code>. Select one row, then compare inline controls with the
+            complete Edit dialog.
           </p>
         </div>
         <div class="demo-table-scroll">
@@ -224,6 +225,7 @@
             <thead>
               <tr>
                 <th>Workflow</th>
+                <th>Priority</th>
                 <th>Contact</th>
                 <th>Support window</th>
                 <th>Review</th>
@@ -232,6 +234,18 @@
             </thead>
           </table>
         </div>
+        <div class="demo-control-actions demo-workflow-actions">
+          <button id="edit-workflow-priority-inline" type="button">
+            Edit selected priority inline
+          </button>
+          <button id="edit-workflow-support-inline" type="button">
+            Edit selected support window inline
+          </button>
+        </div>
+        <p id="workflow-inline-status" class="demo-workflow-status" role="status">
+          The first workflow is selected. Use an inline button or the Edit dialog button
+          above the table.
+        </p>
       </section>
     </main>
 

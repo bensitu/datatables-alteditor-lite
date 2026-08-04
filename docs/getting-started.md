@@ -1,8 +1,7 @@
 # Getting started
 
-For optional single-cell editing after completing this guide, continue with
-[Inline editing](inline-editing.md). Existing dialog applications do not enable it
-automatically in 0.2.0.
+This guide begins with the default dialog workflow. See [Editing](editing.md) for
+complete dialog behavior and optional single-cell editing.
 
 ## Install
 
@@ -78,10 +77,57 @@ Use `table.altEditorLite<UserForm>()` only to retrieve an existing instance. It
 never constructs one. Call `editor.destroy()` before replacing the table or
 creating another editor for the same table element.
 
+## Editing and commit model
+
+Dialog Edit and inline Edit use one persistence transaction. Presentation code
+owns field rendering, validation feedback, focus, and cleanup. Shared operation
+code owns request sequencing, target revalidation, lifecycle callbacks,
+persistence selection, complete-row validation, DataTables mutation, draw
+completion, and normalized failures.
+
+The ordered update flow is:
+
+1. validate and collect immutable values;
+2. confirm the captured row and optional column identity;
+3. run the veto-only `beforeSubmit` hook;
+4. publish submit and invoke the configured update implementation;
+5. confirm request ownership and target identity again;
+6. commit one complete replacement row or run the configured refresh;
+7. wait for the owned draw, publish success, and restore logical focus;
+8. run `afterSuccess` without changing the committed result.
+
+Validation and persistence failures leave canonical DataTables data unchanged.
+Cancellation aborts owned work, and every asynchronous boundary ignores stale or
+destroyed results. Row and cell identity fail closed instead of selecting another
+target by displayed value.
+
+Persistence contexts identify the initiating `mode` as `dialog`, `inline`, or
+`api`, and Edit contexts include a stable `target`. Lifecycle DOM events use the
+same mode and target information. Policies that must decline opening or submission
+belong in `beforeOpen` and `beforeSubmit`; DOM events remain observation-only.
+
+Inline editing requires `inlineEdit: true` on eligible fields and
+`inline: { enabled: true }` in editor options. It does not introduce a separate
+field list, cell-specific persistence callback, optimistic row mutation, jQuery
+API, or private DataTables setting.
+
+## Rendered DataTables columns
+
+`columns.render` and `columnDefs.render` may display derived markup, including
+select and input elements. Editors still read the source value from the canonical
+row object. After either dialog or inline submission, the complete row is replaced
+and DataTables invokes the renderer again with the committed value.
+
+Rendered interactive descendants do not trigger automatic inline activation.
+Call `openInlineEdit(rowSelector, columnSelector)` from an application control
+when a cell is occupied by a display control. See [Editing](editing.md) for the
+complete rendered-control contract and safe renderer guidance.
+
 ## Supported environments
 
 The package targets modern evergreen browsers with native `<dialog>`, including
-the Chromium, Firefox, and WebKit versions exercised by the release test suite.
+the Chromium, Firefox, and WebKit engines exercised by the automated browser
+suite.
 The published Node engine range applies to installation, builds, and server-side
 tooling; the runtime itself is browser code.
 
@@ -103,7 +149,7 @@ The package metadata defines the supported DataTables, Buttons, and Select peer
 ranges. Development uses compatible releases resolved by the lockfile without
 requiring one exact patch version at runtime.
 
-See [API reference](api-reference.md), [Fields](fields.md),
-[Operations](operations.md), [Localization](localization.md), and
-[Browser Global](browser-global.md). A working Browser Global configuration is available in the
-[live demo](https://bensitu.github.io/datatables-alteditor-lite/examples/demo/).
+See [Editing](editing.md), [API reference](api-reference.md), [Fields](fields.md),
+[Operations](operations.md), [Localization](localization.md), and [Browser
+Global](browser-global.md). A working Browser Global configuration is available
+in the [live demo](https://bensitu.github.io/datatables-alteditor-lite/examples/demo/).

@@ -58,7 +58,7 @@ const editor = table.altEditorLite<TFormValues>();
 
 Inline options include `enabled`, `activation`, `blurAction`, `enterAction`,
 `tabAction`, exact named-column `columns` mappings, `updateMode`, and a scoped
-`className`. See [Inline editing](inline-editing.md) for supported field types,
+`className`. See [Editing](editing.md) for supported field types,
 selector requirements, and extension boundaries. Lifecycle hooks are described
 in [Lifecycle hooks](hooks.md).
 

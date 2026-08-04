@@ -1,6 +1,7 @@
 # Lifecycle hooks
 
-Version 0.2.0 provides four optional lifecycle hooks. Hooks extend the operation lifecycle; DOM events remain non-cancelable observation points.
+Four optional lifecycle hooks extend the operation lifecycle. DOM events remain
+non-cancelable observation points.
 
 ```ts
 const editor = new AltEditorLite(table, {

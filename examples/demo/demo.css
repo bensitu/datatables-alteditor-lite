@@ -447,6 +447,30 @@ main > * {
   gap: 0.625rem;
 }
 
+.demo-workflow-actions {
+  margin-block-start: 1rem;
+}
+
+.demo-workflow-status {
+  margin: 0.75rem 0 0;
+  color: var(--demo-muted);
+  font-size: 0.8125rem;
+  line-height: 1.55;
+}
+
+.demo-rendered-control {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 7rem;
+  padding: 0.375rem 0.5rem;
+  color: var(--demo-text);
+  font: inherit;
+  background: var(--demo-card-subtle);
+  border: 1px solid var(--demo-border);
+  border-radius: 0.375rem;
+  opacity: 1;
+}
+
 .demo-runtime-error {
   padding: 0.75rem;
   margin: 0;

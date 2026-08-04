@@ -56,7 +56,7 @@ for an external JSON resource before constructing the editor.
 `inline` configures optional single-cell editing. It supports `enabled`,
 `activation`, `blurAction`, `enterAction`, `tabAction`, exact named-column
 `columns` mappings, `updateMode`, and a safe additional `className`. See
-[Inline editing](inline-editing.md).
+[Editing](editing.md).
 
 `hooks` configures `beforeOpen`, `beforeSubmit`, `afterSuccess`, and `onError`.
 See [Lifecycle hooks](hooks.md).

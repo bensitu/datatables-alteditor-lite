@@ -10,7 +10,7 @@ TypeScript, native browser controls, and the public DataTables API. It has no
 jQuery or UI-framework runtime dependency.
 
 [Live demo](https://bensitu.github.io/datatables-alteditor-lite/examples/demo/) ·
-[Getting started](docs/getting-started.md) ·
+[Getting started](docs/getting-started.md) · [Editing](docs/editing.md) ·
 [Configuration](docs/configuration.md) · [Fields](docs/fields.md) ·
 [Operations](docs/operations.md) · [API reference](docs/api-reference.md) ·
 [Localization](docs/localization.md)
@@ -19,6 +19,8 @@ jQuery or UI-framework runtime dependency.
 
 - Native `<dialog>` forms with focus containment, restoration, responsive layout,
   and accessible validation feedback
+- Optional single-cell inline editing with exact column mapping, validation, and
+  keyboard navigation
 - Create, Edit, Remove, and Ajax-aware or local Refresh operations
 - Non-optimistic asynchronous persistence with `AbortSignal`
 - Stable Edit and Remove target snapshots that fail closed when row identity
@@ -133,10 +135,11 @@ table.altEditorLite<UserForm>(); // AltEditorLite<UserRow, UserForm> | null
 Call `editor.destroy()` before replacing the table or creating another editor for
 the same table element.
 
-## Inline editing
+## Editing modes
 
-Single-cell inline editing is optional and disabled by default. Enable the field
-and editor, then use double click or the public API:
+Dialog editing is available by default for complete forms. Single-cell inline
+editing is optional and disabled by default. Enable the field and editor, then use
+double click or the public API:
 
 ```ts
 const editor = new AltEditorLite<UserRow, UserForm>(table, {
@@ -163,9 +166,8 @@ await editor.openInlineEdit('#user-42', 'displayName:name');
 
 Enter submits, Escape cancels, and Tab submits before moving to the next eligible
 visible cell on the current page. Updates are non-optimistic and reuse the dialog
-Edit persistence transaction. See [Inline editing](docs/inline-editing.md),
-[Lifecycle hooks](docs/hooks.md), and the
-[0.2.0 migration guide](docs/migration-0.2.0.md).
+Edit persistence transaction. See [Editing](docs/editing.md) and [Lifecycle
+hooks](docs/hooks.md).
 
 ## Persistence operations
 
@@ -283,8 +285,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for repository conventions and
 
 ## Project status and attribution
 
-The public API is at version `0.1.1`. This project is independent and is not
-affiliated with or endorsed by the DataTables publisher. DataTables and its
+The public API follows semantic versioning. This project is independent and is
+not affiliated with or endorsed by the DataTables publisher. DataTables and its
 extensions remain separate dependencies distributed under their own terms.
 
 ## Buy Me A Coffee
