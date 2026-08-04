@@ -133,6 +133,40 @@ table.altEditorLite<UserForm>(); // AltEditorLite<UserRow, UserForm> | null
 Call `editor.destroy()` before replacing the table or creating another editor for
 the same table element.
 
+## Inline editing
+
+Single-cell inline editing is optional and disabled by default. Enable the field
+and editor, then use double click or the public API:
+
+```ts
+const editor = new AltEditorLite<UserRow, UserForm>(table, {
+  fields: [
+    {
+      inlineEdit: true,
+      label: 'Name',
+      name: 'profile.name',
+      required: true,
+      type: 'text',
+    },
+  ],
+  inline: {
+    enabled: true,
+    columns: {
+      displayName: 'profile.name',
+      actions: false,
+    },
+  },
+});
+
+await editor.openInlineEdit('#user-42', 'displayName:name');
+```
+
+Enter submits, Escape cancels, and Tab submits before moving to the next eligible
+visible cell on the current page. Updates are non-optimistic and reuse the dialog
+Edit persistence transaction. See [Inline editing](docs/inline-editing.md),
+[Lifecycle hooks](docs/hooks.md), and the
+[0.2.0 migration guide](docs/migration-0.2.0.md).
+
 ## Persistence operations
 
 Remote callbacks receive the complete operation context and may be synchronous or

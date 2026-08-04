@@ -14,16 +14,21 @@ new AltEditorLite<TRow, TFormValues>(table, options);
 shape collected from configured fields and defaults to `DeepPartial<TRow>`. One
 active editor may own a table element.
 
-| Method                           | Result                            | Description                                                                 |
-| -------------------------------- | --------------------------------- | --------------------------------------------------------------------------- |
-| `openCreateDialog()`             | `Promise<void>`                   | Opens Create when `operations.create` or `clientSide.createRow` is present. |
-| `openEditDialog(rowSelector?)`   | `Promise<void>`                   | Opens Edit for one explicit or selected row.                                |
-| `openRemoveDialog(rowSelector?)` | `Promise<void>`                   | Opens confirmation for one or more explicit or selected rows.               |
-| `refreshTable()`                 | `Promise<void>`                   | Runs the configured refresh operation or the default DataTables refresh.    |
-| `closeDialog()`                  | `Promise<void>`                   | Closes an open dialog and aborts work owned by that dialog.                 |
-| `getField<TValue>(name)`         | `FieldController<TValue> \| null` | Returns a rendered field while a form is open.                              |
-| `getState()`                     | `Readonly<EditorState>`           | Returns the current lifecycle state.                                        |
-| `destroy()`                      | `void`                            | Releases operations, DOM, listeners, selection integration, and ownership.  |
+| Method                                        | Result                            | Description                                                                 |
+| --------------------------------------------- | --------------------------------- | --------------------------------------------------------------------------- |
+| `openCreateDialog()`                          | `Promise<void>`                   | Opens Create when `operations.create` or `clientSide.createRow` is present. |
+| `openEditDialog(rowSelector?)`                | `Promise<void>`                   | Opens Edit for one explicit or selected row.                                |
+| `openRemoveDialog(rowSelector?)`              | `Promise<void>`                   | Opens confirmation for one or more explicit or selected rows.               |
+| `openInlineEdit(rowSelector, columnSelector)` | `Promise<void>`                   | Opens one eligible cell selected through public DataTables selectors.       |
+| `submitInlineEdit()`                          | `Promise<void>`                   | Validates and submits the active inline value.                              |
+| `cancelInlineEdit()`                          | `Promise<void>`                   | Cancels the active inline presentation and restores cell content.           |
+| `getInlineState()`                            | `Readonly<InlineEditState>`       | Returns the independent inline lifecycle state.                             |
+| `isInlineEditing()`                           | `boolean`                         | Reports whether inline work is active.                                      |
+| `refreshTable()`                              | `Promise<void>`                   | Runs the configured refresh operation or the default DataTables refresh.    |
+| `closeDialog()`                               | `Promise<void>`                   | Closes an open dialog and aborts work owned by that dialog.                 |
+| `getField<TValue>(name)`                      | `FieldController<TValue> \| null` | Returns a rendered field while a form is open.                              |
+| `getState()`                                  | `Readonly<EditorState>`           | Returns the current dialog and API lifecycle state.                         |
+| `destroy()`                                   | `void`                            | Releases operations, DOM, listeners, selection integration, and ownership.  |
 
 Methods that cannot run in the current state reject or throw a typed
 `AltEditorLiteError`. `destroy()` is idempotent; other instance methods are not
@@ -41,13 +46,21 @@ const editor = table.altEditorLite<TFormValues>();
 
 `AltEditorLiteOptions<TRow, TFormValues>` contains:
 
-| Property         | Type                                      | Description                                                   |
-| ---------------- | ----------------------------------------- | ------------------------------------------------------------- |
-| `fields`         | `readonly FieldConfig<TFormValues>[]`     | Ordered Create and Edit field definitions.                    |
-| `operations`     | `EditorOperations<TRow, TFormValues>`     | Optional synchronous or asynchronous editor operations.       |
-| `clientSide`     | `ClientSideOperations<TRow, TFormValues>` | Optional synchronous row mappings.                            |
-| `closeOnSuccess` | `boolean`                                 | Whether successful Create and Edit close; defaults to `true`. |
-| `language`       | `PartialEditorLanguage`                   | Complete language data or overrides merged with English.      |
+| Property         | Type                                      | Description                                                 |
+| ---------------- | ----------------------------------------- | ----------------------------------------------------------- |
+| `fields`         | `readonly FieldConfig<TFormValues>[]`     | Ordered Create and Edit field definitions.                  |
+| `operations`     | `EditorOperations<TRow, TFormValues>`     | Optional synchronous or asynchronous editor operations.     |
+| `clientSide`     | `ClientSideOperations<TRow, TFormValues>` | Optional synchronous row mappings.                          |
+| `closeOnSuccess` | `boolean`                                 | Whether successful dialog Create and Edit close.            |
+| `language`       | `PartialEditorLanguage`                   | Complete language data or overrides merged with English.    |
+| `inline`         | `InlineEditorOptions<TRow, TFormValues>`  | Optional single-cell editing behavior; disabled by default. |
+| `hooks`          | `EditorHooks<TRow, TFormValues>`          | Optional lifecycle observation and veto callbacks.          |
+
+Inline options include `enabled`, `activation`, `blurAction`, `enterAction`,
+`tabAction`, exact named-column `columns` mappings, `updateMode`, and a scoped
+`className`. See [Inline editing](inline-editing.md) for supported field types,
+selector requirements, and extension boundaries. Lifecycle hooks are described
+in [Lifecycle hooks](hooks.md).
 
 `EditorOperations` supports:
 
@@ -71,8 +84,9 @@ interface EditorOperations<TRow extends object, TFormValues extends object> {
 ```
 
 Every `OperationContext` contains the public DataTables `table`, the current
-`operation`, and an owned cancellation `signal`. `ClientSideOperations` provides
-synchronous `createRow(values)` and `updateRow(original, values)` mappings. See
+`operation`, initiating `mode`, optional stable `target`, and an owned
+cancellation `signal`. `ClientSideOperations` provides synchronous
+`createRow(values)` and `updateRow(original, values)` mappings. See
 [Configuration](configuration.md) and [Operations](operations.md) for capability
 resolution and mutation timing.
 
@@ -80,7 +94,8 @@ resolution and mutation timing.
 
 `FieldConfig<TFormValues>` is the union of the supported field configurations.
 Shared properties include `name`, `defaultValue`, `editable`, `visible`,
-`disabled`, `className`, `attributes`, `onChange`, `validate`, and `unique`.
+`disabled`, `inlineEdit`, `className`, `attributes`, `onChange`, `validate`, and
+`unique`.
 Visible controls also support `label`, `description`, `required`, and `readonly`.
 
 The package exports every concrete configuration type, `SelectOption`,
@@ -134,9 +149,11 @@ needs to provide a safe message, field errors, or retry behavior.
 ## Events and state
 
 The package exports `EditorEventName`, `EditorEventDetailMap`, concrete submit and
-success detail types, `EditorCloseReason`, `DialogAction`, `EditorOperation`, and
-`EditorState`. Event details are discriminated by `type` and, where applicable,
-`operation`. See [Events](events.md) for ordering and payloads.
+success detail types, `EditorCloseReason`, `DialogAction`, `EditorOperation`,
+`EditorOperationMode`, `EditorOperationTarget`, `InlineEventTarget`,
+`InlineEditState`, `InlineTargetSummary`, and `EditorState`. Event details are
+discriminated by `type` and, where applicable, `operation` and `mode`. See
+[Events](events.md) for ordering and payloads.
 
 `EditTargetSnapshot` and `RemoveTargetSnapshot` describe the readonly row
 identities captured for editing operations. `BuiltinValue`, `DeepPartial`,

@@ -28,9 +28,10 @@ const editor = new AltEditorLite<UserRow, UserForm>(table, {
 ```
 
 Each callback receives the owned DataTables API, an `AbortSignal`, and the current
-operation discriminator. Closing a submitting dialog or destroying the editor
-aborts the signal. Results from an aborted, replaced, or destroyed request are
-ignored.
+operation discriminator. The context also identifies the initiating `mode` as
+`dialog`, `inline`, or `api`, plus a stable `target` when Edit owns one. Closing a
+submitting presentation or destroying the editor aborts the signal. Results from
+an aborted, replaced, or destroyed request are ignored.
 
 ## Create
 
@@ -73,6 +74,13 @@ paths. Edited nested branches become new plain objects, unrelated properties are
 preserved, and the original row is not mutated. An enabled field explicitly
 cleared to normalized `undefined` clears that property in the replacement row;
 disabled or unrendered fields remain untouched.
+
+Dialog and inline Edit use the same target validation, value collection,
+persistence resolution, error normalization, row replacement, draw ownership,
+and event ordering. Inline `replace-row` mode commits the complete returned row.
+Inline `refresh` mode requires both `operations.update` and
+`operations.refresh`; it persists first and then lets the refresh operation
+provide the canonical table data.
 
 ## Remove
 

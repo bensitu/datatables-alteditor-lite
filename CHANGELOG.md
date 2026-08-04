@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-08-04
+
+### Added
+
+- Optional safe single-cell inline editing with exact public DataTables target
+  resolution, explicit field eligibility, keyboard operation, validation,
+  cancellation, retry, and accessible status feedback.
+- Shared lifecycle hooks for open, submit, successful commit, and normalized error
+  observation across dialog, inline, and programmatic operations.
+- Public inline state and control methods, operation modes and targets, localized
+  inline messages, integration guidance, migration notes, and a live example.
+
+### Changed
+
+- Unified dialog and inline Edit through the same non-optimistic persistence,
+  target revalidation, row commit, draw ownership, event ordering, and error
+  normalization path.
+- Added `mode` and optional `target` context to operation callbacks and existing
+  lifecycle events without adding a separate inline event family.
+
+### Compatibility
+
+- Inline editing is disabled by default and does not change existing dialog
+  behavior until explicitly configured.
+- Buttons and Select remain supported. KeyTable receives post-draw focus when its
+  public API is available. Responsive child cells, FixedColumns clone cells, and
+  active ColReorder mutations are not inline edit targets.
+
 ## [0.1.1] - 2026-08-03
 
 ### Added

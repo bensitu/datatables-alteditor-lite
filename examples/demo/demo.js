@@ -52,9 +52,10 @@ const languageFileByLocale = new Map([
   ['es', 'es.json'],
 ]);
 const fieldConfigurations = [
-  { label: 'Name', name: 'name', required: true, type: 'text' },
+  { inlineEdit: true, label: 'Name', name: 'name', required: true, type: 'text' },
   {
     label: 'Email',
+    inlineEdit: true,
     name: 'email',
     required: true,
     type: 'email',
@@ -62,6 +63,7 @@ const fieldConfigurations = [
   },
   {
     attributes: { max: '120', min: '16' },
+    inlineEdit: true,
     label: 'Age',
     name: 'age',
     required: true,
@@ -69,14 +71,16 @@ const fieldConfigurations = [
   },
   {
     label: 'Start date',
+    inlineEdit: true,
     name: 'startDate',
     required: true,
     type: 'date',
   },
   { label: 'Notes', name: 'notes', rows: 4, type: 'textarea' },
-  { label: 'Active', name: 'active', type: 'checkbox' },
+  { inlineEdit: true, label: 'Active', name: 'active', type: 'checkbox' },
   {
     label: 'Role',
+    inlineEdit: true,
     name: 'role',
     options: [
       { label: 'Developer', value: 'developer' },
@@ -90,6 +94,7 @@ const fieldConfigurations = [
     allowClear: true,
     debounceMs: 100,
     label: 'Office',
+    inlineEdit: true,
     name: 'officeId',
     options: offices,
     required: true,
@@ -209,6 +214,7 @@ function assertUniqueEmail(email, excludedId) {
 function createEditor(language) {
   return new AltEditorLite(table, {
     fields: fieldConfigurations,
+    inline: { enabled: true },
     language,
     operations: {
       async create(values, context) {
@@ -267,10 +273,15 @@ async function getOrLoadLanguage(localeName) {
 }
 
 function updateState() {
+  const inlineState = currentEditor.getInlineState();
   const state = currentEditor.getState();
-  editorState.textContent =
+  const dialogState =
     'action' in state ? `${state.status}:${state.action}` : state.status;
-  editorState.dataset.state = state.status;
+  editorState.textContent =
+    inlineState.status === 'idle' || inlineState.status === 'disabled'
+      ? dialogState
+      : `${dialogState} · inline:${inlineState.status}`;
+  editorState.dataset.state = inlineState.status === 'error' ? 'error' : state.status;
 }
 
 function appendEvent(event) {
@@ -281,9 +292,12 @@ function appendEvent(event) {
   const detail = event.detail;
   const operation =
     typeof detail?.operation === 'string' ? detail.operation : 'lifecycle';
+  const mode = typeof detail?.mode === 'string' ? `:${detail.mode}` : '';
+  const field =
+    typeof detail?.target?.fieldName === 'string' ? `:${detail.target.fieldName}` : '';
   const phase = typeof detail?.phase === 'string' ? `:${detail.phase}` : '';
   const item = document.createElement('li');
-  item.textContent = `${new Date().toLocaleTimeString()} ${operation}${phase} bubbles=${String(event.bubbles)}`;
+  item.textContent = `${new Date().toLocaleTimeString()} ${operation}${mode}${field}${phase} bubbles=${String(event.bubbles)}`;
   eventLog.prepend(item);
   while (eventLog.children.length > 30) {
     eventLog.lastElementChild?.remove();

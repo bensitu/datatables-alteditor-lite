@@ -1,5 +1,9 @@
 # Localization
 
+Version 0.2.0 language resources include the `inline` section for unavailable
+targets, unsupported fields, saving status, edit start, and cancellation
+announcements. Partial resources may omit these keys and inherit English text.
+
 AltEditorLite keeps translation data separate from its implementation. English is
 the built-in fallback, and every included language is stored as a JSON file under
 `src/locales/`. The build discovers those files automatically and produces:

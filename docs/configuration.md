@@ -53,6 +53,14 @@ exist.
 English strings. Applications can define it inline or await `loadEditorLanguage`
 for an external JSON resource before constructing the editor.
 
+`inline` configures optional single-cell editing. It supports `enabled`,
+`activation`, `blurAction`, `enterAction`, `tabAction`, exact named-column
+`columns` mappings, `updateMode`, and a safe additional `className`. See
+[Inline editing](inline-editing.md).
+
+`hooks` configures `beforeOpen`, `beforeSubmit`, `afterSuccess`, and `onError`.
+See [Lifecycle hooks](hooks.md).
+
 ## Capabilities
 
 Create is available only when `operations.create` or `clientSide.createRow` is
@@ -69,6 +77,9 @@ rows locally after confirmation.
 
 Refresh uses `operations.refresh` when configured. Otherwise, it uses the public
 `ajax.reload` API for Ajax tables and `draw(false)` for local tables.
+
+Inline Edit uses the same Update resolution as dialog Edit. Refresh commit mode
+requires both `operations.update` and `operations.refresh`.
 
 ## Optional extensions
 

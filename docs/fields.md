@@ -1,5 +1,12 @@
 # Fields
 
+Every field supports the optional `inlineEdit` eligibility flag. It defaults to
+`false`. Text, email, number, date, time, datetime-local, checkbox, select,
+textarea, and SearchSelect fields can participate when the editor is enabled and
+the field is editable, enabled, visible, writable, and mapped to a column.
+Password, radio, file, and hidden fields remain dialog-only. See
+[Inline editing](inline-editing.md).
+
 Every field has a safe dot-separated `name`. Segments that can mutate object
 prototypes are rejected. Visible fields require a non-empty label.
 

@@ -1,5 +1,9 @@
 # Browser Global
 
+The browser-global object exports the same 0.2.0 inline methods, lifecycle
+behavior, and locale resources as the ESM entry. Inline editing does not require
+jQuery or a UI framework.
+
 Load DataTables first, optional extensions second, the AltEditorLite browser
 bundle third, and any included language registration bundles last. No script
 requires jQuery.

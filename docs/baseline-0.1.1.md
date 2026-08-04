@@ -15,12 +15,12 @@ The complete `npm run check` command stopped at `format:check` because 35 files 
 
 ## Coverage
 
-| Metric | Result |
-| --- | ---: |
+| Metric     | Result |
+| ---------- | -----: |
 | Statements | 92.57% |
-| Branches | 84.25% |
-| Functions | 95.57% |
-| Lines | 92.63% |
+| Branches   | 84.25% |
+| Functions  | 95.57% |
+| Lines      | 92.63% |
 
 ## Public package surface
 

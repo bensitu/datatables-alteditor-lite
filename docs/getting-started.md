@@ -1,5 +1,9 @@
 # Getting started
 
+For optional single-cell editing after completing this guide, continue with
+[Inline editing](inline-editing.md). Existing dialog applications do not enable it
+automatically in 0.2.0.
+
 ## Install
 
 Install DataTables 3 and AltEditorLite. Buttons and Select are optional peers:
