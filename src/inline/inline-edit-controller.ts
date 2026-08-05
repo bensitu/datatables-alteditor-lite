@@ -6,7 +6,7 @@ import {
   EditorTargetUnavailableError,
 } from '../core/alt-editor-lite-error.js';
 import {
-  commitRowUpdate,
+  commitRowUpdateWithFocus,
   resolveLogicalCellTarget,
   type LogicalCellTarget,
 } from '../core/editing/commit-row-update.js';
@@ -19,11 +19,22 @@ import {
   InternalOperationAbort,
   normalizeOperationError,
 } from '../core/error-normalization.js';
+import { isColumnVisiblyAvailable } from '../datatables/column-visibility.js';
 import { createFieldController } from '../fields/create-field-controller.js';
 
+import { resolveInlineActivationTarget } from './inline-activation.js';
 import { InlineCellHost } from './inline-cell-host.js';
 import { assertInlineEditStateTransition } from './inline-edit-state-transition.js';
-import { isInlineFieldEligible } from './inline-field-capability.js';
+import {
+  focusInlineCellOrTable,
+  ownsInlineFocus,
+  restoreInlineOriginFocus,
+} from './inline-focus-owner.js';
+import { resolveInlineKeyboardIntent } from './inline-keyboard.js';
+import {
+  createInlineNavigationIntent,
+  type InlineNavigationIntent,
+} from './inline-navigation.js';
 import {
   captureInlineTarget,
   type InlineTargetCapture,
@@ -56,24 +67,17 @@ import type { EditorValues } from '../core/editor-values.js';
 import type { FieldConfig } from '../fields/field-config.js';
 import type { ManagedFieldController } from '../fields/managed-field-controller.js';
 import type { FieldPath } from '../object-path/field-path.js';
-import type { Api, ColumnSelector, RowSelector, SelectorModifier } from 'datatables.net';
+import type { Api, ColumnSelector, RowSelector } from 'datatables.net';
 
 interface InlineSession<TRow extends object, TFormValues extends object> {
   readonly capture: InlineTargetCapture<TRow, TFormValues>;
   readonly controller: ManagedFieldController<TFormValues>;
-  readonly fragment: DocumentFragment;
   readonly host: InlineCellHost<TFormValues>;
   readonly interactionToken: InteractionToken;
   readonly originalActiveElement: Element | null;
   readonly normalizedOriginalValue: unknown;
   candidate?: unknown;
   navigationIntent?: InlineNavigationIntent;
-}
-
-interface InlineNavigationIntent {
-  readonly columnIndex: number;
-  readonly direction: 'forward' | 'backward';
-  readonly rowSelector: number | string;
 }
 
 interface InlineControllerArguments<TRow extends object, TFormValues extends object> {
@@ -100,14 +104,6 @@ interface InlineControllerArguments<TRow extends object, TFormValues extends obj
     publishEvent: boolean,
   ) => void;
   readonly notifyIntegration: () => void;
-}
-
-function isInteractiveDescendant(target: Element): boolean {
-  return (
-    target.closest(
-      'a, button, input, select, textarea, [contenteditable], [data-alteditor-lite-ignore-inline], [data-alteditor-lite-inline]',
-    ) !== null
-  );
 }
 
 function asInlineEventTarget(
@@ -165,7 +161,7 @@ export class InlineEditController<TRow extends object, TFormValues extends objec
       }
       arguments_.table.on('draw.altEditorLiteInline', this.handleExternalDraw);
       arguments_.table.on(
-        'column-visibility.altEditorLiteInline column-reorder.altEditorLiteInline',
+        'column-visibility.altEditorLiteInline column-reorder.altEditorLiteInline responsive-resize.altEditorLiteInline',
         this.handleExternalDraw,
       );
     }
@@ -198,6 +194,7 @@ export class InlineEditController<TRow extends object, TFormValues extends objec
     const activationAbortController = new AbortController();
     this.activationAbortController = activationAbortController;
     this.transitionTo({ status: 'activating', target: capture.summary });
+    let activationController: ManagedFieldController<TFormValues> | undefined;
 
     try {
       const shouldOpen = await this.runBeforeOpen(capture, activationAbortController);
@@ -222,13 +219,13 @@ export class InlineEditController<TRow extends object, TFormValues extends objec
         this.arguments_.language.inline.targetUnavailable,
       );
 
-      const fragment = document.createDocumentFragment();
       const controller = createFieldController(
         capture.field,
         `${this.arguments_.instanceId}-inline-${String(capture.summary.rowIndex)}-${String(capture.summary.columnIndex)}`,
         this.arguments_.language,
         this.handleUserChange,
       );
+      activationController = controller;
       controller.setValue(capture.originalValue);
       const normalizedOriginalValue = await Promise.resolve(
         controller.getValue(activationAbortController.signal),
@@ -236,6 +233,7 @@ export class InlineEditController<TRow extends object, TFormValues extends objec
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Cancellation can occur while an asynchronous controller resolves.
       if (activationAbortController.signal.aborted || this.isDestroyed) {
         controller.destroy();
+        activationController = undefined;
         this.releaseActivationInteraction();
         if ((this.state as InlineEditState).status === 'activating') {
           this.transitionTo({ status: 'idle' });
@@ -257,26 +255,22 @@ export class InlineEditController<TRow extends object, TFormValues extends objec
         this.arguments_.language,
         this.arguments_.options.className,
       );
-      while (capture.cellNode.firstChild !== null) {
-        fragment.append(capture.cellNode.firstChild);
-      }
-      capture.cellNode.classList.add('alteditor-lite-cell--editing');
-      capture.cellNode.append(host.element);
-      host.element.addEventListener('keydown', this.handleKeyDown);
-      host.element.addEventListener('focusout', this.handleFocusOut);
-      host.element.addEventListener('click', this.stopOwnedPointerEvent);
-      host.element.addEventListener('dblclick', this.stopOwnedPointerEvent);
-      host.element.addEventListener('pointerdown', this.stopOwnedPointerEvent);
       this.session = {
         capture,
         controller,
-        fragment,
         host,
         interactionToken,
         normalizedOriginalValue,
         originalActiveElement: document.activeElement,
       };
+      activationController = undefined;
       this.activationInteractionToken = undefined;
+      host.mount(capture.cellNode);
+      host.element.addEventListener('keydown', this.handleKeyDown);
+      host.element.addEventListener('focusout', this.handleFocusOut);
+      host.element.addEventListener('click', this.stopOwnedPointerEvent);
+      host.element.addEventListener('dblclick', this.stopOwnedPointerEvent);
+      host.element.addEventListener('pointerdown', this.stopOwnedPointerEvent);
       this.transitionTo({ dirty: false, status: 'editing', target: capture.summary });
       host.focus();
       dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:open'>(
@@ -292,6 +286,11 @@ export class InlineEditController<TRow extends object, TFormValues extends objec
       );
       this.arguments_.notifyIntegration();
     } catch (rawError: unknown) {
+      if (this.session?.capture === capture) {
+        this.cleanupSession('api', true, false, false);
+      } else {
+        activationController?.destroy();
+      }
       this.arguments_.interactionCoordinator.release(interactionToken);
       if (this.activationInteractionToken === interactionToken) {
         this.activationInteractionToken = undefined;
@@ -383,7 +382,7 @@ export class InlineEditController<TRow extends object, TFormValues extends objec
           return Object.freeze({ row });
         }
 
-        const commitResult = await commitRowUpdate(
+        const commitResult = await commitRowUpdateWithFocus(
           this.arguments_.table,
           rowIndex,
           row,
@@ -391,7 +390,6 @@ export class InlineEditController<TRow extends object, TFormValues extends objec
           session.capture.column.columnName,
           this.arguments_.drawOwnership,
           request.abortController.signal,
-          'inline-edit-success',
         );
         this.postCommitFocusTarget = commitResult.focusTarget;
         return commitResult;
@@ -632,19 +630,16 @@ export class InlineEditController<TRow extends object, TFormValues extends objec
   }
 
   private readonly handleActivation = (event: Event): void => {
-    const target = event.target;
-    if (!(target instanceof Element) || isInteractiveDescendant(target)) {
+    const target = resolveInlineActivationTarget(
+      this.arguments_.table,
+      this.arguments_.tableElement,
+      event.target,
+      this.arguments_.mappings,
+    );
+    if (target === undefined) {
       return;
     }
-    const cellNode = target.closest<HTMLTableCellElement>('tbody td, tbody th');
-    if (cellNode?.closest('table') !== this.arguments_.tableElement) {
-      return;
-    }
-    const cellIndex = this.arguments_.table.cell(cellNode).index();
-    if (!this.arguments_.mappings.has(cellIndex.column)) {
-      return;
-    }
-    void this.open(cellIndex.row, cellIndex.column).catch(() => undefined);
+    void this.open(target.rowIndex, target.columnIndex).catch(() => undefined);
   };
 
   private readonly handleExternalDraw = (): void => {
@@ -667,7 +662,8 @@ export class InlineEditController<TRow extends object, TFormValues extends objec
       const session = this.session;
       if (
         session === undefined ||
-        session.host.element.contains(document.activeElement) ||
+        ownsInlineFocus(session.host.element) ||
+        this.state.status === 'validating' ||
         this.state.status === 'submitting'
       ) {
         return;
@@ -681,45 +677,39 @@ export class InlineEditController<TRow extends object, TFormValues extends objec
   };
 
   private readonly handleKeyDown = (event: KeyboardEvent): void => {
-    if (event.defaultPrevented || event.isComposing) {
-      return;
-    }
     const session = this.session;
     if (session === undefined) {
       return;
     }
+    const intent = resolveInlineKeyboardIntent(
+      event,
+      session.capture.field,
+      this.arguments_.options,
+    );
+    if (intent === undefined) {
+      return;
+    }
 
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      event.stopPropagation();
+    event.preventDefault();
+    event.stopPropagation();
+    if (intent.type === 'cancel') {
       void this.cancel('escape');
       return;
     }
-    if (event.key === 'Tab' && this.arguments_.options.tabAction !== 'none') {
-      event.preventDefault();
-      event.stopPropagation();
-      if (this.arguments_.options.tabAction === 'submit-and-move') {
-        const navigationIntent = this.createNavigationIntent(
-          session,
-          event.shiftKey ? 'backward' : 'forward',
-        );
-        if (navigationIntent === undefined) {
-          delete session.navigationIntent;
-        } else {
-          session.navigationIntent = navigationIntent;
-        }
+    if (intent.type === 'submit-and-move') {
+      const navigationIntent = createInlineNavigationIntent(
+        this.arguments_.table,
+        this.arguments_.mappings,
+        this.fieldsByName,
+        session.capture.summary,
+        intent.direction,
+      );
+      if (navigationIntent === undefined) {
+        delete session.navigationIntent;
+      } else {
+        session.navigationIntent = navigationIntent;
       }
-      void this.submit().catch(() => undefined);
-      return;
     }
-    if (event.key !== 'Enter' || this.arguments_.options.enterAction === 'none') {
-      return;
-    }
-    if (session.capture.field.type === 'textarea' && !event.ctrlKey && !event.metaKey) {
-      return;
-    }
-    event.preventDefault();
-    event.stopPropagation();
     void this.submit().catch(() => undefined);
   };
 
@@ -728,8 +718,18 @@ export class InlineEditController<TRow extends object, TFormValues extends objec
     if (session === undefined) {
       return;
     }
+    if (this.state.status === 'submitting') {
+      return;
+    }
     if (this.state.status === 'validating') {
       this.arguments_.operationOwner.abort('inline');
+      this.transitionTo({
+        dirty: true,
+        status: 'editing',
+        target: session.capture.summary,
+      });
+    } else if (this.state.status === 'error') {
+      session.host.clearError();
       this.transitionTo({
         dirty: true,
         status: 'editing',
@@ -741,6 +741,8 @@ export class InlineEditController<TRow extends object, TFormValues extends objec
         status: 'editing',
         target: session.capture.summary,
       });
+    } else {
+      return;
     }
     this.changeAbortController?.abort();
     const abortController = new AbortController();
@@ -769,49 +771,6 @@ export class InlineEditController<TRow extends object, TFormValues extends objec
         }
       }
     }
-  }
-
-  private createNavigationIntent(
-    session: InlineSession<TRow, TFormValues>,
-    direction: 'forward' | 'backward',
-  ): InlineNavigationIntent | undefined {
-    const modifier: SelectorModifier = { page: 'current' };
-    const rowIndexes = this.arguments_.table.rows(modifier).indexes().toArray();
-    const columnIndexes = this.arguments_.table
-      .columns(':visible')
-      .indexes()
-      .toArray()
-      .filter((columnIndex) => {
-        const mapping = this.arguments_.mappings.get(columnIndex);
-        const field =
-          mapping === undefined ? undefined : this.fieldsByName.get(mapping.fieldName);
-        return field !== undefined && isInlineFieldEligible(field);
-      });
-    const cells = rowIndexes.flatMap((rowIndex) =>
-      columnIndexes.map((columnIndex) => ({ columnIndex, rowIndex })),
-    );
-    const currentIndex = cells.findIndex(
-      (cell) =>
-        cell.rowIndex === session.capture.summary.rowIndex &&
-        cell.columnIndex === session.capture.summary.columnIndex,
-    );
-    const nextIndex = direction === 'forward' ? currentIndex + 1 : currentIndex - 1;
-    const next = cells[nextIndex];
-    if (currentIndex < 0 || next === undefined) {
-      return undefined;
-    }
-
-    const rowApi = this.arguments_.table.row(next.rowIndex);
-    const rowId = rowApi.id();
-    const hasStableRowId =
-      typeof rowId === 'string' &&
-      rowId.length > 0 &&
-      this.arguments_.table.row(`#${rowId}`).any();
-    return Object.freeze({
-      columnIndex: next.columnIndex,
-      direction,
-      rowSelector: hasStableRowId ? `#${rowId}` : next.rowIndex,
-    });
   }
 
   private async restorePostCommitFocus(
@@ -843,7 +802,7 @@ export class InlineEditController<TRow extends object, TFormValues extends objec
     } finally {
       this.postCommitFocusTarget = undefined;
     }
-    this.focusCellOrTable(cellNode);
+    focusInlineCellOrTable(this.arguments_.table, this.arguments_.tableElement, cellNode);
   }
 
   private resolveRefreshCell(
@@ -861,7 +820,7 @@ export class InlineEditController<TRow extends object, TFormValues extends objec
       !row.any() ||
       typeof rowIndex !== 'number' ||
       (summary.columnName !== undefined && column.name() !== summary.columnName) ||
-      !column.visible() ||
+      !isColumnVisiblyAvailable(column) ||
       this.arguments_.mappings.get(summary.columnIndex)?.fieldName !== summary.fieldName
     ) {
       throw new EditorTargetUnavailableError(
@@ -871,31 +830,11 @@ export class InlineEditController<TRow extends object, TFormValues extends objec
     return this.arguments_.table.cell(rowIndex, summary.columnIndex).node();
   }
 
-  private focusCellOrTable(cellNode: HTMLTableCellElement | undefined): void {
-    if (cellNode?.isConnected === true) {
-      const cellApi = this.arguments_.table.cell(cellNode) as unknown as {
-        focus?: () => unknown;
-      };
-      if (typeof cellApi.focus === 'function') {
-        cellApi.focus();
-        return;
-      }
-      if (cellNode.tabIndex < 0) {
-        cellNode.tabIndex = -1;
-      }
-      cellNode.focus();
-      return;
-    }
-    if (this.arguments_.tableElement.tabIndex < 0) {
-      this.arguments_.tableElement.tabIndex = -1;
-    }
-    this.arguments_.tableElement.focus();
-  }
-
   private cleanupSession(
     reason: EditorCloseReason,
-    restoreFragment: boolean,
+    restoreOriginalContent: boolean,
     restoreFocus: boolean,
+    publishClose = true,
   ): void {
     const session = this.session;
     if (session === undefined) {
@@ -911,8 +850,8 @@ export class InlineEditController<TRow extends object, TFormValues extends objec
     session.host.element.removeEventListener('pointerdown', this.stopOwnedPointerEvent);
     session.controller.destroy();
 
-    let safeCell: HTMLTableCellElement | undefined;
-    if (restoreFragment) {
+    let canRestoreOriginalContent = false;
+    if (restoreOriginalContent) {
       try {
         resolveInlineTarget(
           this.arguments_.table,
@@ -921,41 +860,34 @@ export class InlineEditController<TRow extends object, TFormValues extends objec
           this.arguments_.mappings,
           this.arguments_.language.inline.targetUnavailable,
         );
-        safeCell = session.capture.cellNode;
-        safeCell.replaceChildren(session.fragment);
+        canRestoreOriginalContent = true;
       } catch {
-        session.fragment.replaceChildren();
+        canRestoreOriginalContent = false;
       }
-    } else {
-      session.fragment.replaceChildren();
     }
-    safeCell?.classList.remove('alteditor-lite-cell--editing');
-    session.host.element.remove();
+    session.host.unmount(canRestoreOriginalContent);
     this.arguments_.interactionCoordinator.release(session.interactionToken);
     if (this.state.status !== 'destroyed') {
       this.transitionTo({ status: 'idle' });
     }
-    dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:close'>(
-      this.arguments_.tableElement,
-      'alteditor-lite:close',
-      {
-        editor: this.arguments_.editor,
-        mode: 'inline',
-        operation: 'edit',
-        reason,
-        target: asInlineEventTarget(session.capture.summary),
-        type: 'close',
-      },
-    );
+    if (publishClose) {
+      dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:close'>(
+        this.arguments_.tableElement,
+        'alteditor-lite:close',
+        {
+          editor: this.arguments_.editor,
+          mode: 'inline',
+          operation: 'edit',
+          reason,
+          target: asInlineEventTarget(session.capture.summary),
+          type: 'close',
+        },
+      );
+    }
     this.arguments_.notifyIntegration();
 
-    if (
-      restoreFocus &&
-      session.originalActiveElement instanceof HTMLElement &&
-      session.originalActiveElement.isConnected &&
-      !session.host.element.contains(session.originalActiveElement)
-    ) {
-      session.originalActiveElement.focus();
+    if (restoreFocus) {
+      restoreInlineOriginFocus(session.host.element, session.originalActiveElement);
     }
   }
 

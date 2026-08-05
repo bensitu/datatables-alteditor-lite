@@ -290,6 +290,42 @@ describe('AltEditorLite programmatic inline editing', () => {
     expect(document.querySelector('.alteditor-lite-inline')).toBeNull();
     expect(editor.getInlineState()).toEqual({ status: 'idle' });
   });
+
+  it('cleans up a mounted session when control focus fails during open', async () => {
+    const onError = vi.fn();
+    const { api, editor, tableElement } = createInlineEditor({
+      fields,
+      hooks: { onError },
+      inline: { enabled: true },
+    });
+    const cell = api.cell('#row-a', 0).node();
+    const originalNode = cell.firstChild;
+    const closeListener = vi.fn();
+    tableElement.addEventListener('alteditor-lite:close', closeListener);
+    const focus = vi
+      .spyOn(HTMLInputElement.prototype, 'focus')
+      .mockImplementationOnce(() => {
+        throw new Error('Focus failed.');
+      });
+
+    try {
+      await expect(editor.openInlineEdit('#row-a', 0)).rejects.toMatchObject({
+        code: 'UNKNOWN',
+      });
+    } finally {
+      focus.mockRestore();
+    }
+
+    expect(editor.getInlineState()).toEqual({ status: 'idle' });
+    expect(cell.firstChild).toBe(originalNode);
+    expect(cell.classList.contains('alteditor-lite-cell--editing')).toBe(false);
+    expect(document.querySelector('.alteditor-lite-inline')).toBeNull();
+    expect(closeListener).not.toHaveBeenCalled();
+    expect(onError).toHaveBeenCalledOnce();
+
+    await editor.openInlineEdit('#row-a', 0);
+    await editor.cancelInlineEdit();
+  });
 });
 
 describe('AltEditorLite inline configuration', () => {
@@ -339,6 +375,21 @@ describe('AltEditorLite inline configuration', () => {
       'enabled mode without an inline field',
       {
         fields: [{ label: 'Name', name: 'name', type: 'text' }],
+        inline: { enabled: true },
+      },
+    ],
+    [
+      'enabled mode with only disabled inline fields',
+      {
+        fields: [
+          {
+            disabled: true,
+            inlineEdit: true,
+            label: 'Name',
+            name: 'name',
+            type: 'text',
+          },
+        ],
         inline: { enabled: true },
       },
     ],
@@ -462,6 +513,90 @@ describe('AltEditorLite inline interaction and redraw behavior', () => {
     expect(api.row('#row-a').data().name).toBe('Multiline Alpha');
   });
 
+  it('leaves Enter available to a native select control', async () => {
+    const { api } = createTestTable('inline-select');
+    const editor = new AltEditorLite<TestRow, InlineValues>(api, {
+      fields: [
+        {
+          inlineEdit: true,
+          label: 'Rank',
+          name: 'rank',
+          options: [
+            { label: 'One', value: 1 },
+            { label: 'Two', value: 2 },
+          ],
+          type: 'select',
+        },
+      ],
+      inline: { enabled: true },
+    });
+    editors.add(editor);
+    await editor.openInlineEdit('#row-a', 1);
+    const select = document.querySelector<HTMLSelectElement>(
+      '.alteditor-lite-inline select',
+    );
+    if (select === null) {
+      throw new Error('Expected an inline select.');
+    }
+    select.value = '2';
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+    const enter = new KeyboardEvent('keydown', {
+      bubbles: true,
+      cancelable: true,
+      key: 'Enter',
+    });
+
+    select.dispatchEvent(enter);
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 0);
+    });
+
+    expect(enter.defaultPrevented).toBe(false);
+    expect(editor.getInlineState().status).toBe('editing');
+    expect(api.row('#row-a').data().rank).toBe(1);
+    await editor.cancelInlineEdit();
+  });
+
+  it('does not apply blur cancellation while validation is running', async () => {
+    const validation = createDeferred<{ readonly valid: true }>();
+    let validationSignal: AbortSignal | undefined;
+    const { api } = createTestTable('inline-validation-blur');
+    const editor = new AltEditorLite<TestRow, InlineValues>(api, {
+      fields: [
+        {
+          inlineEdit: true,
+          label: 'Name',
+          name: 'name',
+          type: 'text',
+          validate: (_value, context) => {
+            validationSignal = context.signal;
+            return validation.promise;
+          },
+        },
+      ],
+      inline: { blurAction: 'cancel', enabled: true },
+    });
+    editors.add(editor);
+    await editor.openInlineEdit('#row-a', 0);
+    const input = replaceInlineValue('Validated Alpha');
+    const submission = editor.submitInlineEdit();
+    await vi.waitFor(() => {
+      expect(editor.getInlineState().status).toBe('validating');
+    });
+    const externalButton = document.createElement('button');
+    document.body.append(externalButton);
+    externalButton.focus();
+    input.dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
+    await Promise.resolve();
+
+    expect(editor.getInlineState().status).toBe('validating');
+    expect(validationSignal?.aborted).toBe(false);
+
+    validation.resolve({ valid: true });
+    await submission;
+    expect(api.row('#row-a').data().name).toBe('Validated Alpha');
+  });
+
   it('keeps SearchSelect popup focus and Escape handling inside the session', async () => {
     const { api } = createTestTable('inline-search-select');
     const editor = new AltEditorLite<TestRow, InlineValues>(api, {
@@ -532,6 +667,7 @@ describe('AltEditorLite inline interaction and redraw behavior', () => {
     tableElement.addEventListener('alteditor-lite:close', closeListener);
 
     await editor.openInlineEdit('#row-a', 0);
+    const editedCell = api.cell('#row-a', 0).node();
     replaceInlineValue('Late Alpha');
     const submission = editor.submitInlineEdit();
     await vi.waitFor(() => {
@@ -540,6 +676,7 @@ describe('AltEditorLite inline interaction and redraw behavior', () => {
     api.draw(false);
     expect(operationSignal?.aborted).toBe(true);
     expect(editor.getInlineState()).toEqual({ status: 'idle' });
+    expect(editedCell.classList.contains('alteditor-lite-cell--editing')).toBe(false);
     deferred.resolve({ id: 'row-a', name: 'Late Alpha', rank: 1 });
     await submission;
 

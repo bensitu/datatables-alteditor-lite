@@ -1,7 +1,7 @@
 import { EditorConfigurationError } from '../core/alt-editor-lite-error.js';
 import { parseFieldPath } from '../object-path/field-path.js';
 
-import { supportsInlineField } from './inline-field-capability.js';
+import { isInlineFieldEligible } from './inline-field-capability.js';
 
 import type { AltEditorLiteOptions } from '../core/alt-editor-lite-options.js';
 import type { FieldConfig } from '../fields/field-config.js';
@@ -87,7 +87,7 @@ function assertExplicitMappings<TRow extends object, TFormValues extends object>
         `Field "${fieldName}" must enable inlineEdit before it can be mapped.`,
       );
     }
-    if (!supportsInlineField(field) || field.type === 'hidden') {
+    if (!isInlineFieldEligible(field)) {
       throw new EditorConfigurationError(
         `Field "${fieldName}" does not support inline editing.`,
       );
@@ -117,8 +117,7 @@ export function validateInlineConfiguration<
   assertExplicitMappings(table, options.fields, inline.columns);
 
   if (inline.enabled === true) {
-    const enabledFields = options.fields.filter((field) => field.inlineEdit === true);
-    if (enabledFields.length === 0 || !enabledFields.some(supportsInlineField)) {
+    if (!options.fields.some(isInlineFieldEligible)) {
       throw new EditorConfigurationError(
         'Enabled inline editing requires at least one supported inlineEdit field.',
       );

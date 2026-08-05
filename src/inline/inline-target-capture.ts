@@ -2,6 +2,7 @@ import {
   EditorSelectionCountError,
   EditorTargetUnavailableError,
 } from '../core/alt-editor-lite-error.js';
+import { isColumnVisiblyAvailable } from '../datatables/column-visibility.js';
 import {
   captureEditTarget,
   type EditTargetCapture,
@@ -68,7 +69,7 @@ export function captureInlineTarget<TRow extends object, TFormValues extends obj
     mapping === undefined ||
     field === undefined ||
     !isInlineFieldEligible(field) ||
-    !column.visible() ||
+    !isColumnVisiblyAvailable(column) ||
     typeof visibleIndex !== 'number'
   ) {
     throw new EditorTargetUnavailableError(unavailableMessage);

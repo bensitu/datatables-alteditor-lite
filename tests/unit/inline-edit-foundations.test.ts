@@ -1,12 +1,36 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
-import { EditorOperationBusyError } from '../../src/core/alt-editor-lite-error.js';
+import {
+  EditorDestroyedError,
+  EditorOperationBusyError,
+} from '../../src/core/alt-editor-lite-error.js';
+import { DrawOwnership } from '../../src/core/editing/draw-ownership.js';
 import { InteractionCoordinator } from '../../src/core/editing/interaction-coordinator.js';
 import { OperationOwner } from '../../src/core/editing/operation-owner.js';
+import { isColumnVisiblyAvailable } from '../../src/datatables/column-visibility.js';
 import {
   assertInlineEditStateTransition,
   canTransitionInlineEditState,
 } from '../../src/inline/inline-edit-state-transition.js';
+
+import type { Api } from 'datatables.net';
+
+function createDrawTableStub(): Api<Record<string, unknown>> {
+  let drawListener: (() => void) | undefined;
+  const table = {
+    off: vi.fn((eventName: string, listener?: () => void) => {
+      if (listener === undefined || listener === drawListener) {
+        drawListener = undefined;
+      }
+      return table;
+    }),
+    one: vi.fn((_eventName: string, listener: () => void) => {
+      drawListener = listener;
+      return table;
+    }),
+  };
+  return table as unknown as Api<Record<string, unknown>>;
+}
 
 describe('inline interaction foundations', () => {
   it('does not allow a stale interaction token to release a newer owner', () => {
@@ -62,5 +86,65 @@ describe('inline interaction foundations', () => {
         },
       );
     }).toThrow(EditorOperationBusyError);
+  });
+
+  it('combines DataTables and Responsive column visibility', () => {
+    expect(isColumnVisiblyAvailable({ visible: () => true })).toBe(true);
+    expect(isColumnVisiblyAvailable({ visible: () => false })).toBe(false);
+    expect(
+      isColumnVisiblyAvailable({
+        responsiveHidden: () => false,
+        visible: () => true,
+      }),
+    ).toBe(false);
+    expect(
+      isColumnVisiblyAvailable({
+        responsiveHidden: () => true,
+        visible: () => true,
+      }),
+    ).toBe(true);
+  });
+});
+
+describe('owned DataTables draws', () => {
+  it('does not start a draw for an already aborted request', async () => {
+    const owner = new DrawOwnership(createDrawTableStub());
+    const abortController = new AbortController();
+    const draw = vi.fn();
+    abortController.abort();
+
+    await owner.runWithDraw('inline-edit-success', abortController.signal, draw);
+
+    expect(draw).not.toHaveBeenCalled();
+    expect(owner.ownsDraw()).toBe(false);
+  });
+
+  it('releases ownership when a draw throws synchronously', async () => {
+    const owner = new DrawOwnership(createDrawTableStub());
+
+    await expect(
+      owner.runWithDraw('dialog-edit-success', new AbortController().signal, () => {
+        throw new Error('Draw failed.');
+      }),
+    ).rejects.toThrow('Draw failed.');
+    expect(owner.ownsDraw()).toBe(false);
+  });
+
+  it('settles a pending draw when ownership is destroyed', async () => {
+    const owner = new DrawOwnership(createDrawTableStub());
+    const pendingDraw = owner.runWithDraw(
+      'inline-edit-success',
+      new AbortController().signal,
+      () => undefined,
+    );
+
+    expect(owner.ownsDraw()).toBe(true);
+    owner.destroy();
+
+    await pendingDraw;
+    expect(owner.ownsDraw()).toBe(false);
+    await expect(
+      owner.runWhile('refresh', () => Promise.resolve()),
+    ).rejects.toBeInstanceOf(EditorDestroyedError);
   });
 });

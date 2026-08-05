@@ -40,6 +40,7 @@ import {
   resolveLanguage,
   type AltEditorLiteLanguage,
 } from './alt-editor-lite-language.js';
+import { commitRowUpdate } from './editing/commit-row-update.js';
 import { DrawOwnership } from './editing/draw-ownership.js';
 import { EditOperationRunner } from './editing/edit-operation-runner.js';
 import {
@@ -465,15 +466,15 @@ export class AltEditorLite<
   }
 
   /** Opens one eligible cell through unique public DataTables selectors. */
-  public openInlineEdit(
+  public async openInlineEdit(
     rowSelector: RowSelector<TRow>,
     columnSelector: ColumnSelector,
   ): Promise<void> {
     try {
       this.assertActive();
-      return this.inlineController.open(rowSelector, columnSelector);
+      await this.inlineController.open(rowSelector, columnSelector);
     } catch (error: unknown) {
-      return Promise.reject(normalizeRejectedReason(error));
+      throw normalizeRejectedReason(error);
     }
   }
 
@@ -960,13 +961,13 @@ export class AltEditorLite<
             },
           }),
       commit: async (row, rowIndex, request) => {
-        this.table.row(rowIndex).data(row);
-        await this.drawOwnership.runWithDraw(
-          'dialog-edit-success',
+        const result = await commitRowUpdate(
+          this.table,
+          rowIndex,
+          row,
+          this.drawOwnership,
           request.abortController.signal,
-          () => {
-            this.table.draw(false);
-          },
+          'dialog-edit-success',
         );
         if (!(this.options.closeOnSuccess ?? true)) {
           this.editTargetCapture = captureEditTarget(
@@ -975,7 +976,7 @@ export class AltEditorLite<
             this.language.errors.targetUnavailable,
           );
         }
-        return Object.freeze({ row, rowIndex });
+        return result;
       },
       dispatchSubmit: (transaction) => {
         dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:submit'>(

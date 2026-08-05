@@ -1,11 +1,15 @@
 import { EditorTargetUnavailableError } from '../core/alt-editor-lite-error.js';
+import { isColumnVisiblyAvailable } from '../datatables/column-visibility.js';
 import { resolveEditTarget } from '../datatables/row-target-resolution.js';
 
 import type { InlineColumnMapping } from './inline-column-mapping.js';
 import type { InlineTargetCapture } from './inline-target-capture.js';
 import type { Api } from 'datatables.net';
 
-function sameOptionalString(left: unknown, right: string | undefined): boolean {
+function sameOptionalString(
+  left: string | null | undefined,
+  right: string | undefined,
+): boolean {
   return (typeof left === 'string' && left.length > 0 ? left : undefined) === right;
 }
 
@@ -33,7 +37,7 @@ export function resolveInlineTarget<TRow extends object, TFormValues extends obj
     !sameOptionalString(column.name(), capture.column.columnName) ||
     (typeof dataSource === 'string' ? dataSource : undefined) !==
       capture.column.dataSrc ||
-    !column.visible() ||
+    !isColumnVisiblyAvailable(column) ||
     !capture.cellNode.isConnected ||
     capture.cellNode.closest('table') !== tableElement ||
     currentCellNode !== capture.cellNode

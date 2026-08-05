@@ -1,3 +1,4 @@
+import { isColumnVisiblyAvailable } from '../../datatables/column-visibility.js';
 import { EditorTargetUnavailableError } from '../alt-editor-lite-error.js';
 
 import type { DrawOwnership } from './draw-ownership.js';
@@ -30,18 +31,39 @@ export async function commitRowUpdate<TRow extends object>(
   table: Api<TRow>,
   rowIndex: number,
   row: TRow,
+  drawOwnership: DrawOwnership<TRow>,
+  signal: AbortSignal,
+  reason: 'dialog-edit-success' | 'inline-edit-success',
+): Promise<Readonly<EditCommitResult<TRow>>> {
+  table.row(rowIndex).data(row);
+  await drawOwnership.runWithDraw(reason, signal, () => {
+    table.draw(false);
+  });
+  return Object.freeze({ row, rowIndex });
+}
+
+/** Commits a row and captures a logical cell target from the completed draw. */
+export async function commitRowUpdateWithFocus<TRow extends object>(
+  table: Api<TRow>,
+  rowIndex: number,
+  row: TRow,
   columnIndex: number,
   columnName: string | undefined,
   drawOwnership: DrawOwnership<TRow>,
   signal: AbortSignal,
-  reason: 'dialog-edit-success' | 'inline-edit-success',
 ): Promise<
   Readonly<EditCommitResult<TRow>> & {
     readonly focusTarget: Readonly<LogicalCellTarget<TRow>>;
   }
 > {
-  const rowApi = table.row(rowIndex);
-  rowApi.data(row);
+  const result = await commitRowUpdate(
+    table,
+    rowIndex,
+    row,
+    drawOwnership,
+    signal,
+    'inline-edit-success',
+  );
   const rowId = resolveStableRowId(table, rowIndex);
   const targetBase = {
     columnIndex,
@@ -52,10 +74,7 @@ export async function commitRowUpdate<TRow extends object>(
   const focusTarget: Readonly<LogicalCellTarget<TRow>> = Object.freeze(
     rowId === undefined ? targetBase : { ...targetBase, rowId },
   );
-  await drawOwnership.runWithDraw(reason, signal, () => {
-    table.draw(false);
-  });
-  return Object.freeze({ focusTarget, row, rowIndex });
+  return Object.freeze({ ...result, focusTarget });
 }
 
 /** Resolves a post-draw logical target through public row and column APIs. */
@@ -76,13 +95,14 @@ export function resolveLogicalCellTarget<TRow extends object>(
     rowApi.data() !== target.row ||
     (target.rowId !== undefined && rowApi.id() !== target.rowId) ||
     (target.columnName !== undefined && column.name() !== target.columnName) ||
-    !column.visible()
+    !isColumnVisiblyAvailable(column)
   ) {
     throw new EditorTargetUnavailableError(unavailableMessage);
   }
 
-  const cellNode = table.cell(resolvedRowIndex, target.columnIndex).node();
-  if (!cellNode.isConnected) {
+  const cellNode = table.cell(resolvedRowIndex, target.columnIndex).node() as
+    HTMLTableCellElement | null | undefined;
+  if (cellNode?.isConnected !== true) {
     throw new EditorTargetUnavailableError(unavailableMessage);
   }
   return cellNode;

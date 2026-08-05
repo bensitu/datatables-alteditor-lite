@@ -20,6 +20,8 @@ export class DrawOwnership<TRow extends object> {
 
   private isDestroyed = false;
 
+  private readonly pendingDraws = new Set<() => void>();
+
   public constructor(private readonly table: Api<TRow>) {}
 
   /** Returns whether a draw event is currently owned by the editor. */
@@ -35,15 +37,23 @@ export class DrawOwnership<TRow extends object> {
   ): Promise<void> {
     this.assertActive();
     const token = this.acquire(reason);
+    if (signal.aborted) {
+      this.release(token);
+      return;
+    }
     await new Promise<void>((resolve, reject) => {
       let isSettled = false;
+      const cleanup = (): void => {
+        signal.removeEventListener('abort', handleAbort);
+        this.table.off('draw.altEditorLiteOwnedDraw', handleDraw);
+        this.pendingDraws.delete(finish);
+      };
       const finish = (): void => {
         if (isSettled) {
           return;
         }
         isSettled = true;
-        signal.removeEventListener('abort', handleAbort);
-        this.table.off('draw.altEditorLiteOwnedDraw', handleDraw);
+        cleanup();
         resolve();
       };
       const handleAbort = (): void => {
@@ -53,14 +63,22 @@ export class DrawOwnership<TRow extends object> {
         finish();
       };
 
+      this.pendingDraws.add(finish);
       signal.addEventListener('abort', handleAbort, { once: true });
       this.table.one('draw.altEditorLiteOwnedDraw', handleDraw);
+      if (signal.aborted) {
+        finish();
+        return;
+      }
       try {
         draw();
       } catch (error: unknown) {
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- A synchronous draw listener can settle before draw() throws.
+        if (isSettled) {
+          return;
+        }
         isSettled = true;
-        signal.removeEventListener('abort', handleAbort);
-        this.table.off('draw.altEditorLiteOwnedDraw', handleDraw);
+        cleanup();
         reject(
           error instanceof Error
             ? error
@@ -91,6 +109,9 @@ export class DrawOwnership<TRow extends object> {
     this.isDestroyed = true;
     this.sequence += 1;
     this.activeToken = undefined;
+    for (const finish of [...this.pendingDraws]) {
+      finish();
+    }
     this.table.off('.altEditorLiteOwnedDraw');
   }
 

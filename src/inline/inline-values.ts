@@ -5,12 +5,16 @@ import type { EditorValues } from '../core/editor-values.js';
 import type { FieldConfig } from '../fields/field-config.js';
 import type { FieldPath } from '../object-path/field-path.js';
 
-function freezePlainValues(value: unknown): void {
+function freezePlainValues(value: unknown, visited = new WeakSet<object>()): void {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     return;
   }
+  if (visited.has(value)) {
+    return;
+  }
+  visited.add(value);
   for (const nestedValue of Object.values(value)) {
-    freezePlainValues(nestedValue);
+    freezePlainValues(nestedValue, visited);
   }
   Object.freeze(value);
 }

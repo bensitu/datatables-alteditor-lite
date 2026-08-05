@@ -113,9 +113,9 @@ export class EditOperationRunner<TRow extends object, TFormValues extends object
       runArguments.target,
     );
     let phase: EditorErrorHookContext['phase'] = 'validation';
-    runArguments.presentation.startValidation();
 
     try {
+      runArguments.presentation.startValidation();
       const validation = await runArguments.presentation.validate(
         request.abortController.signal,
       );

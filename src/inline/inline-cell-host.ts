@@ -1,3 +1,5 @@
+import { InlineErrorPresenter } from './inline-error-presenter.js';
+
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type { FieldConfig } from '../fields/field-config.js';
 import type { ManagedFieldController } from '../fields/managed-field-controller.js';
@@ -6,12 +8,16 @@ import type { ManagedFieldController } from '../fields/managed-field-controller.
 export class InlineCellHost<TFormValues extends object> {
   public readonly element: HTMLDivElement;
 
-  private readonly errorElement: HTMLDivElement;
+  private readonly errorPresenter: InlineErrorPresenter;
+
+  private readonly originalContent = document.createDocumentFragment();
 
   private readonly statusElement: HTMLDivElement;
 
   private readonly primaryControl:
     HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null;
+
+  private mountedCell: HTMLTableCellElement | undefined;
 
   public constructor(
     private readonly controller: ManagedFieldController<TFormValues>,
@@ -22,28 +28,25 @@ export class InlineCellHost<TFormValues extends object> {
   ) {
     this.element = document.createElement('div');
     const controlElement = document.createElement('div');
-    this.errorElement = document.createElement('div');
     this.statusElement = document.createElement('div');
+    this.errorPresenter = new InlineErrorPresenter(this.element, fieldId);
 
     this.element.className = 'alteditor-lite-inline';
     this.element.dataset['alteditorLiteInline'] = '';
     this.element.setAttribute('aria-busy', 'false');
     controlElement.className = 'alteditor-lite-inline__control';
-    this.errorElement.className = 'alteditor-lite-inline__error';
-    this.errorElement.id = `${fieldId}-operation-error`;
-    this.errorElement.hidden = true;
-    this.errorElement.setAttribute('aria-live', 'polite');
-    this.errorElement.setAttribute('role', 'alert');
     this.statusElement.className = 'alteditor-lite-inline__status';
     this.statusElement.setAttribute('aria-live', 'polite');
     this.statusElement.textContent = language.inline.editStarted;
 
     if (className !== undefined) {
-      this.element.classList.add(...className.split(/\s+/u));
+      this.element.classList.add(
+        ...className.split(/\s+/u).filter((token) => token.length > 0),
+      );
     }
 
     controlElement.append(controller.element);
-    this.element.append(controlElement, this.errorElement, this.statusElement);
+    this.element.append(controlElement, this.errorPresenter.element, this.statusElement);
     this.primaryControl = controller.element.querySelector('input, select, textarea');
     this.primaryControl?.setAttribute('aria-label', this.field.label ?? this.field.name);
   }
@@ -53,18 +56,46 @@ export class InlineCellHost<TFormValues extends object> {
     this.controller.focus();
   }
 
+  /** Replaces a cell's current content while preserving the original nodes. */
+  public mount(cellNode: HTMLTableCellElement): void {
+    if (this.mountedCell !== undefined) {
+      return;
+    }
+    this.mountedCell = cellNode;
+    while (cellNode.firstChild !== null) {
+      this.originalContent.append(cellNode.firstChild);
+    }
+    cellNode.classList.add('alteditor-lite-cell--editing');
+    cellNode.append(this.element);
+  }
+
+  /** Removes the host and either restores or discards the preserved cell nodes. */
+  public unmount(restoreOriginalContent: boolean): void {
+    const cellNode = this.mountedCell;
+    this.mountedCell = undefined;
+    if (cellNode === undefined) {
+      this.element.remove();
+      this.originalContent.replaceChildren();
+      return;
+    }
+
+    cellNode.classList.remove('alteditor-lite-cell--editing');
+    if (restoreOriginalContent) {
+      cellNode.replaceChildren(this.originalContent);
+    } else {
+      this.originalContent.replaceChildren();
+      this.element.remove();
+    }
+  }
+
   /** Displays an operation-level error without replacing field validation text. */
   public showError(message: string): void {
-    this.element.classList.add('alteditor-lite-inline--invalid');
-    this.errorElement.textContent = message;
-    this.errorElement.hidden = false;
+    this.errorPresenter.show(message);
   }
 
   /** Clears only the operation-level error. */
   public clearError(): void {
-    this.element.classList.remove('alteditor-lite-inline--invalid');
-    this.errorElement.textContent = '';
-    this.errorElement.hidden = true;
+    this.errorPresenter.clear();
   }
 
   /** Freezes or restores the control while persistence owns the candidate. */
