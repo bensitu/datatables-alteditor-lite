@@ -101,6 +101,10 @@ Cancellation aborts owned work, and every asynchronous boundary ignores stale or
 destroyed results. Row and cell identity fail closed instead of selecting another
 target by displayed value.
 
+If neither `operations.update` nor `clientSide.updateRow` is configured, Edit
+uses the declared-field merge as a local-only update. Configure a persistence
+callback when changes must be stored outside the current DataTables instance.
+
 Persistence contexts identify the initiating `mode` as `dialog`, `inline`, or
 `api`, and Edit contexts include a stable `target`. Lifecycle DOM events use the
 same mode and target information. Policies that must decline opening or submission

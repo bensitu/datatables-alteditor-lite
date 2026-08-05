@@ -117,7 +117,9 @@ interactive element.
 
 ### Keyboard and focus
 
-- Enter submits single-line controls when `enterAction` is `submit`.
+- Enter submits single-line text-like controls when `enterAction` is `submit`.
+- Native Select and SearchSelect keep Enter for choosing the current option. Use
+  Tab, blur submission, or `submitInlineEdit()` to commit a native Select value.
 - Escape cancels. SearchSelect consumes the first Escape when its popup is open;
   a later Escape cancels the cell session.
 - Tab submits and opens the next eligible visible cell on the current page by
@@ -129,7 +131,8 @@ interactive element.
 
 Tab navigation never wraps, changes page, creates a row, or guesses a stale
 destination. It waits for the preceding commit draw to complete before opening
-the next cell.
+the next cell. Configure a stable DataTables `rowId` when navigation must remain
+reliable across refreshes or other row replacement.
 
 After success, focus is resolved from the committed row and column after the draw.
 A pre-draw input, host, or cell node is never reused as the focus target. If the
@@ -168,6 +171,10 @@ Inline Edit uses the same update order as dialog Edit:
 1. `operations.update`;
 2. `clientSide.updateRow`;
 3. safe merge of the edited declared field.
+
+When neither update callback is configured, both dialog and inline Edit use the
+safe local merge and replace the DataTables row only. No remote persistence takes
+place in that fallback.
 
 The canonical DataTables row is not changed until persistence returns a complete
 row successfully.
@@ -237,13 +244,15 @@ possible; and prevents late DOM, DataTables, focus, or event work.
   handles them, and post-commit focus uses a public cell focus method when
   available. Typing-to-edit and `keys.editor` integration are not provided.
 - Responsive supports the main table cell only. Child-row representations and
-  hidden columns are unavailable.
+  columns hidden by either DataTables or Responsive are unavailable. A responsive
+  visibility change cancels the active inline session.
 - Scroller redraw and node recycling cause safe cancellation. Applications should
   verify their row-height and server data configuration in supported browsers.
 - FixedColumns clone cells are not supported; activation is limited to cells
   uniquely resolved inside the owned main table.
-- Column reorder events cancel the current session. Recreate the editor if the
-  application changes the configured column order at runtime.
+- Column reorder events cancel the current session. Recreate the editor before
+  allowing more inline edits after a runtime reorder because the cached
+  column-to-field mapping is not rebuilt automatically.
 - Server-side tables should configure `rowId` and normally use refresh mode. Local
   uniqueness covers only loaded rows.
 

@@ -75,6 +75,10 @@ preserved, and the original row is not mutated. An enabled field explicitly
 cleared to normalized `undefined` clears that property in the replacement row;
 disabled or unrendered fields remain untouched.
 
+When both `operations.update` and `clientSide.updateRow` are absent, Edit uses
+that default merge and updates the DataTables row locally. It does not persist the
+change to a remote service.
+
 Dialog and inline Edit use the same target validation, value collection,
 persistence resolution, error normalization, row replacement, draw ownership,
 and event ordering. Inline `replace-row` mode commits the complete returned row.
