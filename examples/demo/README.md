@@ -13,9 +13,10 @@ or a manual workflow run.
 
 Two employee DataTables load `data/employees.json` through the public Ajax option.
 The first uses Dialog Edit and the second uses double-click Inline Edit; both
-demonstrate asynchronous operations and failures. A third, always-visible workflow
-table uses synchronous client-side mappings, rendered Priority and time controls,
-mode switching, and the remaining native field types.
+demonstrate asynchronous operations and failures in matching table workspaces. A
+third, always-visible workflow table uses synchronous client-side mappings,
+editable rendered Priority and Support window controls, mode switching, and the
+remaining native field types.
 
 For an optional local preview from the repository root:
 

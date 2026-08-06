@@ -198,7 +198,7 @@ let inlineEmployeeEditor;
 let workflowEditor;
 let workflowEditMode = 'inlineDoubleClick';
 let isSwitchingWorkflowMode = false;
-let isApplyingRenderedPriority = false;
+let isApplyingRenderedWorkflowControl = false;
 let nextRowId = 1000;
 let nextWorkflowId = 2;
 let shouldFailNextOperation = false;
@@ -229,7 +229,7 @@ function renderSupportWindowControl(supportWindow, type) {
   if (type !== 'display') {
     return supportWindow;
   }
-  return `<input class="demo-rendered-control" data-alteditor-lite-ignore-inline aria-label="Rendered support window" type="time" value="${escapeHtmlAttribute(supportWindow)}" disabled>`;
+  return `<input class="demo-rendered-control demo-rendered-support-window" data-alteditor-lite-ignore-inline aria-label="Rendered support window" type="time" value="${escapeHtmlAttribute(supportWindow)}">`;
 }
 
 function createEmployeeTable(selector) {
@@ -542,8 +542,8 @@ function updateWorkflowModeUi() {
   workflowModeIndicator.dataset.mode = usesInline ? 'inline' : 'dialog';
   if (!isSwitchingWorkflowMode) {
     workflowInlineStatus.textContent = usesInline
-      ? 'Choose a rendered priority, double-click an eligible cell, or use an Inline action. Select changes commit immediately; Enter or Tab commits other controls.'
-      : 'Choose a rendered priority or select the workflow and use Edit. Both paths open the complete Edit dialog.';
+      ? 'Change a rendered priority or support window, double-click an eligible cell, or use an inline action. Rendered controls commit immediately; Enter or Tab commits other controls.'
+      : 'Change a rendered priority or support window, or select the workflow and use Edit. Both paths open the complete Edit dialog.';
   }
 }
 
@@ -591,66 +591,74 @@ async function submitWorkflowSelect() {
   }
 }
 
-async function applyRenderedPriority(renderedSelect) {
-  const cellNode = renderedSelect.closest('td');
+async function applyRenderedWorkflowValue(renderedControl, fieldName, fieldLabel) {
+  const cellNode = renderedControl.closest('td');
   const cellIndex = cellNode === null ? undefined : workflowTable.cell(cellNode).index();
-  const selectedPriority = workflowPriorities.find(
-    ({ value }) => value === renderedSelect.value,
-  );
-  if (cellIndex === undefined || selectedPriority === undefined) {
-    workflowInlineStatus.textContent = 'The selected priority is unavailable.';
+  const requestedValue = renderedControl.value;
+  const requestedOption =
+    fieldName === 'priority'
+      ? workflowPriorities.find(({ value }) => value === requestedValue)
+      : undefined;
+  if (
+    cellIndex === undefined ||
+    (fieldName === 'priority' && requestedOption === undefined)
+  ) {
+    workflowInlineStatus.textContent = `The requested ${fieldLabel} value is unavailable.`;
     return;
   }
 
   const row = workflowTable.row(cellIndex.row);
-  const originalPriority = row.data().priority;
-  renderedSelect.value = originalPriority;
-  renderedSelect.disabled = true;
+  const originalValue = row.data()[fieldName];
+  renderedControl.value = originalValue;
+  renderedControl.disabled = true;
   row.select();
 
   try {
     if (workflowEditMode === 'dialog') {
       await workflowEditor.openEditDialog(cellIndex.row);
-      const priorityField = workflowEditor.getField('priority');
-      if (priorityField === null) {
-        throw new Error('The priority field is unavailable.');
+      const field = workflowEditor.getField(fieldName);
+      if (field === null) {
+        throw new Error(`The ${fieldLabel} field is unavailable.`);
       }
-      priorityField.setValue(selectedPriority.value);
-      workflowInlineStatus.textContent =
-        'The Edit dialog is open with the selected priority. Submit to commit it.';
+      field.setValue(requestedValue);
+      workflowInlineStatus.textContent = `The Edit dialog contains the requested ${fieldLabel} value. Submit to commit it.`;
       return;
     }
 
-    await workflowEditor.openInlineEdit(cellIndex.row, 'priority:name');
+    await workflowEditor.openInlineEdit(cellIndex.row, `${fieldName}:name`);
     const activeCell = workflowTable.cell(cellIndex.row, cellIndex.column).node();
-    const inlineSelect = activeCell?.querySelector('.alteditor-lite-inline select');
-    const matchingOption = Array.from(inlineSelect?.options ?? []).find(
-      (option) => option.textContent === selectedPriority.label,
+    const inlineControl = activeCell?.querySelector(
+      '.alteditor-lite-inline .dt-alteditor-lite-field__control',
     );
-    if (
-      inlineSelect === null ||
-      inlineSelect === undefined ||
-      matchingOption === undefined
-    ) {
-      throw new Error('The Inline priority control is unavailable.');
+    isApplyingRenderedWorkflowControl = true;
+    if (inlineControl instanceof HTMLSelectElement) {
+      const matchingOption = Array.from(inlineControl.options).find(
+        (option) => option.textContent === requestedOption?.label,
+      );
+      if (matchingOption === undefined) {
+        throw new Error(`The inline ${fieldLabel} option is unavailable.`);
+      }
+      inlineControl.value = matchingOption.value;
+      inlineControl.dispatchEvent(new Event('change', { bubbles: true }));
+    } else if (inlineControl instanceof HTMLInputElement) {
+      inlineControl.value = requestedValue;
+      inlineControl.dispatchEvent(new Event('input', { bubbles: true }));
+    } else {
+      throw new Error(`The inline ${fieldLabel} control is unavailable.`);
     }
-    isApplyingRenderedPriority = true;
-    inlineSelect.value = matchingOption.value;
-    inlineSelect.dispatchEvent(new Event('change', { bubbles: true }));
-    isApplyingRenderedPriority = false;
+    isApplyingRenderedWorkflowControl = false;
     await workflowEditor.submitInlineEdit();
-    workflowInlineStatus.textContent = 'The selected priority was committed Inline.';
+    workflowInlineStatus.textContent = `The ${fieldLabel} value was committed inline.`;
   } catch {
-    isApplyingRenderedPriority = false;
+    isApplyingRenderedWorkflowControl = false;
     if (workflowEditMode === 'inlineDoubleClick' && workflowEditor.isInlineEditing()) {
       await workflowEditor.cancelInlineEdit().catch(() => undefined);
     }
     row.invalidate().draw(false);
-    workflowInlineStatus.textContent =
-      'The priority could not be applied. Retry from the current editing mode.';
+    workflowInlineStatus.textContent = `The ${fieldLabel} value could not be applied. Retry from the current editing mode.`;
   } finally {
-    if (renderedSelect.isConnected) {
-      renderedSelect.disabled = false;
+    if (renderedControl.isConnected) {
+      renderedControl.disabled = false;
     }
   }
 }
@@ -707,15 +715,23 @@ workflowSupportButton.addEventListener('click', () => {
 
 workflowTableElement.addEventListener('change', (event) => {
   const target = event.target;
-  if (!(target instanceof HTMLSelectElement)) {
-    return;
-  }
-  if (target.classList.contains('demo-rendered-priority')) {
-    void applyRenderedPriority(target);
+  if (
+    target instanceof HTMLSelectElement &&
+    target.classList.contains('demo-rendered-priority')
+  ) {
+    void applyRenderedWorkflowValue(target, 'priority', 'priority');
     return;
   }
   if (
-    !isApplyingRenderedPriority &&
+    target instanceof HTMLInputElement &&
+    target.classList.contains('demo-rendered-support-window')
+  ) {
+    void applyRenderedWorkflowValue(target, 'supportWindow', 'support window');
+    return;
+  }
+  if (
+    target instanceof HTMLSelectElement &&
+    !isApplyingRenderedWorkflowControl &&
     workflowEditMode === 'inlineDoubleClick' &&
     target.closest('.alteditor-lite-inline') !== null
   ) {

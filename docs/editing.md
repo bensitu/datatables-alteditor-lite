@@ -244,7 +244,8 @@ Rendered controls can be application-owned editing shortcuts. Resolve their cell
 with the public DataTables API, then route the requested value through
 `openInlineEdit()` in Inline mode or `openEditDialog()` and `getField()` in Dialog
 mode. Keep the canonical row unchanged until the selected editor workflow commits.
-The live demo includes this pattern for a rendered Priority select.
+The live demo includes this pattern for rendered Priority and Support window
+controls.
 
 Render functions should return the underlying data for sorting, filtering, and
 type detection, and return HTML only for the `display` type. Treat row values as

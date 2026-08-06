@@ -32,6 +32,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed the former Inline enablement and activation options. `editMode` now
   selects the complete Edit presentation, and an `inline` object is accepted only
   with `inlineDoubleClick`.
+- Balanced the Dialog and Inline employee examples with matching table workspaces
+  and a compact Inline interaction reference.
 
 ### Fixed
 
@@ -45,8 +47,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Kept Inline inputs compact with one cell-level focus outline, a `1rem` checkbox,
   no nested text-control border, and a compact control height in the supplied
   stylesheet.
-- Made the workflow example's rendered Priority selectable in both editing modes
-  and synchronized the mode switch with editor and button state.
+- Increased Dialog label-to-control spacing so focus outlines remain distinct,
+  while keeping checkbox padding and Inline row height compact.
+- Made the workflow example's rendered Priority and Support window controls
+  editable in both editing modes and synchronized the mode switch with editor and
+  button state.
 
 ### Compatibility
 

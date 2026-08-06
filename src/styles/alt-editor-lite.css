@@ -145,7 +145,8 @@
 }
 
 .dt-alteditor-lite-field {
-  display: block;
+  display: grid;
+  gap: calc(var(--dt-alteditor-lite-spacing) / 2);
 }
 
 .dt-alteditor-lite-field__label {
@@ -179,6 +180,7 @@
   gap: 0.5rem;
   align-items: center;
   width: fit-content;
+  padding-block: calc(var(--dt-alteditor-lite-spacing) / 4);
   cursor: pointer;
 }
 
@@ -380,7 +382,8 @@ textarea.dt-alteditor-lite-field__control {
 .alteditor-lite-inline .dt-alteditor-lite-checkbox {
   width: 100%;
   min-height: 2rem;
-  padding-inline: 0.5rem;
+  padding-block: 0;
+  padding-inline: 0.25rem;
 }
 
 .alteditor-lite-inline .dt-alteditor-lite-checkbox > .dt-alteditor-lite-field__control {

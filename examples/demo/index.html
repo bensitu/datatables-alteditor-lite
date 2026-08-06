@@ -192,33 +192,71 @@
         </aside>
       </div>
 
-      <section class="demo-table-panel" aria-labelledby="inline-employees-title">
-        <div class="demo-section-heading">
-          <div>
-            <p class="demo-eyebrow">Double-click inline editing</p>
-            <h2 id="inline-employees-title">Inline employee directory</h2>
+      <div class="demo-workspace">
+        <section class="demo-table-panel" aria-labelledby="inline-employees-title">
+          <div class="demo-section-heading">
+            <div>
+              <p class="demo-eyebrow">Double-click inline editing</p>
+              <h2 id="inline-employees-title">Inline employee directory</h2>
+            </div>
+            <p class="demo-section-heading__hint">
+              Double-click an eligible cell. Create and Remove remain dialog actions,
+              while the Edit button is not shown.
+            </p>
           </div>
-          <p class="demo-section-heading__hint">
-            Double-click an eligible cell. Create and Remove remain dialog actions, while
-            the Dialog Edit button is not shown.
-          </p>
-        </div>
-        <div class="demo-table-scroll">
-          <table id="employees-inline">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Age</th>
-                <th>Role</th>
-                <th>Office</th>
-                <th>Active</th>
-                <th>Start date</th>
-              </tr>
-            </thead>
-          </table>
-        </div>
-      </section>
+          <div class="demo-table-scroll">
+            <table id="employees-inline">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Age</th>
+                  <th>Role</th>
+                  <th>Office</th>
+                  <th>Active</th>
+                  <th>Start date</th>
+                </tr>
+              </thead>
+            </table>
+          </div>
+        </section>
+
+        <aside class="demo-inline-guide" aria-labelledby="inline-guide-title">
+          <div>
+            <p class="demo-eyebrow">Inline interaction</p>
+            <h2 id="inline-guide-title">Editing at a glance</h2>
+            <p>
+              The employee examples use matching table widths so the two editing
+              presentations can be compared directly.
+            </p>
+          </div>
+          <ol class="demo-inline-steps">
+            <li>
+              <span aria-hidden="true">01</span>
+              <p class="demo-inline-step-copy">
+                <strong>Open</strong> Double-click an eligible cell.
+              </p>
+            </li>
+            <li>
+              <span aria-hidden="true">02</span>
+              <p class="demo-inline-step-copy">
+                <strong>Edit</strong> Use the compact native control in place.
+              </p>
+            </li>
+            <li>
+              <span aria-hidden="true">03</span>
+              <p class="demo-inline-step-copy">
+                <strong>Finish</strong> Commit or cancel without leaving the table.
+              </p>
+            </li>
+          </ol>
+          <div class="demo-inline-keys" aria-label="Inline editing keys">
+            <p class="demo-inline-key"><kbd>Enter</kbd><span>Commit</span></p>
+            <p class="demo-inline-key"><kbd>Tab</kbd><span>Commit and move</span></p>
+            <p class="demo-inline-key"><kbd>Esc</kbd><span>Cancel</span></p>
+          </div>
+        </aside>
+      </div>
 
       <section class="demo-events" aria-labelledby="event-log-title">
         <div class="demo-section-heading">
@@ -247,9 +285,9 @@
             </span>
           </div>
           <p class="demo-section-heading__hint">
-            The table renders a selectable priority and a time input through
-            <code>columnDefs</code>. Switch modes to compare compact Inline Edit with the
-            complete Edit dialog.
+            The table renders editable priority and support-window controls through
+            <code>columnDefs</code>. Switch modes to compare compact inline editing with
+            the complete Edit dialog.
           </p>
         </div>
         <div class="demo-table-scroll">
@@ -282,8 +320,8 @@
           </button>
         </div>
         <p id="workflow-inline-status" class="demo-workflow-status" role="status">
-          The first workflow is selected. Choose a rendered priority, double-click an
-          eligible cell, or use an Inline action.
+          The first workflow is selected. Change a rendered priority or support window,
+          double-click an eligible cell, or use an inline action.
         </p>
       </section>
     </main>
