@@ -1,4 +1,5 @@
 import { createCheckboxFieldController } from './checkbox-field-controller.js';
+import { DIALOG_FIELD_PRESENTATION } from './field-controller-presentation.js';
 import { createFileFieldController } from './file-field-controller.js';
 import {
   createInputFieldController,
@@ -10,6 +11,7 @@ import { createSelectFieldController } from './select-field-controller.js';
 import { createTextareaFieldController } from './textarea-field-controller.js';
 
 import type { FieldConfig } from './field-config.js';
+import type { FieldControllerPresentation } from './field-controller-presentation.js';
 import type { ManagedFieldController } from './managed-field-controller.js';
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 
@@ -27,7 +29,9 @@ export function createFieldController<TFormValues extends object>(
   fieldId: string,
   language: Readonly<AltEditorLiteLanguage>,
   onUserChange: () => void,
+  presentation: Readonly<FieldControllerPresentation> = DIALOG_FIELD_PRESENTATION,
 ): ManagedFieldController<TFormValues> {
+  let controller: ManagedFieldController<TFormValues>;
   switch (config.type) {
     case 'hidden':
     case 'text':
@@ -36,57 +40,69 @@ export function createFieldController<TFormValues extends object>(
     case 'date':
     case 'time':
     case 'datetime-local':
-      return createInputFieldController(
+      controller = createInputFieldController(
         config,
         fieldId,
         language.validation.invalid,
         language.validation.required,
         onUserChange,
       );
+      break;
     case 'number':
-      return createNumberFieldController(
+      controller = createNumberFieldController(
         config,
         fieldId,
         language.validation.invalid,
         language.validation.required,
         onUserChange,
       );
+      break;
     case 'textarea':
-      return createTextareaFieldController(
+      controller = createTextareaFieldController(
         config,
         fieldId,
         language.validation.invalid,
         language.validation.required,
         onUserChange,
       );
+      break;
     case 'checkbox':
-      return createCheckboxFieldController(
+      controller = createCheckboxFieldController(
         config,
         fieldId,
         language.validation.invalid,
         language.validation.required,
         onUserChange,
       );
+      break;
     case 'radio':
-      return createRadioFieldController(
+      controller = createRadioFieldController(
         config,
         fieldId,
         language.validation.invalid,
         language.validation.required,
         onUserChange,
       );
+      break;
     case 'select':
-      return createSelectFieldController(
+      controller = createSelectFieldController(
         config,
         fieldId,
         language.validation.invalid,
         language.validation.required,
         onUserChange,
       );
+      break;
     case 'search-select':
-      return createSearchSelectFieldController(config, fieldId, language, onUserChange);
+      controller = createSearchSelectFieldController(
+        config,
+        fieldId,
+        language,
+        onUserChange,
+      );
+      break;
     case 'file':
-      return createFileFieldController(
+      controller = createFileFieldController(
         config,
         fieldId,
         language.validation.invalid,
@@ -97,5 +113,51 @@ export function createFieldController<TFormValues extends object>(
         },
         onUserChange,
       );
+      break;
   }
+
+  if (presentation.label === 'visually-hidden') {
+    for (const label of controller.element.querySelectorAll<HTMLElement>(
+      '.dt-alteditor-lite-field__label, .dt-alteditor-lite-field__description',
+    )) {
+      label.classList.add('dt-alteditor-lite-visually-hidden');
+    }
+  }
+  if (presentation.error === 'field') {
+    return controller;
+  }
+
+  const errorElement = controller.element.querySelector<HTMLElement>(
+    '.dt-alteditor-lite-field__error',
+  );
+  const errorId = errorElement?.id;
+  errorElement?.remove();
+  if (errorId !== undefined) {
+    for (const control of controller.element.querySelectorAll<HTMLElement>(
+      '[aria-describedby]',
+    )) {
+      const references = (control.getAttribute('aria-describedby') ?? '')
+        .split(/\s+/u)
+        .filter((reference) => reference.length > 0 && reference !== errorId);
+      if (references.length === 0) {
+        control.removeAttribute('aria-describedby');
+      } else {
+        control.setAttribute('aria-describedby', references.join(' '));
+      }
+    }
+  }
+
+  let externalError: string | undefined;
+  return {
+    ...controller,
+    clearError: () => {
+      externalError = undefined;
+      controller.clearError();
+    },
+    getError: () => externalError,
+    showError: (message: string) => {
+      externalError = message;
+      controller.showError(message);
+    },
+  };
 }

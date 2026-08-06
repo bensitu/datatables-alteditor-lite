@@ -7,7 +7,7 @@ const transitions: Readonly<Record<InlineEditState['status'], readonly string[]>
   idle: ['activating', 'destroyed'],
   activating: ['editing', 'idle', 'destroyed'],
   editing: ['validating', 'idle', 'destroyed'],
-  validating: ['editing', 'submitting', 'idle', 'destroyed'],
+  validating: ['editing', 'submitting', 'error', 'idle', 'destroyed'],
   submitting: ['idle', 'error', 'destroyed'],
   error: ['validating', 'editing', 'idle', 'destroyed'],
   destroyed: [],

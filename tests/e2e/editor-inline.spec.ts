@@ -15,10 +15,12 @@ const stylesheetPath = resolve(repositoryRoot, 'dist/alt-editor-lite.css');
 
 interface RenderedControlsRuntime {
   readonly editor?: {
+    destroy(): void;
     openEditDialog(row: string): Promise<void>;
     openInlineEdit(row: string, column: string): Promise<void>;
     submitInlineEdit(): Promise<void>;
   };
+  readonly useDialogEditor?: () => void;
   readonly tableApi?: {
     row(row: string): {
       data(): { readonly schedule: string; readonly status: string };
@@ -76,7 +78,7 @@ async function createInlineFixture(page: Page): Promise<void> {
               type: 'number'
             }
           ],
-          inline: { enabled: true },
+          editMode: 'inlineDoubleClick',
           operations: {
             async update(values, original) {
               await new Promise(resolve => globalThis.setTimeout(resolve, 20));
@@ -141,9 +143,7 @@ async function createRenderedControlsFixture(page: Page): Promise<void> {
         data: [{ id: 'row-a', schedule: '09:00', status: 'open' }],
         rowId: 'id'
       });
-      globalThis.editor = new DataTablesAltEditorLite.AltEditorLite(
-        globalThis.tableApi,
-        {
+      globalThis.editorOptions = {
           clientSide: {
             updateRow(original, values) {
               return {
@@ -174,9 +174,18 @@ async function createRenderedControlsFixture(page: Page): Promise<void> {
               type: 'time'
             }
           ],
-          inline: { enabled: true }
-        }
+      };
+      globalThis.editor = new DataTablesAltEditorLite.AltEditorLite(
+        globalThis.tableApi,
+        { ...globalThis.editorOptions, editMode: 'inlineDoubleClick' }
       );
+      globalThis.useDialogEditor = () => {
+        globalThis.editor.destroy();
+        globalThis.editor = new DataTablesAltEditorLite.AltEditorLite(
+          globalThis.tableApi,
+          { ...globalThis.editorOptions, editMode: 'dialog' }
+        );
+      };
     `,
   });
 }
@@ -254,6 +263,7 @@ test('redraws columnDefs controls from committed inline and dialog values', asyn
 
   await page.evaluate(async () => {
     const runtimeScope = globalThis as typeof globalThis & RenderedControlsRuntime;
+    runtimeScope.useDialogEditor?.();
     await runtimeScope.editor?.openEditDialog('#row-a');
   });
   const dialog = page.locator('dialog');

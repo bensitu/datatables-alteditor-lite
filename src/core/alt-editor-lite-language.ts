@@ -61,10 +61,12 @@ export interface AltEditorLiteLanguage {
   readonly inline: {
     readonly unavailable: string;
     readonly unsupportedField: string;
-    readonly saving: string;
     readonly targetUnavailable: string;
-    readonly editStarted: string;
-    readonly editCancelled: string;
+  };
+  /** Titles used by operation and validation alerts. */
+  readonly alert: {
+    readonly validationTitle: string;
+    readonly operationTitle: string;
   };
   /** Operation-level error fallbacks. */
   readonly errors: {
@@ -140,6 +142,7 @@ export function resolveLanguage(
       language?.accessibility,
     ),
     inline: mergeDefinedLanguageText(ENGLISH_LANGUAGE.inline, language?.inline),
+    alert: mergeDefinedLanguageText(ENGLISH_LANGUAGE.alert, language?.alert),
     errors: mergeDefinedLanguageText(ENGLISH_LANGUAGE.errors, language?.errors),
   };
 }

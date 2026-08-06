@@ -40,6 +40,7 @@ import {
   resolveLanguage,
   type AltEditorLiteLanguage,
 } from './alt-editor-lite-language.js';
+import { resolveEditMode } from './edit-mode.js';
 import { commitRowUpdate } from './editing/commit-row-update.js';
 import { DrawOwnership } from './editing/draw-ownership.js';
 import { EditOperationRunner } from './editing/edit-operation-runner.js';
@@ -48,6 +49,7 @@ import {
   type InteractionToken,
 } from './editing/interaction-coordinator.js';
 import { OperationOwner, type OwnedOperationRequest } from './editing/operation-owner.js';
+import { resolveEditorCapabilities } from './editor-capabilities.js';
 import { dispatchEditorEvent, type EditorCloseReason } from './editor-event.js';
 import { assertEditorStateTransition } from './editor-state-transition.js';
 import {
@@ -65,6 +67,8 @@ import type {
   EditorErrorHookContext,
   OperationContext,
 } from './alt-editor-lite-options.js';
+import type { EditMode } from './edit-mode.js';
+import type { EditorCapabilities } from './editor-capabilities.js';
 import type {
   DialogAction,
   EditorOperation,
@@ -124,6 +128,10 @@ export class AltEditorLite<
 > {
   private readonly dialog: EditorDialog;
 
+  private readonly editMode: EditMode;
+
+  private readonly capabilities: Readonly<EditorCapabilities>;
+
   private readonly instanceId = createInstanceId();
 
   private readonly language: Readonly<AltEditorLiteLanguage>;
@@ -170,10 +178,13 @@ export class AltEditorLite<
     private readonly table: Api<TRow>,
     private readonly options: AltEditorLiteOptions<TRow, TFormValues>,
   ) {
+    const editMode = resolveEditMode(options.editMode);
     validateFieldConfigurations(options.fields);
     validateOperationConfiguration(options);
     validateHooksConfiguration(options);
-    validateInlineConfiguration(table, options);
+    validateInlineConfiguration(table, options, editMode);
+    this.editMode = editMode;
+    this.capabilities = resolveEditorCapabilities(editMode);
     this.uniqueFieldLookups = Object.freeze(
       options.fields
         .filter((field) => field.unique === true)
@@ -207,6 +218,7 @@ export class AltEditorLite<
       );
       this.inlineController = new InlineEditController({
         drawOwnership: this.drawOwnership,
+        enabled: this.capabilities.inlineEdit,
         editOperationRunner: this.editOperationRunner,
         editor: this,
         editorOptions: options,
@@ -278,6 +290,7 @@ export class AltEditorLite<
   public async openEditDialog(rowSelector?: RowSelector<TRow>): Promise<void> {
     try {
       this.assertActive();
+      this.assertDialogEditAvailable();
       this.assertReady();
       this.acquireDialogInteraction();
       const rowIndexes = this.resolveRequestedRowIndexes(rowSelector);
@@ -472,6 +485,7 @@ export class AltEditorLite<
   ): Promise<void> {
     try {
       this.assertActive();
+      this.assertInlineEditAvailable();
       await this.inlineController.open(rowSelector, columnSelector);
     } catch (error: unknown) {
       throw normalizeRejectedReason(error);
@@ -482,6 +496,7 @@ export class AltEditorLite<
   public submitInlineEdit(): Promise<void> {
     try {
       this.assertActive();
+      this.assertInlineEditAvailable();
       return this.inlineController.submit();
     } catch (error: unknown) {
       return Promise.reject(normalizeRejectedReason(error));
@@ -492,7 +507,8 @@ export class AltEditorLite<
   public cancelInlineEdit(): Promise<void> {
     try {
       this.assertActive();
-      return this.inlineController.cancel('api');
+      this.assertInlineEditAvailable();
+      return this.inlineController.cancel();
     } catch (error: unknown) {
       return Promise.reject(normalizeRejectedReason(error));
     }
@@ -501,12 +517,14 @@ export class AltEditorLite<
   /** Returns the independent inline presentation state. */
   public getInlineState(): Readonly<InlineEditState> {
     this.assertActive();
+    this.assertInlineEditAvailable();
     return this.inlineController.getState();
   }
 
   /** Returns whether inline activation, validation, or submission is active. */
   public isInlineEditing(): boolean {
     this.assertActive();
+    this.assertInlineEditAvailable();
     return this.inlineController.isEditing();
   }
 
@@ -556,6 +574,20 @@ export class AltEditorLite<
       this.interactionCoordinator.current() !== 'none'
     ) {
       throw new EditorOperationBusyError();
+    }
+  }
+
+  private assertDialogEditAvailable(): void {
+    if (!this.capabilities.editDialog) {
+      throw new EditorConfigurationError(
+        'Dialog Edit is unavailable in inlineDoubleClick mode.',
+      );
+    }
+  }
+
+  private assertInlineEditAvailable(): void {
+    if (!this.capabilities.inlineEdit) {
+      throw new EditorConfigurationError('Inline Edit is unavailable in dialog mode.');
     }
   }
 
@@ -1496,6 +1528,7 @@ export class AltEditorLite<
     const hasCreate = this.hasCreateCapability();
 
     return createEditorButtonState({
+      capabilities: this.capabilities,
       hasCreate,
       hasSelect,
       isReady,

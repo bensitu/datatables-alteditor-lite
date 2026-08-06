@@ -43,10 +43,11 @@
   "inline": {
     "unavailable": "Inline editing is not available for this cell.",
     "unsupportedField": "This field does not support inline editing.",
-    "saving": "Saving change.",
-    "targetUnavailable": "The edited cell is no longer available.",
-    "editStarted": "Cell editing started.",
-    "editCancelled": "Cell editing cancelled."
+    "targetUnavailable": "The edited cell is no longer available."
+  },
+  "alert": {
+    "validationTitle": "Check the value",
+    "operationTitle": "The edit could not be completed"
   },
   "errors": {
     "generic": "The operation could not be completed.",

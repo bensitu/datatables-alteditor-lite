@@ -12,6 +12,44 @@ export interface DialogTemplate {
   readonly cancelButton: HTMLButtonElement;
 }
 
+/** Shared native dialog structure used by form and alert presentations. */
+export interface DialogShellTemplate {
+  readonly dialogElement: HTMLDialogElement;
+  readonly bodyElement: HTMLDivElement;
+  readonly footerElement: HTMLElement;
+  readonly titleElement: HTMLHeadingElement;
+}
+
+/** Creates the common accessible dialog shell. */
+export function createDialogShell(
+  dialogId: string,
+  titleId: string,
+): DialogShellTemplate {
+  const dialogElement = document.createElement('dialog');
+  const surfaceElement = document.createElement('div');
+  const headerElement = document.createElement('header');
+  const titleElement = document.createElement('h2');
+  const bodyElement = document.createElement('div');
+  const footerElement = document.createElement('footer');
+
+  dialogElement.className = 'dt-alteditor-lite-dialog';
+  dialogElement.id = dialogId;
+  dialogElement.setAttribute('aria-labelledby', titleId);
+  dialogElement.setAttribute('aria-modal', 'true');
+  surfaceElement.className = 'dt-alteditor-lite-dialog__surface';
+  headerElement.className = 'dt-alteditor-lite-dialog__header';
+  titleElement.className = 'dt-alteditor-lite-dialog__title';
+  titleElement.id = titleId;
+  bodyElement.className = 'dt-alteditor-lite-dialog__body';
+  footerElement.className = 'dt-alteditor-lite-dialog__footer';
+
+  headerElement.append(titleElement);
+  surfaceElement.append(headerElement, bodyElement, footerElement);
+  dialogElement.append(surfaceElement);
+
+  return { bodyElement, dialogElement, footerElement, titleElement };
+}
+
 /**
  * Creates the fixed native dialog structure without parsing HTML strings.
  *
@@ -23,29 +61,13 @@ export function createDialogTemplate(
   instanceId: string,
   language: Readonly<AltEditorLiteLanguage>,
 ): DialogTemplate {
-  const dialogElement = document.createElement('dialog');
-  const surfaceElement = document.createElement('div');
-  const headerElement = document.createElement('header');
-  const titleElement = document.createElement('h2');
-  const bodyElement = document.createElement('div');
+  const shell = createDialogShell(`${instanceId}-dialog`, `${instanceId}-dialog-title`);
   const errorElement = document.createElement('div');
-  const footerElement = document.createElement('footer');
   const cancelButton = document.createElement('button');
   const submitButton = document.createElement('button');
-
-  dialogElement.className = 'dt-alteditor-lite-dialog';
-  dialogElement.id = `${instanceId}-dialog`;
-  dialogElement.setAttribute('aria-labelledby', `${instanceId}-dialog-title`);
-  dialogElement.setAttribute('aria-modal', 'true');
-  surfaceElement.className = 'dt-alteditor-lite-dialog__surface';
-  headerElement.className = 'dt-alteditor-lite-dialog__header';
-  titleElement.className = 'dt-alteditor-lite-dialog__title';
-  titleElement.id = `${instanceId}-dialog-title`;
-  bodyElement.className = 'dt-alteditor-lite-dialog__body';
   errorElement.className = 'dt-alteditor-lite-dialog__errors';
   errorElement.hidden = true;
   errorElement.setAttribute('role', 'alert');
-  footerElement.className = 'dt-alteditor-lite-dialog__footer';
 
   cancelButton.className =
     'dt-alteditor-lite-dialog__button dt-alteditor-lite-dialog__button--cancel';
@@ -57,17 +79,45 @@ export function createDialogTemplate(
   submitButton.type = 'submit';
   submitButton.textContent = language.actions.submit;
 
-  headerElement.append(titleElement);
-  footerElement.append(cancelButton, submitButton);
-  surfaceElement.append(headerElement, bodyElement, errorElement, footerElement);
-  dialogElement.append(surfaceElement);
+  shell.footerElement.append(cancelButton, submitButton);
+  shell.bodyElement.after(errorElement);
 
   return {
-    bodyElement,
+    bodyElement: shell.bodyElement,
     cancelButton,
-    dialogElement,
+    dialogElement: shell.dialogElement,
     errorElement,
     submitButton,
-    titleElement,
+    titleElement: shell.titleElement,
   };
+}
+
+/** Owned elements used by a plain-text alert dialog. */
+export interface AlertDialogTemplate extends DialogShellTemplate {
+  readonly closeButton: HTMLButtonElement;
+  readonly messageElement: HTMLParagraphElement;
+}
+
+/** Creates the alert presentation on the shared dialog shell. */
+export function createAlertDialogTemplate(
+  instanceId: string,
+  language: Readonly<AltEditorLiteLanguage>,
+): AlertDialogTemplate {
+  const shell = createDialogShell(
+    `${instanceId}-alert-dialog`,
+    `${instanceId}-alert-dialog-title`,
+  );
+  const messageElement = document.createElement('p');
+  const closeButton = document.createElement('button');
+
+  shell.dialogElement.classList.add('dt-alteditor-lite-dialog--alert');
+  messageElement.className = 'dt-alteditor-lite-dialog__message';
+  closeButton.className =
+    'dt-alteditor-lite-dialog__button dt-alteditor-lite-dialog__button--cancel';
+  closeButton.type = 'button';
+  closeButton.textContent = language.actions.close;
+  shell.bodyElement.append(messageElement);
+  shell.footerElement.append(closeButton);
+
+  return { ...shell, closeButton, messageElement };
 }

@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { resolveLanguage } from '../../src/core/alt-editor-lite-language.js';
+import { createFieldController } from '../../src/fields/create-field-controller.js';
+import { INLINE_FIELD_PRESENTATION } from '../../src/fields/field-controller-presentation.js';
 import { buildEditorForm } from '../../src/form/build-editor-form.js';
 
 import type { FieldConfig } from '../../src/fields/field-config.js';
@@ -70,6 +72,33 @@ afterEach(() => {
 });
 
 describe('native field presentation', () => {
+  it('keeps inline labels accessible while exposing errors outside the field DOM', () => {
+    const controller = createFieldController(
+      { label: 'Name', name: 'name', type: 'text' },
+      'inline-name',
+      language,
+      () => undefined,
+      INLINE_FIELD_PRESENTATION,
+    );
+    document.body.append(controller.element);
+
+    controller.showError('Name is unavailable.');
+
+    expect(
+      controller.element
+        .querySelector('.dt-alteditor-lite-field__label')
+        ?.classList.contains('dt-alteditor-lite-visually-hidden'),
+    ).toBe(true);
+    expect(
+      controller.element.querySelector('.dt-alteditor-lite-field__error'),
+    ).toBeNull();
+    expect(controller.getError?.()).toBe('Name is unavailable.');
+    expect(controller.element.querySelector('input')?.getAttribute('aria-invalid')).toBe(
+      'true',
+    );
+    controller.destroy();
+  });
+
   it('uses the configured required message for every required field type', async () => {
     activeForm = buildEditorForm(requiredFields, 'required-fields', language);
     document.body.append(activeForm.element);

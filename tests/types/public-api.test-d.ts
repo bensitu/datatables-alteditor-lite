@@ -110,8 +110,17 @@ expectAssignable<InlineEditorOptions<Row, FormValues>>({
     contact: 'contact.email',
     disabled: false,
   },
-  enabled: true,
 });
+expectAssignable<AltEditorLiteOptions<Row, FormValues>>({
+  editMode: 'inlineDoubleClick',
+  fields: [],
+});
+expectNotAssignable<AltEditorLiteOptions<Row, FormValues>>({
+  editMode: 'inlineHover',
+  fields: [],
+});
+expectNotAssignable<InlineEditorOptions<Row, FormValues>>({ enabled: true });
+expectNotAssignable<InlineEditorOptions<Row, FormValues>>({ activation: 'dblclick' });
 expectNotAssignable<InlineEditorOptions<Row, FormValues>>({
   columns: { contact: 'contact.missing' },
 });

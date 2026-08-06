@@ -3,6 +3,7 @@ import { ENGLISH_LANGUAGE } from '../core/alt-editor-lite-language.js';
 import { EDITOR_INTEGRATION_UPDATE_EVENT } from './editor-integration-event.js';
 
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
+import type { EditorCapabilities } from '../core/editor-capabilities.js';
 import type { EditorInstanceLookup } from '../instance/editor-instance-store.js';
 import type { Api, DataTablesStatic } from 'datatables.net';
 
@@ -20,21 +21,25 @@ export interface EditorButtonState {
   readonly unavailableTitle: string;
   readonly create: {
     readonly enabled: boolean;
+    readonly visible: boolean;
     readonly text: string;
     readonly title: string;
   };
   readonly edit: {
     readonly enabled: boolean;
+    readonly visible: boolean;
     readonly text: string;
     readonly title: string;
   };
   readonly remove: {
     readonly enabled: boolean;
+    readonly visible: boolean;
     readonly text: string;
     readonly title: string;
   };
   readonly refresh: {
     readonly enabled: boolean;
+    readonly visible: boolean;
     readonly text: string;
     readonly title: string;
   };
@@ -44,6 +49,8 @@ export interface EditorButtonState {
  * Inputs used to derive optional Buttons state without retaining an editor.
  */
 export interface EditorButtonStateInput {
+  /** Features available for the configured edit presentation. */
+  readonly capabilities: Readonly<EditorCapabilities>;
   /** Whether Create has a configured persistence owner. */
   readonly hasCreate: boolean;
   /** Whether Select extended the table API. */
@@ -69,7 +76,8 @@ export function createEditorButtonState(
   return {
     unavailableTitle: language.buttons.initialize,
     create: {
-      enabled: input.isReady && input.hasCreate,
+      visible: input.capabilities.createDialog,
+      enabled: input.capabilities.createDialog && input.isReady && input.hasCreate,
       text: language.actions.create,
       title: !input.hasCreate
         ? language.buttons.createUnavailable
@@ -78,7 +86,12 @@ export function createEditorButtonState(
           : language.buttons.busy,
     },
     edit: {
-      enabled: input.isReady && input.hasSelect && input.selectedRowCount === 1,
+      visible: input.capabilities.editDialog,
+      enabled:
+        input.capabilities.editDialog &&
+        input.isReady &&
+        input.hasSelect &&
+        input.selectedRowCount === 1,
       text: language.actions.edit,
       title: !input.hasSelect
         ? language.buttons.selectUnavailable
@@ -89,12 +102,18 @@ export function createEditorButtonState(
             : language.buttons.busy,
     },
     refresh: {
-      enabled: input.isReady,
+      visible: input.capabilities.refresh,
+      enabled: input.capabilities.refresh && input.isReady,
       text: language.actions.refresh,
       title: input.isReady ? language.actions.refresh : language.buttons.busy,
     },
     remove: {
-      enabled: input.isReady && input.hasSelect && input.selectedRowCount > 0,
+      visible: input.capabilities.removeDialog,
+      enabled:
+        input.capabilities.removeDialog &&
+        input.isReady &&
+        input.hasSelect &&
+        input.selectedRowCount > 0,
       text: language.actions.remove,
       title: !input.hasSelect
         ? language.buttons.selectUnavailable
@@ -122,6 +141,8 @@ interface ButtonController {
 
 interface ButtonNode {
   attr(name: string, value: string): unknown;
+  attrRemove(name: string): unknown;
+  css(name: string, value: string): unknown;
 }
 
 interface ButtonDefinition {
@@ -206,6 +227,13 @@ function unavailableButtonState(
   const fallbackState =
     previousState ??
     createEditorButtonState({
+      capabilities: {
+        createDialog: true,
+        editDialog: false,
+        inlineEdit: false,
+        refresh: true,
+        removeDialog: true,
+      },
       hasCreate: false,
       hasSelect: false,
       isReady: false,
@@ -225,7 +253,7 @@ function unavailableButtonState(
 function selectButtonState(
   state: Readonly<EditorButtonState>,
   operation: EditorButtonName,
-): Readonly<{ enabled: boolean; text: string; title: string }> {
+): Readonly<{ enabled: boolean; visible: boolean; text: string; title: string }> {
   switch (operation) {
     case 'altEditorLiteCreate':
       return state.create;
@@ -264,8 +292,15 @@ function createButtonDefinition(
         const buttonState = selectButtonState(currentState, operation);
         this.enable(buttonState.enabled);
         this.text(buttonState.text);
+        buttonNode.css('display', buttonState.visible ? '' : 'none');
+        buttonNode.attr('aria-hidden', String(!buttonState.visible));
         buttonNode.attr('aria-disabled', String(!buttonState.enabled));
         buttonNode.attr('title', buttonState.title);
+        if (buttonState.visible) {
+          buttonNode.attrRemove('tabindex');
+        } else {
+          buttonNode.attr('tabindex', '-1');
+        }
       };
 
       tableElement.addEventListener(EDITOR_INTEGRATION_UPDATE_EVENT, updateButton);

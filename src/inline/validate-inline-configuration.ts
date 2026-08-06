@@ -4,10 +4,10 @@ import { parseFieldPath } from '../object-path/field-path.js';
 import { isInlineFieldEligible } from './inline-field-capability.js';
 
 import type { AltEditorLiteOptions } from '../core/alt-editor-lite-options.js';
+import type { EditMode } from '../core/edit-mode.js';
 import type { FieldConfig } from '../fields/field-config.js';
 import type { Api } from 'datatables.net';
 
-const activations = new Set(['click', 'dblclick', 'none']);
 const blurActions = new Set(['submit', 'cancel', 'none']);
 const enterActions = new Set(['submit', 'none']);
 const tabActions = new Set(['submit-and-move', 'submit', 'none']);
@@ -99,32 +99,36 @@ function assertExplicitMappings<TRow extends object, TFormValues extends object>
 export function validateInlineConfiguration<
   TRow extends object,
   TFormValues extends object,
->(table: Api<TRow>, options: Readonly<AltEditorLiteOptions<TRow, TFormValues>>): void {
+>(
+  table: Api<TRow>,
+  options: Readonly<AltEditorLiteOptions<TRow, TFormValues>>,
+  editMode: EditMode,
+): void {
   const inline = options.inline;
-  if (inline === undefined) {
+
+  if (editMode === 'dialog') {
+    if (inline !== undefined) {
+      throw new EditorConfigurationError(
+        'inline options require editMode "inlineDoubleClick".',
+      );
+    }
     return;
   }
 
-  if (inline.enabled !== undefined && typeof inline.enabled !== 'boolean') {
-    throw new EditorConfigurationError('inline.enabled must be a boolean.');
-  }
-  assertChoice(inline.activation, activations, 'activation');
-  assertChoice(inline.blurAction, blurActions, 'blurAction');
-  assertChoice(inline.enterAction, enterActions, 'enterAction');
-  assertChoice(inline.tabAction, tabActions, 'tabAction');
-  assertChoice(inline.updateMode, updateModes, 'updateMode');
-  assertClassName(inline.className);
-  assertExplicitMappings(table, options.fields, inline.columns);
+  assertChoice(inline?.blurAction, blurActions, 'blurAction');
+  assertChoice(inline?.enterAction, enterActions, 'enterAction');
+  assertChoice(inline?.tabAction, tabActions, 'tabAction');
+  assertChoice(inline?.updateMode, updateModes, 'updateMode');
+  assertClassName(inline?.className);
+  assertExplicitMappings(table, options.fields, inline?.columns);
 
-  if (inline.enabled === true) {
-    if (!options.fields.some(isInlineFieldEligible)) {
-      throw new EditorConfigurationError(
-        'Enabled inline editing requires at least one supported inlineEdit field.',
-      );
-    }
+  if (!options.fields.some(isInlineFieldEligible)) {
+    throw new EditorConfigurationError(
+      'inlineDoubleClick mode requires at least one supported inlineEdit field.',
+    );
   }
 
-  if (inline.updateMode === 'refresh') {
+  if (inline?.updateMode === 'refresh') {
     if (
       options.operations?.update === undefined ||
       options.operations.refresh === undefined

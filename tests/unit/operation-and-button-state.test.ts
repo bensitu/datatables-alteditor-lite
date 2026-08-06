@@ -6,6 +6,7 @@ import {
   EditorSelectionCountError,
 } from '../../src/core/alt-editor-lite-error.js';
 import { ENGLISH_LANGUAGE } from '../../src/core/alt-editor-lite-language.js';
+import { resolveEditorCapabilities } from '../../src/core/editor-capabilities.js';
 import { validateOperationConfiguration } from '../../src/core/validate-operation-configuration.js';
 import { createEditorButtonState } from '../../src/datatables/register-editor-buttons.js';
 
@@ -94,8 +95,11 @@ describe('operation configuration', () => {
 });
 
 describe('editor button enablement', () => {
+  const dialogCapabilities = resolveEditorCapabilities('dialog');
+
   it('disables unavailable Create and selection actions', () => {
     const state = createEditorButtonState({
+      capabilities: dialogCapabilities,
       hasCreate: false,
       hasSelect: false,
       isReady: true,
@@ -113,6 +117,7 @@ describe('editor button enablement', () => {
 
   it('enables ready capabilities at their exact selection counts', () => {
     const oneSelected = createEditorButtonState({
+      capabilities: dialogCapabilities,
       hasCreate: true,
       hasSelect: true,
       isReady: true,
@@ -120,6 +125,7 @@ describe('editor button enablement', () => {
       selectedRowCount: 1,
     });
     const manySelected = createEditorButtonState({
+      capabilities: dialogCapabilities,
       hasCreate: true,
       hasSelect: true,
       isReady: true,
@@ -127,6 +133,7 @@ describe('editor button enablement', () => {
       selectedRowCount: 2,
     });
     const noneSelected = createEditorButtonState({
+      capabilities: dialogCapabilities,
       hasCreate: true,
       hasSelect: true,
       isReady: true,
@@ -146,6 +153,7 @@ describe('editor button enablement', () => {
 
   it('disables every action while busy with explicit titles', () => {
     const state = createEditorButtonState({
+      capabilities: dialogCapabilities,
       hasCreate: true,
       hasSelect: true,
       isReady: false,
@@ -162,5 +170,21 @@ describe('editor button enablement', () => {
     expect(state.remove.enabled).toBe(false);
     expect(state.remove.title).toBe('The editor is busy.');
     expect(state.refresh.enabled).toBe(false);
+  });
+
+  it('hides Dialog Edit without removing the global button capability', () => {
+    const state = createEditorButtonState({
+      capabilities: resolveEditorCapabilities('inlineDoubleClick'),
+      hasCreate: true,
+      hasSelect: true,
+      isReady: true,
+      language: ENGLISH_LANGUAGE,
+      selectedRowCount: 1,
+    });
+
+    expect(state.edit).toMatchObject({ enabled: false, visible: false });
+    expect(state.create).toMatchObject({ enabled: true, visible: true });
+    expect(state.remove.visible).toBe(true);
+    expect(state.refresh.visible).toBe(true);
   });
 });

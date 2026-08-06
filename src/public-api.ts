@@ -36,6 +36,7 @@ export type {
   EditorOperations,
   OperationContext,
 } from './core/alt-editor-lite-options.js';
+export type { EditMode } from './core/edit-mode.js';
 export type {
   EditorCreateSubmitEventDetail,
   EditorCreateSuccessEventDetail,

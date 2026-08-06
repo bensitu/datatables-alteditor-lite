@@ -6,8 +6,6 @@ export interface InlineEditorOptions<
   TRow extends object,
   TFormValues extends object,
 > {
-  readonly enabled?: boolean;
-  readonly activation?: 'click' | 'dblclick' | 'none';
   readonly blurAction?: 'submit' | 'cancel' | 'none';
   readonly enterAction?: 'submit' | 'none';
   readonly tabAction?: 'submit-and-move' | 'submit' | 'none';
@@ -18,8 +16,6 @@ export interface InlineEditorOptions<
 
 /** Fully resolved inline behavior used by the runtime controller. */
 export interface ResolvedInlineEditorOptions<TFormValues extends object> {
-  readonly enabled: boolean;
-  readonly activation: 'click' | 'dblclick' | 'none';
   readonly blurAction: 'submit' | 'cancel' | 'none';
   readonly enterAction: 'submit' | 'none';
   readonly tabAction: 'submit-and-move' | 'submit' | 'none';
@@ -28,11 +24,9 @@ export interface ResolvedInlineEditorOptions<TFormValues extends object> {
   readonly className?: string;
 }
 
-/** Default inline behavior. Inline editing remains disabled unless enabled. */
+/** Default behavior used by the inline Edit presentation. */
 export const DEFAULT_INLINE_OPTIONS = Object.freeze({
-  activation: 'dblclick',
   blurAction: 'submit',
-  enabled: false,
   enterAction: 'submit',
   tabAction: 'submit-and-move',
   updateMode: 'replace-row',
@@ -43,10 +37,8 @@ export function resolveInlineOptions<TRow extends object, TFormValues extends ob
   options: Readonly<InlineEditorOptions<TRow, TFormValues>> | undefined,
 ): Readonly<ResolvedInlineEditorOptions<TFormValues>> {
   return Object.freeze({
-    activation: options?.activation ?? DEFAULT_INLINE_OPTIONS.activation,
     blurAction: options?.blurAction ?? DEFAULT_INLINE_OPTIONS.blurAction,
     columns: Object.freeze({ ...(options?.columns ?? {}) }),
-    enabled: options?.enabled ?? DEFAULT_INLINE_OPTIONS.enabled,
     enterAction: options?.enterAction ?? DEFAULT_INLINE_OPTIONS.enterAction,
     tabAction: options?.tabAction ?? DEFAULT_INLINE_OPTIONS.tabAction,
     updateMode: options?.updateMode ?? DEFAULT_INLINE_OPTIONS.updateMode,

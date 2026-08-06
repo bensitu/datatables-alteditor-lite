@@ -26,5 +26,6 @@ export interface ManagedFieldController<TFormValues extends object> {
   ): Promise<void>;
   clearError(): void;
   showError(message: string): void;
+  getError?(): string | undefined;
   destroy(): void;
 }

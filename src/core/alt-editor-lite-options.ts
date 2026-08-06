@@ -1,4 +1,5 @@
 import type { PartialEditorLanguage } from './alt-editor-lite-language.js';
+import type { EditMode } from './edit-mode.js';
 import type {
   EditorOperation,
   EditorOperationMode,
@@ -150,6 +151,8 @@ export interface AltEditorLiteOptions<
   TRow extends object,
   TFormValues extends object = DeepPartial<TRow>,
 > {
+  /** Selects the only Edit presentation enabled by this instance. */
+  readonly editMode?: EditMode;
   /** Ordered field definitions used by Create and Edit forms. */
   readonly fields: readonly FieldConfig<TFormValues>[];
   /**

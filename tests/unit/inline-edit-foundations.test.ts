@@ -12,6 +12,8 @@ import {
   assertInlineEditStateTransition,
   canTransitionInlineEditState,
 } from '../../src/inline/inline-edit-state-transition.js';
+import { InlineFocusStateMachine } from '../../src/inline/inline-focus-state-machine.js';
+import { InlineOriginalContent } from '../../src/inline/inline-original-content.js';
 
 import type { Api } from 'datatables.net';
 
@@ -103,6 +105,48 @@ describe('inline interaction foundations', () => {
         visible: () => true,
       }),
     ).toBe(true);
+  });
+
+  it('suppresses blur actions during validation and alert focus transfer', () => {
+    const focusState = new InlineFocusStateMachine();
+    focusState.transition({ type: 'session-mounted' });
+    expect(focusState.shouldApplyBlurAction()).toBe(true);
+
+    focusState.transition({ type: 'validation-started' });
+    focusState.transition({ type: 'alert-requested' });
+    focusState.transition({ type: 'alert-opened' });
+    expect(focusState.shouldApplyBlurAction()).toBe(false);
+
+    focusState.transition({ type: 'alert-close-requested' });
+    focusState.transition({ type: 'focus-restore-started' });
+    focusState.transition({ type: 'focus-restored' });
+    expect(focusState.shouldApplyBlurAction()).toBe(true);
+    expect(() => focusState.transition({ type: 'alert-opened' })).toThrow(
+      'Invalid inline focus transition',
+    );
+  });
+
+  it('restores cell nodes only while the view still owns the original cell', () => {
+    const table = document.createElement('table');
+    const cell = document.createElement('td');
+    const original = document.createElement('span');
+    const view = document.createElement('div');
+    original.textContent = 'Original';
+    cell.append(original);
+    table.append(cell);
+    document.body.append(table);
+
+    const ownedContent = InlineOriginalContent.capture(cell, view, table);
+    cell.append(view);
+    expect(ownedContent.restore()).toBe(true);
+    expect(cell.firstChild).toBe(original);
+
+    const staleView = document.createElement('div');
+    const staleContent = InlineOriginalContent.capture(cell, staleView, table);
+    cell.append(staleView);
+    table.remove();
+    expect(staleContent.restore()).toBe(false);
+    expect(cell.childNodes).toHaveLength(0);
   });
 });
 

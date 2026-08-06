@@ -1,9 +1,10 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import {
   AltEditorLite,
   AltEditorLiteError,
   EditorConfigurationError,
+  EditorOperationBusyError,
   type FieldConfig,
   type AltEditorLiteOptions,
   type BeforeOpenContext,
@@ -44,11 +45,53 @@ const fields = [
 ] as const satisfies readonly FieldConfig<InlineValues>[];
 
 const editors = new Set<AltEditorLite<TestRow, InlineValues>>();
+let originalShowModalDescriptor: PropertyDescriptor | undefined;
+let originalCloseDescriptor: PropertyDescriptor | undefined;
 
 const namedColumns = [
   { data: 'name', name: 'displayName' },
   { data: 'rank', name: 'rank' },
 ] as const;
+
+beforeAll(() => {
+  originalShowModalDescriptor = Object.getOwnPropertyDescriptor(
+    HTMLDialogElement.prototype,
+    'showModal',
+  );
+  originalCloseDescriptor = Object.getOwnPropertyDescriptor(
+    HTMLDialogElement.prototype,
+    'close',
+  );
+  Object.defineProperty(HTMLDialogElement.prototype, 'showModal', {
+    configurable: true,
+    value(this: HTMLDialogElement): void {
+      this.open = true;
+    },
+  });
+  Object.defineProperty(HTMLDialogElement.prototype, 'close', {
+    configurable: true,
+    value(this: HTMLDialogElement): void {
+      this.open = false;
+    },
+  });
+});
+
+afterAll(() => {
+  if (originalShowModalDescriptor === undefined) {
+    Reflect.deleteProperty(HTMLDialogElement.prototype, 'showModal');
+  } else {
+    Object.defineProperty(
+      HTMLDialogElement.prototype,
+      'showModal',
+      originalShowModalDescriptor,
+    );
+  }
+  if (originalCloseDescriptor === undefined) {
+    Reflect.deleteProperty(HTMLDialogElement.prototype, 'close');
+  } else {
+    Object.defineProperty(HTMLDialogElement.prototype, 'close', originalCloseDescriptor);
+  }
+});
 
 afterEach(() => {
   for (const editor of editors) {
@@ -76,7 +119,7 @@ function createDeferred<TValue>(): Deferred<TValue> {
 function createInlineEditor(
   options: ConstructorParameters<typeof AltEditorLite<TestRow, InlineValues>>[1] = {
     fields,
-    inline: { enabled: true },
+    editMode: 'inlineDoubleClick',
   },
 ) {
   const fixture = createTestTable();
@@ -96,24 +139,40 @@ function replaceInlineValue(value: string): HTMLInputElement {
 }
 
 describe('AltEditorLite programmatic inline editing', () => {
-  it('stays disabled by default and rejects incomplete refresh ownership', async () => {
+  it('enforces the configured Edit presentation and refresh ownership', async () => {
     const { api } = createTestTable('inline-disabled');
     const disabledEditor = new AltEditorLite<TestRow, InlineValues>(api, { fields });
     editors.add(disabledEditor);
-    expect(disabledEditor.getInlineState()).toEqual({ status: 'disabled' });
-    await expect(disabledEditor.openInlineEdit('#row-a', 0)).rejects.toBeInstanceOf(
-      EditorConfigurationError,
+    expect(() => disabledEditor.getInlineState()).toThrow(
+      'Inline Edit is unavailable in dialog mode.',
+    );
+    await expect(disabledEditor.openInlineEdit('#row-a', 0)).rejects.toThrow(
+      'Inline Edit is unavailable in dialog mode.',
     );
     disabledEditor.destroy();
     editors.delete(disabledEditor);
     api.destroy();
+
+    const inlineFixture = createTestTable('inline-edit-mode');
+    const inlineEditor = new AltEditorLite<TestRow, InlineValues>(inlineFixture.api, {
+      editMode: 'inlineDoubleClick',
+      fields,
+    });
+    editors.add(inlineEditor);
+    await expect(inlineEditor.openEditDialog('#row-a')).rejects.toThrow(
+      'Dialog Edit is unavailable in inlineDoubleClick mode.',
+    );
+    inlineEditor.destroy();
+    editors.delete(inlineEditor);
+    inlineFixture.api.destroy();
 
     const refreshFixture = createTestTable('inline-invalid-refresh');
     expect(
       () =>
         new AltEditorLite<TestRow, InlineValues>(refreshFixture.api, {
           fields,
-          inline: { enabled: true, updateMode: 'refresh' },
+          editMode: 'inlineDoubleClick',
+          inline: { updateMode: 'refresh' },
           operations: {
             update: (_values, original) => original,
           },
@@ -160,6 +219,83 @@ describe('AltEditorLite programmatic inline editing', () => {
     ]);
   });
 
+  it('keeps other editor operations blocked until the inline session ends', async () => {
+    const { editor } = createInlineEditor({
+      clientSide: {
+        createRow: () => ({ id: 'row-c', name: 'Gamma', rank: 3 }),
+      },
+      editMode: 'inlineDoubleClick',
+      fields,
+    });
+    await editor.openInlineEdit('#row-a', 0);
+
+    await expect(editor.openCreateDialog()).rejects.toBeInstanceOf(
+      EditorOperationBusyError,
+    );
+    await expect(editor.openRemoveDialog('#row-b')).rejects.toBeInstanceOf(
+      EditorOperationBusyError,
+    );
+    await expect(editor.refreshTable()).rejects.toBeInstanceOf(EditorOperationBusyError);
+
+    await editor.cancelInlineEdit();
+    await editor.refreshTable();
+  });
+
+  it('defers the latest change callback failure until submission', async () => {
+    const onError = vi.fn();
+    const { api, editor } = createInlineEditor({
+      editMode: 'inlineDoubleClick',
+      fields: [
+        {
+          inlineEdit: true,
+          label: 'Name',
+          name: 'name',
+          onChange: (value) => {
+            if (value === 'Blocked') {
+              throw new AltEditorLiteError({
+                code: 'CHANGE_REJECTED',
+                fieldErrors: { name: 'Choose another name.' },
+                message: 'The change callback rejected this value.',
+                retryable: true,
+              });
+            }
+          },
+          type: 'text',
+        },
+      ],
+      hooks: { onError },
+    });
+    await editor.openInlineEdit('#row-a', 0);
+    replaceInlineValue('Blocked');
+    await vi.waitFor(() => {
+      expect(onError).toHaveBeenCalledOnce();
+    });
+    expect(
+      document.querySelector<HTMLDialogElement>('.dt-alteditor-lite-dialog--alert')?.open,
+    ).toBe(false);
+
+    const blockedSubmission = editor.submitInlineEdit();
+    const blockedExpectation = expect(blockedSubmission).rejects.toMatchObject({
+      code: 'CHANGE_REJECTED',
+    });
+    await vi.waitFor(() => {
+      expect(
+        document.querySelector<HTMLDialogElement>('.dt-alteditor-lite-dialog--alert')
+          ?.open,
+      ).toBe(true);
+    });
+    document
+      .querySelector<HTMLButtonElement>(
+        '.dt-alteditor-lite-dialog--alert .dt-alteditor-lite-dialog__button',
+      )
+      ?.click();
+    await blockedExpectation;
+
+    replaceInlineValue('Allowed');
+    await editor.submitInlineEdit();
+    expect(api.row('#row-a').data().name).toBe('Allowed');
+  });
+
   it('keeps invalid and failed candidates open for correction or retry', async () => {
     let attempt = 0;
     const update = vi.fn(
@@ -187,22 +323,48 @@ describe('AltEditorLite programmatic inline editing', () => {
     );
     const { api, editor } = createInlineEditor({
       fields,
-      inline: { enabled: true },
+      editMode: 'inlineDoubleClick',
       operations: { update },
     });
 
     await editor.openInlineEdit('#row-a', 0);
     replaceInlineValue('');
-    await expect(editor.submitInlineEdit()).rejects.toMatchObject({
+    const invalidSubmission = editor.submitInlineEdit();
+    const invalidExpectation = expect(invalidSubmission).rejects.toMatchObject({
       code: 'VALIDATION',
     });
-    expect(editor.getInlineState().status).toBe('editing');
+    await vi.waitFor(() => {
+      expect(document.querySelector('.dt-alteditor-lite-dialog--alert')).toHaveProperty(
+        'open',
+        true,
+      );
+    });
+    document
+      .querySelector<HTMLButtonElement>(
+        '.dt-alteditor-lite-dialog--alert .dt-alteditor-lite-dialog__button',
+      )
+      ?.click();
+    await invalidExpectation;
+    expect(editor.getInlineState().status).toBe('error');
     expect(update).not.toHaveBeenCalled();
 
     replaceInlineValue('Retried Alpha');
-    await expect(editor.submitInlineEdit()).rejects.toMatchObject({
+    const failedSubmission = editor.submitInlineEdit();
+    const failedExpectation = expect(failedSubmission).rejects.toMatchObject({
       code: 'TEMPORARY',
     });
+    await vi.waitFor(() => {
+      expect(document.querySelector('.dt-alteditor-lite-dialog--alert')).toHaveProperty(
+        'open',
+        true,
+      );
+    });
+    document
+      .querySelector<HTMLButtonElement>(
+        '.dt-alteditor-lite-dialog--alert .dt-alteditor-lite-dialog__button',
+      )
+      ?.click();
+    await failedExpectation;
     expect(editor.getInlineState().status).toBe('error');
     expect(api.row('#row-a').data().name).toBe('Alpha');
     expect(
@@ -230,7 +392,7 @@ describe('AltEditorLite programmatic inline editing', () => {
         beforeSubmit,
         onError,
       },
-      inline: { enabled: true },
+      editMode: 'inlineDoubleClick',
     });
     tableElement.addEventListener('alteditor-lite:error', errorEvent);
 
@@ -258,7 +420,7 @@ describe('AltEditorLite programmatic inline editing', () => {
     const { editor, tableElement } = createInlineEditor({
       fields,
       hooks: { beforeOpen },
-      inline: { enabled: true },
+      editMode: 'inlineDoubleClick',
     });
     const openListener = vi.fn();
     const closeListener = vi.fn();
@@ -296,7 +458,7 @@ describe('AltEditorLite programmatic inline editing', () => {
     const { api, editor, tableElement } = createInlineEditor({
       fields,
       hooks: { onError },
-      inline: { enabled: true },
+      editMode: 'inlineDoubleClick',
     });
     const cell = api.cell('#row-a', 0).node();
     const originalNode = cell.firstChild;
@@ -330,27 +492,58 @@ describe('AltEditorLite programmatic inline editing', () => {
 
 describe('AltEditorLite inline configuration', () => {
   const invalidConfigurations: readonly [string, object, object?][] = [
-    ['non-boolean enabled', { fields, inline: { enabled: 'yes' } }],
-    ['unknown activation', { fields, inline: { activation: 'hover' } }],
-    ['unknown blur action', { fields, inline: { blurAction: 'save' } }],
-    ['unknown Enter action', { fields, inline: { enterAction: 'cancel' } }],
-    ['unknown Tab action', { fields, inline: { tabAction: 'move' } }],
-    ['unknown update mode', { fields, inline: { updateMode: 'cell' } }],
-    ['unsafe class name', { fields, inline: { className: 'valid unsafe!' } }],
-    ['array column map', { fields, inline: { columns: [] } }],
+    ['unknown edit mode', { editMode: 'inlineHover', fields }],
+    ['inline options in dialog mode', { fields, inline: {} }],
+    [
+      'unknown blur action',
+      { editMode: 'inlineDoubleClick', fields, inline: { blurAction: 'save' } },
+    ],
+    [
+      'unknown Enter action',
+      { editMode: 'inlineDoubleClick', fields, inline: { enterAction: 'cancel' } },
+    ],
+    [
+      'unknown Tab action',
+      { editMode: 'inlineDoubleClick', fields, inline: { tabAction: 'move' } },
+    ],
+    [
+      'unknown update mode',
+      { editMode: 'inlineDoubleClick', fields, inline: { updateMode: 'cell' } },
+    ],
+    [
+      'unsafe class name',
+      {
+        editMode: 'inlineDoubleClick',
+        fields,
+        inline: { className: 'valid unsafe!' },
+      },
+    ],
+    [
+      'array column map',
+      { editMode: 'inlineDoubleClick', fields, inline: { columns: [] } },
+    ],
     [
       'unknown column name',
-      { fields, inline: { columns: { missing: 'name' } } },
+      {
+        editMode: 'inlineDoubleClick',
+        fields,
+        inline: { columns: { missing: 'name' } },
+      },
       { columns: namedColumns },
     ],
     [
       'unknown mapped field',
-      { fields, inline: { columns: { displayName: 'missing' } } },
+      {
+        editMode: 'inlineDoubleClick',
+        fields,
+        inline: { columns: { displayName: 'missing' } },
+      },
       { columns: namedColumns },
     ],
     [
       'field without inline eligibility',
       {
+        editMode: 'inlineDoubleClick',
         fields: [{ label: 'Name', name: 'name', type: 'text' }],
         inline: { columns: { displayName: 'name' } },
       },
@@ -359,6 +552,7 @@ describe('AltEditorLite inline configuration', () => {
     [
       'unsupported mapped field',
       {
+        editMode: 'inlineDoubleClick',
         fields: [
           {
             inlineEdit: true,
@@ -372,15 +566,16 @@ describe('AltEditorLite inline configuration', () => {
       { columns: namedColumns },
     ],
     [
-      'enabled mode without an inline field',
+      'inline mode without an inline field',
       {
+        editMode: 'inlineDoubleClick',
         fields: [{ label: 'Name', name: 'name', type: 'text' }],
-        inline: { enabled: true },
       },
     ],
     [
-      'enabled mode with only disabled inline fields',
+      'inline mode with only disabled inline fields',
       {
+        editMode: 'inlineDoubleClick',
         fields: [
           {
             disabled: true,
@@ -390,12 +585,15 @@ describe('AltEditorLite inline configuration', () => {
             type: 'text',
           },
         ],
-        inline: { enabled: true },
       },
     ],
     [
       'duplicate column name',
-      { fields, inline: { columns: { shared: 'name' } } },
+      {
+        editMode: 'inlineDoubleClick',
+        fields,
+        inline: { columns: { shared: 'name' } },
+      },
       {
         columns: [
           { data: 'name', name: 'shared' },
@@ -425,7 +623,7 @@ describe('AltEditorLite inline configuration', () => {
     });
     const editor = new AltEditorLite<TestRow, InlineValues>(api, {
       fields,
-      inline: { enabled: true },
+      editMode: 'inlineDoubleClick',
     });
     editors.add(editor);
 
@@ -440,9 +638,9 @@ describe('AltEditorLite inline configuration', () => {
     });
     const editor = new AltEditorLite<TestRow, InlineValues>(api, {
       fields,
+      editMode: 'inlineDoubleClick',
       inline: {
         columns: { displayName: 'name', rank: false },
-        enabled: true,
       },
     });
     editors.add(editor);
@@ -489,7 +687,7 @@ describe('AltEditorLite inline interaction and redraw behavior', () => {
           type: 'textarea',
         },
       ],
-      inline: { enabled: true },
+      editMode: 'inlineDoubleClick',
     });
     editors.add(editor);
     await editor.openInlineEdit('#row-a', 0);
@@ -528,7 +726,7 @@ describe('AltEditorLite inline interaction and redraw behavior', () => {
           type: 'select',
         },
       ],
-      inline: { enabled: true },
+      editMode: 'inlineDoubleClick',
     });
     editors.add(editor);
     await editor.openInlineEdit('#row-a', 1);
@@ -574,7 +772,8 @@ describe('AltEditorLite inline interaction and redraw behavior', () => {
           },
         },
       ],
-      inline: { blurAction: 'cancel', enabled: true },
+      editMode: 'inlineDoubleClick',
+      inline: { blurAction: 'cancel' },
     });
     editors.add(editor);
     await editor.openInlineEdit('#row-a', 0);
@@ -612,7 +811,7 @@ describe('AltEditorLite inline interaction and redraw behavior', () => {
           type: 'search-select',
         },
       ],
-      inline: { enabled: true },
+      editMode: 'inlineDoubleClick',
     });
     editors.add(editor);
     await editor.openInlineEdit('#row-a', 0);
@@ -655,7 +854,7 @@ describe('AltEditorLite inline interaction and redraw behavior', () => {
     let operationSignal: AbortSignal | undefined;
     const { api, editor, tableElement } = createInlineEditor({
       fields,
-      inline: { enabled: true },
+      editMode: 'inlineDoubleClick',
       operations: {
         update: (_values, _original, context) => {
           operationSignal = context.signal;
@@ -692,7 +891,8 @@ describe('AltEditorLite inline interaction and redraw behavior', () => {
     let updatedName = 'Alpha';
     const editor = new AltEditorLite<TestRow, InlineValues>(api, {
       fields,
-      inline: { enabled: true, updateMode: 'refresh' },
+      editMode: 'inlineDoubleClick',
+      inline: { updateMode: 'refresh' },
       operations: {
         refresh: () => {
           const rows = api

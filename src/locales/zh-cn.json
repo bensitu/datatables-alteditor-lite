@@ -43,10 +43,11 @@
   "inline": {
     "unavailable": "此单元格不可进行行内编辑。",
     "unsupportedField": "此字段不支持行内编辑。",
-    "saving": "正在保存更改。",
-    "targetUnavailable": "正在编辑的单元格已不可用。",
-    "editStarted": "已开始编辑单元格。",
-    "editCancelled": "已取消编辑单元格。"
+    "targetUnavailable": "正在编辑的单元格已不可用。"
+  },
+  "alert": {
+    "validationTitle": "请检查输入值",
+    "operationTitle": "无法完成编辑"
   },
   "errors": {
     "generic": "无法完成操作。",
