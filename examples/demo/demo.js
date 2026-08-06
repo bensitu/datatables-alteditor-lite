@@ -59,8 +59,8 @@ const languageFileByLocale = new Map([
 const fieldConfigurations = [
   { inlineEdit: true, label: 'Name', name: 'name', required: true, type: 'text' },
   {
-    label: 'Email',
     inlineEdit: true,
+    label: 'Email',
     name: 'email',
     required: true,
     type: 'email',
@@ -75,8 +75,8 @@ const fieldConfigurations = [
     type: 'number',
   },
   {
-    label: 'Start date',
     inlineEdit: true,
+    label: 'Start date',
     name: 'startDate',
     required: true,
     type: 'date',
@@ -84,8 +84,8 @@ const fieldConfigurations = [
   { label: 'Notes', name: 'notes', rows: 4, type: 'textarea' },
   { inlineEdit: true, label: 'Active', name: 'active', type: 'checkbox' },
   {
-    label: 'Role',
     inlineEdit: true,
+    label: 'Role',
     name: 'role',
     options: [
       { label: 'Developer', value: 'developer' },
@@ -98,8 +98,8 @@ const fieldConfigurations = [
   {
     allowClear: true,
     debounceMs: 100,
-    label: 'Office',
     inlineEdit: true,
+    label: 'Office',
     name: 'officeId',
     options: offices,
     required: true,
@@ -107,6 +107,65 @@ const fieldConfigurations = [
     type: 'search-select',
   },
   { defaultValue: 'distribution-example', name: 'source', type: 'hidden' },
+];
+const workflowFields = [
+  {
+    inlineEdit: true,
+    label: 'Workflow title',
+    name: 'title',
+    required: true,
+    type: 'text',
+  },
+  {
+    inlineEdit: true,
+    label: 'Priority',
+    name: 'priority',
+    options: workflowPriorities,
+    required: true,
+    type: 'select',
+  },
+  {
+    defaultValue: '',
+    description: 'Optional value collected for the callback but not stored.',
+    label: 'Temporary access code',
+    name: 'accessCode',
+    type: 'password',
+  },
+  {
+    inlineEdit: true,
+    label: 'Support window',
+    name: 'supportWindow',
+    required: true,
+    type: 'time',
+  },
+  {
+    inlineEdit: true,
+    label: 'Review date and time',
+    name: 'reviewAt',
+    required: true,
+    type: 'datetime-local',
+  },
+  {
+    label: 'Preferred contact',
+    name: 'contactMethod',
+    options: [
+      { label: 'Email', value: 'email' },
+      { label: 'Phone', value: 'phone' },
+      { label: 'Video call', value: 'video' },
+    ],
+    required: true,
+    type: 'radio',
+  },
+  {
+    accept: '.pdf,image/*',
+    defaultValue: null,
+    description: 'Maximum file size: 1 MiB.',
+    label: 'Reference file',
+    maxFileBytes: 1048576,
+    name: 'attachment',
+    type: 'file',
+  },
+  { defaultValue: 'workflow-example', name: 'source', type: 'hidden' },
 ];
 const eventNames = [
   'alteditor-lite:open',
@@ -117,15 +176,29 @@ const eventNames = [
   'alteditor-lite:refresh',
   'alteditor-lite:destroy',
 ];
+
 const eventLog = document.querySelector('#event-log');
 const editorState = document.querySelector('#editor-state');
 const failNextButton = document.querySelector('#fail-next');
 const localeSelect = document.querySelector('#locale-select');
 const localeStatus = document.querySelector('#locale-status');
-const employeeTableElement = document.querySelector('#employees');
+const dialogEmployeeTableElement = document.querySelector('#employees');
+const inlineEmployeeTableElement = document.querySelector('#employees-inline');
+const workflowTableElement = document.querySelector('#workflows');
+const workflowInlineStatus = document.querySelector('#workflow-inline-status');
+const workflowModeIndicator = document.querySelector('#workflow-mode-indicator');
+const workflowPriorityButton = document.querySelector('#edit-workflow-priority-inline');
+const workflowSupportButton = document.querySelector('#edit-workflow-support-inline');
+const toggleWorkflowModeButton = document.querySelector('#toggle-workflow-mode');
+
+let currentLanguage;
 let currentLocaleName = 'en';
-let currentEditor;
-let fieldGalleryEditor;
+let dialogEmployeeEditor;
+let inlineEmployeeEditor;
+let workflowEditor;
+let workflowEditMode = 'inlineDoubleClick';
+let isSwitchingWorkflowMode = false;
+let isApplyingRenderedPriority = false;
 let nextRowId = 1000;
 let nextWorkflowId = 2;
 let shouldFailNextOperation = false;
@@ -149,39 +222,98 @@ function renderPriorityControl(priority, type) {
       return `<option value="${escapeHtmlAttribute(value)}"${selected}>${escapeHtmlAttribute(label)}</option>`;
     })
     .join('');
-  return `<select class="demo-rendered-control" aria-label="Rendered priority" disabled>${options}</select>`;
+  return `<select class="demo-rendered-control demo-rendered-priority" data-alteditor-lite-ignore-inline aria-label="Rendered priority">${options}</select>`;
 }
 
 function renderSupportWindowControl(supportWindow, type) {
   if (type !== 'display') {
     return supportWindow;
   }
-  return `<input class="demo-rendered-control" aria-label="Rendered support window" type="time" value="${escapeHtmlAttribute(supportWindow)}" disabled>`;
+  return `<input class="demo-rendered-control" data-alteditor-lite-ignore-inline aria-label="Rendered support window" type="time" value="${escapeHtmlAttribute(supportWindow)}" disabled>`;
 }
 
-const table = new DataTable('#employees', {
-  ajax: {
-    dataSrc: '',
-    url: './data/employees.json',
-  },
+function createEmployeeTable(selector) {
+  return new DataTable(selector, {
+    ajax: {
+      dataSrc: '',
+      url: './data/employees.json',
+    },
+    columns: [
+      { data: 'name', name: 'name' },
+      { data: 'email', name: 'email' },
+      { data: 'age', name: 'age' },
+      { data: 'role', name: 'role' },
+      {
+        data: 'officeId',
+        name: 'officeId',
+        render(officeId) {
+          return offices.find(({ value }) => value === officeId)?.label ?? 'Unknown';
+        },
+      },
+      {
+        data: 'active',
+        name: 'active',
+        render(isActive) {
+          return isActive ? 'Yes' : 'No';
+        },
+      },
+      { data: 'startDate', name: 'startDate' },
+    ],
+    layout: {
+      topStart: {
+        buttons: [
+          'altEditorLiteCreate',
+          'altEditorLiteEdit',
+          'altEditorLiteRemove',
+          'altEditorLiteRefresh',
+        ],
+      },
+    },
+    rowId: (row) => `employee-${String(row.id)}`,
+    select: { style: 'multi' },
+  });
+}
+
+const dialogEmployeeTable = createEmployeeTable('#employees');
+const inlineEmployeeTable = createEmployeeTable('#employees-inline');
+const workflowTable = new DataTable('#workflows', {
   columns: [
-    { data: 'name' },
-    { data: 'email' },
-    { data: 'age' },
-    { data: 'role' },
+    { data: 'title', name: 'title' },
+    { data: 'priority', name: 'priority' },
+    { data: 'contactMethod', name: 'contactMethod' },
+    { data: 'supportWindow', name: 'supportWindow' },
+    { data: 'reviewAt', name: 'reviewAt' },
+    { data: 'attachmentName', name: 'attachmentName' },
+  ],
+  columnDefs: [
     {
-      data: 'officeId',
-      render(officeId) {
-        return offices.find(({ value }) => value === officeId)?.label ?? 'Unknown';
-      },
+      render: renderPriorityControl,
+      targets: 1,
     },
     {
-      data: 'active',
-      render(isActive) {
-        return isActive ? 'Yes' : 'No';
-      },
+      render: renderSupportWindowControl,
+      targets: 3,
     },
-    { data: 'startDate' },
+    {
+      render(value, type) {
+        if (type !== 'display') {
+          return value;
+        }
+        return typeof value === 'string' ? value.replace('T', ' ') : '';
+      },
+      targets: 4,
+    },
+  ],
+  data: [
+    {
+      attachmentName: 'None',
+      contactMethod: 'email',
+      id: 1,
+      priority: 'normal',
+      reviewAt: '2026-08-10T09:30',
+      supportWindow: '10:00',
+      title: 'Accessibility review',
+    },
   ],
   layout: {
     topStart: {
@@ -193,8 +325,8 @@ const table = new DataTable('#employees', {
       ],
     },
   },
-  rowId: (row) => `employee-${String(row.id)}`,
-  select: { style: 'multi' },
+  rowId: (row) => `workflow-${String(row.id)}`,
+  select: { style: 'single' },
 });
 
 function waitForLatency(signal) {
@@ -226,7 +358,7 @@ function throwRequestedFailure() {
   });
 }
 
-function hasDuplicateEmail(email, excludedId) {
+function hasDuplicateEmail(table, email, excludedId) {
   return table
     .rows()
     .data()
@@ -234,8 +366,8 @@ function hasDuplicateEmail(email, excludedId) {
     .some((row) => row.id !== excludedId && row.email === email);
 }
 
-function assertUniqueEmail(email, excludedId) {
-  if (hasDuplicateEmail(email, excludedId)) {
+function assertUniqueEmail(table, email, excludedId) {
+  if (hasDuplicateEmail(table, email, excludedId)) {
     throw new AltEditorLiteError({
       code: 'EMAIL_CONFLICT',
       fieldErrors: { email: 'This email is already registered.' },
@@ -245,16 +377,16 @@ function assertUniqueEmail(email, excludedId) {
   }
 }
 
-function createEditor(language) {
+function createEmployeeEditor(table, editMode, language) {
   return new AltEditorLite(table, {
-    editMode: 'inlineDoubleClick',
+    editMode,
     fields: fieldConfigurations,
     language,
     operations: {
       async create(values, context) {
         await waitForLatency(context.signal);
         throwRequestedFailure();
-        assertUniqueEmail(values.email, undefined);
+        assertUniqueEmail(table, values.email, undefined);
         return {
           active: values.active ?? false,
           age: values.age ?? 18,
@@ -274,7 +406,7 @@ function createEditor(language) {
       async update(values, original, context) {
         await waitForLatency(context.signal);
         throwRequestedFailure();
-        assertUniqueEmail(values.email ?? '', original.id);
+        assertUniqueEmail(table, values.email ?? '', original.id);
         return {
           ...original,
           active: values.active ?? original.active,
@@ -288,6 +420,45 @@ function createEditor(language) {
         };
       },
     },
+  });
+}
+
+const workflowEditorOptions = {
+  clientSide: {
+    createRow(values) {
+      return {
+        attachmentName: values.attachment?.name ?? 'None',
+        contactMethod: values.contactMethod ?? 'email',
+        id: nextWorkflowId++,
+        priority: values.priority ?? 'normal',
+        reviewAt: values.reviewAt ?? '',
+        supportWindow: values.supportWindow ?? '',
+        title: values.title ?? '',
+      };
+    },
+    updateRow(original, values) {
+      return {
+        ...original,
+        attachmentName: values.attachment?.name ?? original.attachmentName,
+        contactMethod: values.contactMethod ?? original.contactMethod,
+        priority: values.priority ?? original.priority,
+        reviewAt: values.reviewAt ?? original.reviewAt,
+        supportWindow: values.supportWindow ?? original.supportWindow,
+        title: values.title ?? original.title,
+      };
+    },
+  },
+  fields: workflowFields,
+};
+
+function createWorkflowEditor(language) {
+  return new AltEditorLite(workflowTable, {
+    ...workflowEditorOptions,
+    editMode: workflowEditMode,
+    language,
+    ...(workflowEditMode === 'inlineDoubleClick'
+      ? { inline: { blurAction: 'none' } }
+      : {}),
   });
 }
 
@@ -306,16 +477,23 @@ async function getOrLoadLanguage(localeName) {
   return registerLocale(await loadEditorLanguage(resourceUrl));
 }
 
-function updateState() {
-  const inlineState = currentEditor.getInlineState();
-  const state = currentEditor.getState();
+function describeEditorState(editor, editMode) {
+  const state = editor.getState();
   const dialogState =
     'action' in state ? `${state.status}:${state.action}` : state.status;
-  editorState.textContent =
-    inlineState.status === 'idle' || inlineState.status === 'disabled'
-      ? dialogState
-      : `${dialogState} · inline:${inlineState.status}`;
-  editorState.dataset.state = inlineState.status === 'error' ? 'error' : state.status;
+  if (editMode === 'dialog') {
+    return dialogState;
+  }
+  const inlineState = editor.getInlineState();
+  return inlineState.status === 'idle' ? dialogState : inlineState.status;
+}
+
+function updateState() {
+  const dialogState = describeEditorState(dialogEmployeeEditor, 'dialog');
+  const inlineState = describeEditorState(inlineEmployeeEditor, 'inlineDoubleClick');
+  editorState.textContent = `dialog:${dialogState} · inline:${inlineState}`;
+  editorState.dataset.state =
+    dialogState === 'error' || inlineState === 'error' ? 'error' : 'ready';
 }
 
 function appendEvent(event) {
@@ -330,8 +508,12 @@ function appendEvent(event) {
   const field =
     typeof detail?.target?.fieldName === 'string' ? `:${detail.target.fieldName}` : '';
   const phase = typeof detail?.phase === 'string' ? `:${detail.phase}` : '';
+  const source =
+    event.currentTarget instanceof HTMLElement
+      ? (event.currentTarget.dataset.demoSource ?? 'editor')
+      : 'editor';
   const item = document.createElement('li');
-  item.textContent = `${new Date().toLocaleTimeString()} ${operation}${mode}${field}${phase} bubbles=${String(event.bubbles)}`;
+  item.textContent = `${new Date().toLocaleTimeString()} ${source} ${operation}${mode}${field}${phase} bubbles=${String(event.bubbles)}`;
   eventLog.prepend(item);
   while (eventLog.children.length > 30) {
     eventLog.lastElementChild?.remove();
@@ -339,16 +521,150 @@ function appendEvent(event) {
   window.setTimeout(updateState, 0);
 }
 
-for (const eventName of eventNames) {
-  employeeTableElement.addEventListener(eventName, appendEvent);
+function registerEventSource(tableElement, sourceName) {
+  tableElement.dataset.demoSource = sourceName;
+  for (const eventName of eventNames) {
+    tableElement.addEventListener(eventName, appendEvent);
+  }
 }
+
+function updateWorkflowModeUi() {
+  const usesInline = workflowEditMode === 'inlineDoubleClick';
+  workflowPriorityButton.disabled = !usesInline || isSwitchingWorkflowMode;
+  workflowSupportButton.disabled = !usesInline || isSwitchingWorkflowMode;
+  toggleWorkflowModeButton.disabled = isSwitchingWorkflowMode;
+  toggleWorkflowModeButton.textContent = usesInline
+    ? 'Switch to Dialog editing'
+    : 'Switch to Inline editing';
+  workflowModeIndicator.textContent = usesInline
+    ? 'Inline double-click mode'
+    : 'Dialog mode';
+  workflowModeIndicator.dataset.mode = usesInline ? 'inline' : 'dialog';
+  if (!isSwitchingWorkflowMode) {
+    workflowInlineStatus.textContent = usesInline
+      ? 'Choose a rendered priority, double-click an eligible cell, or use an Inline action. Select changes commit immediately; Enter or Tab commits other controls.'
+      : 'Choose a rendered priority or select the workflow and use Edit. Both paths open the complete Edit dialog.';
+  }
+}
+
+function recreateEditors(language) {
+  dialogEmployeeEditor?.destroy();
+  inlineEmployeeEditor?.destroy();
+  workflowEditor?.destroy();
+  dialogEmployeeEditor = createEmployeeEditor(dialogEmployeeTable, 'dialog', language);
+  inlineEmployeeEditor = createEmployeeEditor(
+    inlineEmployeeTable,
+    'inlineDoubleClick',
+    language,
+  );
+  workflowEditor = createWorkflowEditor(language);
+  workflowTable.row('#workflow-1').select();
+  updateWorkflowModeUi();
+  updateState();
+}
+
+async function openSelectedWorkflowInline(columnName) {
+  const selectedIndexes = workflowTable.rows({ selected: true }).indexes().toArray();
+  if (selectedIndexes.length !== 1) {
+    workflowInlineStatus.textContent =
+      'Select exactly one workflow before opening Inline Edit.';
+    return;
+  }
+  try {
+    await workflowEditor.openInlineEdit(selectedIndexes[0], `${columnName}:name`);
+    workflowInlineStatus.textContent =
+      columnName === 'priority'
+        ? 'Choose a priority to commit it, or press Escape to cancel.'
+        : 'Edit the support window, then press Enter or Tab to commit, or Escape to cancel.';
+  } catch {
+    workflowInlineStatus.textContent = 'Inline Edit is unavailable for this cell.';
+  }
+}
+
+async function submitWorkflowSelect() {
+  try {
+    await workflowEditor.submitInlineEdit();
+    workflowInlineStatus.textContent = 'The selected priority was committed.';
+  } catch {
+    workflowInlineStatus.textContent =
+      'The priority could not be committed. Correct the value and retry.';
+  }
+}
+
+async function applyRenderedPriority(renderedSelect) {
+  const cellNode = renderedSelect.closest('td');
+  const cellIndex = cellNode === null ? undefined : workflowTable.cell(cellNode).index();
+  const selectedPriority = workflowPriorities.find(
+    ({ value }) => value === renderedSelect.value,
+  );
+  if (cellIndex === undefined || selectedPriority === undefined) {
+    workflowInlineStatus.textContent = 'The selected priority is unavailable.';
+    return;
+  }
+
+  const row = workflowTable.row(cellIndex.row);
+  const originalPriority = row.data().priority;
+  renderedSelect.value = originalPriority;
+  renderedSelect.disabled = true;
+  row.select();
+
+  try {
+    if (workflowEditMode === 'dialog') {
+      await workflowEditor.openEditDialog(cellIndex.row);
+      const priorityField = workflowEditor.getField('priority');
+      if (priorityField === null) {
+        throw new Error('The priority field is unavailable.');
+      }
+      priorityField.setValue(selectedPriority.value);
+      workflowInlineStatus.textContent =
+        'The Edit dialog is open with the selected priority. Submit to commit it.';
+      return;
+    }
+
+    await workflowEditor.openInlineEdit(cellIndex.row, 'priority:name');
+    const activeCell = workflowTable.cell(cellIndex.row, cellIndex.column).node();
+    const inlineSelect = activeCell?.querySelector('.alteditor-lite-inline select');
+    const matchingOption = Array.from(inlineSelect?.options ?? []).find(
+      (option) => option.textContent === selectedPriority.label,
+    );
+    if (
+      inlineSelect === null ||
+      inlineSelect === undefined ||
+      matchingOption === undefined
+    ) {
+      throw new Error('The Inline priority control is unavailable.');
+    }
+    isApplyingRenderedPriority = true;
+    inlineSelect.value = matchingOption.value;
+    inlineSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    isApplyingRenderedPriority = false;
+    await workflowEditor.submitInlineEdit();
+    workflowInlineStatus.textContent = 'The selected priority was committed Inline.';
+  } catch {
+    isApplyingRenderedPriority = false;
+    if (workflowEditMode === 'inlineDoubleClick' && workflowEditor.isInlineEditing()) {
+      await workflowEditor.cancelInlineEdit().catch(() => undefined);
+    }
+    row.invalidate().draw(false);
+    workflowInlineStatus.textContent =
+      'The priority could not be applied. Retry from the current editing mode.';
+  } finally {
+    if (renderedSelect.isConnected) {
+      renderedSelect.disabled = false;
+    }
+  }
+}
+
+registerEventSource(dialogEmployeeTableElement, 'dialog table');
+registerEventSource(inlineEmployeeTableElement, 'inline table');
+registerEventSource(workflowTableElement, 'workflow table');
 
 const englishLanguage = getLocale('en');
 if (englishLanguage === undefined) {
   throw new Error('The built-in English language is unavailable.');
 }
-currentEditor = createEditor(englishLanguage);
-updateState();
+currentLanguage = englishLanguage;
+recreateEditors(currentLanguage);
 document.querySelector('#jquery-status').textContent =
   globalThis.jQuery === undefined ? 'not loaded' : 'unexpectedly present';
 localeStatus.textContent = getRegisteredLocaleNames().join(', ');
@@ -366,12 +682,11 @@ localeSelect.addEventListener('change', () => {
 
   void getOrLoadLanguage(requestedLocaleName)
     .then((language) => {
-      currentEditor.destroy();
-      currentEditor = createEditor(language);
+      currentLanguage = language;
+      recreateEditors(language);
       currentLocaleName = language.locale;
       document.documentElement.lang = language.locale;
       localeStatus.textContent = getRegisteredLocaleNames().join(', ');
-      updateState();
     })
     .catch(() => {
       localeSelect.value = currentLocaleName;
@@ -382,216 +697,68 @@ localeSelect.addEventListener('change', () => {
     });
 });
 
-document.querySelector('#show-field-gallery').addEventListener('click', (event) => {
-  if (fieldGalleryEditor !== undefined) {
+workflowPriorityButton.addEventListener('click', () => {
+  void openSelectedWorkflowInline('priority');
+});
+
+workflowSupportButton.addEventListener('click', () => {
+  void openSelectedWorkflowInline('supportWindow');
+});
+
+workflowTableElement.addEventListener('change', (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLSelectElement)) {
     return;
   }
+  if (target.classList.contains('demo-rendered-priority')) {
+    void applyRenderedPriority(target);
+    return;
+  }
+  if (
+    !isApplyingRenderedPriority &&
+    workflowEditMode === 'inlineDoubleClick' &&
+    target.closest('.alteditor-lite-inline') !== null
+  ) {
+    void submitWorkflowSelect();
+  }
+});
 
-  const fieldGallery = document.querySelector('#field-gallery');
-  fieldGallery.hidden = false;
-  const workflowTable = new DataTable('#workflows', {
-    columns: [
-      { data: 'title', name: 'title' },
-      { data: 'priority', name: 'priority' },
-      { data: 'contactMethod', name: 'contactMethod' },
-      { data: 'supportWindow', name: 'supportWindow' },
-      {
-        data: 'reviewAt',
-        name: 'reviewAt',
-      },
-      { data: 'attachmentName', name: 'attachmentName' },
-    ],
-    columnDefs: [
-      {
-        render: renderPriorityControl,
-        targets: 1,
-      },
-      {
-        render: renderSupportWindowControl,
-        targets: 3,
-      },
-      {
-        render(value, type) {
-          if (type !== 'display') {
-            return value;
-          }
-          return typeof value === 'string' ? value.replace('T', ' ') : '';
-        },
-        targets: 4,
-      },
-    ],
-    data: [
-      {
-        attachmentName: 'None',
-        contactMethod: 'email',
-        id: 1,
-        priority: 'normal',
-        reviewAt: '2026-08-10T09:30',
-        supportWindow: '10:00',
-        title: 'Accessibility review',
-      },
-    ],
-    layout: {
-      topStart: {
-        buttons: [
-          'altEditorLiteCreate',
-          'altEditorLiteEdit',
-          'altEditorLiteRemove',
-          'altEditorLiteRefresh',
-        ],
-      },
-    },
-    rowId: (row) => `workflow-${String(row.id)}`,
-    select: { style: 'single' },
-  });
-  const workflowEditorOptions = {
-    clientSide: {
-      createRow(values) {
-        return {
-          attachmentName: values.attachment?.name ?? 'None',
-          contactMethod: values.contactMethod ?? 'email',
-          id: nextWorkflowId++,
-          priority: values.priority ?? 'normal',
-          reviewAt: values.reviewAt ?? '',
-          supportWindow: values.supportWindow ?? '',
-          title: values.title ?? '',
-        };
-      },
-      updateRow(original, values) {
-        return {
-          ...original,
-          attachmentName: values.attachment?.name ?? original.attachmentName,
-          contactMethod: values.contactMethod ?? original.contactMethod,
-          priority: values.priority ?? original.priority,
-          reviewAt: values.reviewAt ?? original.reviewAt,
-          supportWindow: values.supportWindow ?? original.supportWindow,
-          title: values.title ?? original.title,
-        };
-      },
-    },
-    fields: [
-      {
-        inlineEdit: true,
-        label: 'Workflow title',
-        name: 'title',
-        required: true,
-        type: 'text',
-      },
-      {
-        inlineEdit: true,
-        label: 'Priority',
-        name: 'priority',
-        options: workflowPriorities,
-        required: true,
-        type: 'select',
-      },
-      {
-        defaultValue: '',
-        description: 'Collected for the callback but not stored by this example.',
-        label: 'Temporary access code',
-        name: 'accessCode',
-        required: true,
-        type: 'password',
-      },
-      {
-        inlineEdit: true,
-        label: 'Support window',
-        name: 'supportWindow',
-        required: true,
-        type: 'time',
-      },
-      {
-        inlineEdit: true,
-        label: 'Review date and time',
-        name: 'reviewAt',
-        required: true,
-        type: 'datetime-local',
-      },
-      {
-        label: 'Preferred contact',
-        name: 'contactMethod',
-        options: [
-          { label: 'Email', value: 'email' },
-          { label: 'Phone', value: 'phone' },
-          { label: 'Video call', value: 'video' },
-        ],
-        required: true,
-        type: 'radio',
-      },
-      {
-        accept: '.pdf,image/*',
-        defaultValue: null,
-        description: 'Maximum file size: 1 MiB.',
-        label: 'Reference file',
-        maxFileBytes: 1048576,
-        name: 'attachment',
-        type: 'file',
-      },
-      { defaultValue: 'field-gallery', name: 'source', type: 'hidden' },
-    ],
-  };
-  let workflowEditMode = 'inlineDoubleClick';
-  const createWorkflowEditor = () =>
-    new AltEditorLite(workflowTable, {
-      ...workflowEditorOptions,
-      editMode: workflowEditMode,
-    });
-  fieldGalleryEditor = createWorkflowEditor();
-  workflowTable.row('#workflow-1').select();
+toggleWorkflowModeButton.addEventListener('click', () => {
+  if (isSwitchingWorkflowMode) {
+    return;
+  }
+  isSwitchingWorkflowMode = true;
+  workflowInlineStatus.textContent = 'Switching the workflow editing mode…';
+  updateWorkflowModeUi();
 
-  const workflowInlineStatus = document.querySelector('#workflow-inline-status');
-  async function openSelectedWorkflowInline(columnName) {
-    const selectedIndexes = workflowTable.rows({ selected: true }).indexes().toArray();
-    if (selectedIndexes.length !== 1) {
-      workflowInlineStatus.textContent =
-        'Select exactly one workflow before opening inline editing.';
-      return;
-    }
+  void (async () => {
+    const previousMode = workflowEditMode;
+    let switchSucceeded = false;
     try {
-      await fieldGalleryEditor.openInlineEdit(selectedIndexes[0], `${columnName}:name`);
-      workflowInlineStatus.textContent =
-        'Inline editing replaces the rendered display control and commits through the shared update workflow.';
+      if (workflowEditMode === 'inlineDoubleClick' && workflowEditor.isInlineEditing()) {
+        await workflowEditor.cancelInlineEdit();
+      }
+      workflowEditor.destroy();
+      workflowEditMode =
+        workflowEditMode === 'inlineDoubleClick' ? 'dialog' : 'inlineDoubleClick';
+      try {
+        workflowEditor = createWorkflowEditor(currentLanguage);
+      } catch (error) {
+        workflowEditMode = previousMode;
+        workflowEditor = createWorkflowEditor(currentLanguage);
+        throw error;
+      }
+      workflowTable.row('#workflow-1').select();
+      switchSucceeded = true;
     } catch {
-      workflowInlineStatus.textContent = 'Inline editing is unavailable for this cell.';
+      switchSucceeded = false;
+    } finally {
+      isSwitchingWorkflowMode = false;
+      updateWorkflowModeUi();
+      if (!switchSucceeded) {
+        workflowInlineStatus.textContent =
+          'The editing mode could not be switched. Finish the active operation and retry.';
+      }
     }
-  }
-
-  document
-    .querySelector('#edit-workflow-priority-inline')
-    .addEventListener('click', () => {
-      void openSelectedWorkflowInline('priority');
-    });
-  document
-    .querySelector('#edit-workflow-support-inline')
-    .addEventListener('click', () => {
-      void openSelectedWorkflowInline('supportWindow');
-    });
-  const toggleWorkflowModeButton = document.querySelector('#toggle-workflow-mode');
-  toggleWorkflowModeButton.addEventListener('click', async () => {
-    if (
-      workflowEditMode === 'inlineDoubleClick' &&
-      fieldGalleryEditor.isInlineEditing()
-    ) {
-      await fieldGalleryEditor.cancelInlineEdit();
-    }
-    fieldGalleryEditor.destroy();
-    workflowEditMode =
-      workflowEditMode === 'inlineDoubleClick' ? 'dialog' : 'inlineDoubleClick';
-    fieldGalleryEditor = createWorkflowEditor();
-    workflowTable.row('#workflow-1').select();
-    const usesInline = workflowEditMode === 'inlineDoubleClick';
-    document.querySelector('#edit-workflow-priority-inline').disabled = !usesInline;
-    document.querySelector('#edit-workflow-support-inline').disabled = !usesInline;
-    toggleWorkflowModeButton.textContent = usesInline
-      ? 'Switch to Dialog editing'
-      : 'Switch to Inline editing';
-    workflowInlineStatus.textContent = usesInline
-      ? 'Double-click an eligible cell or use an inline action. The Dialog Edit button is hidden.'
-      : 'Select the workflow and use the Edit button above the table. Inline actions are unavailable.';
-  });
-  if (event.currentTarget instanceof HTMLButtonElement) {
-    event.currentTarget.disabled = true;
-    event.currentTarget.textContent = 'Field type gallery initialized';
-  }
-  fieldGallery.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  })();
 });

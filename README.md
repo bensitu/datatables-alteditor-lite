@@ -264,8 +264,9 @@ dialog closes. Refresh publishes start and complete phases. See
 
 The [live demo](https://bensitu.github.io/datatables-alteditor-lite/examples/demo/)
 uses the Browser Global distribution, the official DataTables CDN, an Ajax JSON
-data source, asynchronous persistence, external languages, and a separate field
-type gallery.
+data source, asynchronous persistence, and external languages. It presents
+separate Dialog and double-click Inline employee tables, followed by a synchronous
+workflow table with rendered controls and a live editing-mode switch.
 
 For a local repository preview:
 

@@ -124,11 +124,11 @@
         <section class="demo-table-panel" aria-labelledby="employees-title">
           <div class="demo-section-heading">
             <div>
-              <p class="demo-eyebrow">Live workbench</p>
+              <p class="demo-eyebrow">Dialog editing</p>
               <h2 id="employees-title">Employee directory</h2>
             </div>
             <p class="demo-section-heading__hint">
-              Double-click an editable cell, or select rows for dialog actions.
+              Select one row and use Edit for a complete form in a native dialog.
             </p>
           </div>
           <div class="demo-table-scroll">
@@ -153,8 +153,8 @@
             <p class="demo-eyebrow">Interactive options</p>
             <h2 id="demo-controls-title">Example controls</h2>
             <p>
-              Change language, force a persistence failure, or open a second workflow that
-              demonstrates the remaining native field types.
+              Change the editor language or force the next persistence request to fail
+              across the employee examples.
             </p>
           </div>
 
@@ -170,9 +170,6 @@
           <div class="demo-control-actions">
             <button id="fail-next" class="demo-danger-button" type="button">
               Fail the next persistence request
-            </button>
-            <button id="show-field-gallery" type="button">
-              Explore editing modes and field types
             </button>
           </div>
 
@@ -195,6 +192,34 @@
         </aside>
       </div>
 
+      <section class="demo-table-panel" aria-labelledby="inline-employees-title">
+        <div class="demo-section-heading">
+          <div>
+            <p class="demo-eyebrow">Double-click inline editing</p>
+            <h2 id="inline-employees-title">Inline employee directory</h2>
+          </div>
+          <p class="demo-section-heading__hint">
+            Double-click an eligible cell. Create and Remove remain dialog actions, while
+            the Dialog Edit button is not shown.
+          </p>
+        </div>
+        <div class="demo-table-scroll">
+          <table id="employees-inline">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Age</th>
+                <th>Role</th>
+                <th>Office</th>
+                <th>Active</th>
+                <th>Start date</th>
+              </tr>
+            </thead>
+          </table>
+        </div>
+      </section>
+
       <section class="demo-events" aria-labelledby="event-log-title">
         <div class="demo-section-heading">
           <div>
@@ -208,16 +233,23 @@
         <ol id="event-log" aria-live="polite"></ol>
       </section>
 
-      <section id="field-gallery" class="demo-table-panel" hidden>
+      <section
+        id="workflow-example"
+        class="demo-table-panel"
+        aria-labelledby="workflow-example-title"
+      >
         <div class="demo-section-heading">
           <div>
-            <p class="demo-eyebrow">Field type gallery</p>
-            <h2>Synchronous workflow editor</h2>
+            <p class="demo-eyebrow">Rendered controls and field types</p>
+            <h2 id="workflow-example-title">Synchronous workflow editor</h2>
+            <span id="workflow-mode-indicator" class="demo-mode-indicator">
+              Inline double-click mode
+            </span>
           </div>
           <p class="demo-section-heading__hint">
-            The table renders a display-only select and time input through
-            <code>columnDefs</code>. Switch editing modes to compare the compact inline
-            control with the complete Edit dialog.
+            The table renders a selectable priority and a time input through
+            <code>columnDefs</code>. Switch modes to compare compact Inline Edit with the
+            complete Edit dialog.
           </p>
         </div>
         <div class="demo-table-scroll">
@@ -234,20 +266,24 @@
             </thead>
           </table>
         </div>
-        <div class="demo-control-actions demo-workflow-actions">
+        <div class="demo-workflow-actions">
           <button id="edit-workflow-priority-inline" type="button">
-            Edit selected priority inline
+            Edit priority inline
           </button>
           <button id="edit-workflow-support-inline" type="button">
-            Edit selected support window inline
+            Edit support window inline
           </button>
-          <button id="toggle-workflow-mode" type="button">
+          <button
+            id="toggle-workflow-mode"
+            class="demo-workflow-actions__mode"
+            type="button"
+          >
             Switch to Dialog editing
           </button>
         </div>
         <p id="workflow-inline-status" class="demo-workflow-status" role="status">
-          The first workflow is selected. Double-click an eligible cell or use an inline
-          action. The Dialog Edit button is hidden in this mode.
+          The first workflow is selected. Choose a rendered priority, double-click an
+          eligible cell, or use an Inline action.
         </p>
       </section>
     </main>

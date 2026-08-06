@@ -5,33 +5,55 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.2.0] - 2026-08-04
+## [0.2.0] - 2026-08-07
 
 ### Added
 
-- Optional safe single-cell inline editing with exact public DataTables target
-  resolution, explicit field eligibility, keyboard operation, validation,
-  cancellation, retry, and accessible status feedback.
-- Shared lifecycle hooks for open, submit, successful commit, and normalized error
-  observation across dialog, inline, and programmatic operations.
-- Public inline state and control methods, operation modes and targets, localized
-  inline messages, integration guidance, migration notes, and a live example.
+- Mutually exclusive `dialog` and `inlineDoubleClick` Edit presentations, with
+  Dialog Edit remaining the default.
+- Single-cell Inline Edit with exact public DataTables target resolution, explicit
+  field eligibility, keyboard navigation, validation, cancellation, and retry.
+- Public Inline state and control methods, operation modes and targets, shared
+  lifecycle hooks, and plain-text modal feedback for Inline failures.
+- A live demonstration with separate Dialog and Inline employee tables plus an
+  always-visible synchronous workflow table.
 
 ### Changed
 
-- Unified dialog and inline Edit through the same non-optimistic persistence,
+- Unified Dialog and Inline Edit through the same non-optimistic persistence,
   target revalidation, row commit, draw ownership, event ordering, and error
   normalization path.
-- Added `mode` and optional `target` context to operation callbacks and existing
-  lifecycle events without adding a separate inline event family.
+- Made editor buttons capability-aware: Dialog Edit is hidden in Inline mode, and
+  all visible actions are disabled while an Inline session owns the table.
+- Added `mode` and optional `target` information to operation callbacks and the
+  existing lifecycle events without adding a separate Inline event family.
+- Separated Inline activation, session, presentation, content ownership, and focus
+  state responsibilities while retaining the public Inline API and CSS names.
+- Removed the former Inline enablement and activation options. `editMode` now
+  selects the complete Edit presentation, and an `inline` object is accepted only
+  with `inlineDoubleClick`.
+
+### Fixed
+
+- Preserved or discarded rendered cell content safely across Inline completion,
+  cancellation, redraw, destruction, and stale-target failures.
+- Prevented active Inline sessions from being implicitly cancelled by Create,
+  Remove, or Refresh; conflicting actions remain blocked until explicit submit or
+  cancellation.
+- Kept only the latest asynchronous field-change result and prevented stale
+  failures or alert focus transfers from submitting or closing the current cell.
+- Kept Inline inputs compact with one cell-level focus outline, a `1rem` checkbox,
+  no nested text-control border, and a compact control height in the supplied
+  stylesheet.
+- Made the workflow example's rendered Priority selectable in both editing modes
+  and synchronized the mode switch with editor and button state.
 
 ### Compatibility
 
-- Inline editing is disabled by default and does not change existing dialog
-  behavior until explicitly configured.
+- Existing configurations that omit `editMode` continue to use Dialog Edit.
 - Buttons and Select remain supported. KeyTable receives post-draw focus when its
   public API is available. Responsive child cells, FixedColumns clone cells, and
-  active ColReorder mutations are not inline edit targets.
+  active ColReorder mutations are not Inline Edit targets.
 
 ## [0.1.1] - 2026-08-03
 

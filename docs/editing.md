@@ -240,9 +240,21 @@ editing contract:
 - Changing a rendered control directly does not update row data unless the
   application separately implements that behavior through DataTables public APIs.
 
+Rendered controls can be application-owned editing shortcuts. Resolve their cell
+with the public DataTables API, then route the requested value through
+`openInlineEdit()` in Inline mode or `openEditDialog()` and `getField()` in Dialog
+mode. Keep the canonical row unchanged until the selected editor workflow commits.
+The live demo includes this pattern for a rendered Priority select.
+
 Render functions should return the underlying data for sorting, filtering, and
 type detection, and return HTML only for the `display` type. Treat row values as
 untrusted and escape them before placing them in HTML attributes or text.
+
+The supplied stylesheet keeps Inline controls compact: the editing cell owns one
+focus outline, text-like controls use a `2rem` control height without an inner
+border, and Inline checkboxes use a `1rem` control. This prevents normal rows
+from growing solely because a cell entered Inline Edit. Applications overriding
+these rules should preserve a visible focus indicator and the table's row rhythm.
 
 ## Redraw, cancellation, and destroy
 

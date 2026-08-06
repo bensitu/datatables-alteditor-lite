@@ -448,7 +448,31 @@ main > * {
 }
 
 .demo-workflow-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.625rem;
   margin-block-start: 1rem;
+}
+
+.demo-mode-indicator {
+  display: inline-flex;
+  min-height: 1.75rem;
+  padding: 0.35rem 0.6rem;
+  margin-block-start: 0.75rem;
+  color: var(--demo-accent-strong);
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  background: var(--demo-accent-soft);
+  border: 1px solid color-mix(in srgb, var(--demo-accent) 35%, var(--demo-border));
+  border-radius: 999px;
+  align-items: center;
+}
+
+.demo-mode-indicator[data-mode='dialog'] {
+  color: var(--demo-success);
+  background: color-mix(in srgb, var(--demo-success) 10%, var(--demo-card));
+  border-color: color-mix(in srgb, var(--demo-success) 35%, var(--demo-border));
 }
 
 .demo-workflow-status {
@@ -471,6 +495,10 @@ main > * {
   opacity: 1;
 }
 
+select.demo-rendered-control:not(:disabled) {
+  cursor: pointer;
+}
+
 .demo-runtime-error {
   padding: 0.75rem;
   margin: 0;
@@ -482,7 +510,7 @@ main > * {
   border-radius: 0.5rem;
 }
 
-#field-gallery {
+#workflow-example {
   scroll-margin-block-start: 1rem;
 }
 
@@ -511,6 +539,31 @@ main > * {
   background: var(--demo-card-subtle);
   border: 1px solid var(--demo-border);
   border-radius: 0.55rem;
+}
+
+.demo-workflow-actions button {
+  display: inline-flex;
+  min-width: 0;
+  min-height: 2.65rem;
+  padding: 0.65rem 0.875rem;
+  color: var(--demo-text);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 750;
+  line-height: 1.35;
+  text-align: center;
+  cursor: pointer;
+  background: var(--demo-card-subtle);
+  border: 1px solid var(--demo-border);
+  border-radius: 0.55rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.demo-workflow-actions .demo-workflow-actions__mode {
+  color: #fff;
+  background: var(--demo-code);
+  border-color: var(--demo-code);
 }
 
 .demo-controls button {
@@ -551,6 +604,11 @@ main > * {
   opacity: 0.52;
 }
 
+.demo-workflow-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
 .demo-controls button:focus-visible,
 .demo-controls select:focus-visible,
 .dt-buttons button:focus-visible {
@@ -558,8 +616,17 @@ main > * {
   outline-offset: 2px;
 }
 
+.demo-workflow-actions button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--demo-accent) 70%, white);
+  outline-offset: 2px;
+}
+
 .demo-controls button:hover:not(:disabled),
 .dt-buttons button:hover:not(:disabled) {
+  border-color: var(--demo-accent);
+}
+
+.demo-workflow-actions button:hover:not(:disabled) {
   border-color: var(--demo-accent);
 }
 
@@ -822,6 +889,10 @@ tbody tr.selected:hover {
   }
 
   .demo-control-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .demo-workflow-actions {
     grid-template-columns: 1fr;
   }
 

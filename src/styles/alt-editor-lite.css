@@ -197,18 +197,21 @@
 }
 
 .alteditor-lite-cell--editing {
+  padding-block: 0;
+  padding-inline: 0;
   outline: 2px solid var(--dt-alteditor-lite-focus-color);
   outline-offset: -2px;
 }
 
 .alteditor-lite-inline {
   box-sizing: border-box;
-  display: grid;
-  gap: 0.375rem;
+  display: flex;
+  min-height: 2rem;
   width: 100%;
-  min-width: 8rem;
+  min-width: 0;
   color: var(--dt-alteditor-lite-text-color);
   color-scheme: light dark;
+  align-items: center;
 }
 
 .alteditor-lite-inline__control,
@@ -224,18 +227,16 @@
 }
 
 .alteditor-lite-inline--invalid {
-  outline: 2px solid var(--dt-alteditor-lite-error-color);
-  outline-offset: 1px;
+  outline: 0;
 }
 
-.alteditor-lite-inline :focus-visible {
-  outline: 3px solid var(--dt-alteditor-lite-focus-color);
-  outline-offset: 2px;
+.alteditor-lite-cell--editing:has(.alteditor-lite-inline--invalid) {
+  outline-color: var(--dt-alteditor-lite-error-color);
 }
 
 @media (forced-colors: active) {
   .alteditor-lite-cell--editing,
-  .alteditor-lite-inline--invalid {
+  .alteditor-lite-cell--editing:has(.alteditor-lite-inline--invalid) {
     outline-color: Highlight;
   }
 }
@@ -365,6 +366,36 @@ textarea.dt-alteditor-lite-field__control {
 .dt-alteditor-lite-search-select__clear:focus-visible {
   outline: 3px solid var(--dt-alteditor-lite-focus-color);
   outline-offset: 2px;
+}
+
+.alteditor-lite-inline .dt-alteditor-lite-field__control:not([type='checkbox']) {
+  height: 2rem;
+  min-height: 2rem;
+  padding: 0.05rem 0.15rem;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.alteditor-lite-inline .dt-alteditor-lite-checkbox {
+  width: 100%;
+  min-height: 2rem;
+  padding-inline: 0.5rem;
+}
+
+.alteditor-lite-inline .dt-alteditor-lite-checkbox > .dt-alteditor-lite-field__control {
+  width: 1rem;
+  height: 1rem;
+}
+
+.alteditor-lite-inline .dt-alteditor-lite-search-select__clear {
+  inset-block-start: 0.125rem;
+}
+
+.alteditor-lite-inline .dt-alteditor-lite-field__control:focus-visible,
+.alteditor-lite-inline .dt-alteditor-lite-search-select__clear:focus-visible {
+  outline: 0;
+  box-shadow: none;
 }
 
 .dt-alteditor-lite-dialog[aria-busy='true'] .dt-alteditor-lite-dialog__button:disabled {

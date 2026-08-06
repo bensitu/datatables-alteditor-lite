@@ -11,10 +11,11 @@ Before the first deployment, select **GitHub Actions** as the repository's Pages
 source. The workflow then builds and uploads the site artifact on pushes to `main`
 or a manual workflow run.
 
-The main DataTable loads `data/employees.json` through the public Ajax option. Its
-editor demonstrates asynchronous operations and failures. The field type gallery
-uses a separate DataTable and synchronous client-side mappings for password, time,
-datetime-local, radio, file, and hidden controls.
+Two employee DataTables load `data/employees.json` through the public Ajax option.
+The first uses Dialog Edit and the second uses double-click Inline Edit; both
+demonstrate asynchronous operations and failures. A third, always-visible workflow
+table uses synchronous client-side mappings, rendered Priority and time controls,
+mode switching, and the remaining native field types.
 
 For an optional local preview from the repository root:
 

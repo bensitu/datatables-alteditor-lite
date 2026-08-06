@@ -36,3 +36,16 @@ The provided stylesheet includes visible focus, light and dark color schemes,
 reduced-motion behavior, a 320 px layout, and high-zoom wrapping. Applications
 must preserve the supplied labels and maintain sufficient contrast when
 overriding CSS variables.
+
+## Inline focus and controls
+
+Inline Edit mounts one native control in the owned cell. Its label remains
+available to assistive technology while visual error text is presented through a
+plain-text modal alert. The editing cell supplies the visible focus outline, so
+the nested control does not create several competing focus rings. Checkbox and
+text-like controls use compact dimensions that retain the surrounding row height.
+
+Focus moving to an Inline-owned SearchSelect popup or an error alert does not
+trigger the configured blur action. After an alert closes, focus returns to the
+current Inline control when it is still available; otherwise it falls back to the
+logical cell or table.

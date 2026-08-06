@@ -136,6 +136,12 @@ Call `openInlineEdit(rowSelector, columnSelector)` from an application control
 when a cell is occupied by a display control. See [Editing](editing.md) for the
 complete rendered-control contract and safe renderer guidance.
 
+An application may also treat a rendered control as an editing shortcut. Handle
+its change event, resolve the owning cell through the public DataTables API, and
+route the requested value through the editor presentation selected for that table.
+The live demo uses Inline Edit in `inlineDoubleClick` mode and opens the Edit dialog
+in `dialog` mode; the renderer itself never becomes the canonical data source.
+
 Inline validation, change-callback, persistence, commit, and target errors use a
 plain-text modal alert. The current candidate remains in the cell. Closing the
 alert restores the current input when possible and allows correction or retry;

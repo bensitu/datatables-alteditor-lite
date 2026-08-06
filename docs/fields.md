@@ -2,8 +2,9 @@
 
 Every field supports the optional `inlineEdit` eligibility flag. It defaults to
 `false`. Text, email, number, date, time, datetime-local, checkbox, select,
-textarea, and SearchSelect fields can participate when the editor is enabled and
-the field is editable, enabled, visible, writable, and mapped to a column.
+textarea, and SearchSelect fields can participate when the editor uses
+`inlineDoubleClick` and the field is editable, enabled, visible, writable, and
+mapped to a column.
 Password, radio, file, and hidden fields remain dialog-only. See
 [Editing](editing.md).
 
