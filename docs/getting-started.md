@@ -110,10 +110,19 @@ Persistence contexts identify the initiating `mode` as `dialog`, `inline`, or
 same mode and target information. Policies that must decline opening or submission
 belong in `beforeOpen` and `beforeSubmit`; DOM events remain observation-only.
 
-Inline editing requires `inlineEdit: true` on eligible fields and
-`inline: { enabled: true }` in editor options. It does not introduce a separate
-field list, cell-specific persistence callback, optimistic row mutation, jQuery
-API, or private DataTables setting.
+Inline editing requires `editMode: 'inlineDoubleClick'` and `inlineEdit: true` on
+at least one eligible field. The optional `inline` object adjusts blur, keyboard,
+column mapping, commit, and styling behavior; it does not enable the mode. Inline
+editing does not introduce a separate field list, cell-specific persistence
+callback, optimistic row mutation, jQuery API, or private DataTables setting.
+
+An editor uses either Dialog Edit or Inline Edit. The default `dialog` mode makes
+`openEditDialog()` available and rejects Inline methods. The
+`inlineDoubleClick` mode makes Inline methods and double-click activation
+available, hides the Dialog Edit button, and rejects `openEditDialog()`. Create,
+Remove, and Refresh retain their normal capabilities in both modes. While an
+Inline session is active, other editor operations remain blocked until the
+session is submitted or cancelled.
 
 ## Rendered DataTables columns
 
@@ -126,6 +135,11 @@ Rendered interactive descendants do not trigger automatic inline activation.
 Call `openInlineEdit(rowSelector, columnSelector)` from an application control
 when a cell is occupied by a display control. See [Editing](editing.md) for the
 complete rendered-control contract and safe renderer guidance.
+
+Inline validation, change-callback, persistence, commit, and target errors use a
+plain-text modal alert. The current candidate remains in the cell. Closing the
+alert restores the current input when possible and allows correction or retry;
+it does not close the Inline session or publish an additional close event.
 
 ## Supported environments
 

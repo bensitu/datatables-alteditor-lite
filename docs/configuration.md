@@ -53,10 +53,15 @@ exist.
 English strings. Applications can define it inline or await `loadEditorLanguage`
 for an external JSON resource before constructing the editor.
 
-`inline` configures optional single-cell editing. It supports `enabled`,
-`activation`, `blurAction`, `enterAction`, `tabAction`, exact named-column
-`columns` mappings, `updateMode`, and a safe additional `className`. See
-[Editing](editing.md).
+`editMode` selects the Edit presentation. It accepts `dialog` (the default) or
+`inlineDoubleClick`. Dialog mode enables `openEditDialog()` and does not accept
+an `inline` object. Inline mode enables double-click and programmatic single-cell
+editing while making Dialog Edit unavailable.
+
+`inline` configures behavior for `inlineDoubleClick`. It supports `blurAction`,
+`enterAction`, `tabAction`, exact named-column `columns` mappings, `updateMode`,
+and a safe additional `className`. It is optional in Inline mode and rejected in
+Dialog mode. See [Editing](editing.md).
 
 `hooks` configures `beforeOpen`, `beforeSubmit`, `afterSuccess`, and `onError`.
 See [Lifecycle hooks](hooks.md).
@@ -78,7 +83,7 @@ rows locally after confirmation.
 Refresh uses `operations.refresh` when configured. Otherwise, it uses the public
 `ajax.reload` API for Ajax tables and `draw(false)` for local tables.
 
-Inline Edit uses the same Update resolution as dialog Edit. Refresh commit mode
+Inline Edit uses the same Update resolution as Dialog Edit. Refresh commit mode
 requires both `operations.update` and `operations.refresh`.
 
 ## Optional extensions
@@ -99,3 +104,9 @@ Without Select, Create and Refresh buttons still work. Edit and Remove buttons a
 disabled with `aria-disabled` and a descriptive title. The instance APIs continue
 to support explicit DataTables row selectors. Button labels and descriptive titles
 come from the owning editor's resolved `language` object.
+
+The Edit button is visible only in Dialog mode. In Inline mode its registered
+global definition remains available to other tables, but the instance-specific
+button is hidden, disabled, removed from keyboard navigation, and marked
+`aria-hidden`. All visible buttons remain disabled while Inline editing owns the
+table; they do not cancel the active cell.

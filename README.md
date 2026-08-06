@@ -137,12 +137,13 @@ the same table element.
 
 ## Editing modes
 
-Dialog editing is available by default for complete forms. Single-cell inline
-editing is optional and disabled by default. Enable the field and editor, then use
-double click or the public API:
+Dialog Edit is available by default for complete forms. Each editor selects one
+Edit presentation through `editMode`. Choose `inlineDoubleClick`, mark at least
+one eligible field, then use double click or the public API:
 
 ```ts
 const editor = new AltEditorLite<UserRow, UserForm>(table, {
+  editMode: 'inlineDoubleClick',
   fields: [
     {
       inlineEdit: true,
@@ -153,7 +154,6 @@ const editor = new AltEditorLite<UserRow, UserForm>(table, {
     },
   ],
   inline: {
-    enabled: true,
     columns: {
       displayName: 'profile.name',
       actions: false,
@@ -165,9 +165,10 @@ await editor.openInlineEdit('#user-42', 'displayName:name');
 ```
 
 Enter submits, Escape cancels, and Tab submits before moving to the next eligible
-visible cell on the current page. Updates are non-optimistic and reuse the dialog
-Edit persistence transaction. See [Editing](docs/editing.md) and [Lifecycle
-hooks](docs/hooks.md).
+visible cell on the current page. Dialog Edit is unavailable in this mode; Create,
+Remove, and Refresh retain their normal capabilities. Updates are non-optimistic
+and reuse the shared Edit persistence transaction. See
+[Editing](docs/editing.md) and [Lifecycle hooks](docs/hooks.md).
 
 ## Persistence operations
 

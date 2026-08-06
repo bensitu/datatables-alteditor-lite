@@ -1,13 +1,23 @@
 # Editing
 
-AltEditorLite provides dialog workflows for complete forms and optional inline
-editing for one cell at a time. Both presentations use the same non-optimistic
-update transaction and are mutually exclusive on a table.
+AltEditorLite provides complete-form Dialog editing and compact editing for one
+cell at a time. Set one `editMode` for each editor instance. Both presentations
+use the same non-optimistic update transaction and are mutually exclusive with
+other operations on the owned table.
+
+| `editMode`          | Dialog Edit | Double-click Inline Edit |
+| ------------------- | ----------- | ------------------------ |
+| `dialog` (default)  | Available   | Unavailable              |
+| `inlineDoubleClick` | Unavailable | Available                |
+
+Create, Remove, and Refresh remain available in both modes when their normal
+requirements are met. `inlineHover` and other mode names are not accepted.
 
 ## Dialog editing
 
-Dialog Create, Edit, and Remove are available through the public methods or the
-optional DataTables Buttons integration:
+Dialog Create and Remove are available in either mode. Dialog Edit requires
+`editMode: 'dialog'`. These workflows are available through the public methods or
+the optional DataTables Buttons integration:
 
 ```ts
 await editor.openCreateDialog();
@@ -34,10 +44,12 @@ connected logical target.
 
 ## Inline editing
 
-Inline editing is disabled by default. A field and the editor must both opt in:
+Inline editing requires `editMode: 'inlineDoubleClick'` and at least one eligible
+field with `inlineEdit: true`:
 
 ```ts
 const editor = new AltEditorLite<UserRow, UserValues>(table, {
+  editMode: 'inlineDoubleClick',
   fields: [
     {
       inlineEdit: true,
@@ -47,11 +59,12 @@ const editor = new AltEditorLite<UserRow, UserValues>(table, {
       type: 'text',
     },
   ],
-  inline: {
-    enabled: true,
-  },
 });
 ```
+
+The `inline` object is optional and configures behavior only. Supplying it in
+Dialog mode is a configuration error. A field may keep `inlineEdit: true` in
+Dialog mode; the flag is ignored until an Inline editor is constructed.
 
 An eligible field must also be editable, enabled, visible, writable, supported by
 inline editing, and mapped to an available visible column.
@@ -79,6 +92,7 @@ const table = new DataTable<UserRow>('#users', {
 });
 
 const editor = new AltEditorLite(table, {
+  editMode: 'inlineDoubleClick',
   fields,
   inline: {
     columns: {
@@ -86,7 +100,6 @@ const editor = new AltEditorLite(table, {
       displayName: 'profile.name',
       rank: 'rank',
     },
-    enabled: true,
   },
 });
 ```
@@ -97,8 +110,8 @@ paths, render results, and function data sources are never used to infer a field
 
 ### Activation and public methods
 
-Double-click activation is the default. Use `activation: 'click'` for single
-click, or `activation: 'none'` for API-only activation.
+Double-click is the only automatic activation gesture. A single click never
+starts editing. Programmatic activation bypasses the gesture strategy:
 
 ```ts
 await editor.openInlineEdit('#user-42', 'displayName:name');
@@ -142,8 +155,15 @@ cell is unavailable, focus falls back to the table.
 
 `blurAction` defaults to `submit`. It also accepts `cancel` and `none`. Focus
 moving within an inline-owned SearchSelect or its popup does not trigger the blur
-action. A validation failure keeps the candidate open, displays the field error,
-and restores control focus.
+action. Validation and operation failures retain the candidate, mark the compact
+view invalid, and open a plain-text modal alert. Closing the alert restores focus
+to the current control when it is still mounted, so the value can be corrected
+and retried. Alert focus transfer never triggers a blur submission.
+
+An `onChange` failure is retained only for the input revision that produced it.
+It is reported through the normal error channels without opening an alert
+immediately. Submission checks the latest retained failure after field
+validation; a newer input clears a stale failure.
 
 ### Values and validation
 
@@ -158,8 +178,9 @@ Validation order is:
 2. native constraint validation;
 3. the field's custom validator;
 4. local uniqueness among currently loaded rows;
-5. `beforeSubmit`;
-6. submit event and persistence.
+5. the latest retained `onChange` result;
+6. `beforeSubmit`;
+7. submit event and persistence.
 
 An unchanged normalized value closes with reason `unchanged` and does not
 validate, publish submit or success, or call persistence.
@@ -185,7 +206,6 @@ The default `updateMode: 'replace-row'` replaces the row and waits for an owned
 
 ```ts
 inline: {
-  enabled: true,
   updateMode: 'refresh',
 },
 operations: {
@@ -238,8 +258,10 @@ possible; and prevents late DOM, DataTables, focus, or event work.
 ## DataTables extension boundaries
 
 - Buttons and Select are supported through their existing optional integrations.
-  Buttons are disabled during an inline session, and the session does not clear
-  selection.
+  Dialog Edit is hidden in Inline mode. All visible editor buttons are disabled
+  during an active inline session, and the session does not clear selection.
+  Clicking another editor action does not cancel Inline editing; submit or cancel
+  the current cell before starting another operation.
 - KeyTable has basic coexistence. Consumed control keys stop before KeyTable
   handles them, and post-commit focus uses a public cell focus method when
   available. Typing-to-edit and `keys.editor` integration are not provided.

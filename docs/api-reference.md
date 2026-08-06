@@ -34,6 +34,12 @@ Methods that cannot run in the current state reject or throw a typed
 `AltEditorLiteError`. `destroy()` is idempotent; other instance methods are not
 available after destruction.
 
+`openEditDialog()` rejects with `EditorConfigurationError` in
+`inlineDoubleClick` mode. Inline methods reject in `dialog` mode, while the
+synchronous Inline state getters throw the same error immediately. Active Inline
+editing blocks Create, Remove, Refresh, and other mutually exclusive operations
+with `EditorOperationBusyError` until the cell is submitted or cancelled.
+
 The registered DataTables method retrieves an existing editor and never creates
 one:
 
@@ -46,19 +52,21 @@ const editor = table.altEditorLite<TFormValues>();
 
 `AltEditorLiteOptions<TRow, TFormValues>` contains:
 
-| Property         | Type                                      | Description                                                 |
-| ---------------- | ----------------------------------------- | ----------------------------------------------------------- |
-| `fields`         | `readonly FieldConfig<TFormValues>[]`     | Ordered Create and Edit field definitions.                  |
-| `operations`     | `EditorOperations<TRow, TFormValues>`     | Optional synchronous or asynchronous editor operations.     |
-| `clientSide`     | `ClientSideOperations<TRow, TFormValues>` | Optional synchronous row mappings.                          |
-| `closeOnSuccess` | `boolean`                                 | Whether successful dialog Create and Edit close.            |
-| `language`       | `PartialEditorLanguage`                   | Complete language data or overrides merged with English.    |
-| `inline`         | `InlineEditorOptions<TRow, TFormValues>`  | Optional single-cell editing behavior; disabled by default. |
-| `hooks`          | `EditorHooks<TRow, TFormValues>`          | Optional lifecycle observation and veto callbacks.          |
+| Property         | Type                                      | Description                                              |
+| ---------------- | ----------------------------------------- | -------------------------------------------------------- |
+| `fields`         | `readonly FieldConfig<TFormValues>[]`     | Ordered Create and Edit field definitions.               |
+| `editMode`       | `EditMode`                                | `dialog` (default) or `inlineDoubleClick`.               |
+| `operations`     | `EditorOperations<TRow, TFormValues>`     | Optional synchronous or asynchronous editor operations.  |
+| `clientSide`     | `ClientSideOperations<TRow, TFormValues>` | Optional synchronous row mappings.                       |
+| `closeOnSuccess` | `boolean`                                 | Whether successful dialog Create and Edit close.         |
+| `language`       | `PartialEditorLanguage`                   | Complete language data or overrides merged with English. |
+| `inline`         | `InlineEditorOptions<TRow, TFormValues>`  | Behavior used only with `inlineDoubleClick`.             |
+| `hooks`          | `EditorHooks<TRow, TFormValues>`          | Optional lifecycle observation and veto callbacks.       |
 
-Inline options include `enabled`, `activation`, `blurAction`, `enterAction`,
-`tabAction`, exact named-column `columns` mappings, `updateMode`, and a scoped
-`className`. See [Editing](editing.md) for supported field types,
+Inline options include `blurAction`, `enterAction`, `tabAction`, exact
+named-column `columns` mappings, `updateMode`, and a scoped `className`. The
+object is optional in Inline mode and invalid in Dialog mode. See
+[Editing](editing.md) for supported field types,
 selector requirements, and extension boundaries. Lifecycle hooks are described
 in [Lifecycle hooks](hooks.md).
 

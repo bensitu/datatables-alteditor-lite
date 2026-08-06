@@ -216,8 +216,8 @@
           </div>
           <p class="demo-section-heading__hint">
             The table renders a display-only select and time input through
-            <code>columnDefs</code>. Select one row, then compare inline controls with the
-            complete Edit dialog.
+            <code>columnDefs</code>. Switch editing modes to compare the compact inline
+            control with the complete Edit dialog.
           </p>
         </div>
         <div class="demo-table-scroll">
@@ -241,10 +241,13 @@
           <button id="edit-workflow-support-inline" type="button">
             Edit selected support window inline
           </button>
+          <button id="toggle-workflow-mode" type="button">
+            Switch to Dialog editing
+          </button>
         </div>
         <p id="workflow-inline-status" class="demo-workflow-status" role="status">
-          The first workflow is selected. Use an inline button or the Edit dialog button
-          above the table.
+          The first workflow is selected. Double-click an eligible cell or use an inline
+          action. The Dialog Edit button is hidden in this mode.
         </p>
       </section>
     </main>

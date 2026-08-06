@@ -247,8 +247,8 @@ function assertUniqueEmail(email, excludedId) {
 
 function createEditor(language) {
   return new AltEditorLite(table, {
+    editMode: 'inlineDoubleClick',
     fields: fieldConfigurations,
-    inline: { enabled: true },
     language,
     operations: {
       async create(values, context) {
@@ -444,7 +444,7 @@ document.querySelector('#show-field-gallery').addEventListener('click', (event) 
     rowId: (row) => `workflow-${String(row.id)}`,
     select: { style: 'single' },
   });
-  fieldGalleryEditor = new AltEditorLite(workflowTable, {
+  const workflowEditorOptions = {
     clientSide: {
       createRow(values) {
         return {
@@ -529,8 +529,14 @@ document.querySelector('#show-field-gallery').addEventListener('click', (event) 
       },
       { defaultValue: 'field-gallery', name: 'source', type: 'hidden' },
     ],
-    inline: { enabled: true },
-  });
+  };
+  let workflowEditMode = 'inlineDoubleClick';
+  const createWorkflowEditor = () =>
+    new AltEditorLite(workflowTable, {
+      ...workflowEditorOptions,
+      editMode: workflowEditMode,
+    });
+  fieldGalleryEditor = createWorkflowEditor();
   workflowTable.row('#workflow-1').select();
 
   const workflowInlineStatus = document.querySelector('#workflow-inline-status');
@@ -560,6 +566,29 @@ document.querySelector('#show-field-gallery').addEventListener('click', (event) 
     .addEventListener('click', () => {
       void openSelectedWorkflowInline('supportWindow');
     });
+  const toggleWorkflowModeButton = document.querySelector('#toggle-workflow-mode');
+  toggleWorkflowModeButton.addEventListener('click', async () => {
+    if (
+      workflowEditMode === 'inlineDoubleClick' &&
+      fieldGalleryEditor.isInlineEditing()
+    ) {
+      await fieldGalleryEditor.cancelInlineEdit();
+    }
+    fieldGalleryEditor.destroy();
+    workflowEditMode =
+      workflowEditMode === 'inlineDoubleClick' ? 'dialog' : 'inlineDoubleClick';
+    fieldGalleryEditor = createWorkflowEditor();
+    workflowTable.row('#workflow-1').select();
+    const usesInline = workflowEditMode === 'inlineDoubleClick';
+    document.querySelector('#edit-workflow-priority-inline').disabled = !usesInline;
+    document.querySelector('#edit-workflow-support-inline').disabled = !usesInline;
+    toggleWorkflowModeButton.textContent = usesInline
+      ? 'Switch to Dialog editing'
+      : 'Switch to Inline editing';
+    workflowInlineStatus.textContent = usesInline
+      ? 'Double-click an eligible cell or use an inline action. The Dialog Edit button is hidden.'
+      : 'Select the workflow and use the Edit button above the table. Inline actions are unavailable.';
+  });
   if (event.currentTarget instanceof HTMLButtonElement) {
     event.currentTarget.disabled = true;
     event.currentTarget.textContent = 'Field type gallery initialized';
