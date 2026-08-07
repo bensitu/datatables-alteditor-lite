@@ -8,6 +8,7 @@ import DataTable from 'datatables.net';
 import 'datatables.net-buttons';
 import 'datatables.net-select';
 import 'datatables-alteditor-lite';
+import 'datatables-alteditor-lite/style.css';
 
 const table = new DataTable('#users', {
   layout: {

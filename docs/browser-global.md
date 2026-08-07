@@ -1,24 +1,109 @@
 # Browser Global
 
-The browser-global object exports the same editing methods, lifecycle behavior,
-and locale resources as the ESM entry. Inline editing does not require jQuery or
-a UI framework.
+The Browser Global distribution exposes the same editing methods, lifecycle
+behavior, and language APIs as the ESM entry. It does not require jQuery or a UI
+framework.
 
-Load DataTables first, optional extensions second, the AltEditorLite browser
-bundle third, and any included language registration bundles last. No script
-requires jQuery.
+## Quick start
+
+This example loads DataTables from its CDN and loads both AltEditorLite assets
+from jsDelivr:
 
 ```html
-<link rel="stylesheet" href="alt-editor-lite.css" />
-<script src="dataTables.js"></script>
-<script src="dataTables.buttons.js"></script>
-<script src="dataTables.select.js"></script>
-<script src="datatables-alteditor-lite.js"></script>
-<script src="locales/datatables-alteditor-lite.ja.js"></script>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>AltEditorLite quick start</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.datatables.net/v/dt/dt-3.0.1/datatables.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/alt-editor-lite.min.css"
+    />
+  </head>
+  <body>
+    <button id="create-user" type="button">Create user</button>
+    <table id="users">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+        </tr>
+      </thead>
+    </table>
+
+    <script src="https://cdn.datatables.net/v/dt/dt-3.0.1/datatables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/datatables-alteditor-lite.min.js"></script>
+    <script>
+      const table = new DataTable('#users', {
+        columns: [{ data: 'name' }, { data: 'email' }],
+        data: [],
+        rowId: 'id',
+      });
+
+      const editor = new DataTablesAltEditorLite.AltEditorLite(table, {
+        clientSide: {
+          createRow(values) {
+            return {
+              id: crypto.randomUUID(),
+              name: values.name ?? '',
+              email: values.email ?? '',
+            };
+          },
+        },
+        fields: [
+          { label: 'Name', name: 'name', required: true, type: 'text' },
+          { label: 'Email', name: 'email', required: true, type: 'email' },
+        ],
+      });
+
+      document.querySelector('#create-user').addEventListener('click', () => {
+        void editor.openCreateDialog();
+      });
+    </script>
+  </body>
+</html>
 ```
 
-The constructor, language loader, and language registry are on
-`globalThis.DataTablesAltEditorLite`:
+The unversioned jsDelivr URLs follow the latest package. Pin the same
+`datatables-alteditor-lite` version in both URLs for production. Select a
+compatible DataTables build through the
+[DataTables download builder](https://datatables.net/download/) when Buttons,
+Select, or another extension is needed.
+
+## Load order and published files
+
+Load DataTables first, optional DataTables extensions second, the AltEditorLite
+browser bundle third, and any included language registration bundles last. The
+stylesheet may load in the document head, but it must be present before an editor
+is shown.
+
+The npm package publishes these Browser Global files under `dist/`:
+
+- `alt-editor-lite.css` and `alt-editor-lite.min.css`;
+- `datatables-alteditor-lite.js` and `datatables-alteditor-lite.min.js`;
+- JSON, ESM, and Browser Global language resources under `dist/locales/`.
+
+For self-hosting, copy the required `dist/` files and use equivalent local URLs:
+
+```html
+<link rel="stylesheet" href="/vendor/alt-editor-lite.min.css" />
+<script src="/vendor/datatables-alteditor-lite.min.js"></script>
+```
+
+The constructor, language loader, and language registry are available through
+`globalThis.DataTablesAltEditorLite`.
+
+## Languages
+
+Included language registration bundles must load after the main browser bundle:
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/locales/datatables-alteditor-lite.ja.min.js"></script>
+```
 
 ```js
 const language = DataTablesAltEditorLite.getLocale('ja');
@@ -28,25 +113,18 @@ const editor = new DataTablesAltEditorLite.AltEditorLite(table, {
 });
 ```
 
-Available locale artifacts use `en`, `ja`, `zh-cn`, and `es` filenames, with
-minified and unminified source-mapped variants. They are generated from the JSON
-resources in `src/locales/`.
-
-CDN users can load a custom JSON resource without changing the library:
+Available locale filenames use `en`, `ja`, `zh-cn`, and `es`. A custom partial
+JSON resource can be loaded without changing the library:
 
 ```js
 const language = await DataTablesAltEditorLite.loadEditorLanguage(
   './languages/fr-FR.json',
 );
-const editor = new DataTablesAltEditorLite.AltEditorLite(table, {
-  fields,
-  language,
-});
 ```
 
 Evaluating the main bundle before DataTables throws a load-order error. Evaluating
 an included language registration bundle before the main bundle also throws.
 These diagnostics prevent silent partial initialization.
 
-The repository demonstration loads the main bundle and JSON languages from built
+The repository demonstration uses the same Browser Global API with built
 distribution files. GitHub Pages builds those files before deployment.

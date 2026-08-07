@@ -36,6 +36,8 @@ jQuery or UI-framework runtime dependency.
 
 ## Installation
 
+### Npm
+
 Install the core packages:
 
 ```bash
@@ -51,6 +53,24 @@ npm install datatables.net-buttons datatables.net-select
 
 The package peer ranges accept compatible DataTables 3, Buttons 4, and Select 4
 releases rather than one fixed patch version.
+
+### CDN
+
+For direct browser use, load DataTables first and include both AltEditorLite
+distribution files:
+
+```html
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/alt-editor-lite.min.css"
+/>
+<script src="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/datatables-alteditor-lite.min.js"></script>
+```
+
+The unversioned URLs follow the latest published package. Pin the same package
+version in both URLs for production, for example by inserting `@<version>` after
+the package name. The script exposes `globalThis.DataTablesAltEditorLite`; it does
+not bundle DataTables.
 
 ## Quick start
 
@@ -224,21 +244,26 @@ Browser Global registry.
 
 ## Browser Global usage
 
-Load DataTables and optional extensions first, followed by AltEditorLite:
+Include the AltEditorLite stylesheet, then load DataTables and optional extension
+scripts before the AltEditorLite browser bundle:
 
 ```html
-<link rel="stylesheet" href="alt-editor-lite.css" />
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/alt-editor-lite.min.css"
+/>
 <script src="dataTables.js"></script>
 <script src="dataTables.buttons.js"></script>
 <script src="dataTables.select.js"></script>
-<script src="datatables-alteditor-lite.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/datatables-alteditor-lite.min.js"></script>
 ```
 
 The public API is available at `globalThis.DataTablesAltEditorLite`. Included
 language registration bundles load after the main bundle; external JSON languages
 use `DataTablesAltEditorLite.loadEditorLanguage(...)`.
 
-See [Browser Global](docs/browser-global.md) for load order and published paths.
+See [Browser Global](docs/browser-global.md) for a complete CDN quick start, load
+order, self-hosted paths, and language resources.
 
 ## Events
 

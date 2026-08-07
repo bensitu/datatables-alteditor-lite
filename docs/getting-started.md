@@ -174,6 +174,7 @@ ranges. Development uses compatible releases resolved by the lockfile without
 requiring one exact patch version at runtime.
 
 See [Editing](editing.md), [API reference](api-reference.md), [Fields](fields.md),
-[Operations](operations.md), [Localization](localization.md), and [Browser
-Global](browser-global.md). A working Browser Global configuration is available
-in the [live demo](https://bensitu.github.io/datatables-alteditor-lite/examples/demo/).
+[Operations](operations.md), and [Localization](localization.md). The [Browser
+Global guide](browser-global.md) includes a complete jsDelivr quick start, while
+the [live demo](https://bensitu.github.io/datatables-alteditor-lite/examples/demo/)
+shows both editing presentations and rendered-control integration.

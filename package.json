@@ -32,6 +32,7 @@
   "types": "./dist/index.d.ts",
   "unpkg": "./dist/datatables-alteditor-lite.min.js",
   "jsdelivr": "./dist/datatables-alteditor-lite.min.js",
+  "style": "./dist/alt-editor-lite.min.css",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",

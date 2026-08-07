@@ -41,8 +41,9 @@ repository-wide thresholds defined in `vitest.config.ts`.
 
 Keep `dist/index.js` as readable, non-minified ESM with a source map. Browser
 Global and language bundles provide readable and `.min.js` variants with source
-maps. Copy JSON language resources unchanged so they can be loaded directly by
-browsers and applications.
+maps. The supplied stylesheet provides readable `.css` and minified `.min.css`
+variants. Copy JSON language resources unchanged so they can be loaded directly
+by browsers and applications.
 
 ## Commits and pull requests
 

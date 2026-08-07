@@ -107,7 +107,7 @@ used by the main bundle in production:
 
 ```js
 const language = await DataTablesAltEditorLite.loadEditorLanguage(
-  'https://cdn.jsdelivr.net/npm/datatables-alteditor-lite@<version>/locales/ja.json',
+  'https://cdn.jsdelivr.net/npm/datatables-alteditor-lite@<version>/dist/locales/ja.json',
 );
 ```
 

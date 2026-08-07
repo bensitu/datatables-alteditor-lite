@@ -15,8 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   field eligibility, keyboard navigation, validation, cancellation, and retry.
 - Public Inline state and control methods, operation modes and targets, shared
   lifecycle hooks, and plain-text modal feedback for Inline failures.
-- A live demonstration with separate Dialog and Inline employee tables plus an
-  always-visible synchronous workflow table.
+- jsDelivr installation guidance and a complete Browser Global quick start that
+  loads both the JavaScript and stylesheet distributions.
 
 ### Changed
 
@@ -32,8 +32,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed the former Inline enablement and activation options. `editMode` now
   selects the complete Edit presentation, and an `inline` object is accepted only
   with `inlineDoubleClick`.
-- Balanced the Dialog and Inline employee examples with matching table workspaces
-  and a compact Inline interaction reference.
+- Declared the minified stylesheet through package metadata so CDN package pages
+  can present JavaScript and CSS as the default browser assets.
 
 ### Fixed
 
@@ -47,11 +47,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Kept Inline inputs compact with one cell-level focus outline, a `1rem` checkbox,
   no nested text-control border, and a compact control height in the supplied
   stylesheet.
-- Increased Dialog label-to-control spacing so focus outlines remain distinct,
-  while keeping checkbox padding and Inline row height compact.
-- Made the workflow example's rendered Priority and Support window controls
-  editable in both editing modes and synchronized the mode switch with editor and
-  button state.
 
 ### Compatibility
 
