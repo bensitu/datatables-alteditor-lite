@@ -15,8 +15,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   field eligibility, keyboard navigation, validation, cancellation, and retry.
 - Public Inline state and control methods, operation modes and targets, shared
   lifecycle hooks, and plain-text modal feedback for Inline failures.
-- jsDelivr installation guidance and a complete Browser Global quick start that
-  loads both the JavaScript and stylesheet distributions.
 
 ### Changed
 
@@ -32,8 +30,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed the former Inline enablement and activation options. `editMode` now
   selects the complete Edit presentation, and an `inline` object is accepted only
   with `inlineDoubleClick`.
-- Declared the minified stylesheet through package metadata so CDN package pages
-  can present JavaScript and CSS as the default browser assets.
 
 ### Fixed
 

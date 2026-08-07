@@ -2,7 +2,7 @@
 
 [![npm](https://img.shields.io/npm/l/datatables-alteditor-lite.svg)](https://github.com/bensitu/datatables-alteditor-lite)
 [![npm](https://img.shields.io/npm/v/datatables-alteditor-lite.svg)](https://www.npmjs.com/package/datatables-alteditor-lite)
-[![](https://data.jsdelivr.com/v1/package/npm/datatables-alteditor-lite/badge)](https://www.jsdelivr.com/package/npm/datatables-alteditor-lite)
+[![jsdelivr](https://data.jsdelivr.com/v1/package/npm/datatables-alteditor-lite/badge)](https://www.jsdelivr.com/package/npm/datatables-alteditor-lite)
 
 `datatables-alteditor-lite` is an independent, lightweight editing extension for
 DataTables 3. It provides Create, Edit, Remove, and Refresh workflows using
@@ -14,6 +14,8 @@ jQuery or UI-framework runtime dependency.
 [Configuration](docs/configuration.md) · [Fields](docs/fields.md) ·
 [Operations](docs/operations.md) · [API reference](docs/api-reference.md) ·
 [Localization](docs/localization.md)
+
+[![datatables-alteditor-lite](examples/images/datatables-alteditor-lite.svg)](https://bensitu.github.io/datatables-alteditor-lite/examples/demo/)
 
 ## Highlights
 

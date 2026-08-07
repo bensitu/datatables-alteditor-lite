@@ -1,0 +1,265 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">datatables-alteditor-lite showcase</title>
+  <desc id="desc">A static product showcase featuring DataTables CRUD buttons, a selected row, inline editing, and an edit dialog.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f6faf8"/>
+      <stop offset="1" stop-color="#eef4f1"/>
+    </linearGradient>
+    <linearGradient id="heroGlow" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#15251f"/>
+      <stop offset="1" stop-color="#1f332b"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="160%">
+      <feDropShadow dx="0" dy="18" stdDeviation="24" flood-color="#12221c" flood-opacity="0.14"/>
+    </filter>
+    <filter id="dialogShadow" x="-30%" y="-30%" width="160%" height="180%">
+      <feDropShadow dx="0" dy="22" stdDeviation="28" flood-color="#0a1611" flood-opacity="0.22"/>
+    </filter>
+    <pattern id="dots" width="28" height="28" patternUnits="userSpaceOnUse">
+      <circle cx="1.5" cy="1.5" r="1.5" fill="#bbcbc4" opacity="0.28"/>
+    </pattern>
+    <style>
+      .ui { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; }
+      .mono { font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace; }
+      .muted { fill: #617169; }
+      .soft { fill: #8a9891; }
+      .dark { fill: #15251f; }
+      .accent { fill: #12a96f; }
+      .white { fill: #ffffff; }
+      .thead { fill: #68766f; font-size: 14px; font-weight: 750; letter-spacing: 1.1px; }
+      .cell { fill: #28352f; font-size: 17px; font-weight: 520; }
+      .small { font-size: 13px; }
+    </style>
+  </defs>
+
+  <!-- background -->
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <rect width="1600" height="900" fill="url(#dots)"/>
+  <circle cx="1480" cy="86" r="280" fill="#c6f4de" opacity="0.35"/>
+  <circle cx="72" cy="850" r="220" fill="#d8e7e0" opacity="0.65"/>
+
+  <!-- header -->
+  <g class="ui">
+    <g transform="translate(92,62)">
+      <rect width="58" height="58" rx="16" fill="url(#heroGlow)"/>
+      <text x="29" y="37" text-anchor="middle" fill="#dff9ec" font-size="18" font-weight="800" letter-spacing="1.2">AEL</text>
+      <text x="78" y="25" class="dark" font-size="30" font-weight="780">datatables-alteditor-lite</text>
+      <text x="78" y="50" class="muted" font-size="15.5" font-weight="560">Browser-native editing workflows for DataTables 3</text>
+    </g>
+
+    <g transform="translate(1138,68)">
+      <rect x="0" y="0" width="110" height="34" rx="17" fill="#ffffff" stroke="#d6e1dc"/>
+      <circle cx="19" cy="17" r="5" fill="#12a96f"/>
+      <text x="33" y="22" class="dark" font-size="13" font-weight="700">TypeScript</text>
+      <rect x="122" y="0" width="106" height="34" rx="17" fill="#ffffff" stroke="#d6e1dc"/>
+      <text x="175" y="22" text-anchor="middle" class="dark" font-size="13" font-weight="700"><tspan fill="green">0</tspan> jQuery</text>
+      <rect x="240" y="0" width="120" height="34" rx="17" fill="#ffffff" stroke="#d6e1dc"/>
+      <text x="300" y="22" text-anchor="middle" class="dark" font-size="13" font-weight="700">MIT</text>
+    </g>
+  </g>
+
+  <!-- main product window -->
+  <g filter="url(#shadow)">
+    <rect x="78" y="150" width="1444" height="638" rx="28" fill="#ffffff"/>
+  </g>
+
+  <!-- browser title bar -->
+  <g class="ui">
+    <rect x="78" y="150" width="1444" height="56" rx="28" fill="#f9fbfa"/>
+    <rect x="78" y="182" width="1444" height="24" fill="#f9fbfa"/>
+    <circle cx="112" cy="178" r="6" fill="#d5dfda"/>
+    <circle cx="132" cy="178" r="6" fill="#d5dfda"/>
+    <circle cx="152" cy="178" r="6" fill="#d5dfda"/>
+    <rect x="608" y="165" width="384" height="27" rx="13.5" fill="#edf3f0"/>
+    <text x="800" y="183" text-anchor="middle" fill="#809089" font-size="12" font-weight="620">employee-directory · altEditorLite</text>
+  </g>
+
+  <!-- toolbar -->
+  <g class="ui">
+    <g transform="translate(110,232)">
+      <rect width="104" height="48" rx="12" fill="#15251f"/>
+      <text x="52" y="30" text-anchor="middle" fill="#ffffff" font-size="16" font-weight="760">+ Create</text>
+
+      <rect x="116" width="92" height="48" rx="12" fill="#ffffff" stroke="#cdd9d3"/>
+      <text x="162" y="30" text-anchor="middle" fill="#35443d" font-size="16" font-weight="720">Edit</text>
+
+      <rect x="220" width="108" height="48" rx="12" fill="#ffffff" stroke="#cdd9d3"/>
+      <text x="274" y="30" text-anchor="middle" fill="#35443d" font-size="16" font-weight="720">Remove</text>
+
+      <rect x="340" width="110" height="48" rx="12" fill="#eff7f3" stroke="#c9ded4"/>
+      <text x="395" y="30" text-anchor="middle" fill="#176c4d" font-size="16" font-weight="720">Refresh</text>
+    </g>
+
+    <!-- search -->
+    <text x="1196" y="262" class="muted" font-size="14" font-weight="660">Search</text>
+    <rect x="1261" y="234" width="226" height="44" rx="11" fill="#fbfcfc" stroke="#ccd7d2"/>
+    <circle cx="1283" cy="256" r="7.5" fill="none" stroke="#73827b" stroke-width="2"/>
+    <line x1="1288" y1="261" x2="1295" y2="268" stroke="#73827b" stroke-width="2" stroke-linecap="round"/>
+    <text x="1307" y="262" fill="#9ba7a1" font-size="14">type to filter…</text>
+  </g>
+
+  <!-- table header -->
+  <g class="ui">
+    <line x1="110" y1="314" x2="1490" y2="314" stroke="#dde6e2"/>
+    <text x="126" y="345" class="thead">NAME</text>
+    <text x="360" y="345" class="thead">EMAIL</text>
+    <text x="657" y="345" class="thead">AGE</text>
+    <text x="742" y="345" class="thead">ROLE</text>
+    <text x="941" y="345" class="thead">OFFICE</text>
+    <text x="1125" y="345" class="thead">ACTIVE</text>
+    <text x="1294" y="345" class="thead">START DATE</text>
+
+    <!-- sort hints -->
+    <path d="M319 337 l6 -8 l6 8 z" fill="#74827b"/>
+    <path d="M319 350 l6 8 l6 -8 z" fill="#d3dbd7"/>
+    <path d="M618 337 l6 -8 l6 8 z" fill="#d3dbd7"/>
+    <path d="M618 350 l6 8 l6 -8 z" fill="#d3dbd7"/>
+    <path d="M899 337 l6 -8 l6 8 z" fill="#d3dbd7"/>
+    <path d="M899 350 l6 8 l6 -8 z" fill="#d3dbd7"/>
+  </g>
+
+  <!-- rows -->
+  <g class="ui">
+    <!-- row 1 -->
+    <rect x="98" y="365" width="1404" height="64" rx="12" fill="#ffffff"/>
+    <text x="126" y="404" class="cell">Aiko Tanaka</text>
+    <text x="360" y="404" class="cell">aiko@example.test</text>
+    <text x="667" y="404" class="cell">34</text>
+    <rect x="742" y="384" width="88" height="30" rx="15" fill="#ecf3f0"/>
+    <text x="786" y="404" text-anchor="middle" fill="#405049" font-size="13" font-weight="680">designer</text>
+    <text x="941" y="404" class="cell">Tokyo</text>
+    <rect x="1120" y="384" width="62" height="30" rx="15" fill="#e7f8ef"/>
+    <circle cx="1135" cy="399" r="5" fill="#12a96f"/>
+    <text x="1150" y="404" fill="#1e664b" font-size="13" font-weight="720">Yes</text>
+    <text x="1294" y="404" class="cell">2022-04-01</text>
+    <line x1="110" y1="429" x2="1490" y2="429" stroke="#edf1ef"/>
+
+    <!-- row 2 selected -->
+    <rect x="98" y="430" width="1404" height="68" rx="12" fill="#ecfaf3"/>
+    <rect x="98" y="439" width="4" height="50" rx="2" fill="#12a96f"/>
+    <circle cx="118" cy="464" r="9" fill="#12a96f"/>
+    <path d="M113.5 464.5 l3 3 l6 -7" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="142" y="471" class="cell" font-weight="680">Lucas Martín</text>
+    <text x="360" y="471" class="cell">lucas@example.test</text>
+    <text x="667" y="471" class="cell">41</text>
+    <rect x="742" y="450" width="86" height="30" rx="15" fill="#dff4e8"/>
+    <text x="785" y="470" text-anchor="middle" fill="#176c4d" font-size="13" font-weight="720">manager</text>
+    <text x="941" y="471" class="cell">Madrid</text>
+    <rect x="1120" y="450" width="62" height="30" rx="15" fill="#dff4e8"/>
+    <circle cx="1135" cy="465" r="5" fill="#12a96f"/>
+    <text x="1150" y="470" fill="#176c4d" font-size="13" font-weight="720">Yes</text>
+    <text x="1294" y="471" class="cell">2020-09-14</text>
+    <line x1="110" y1="498" x2="1490" y2="498" stroke="#edf1ef"/>
+
+    <!-- row 3 with inline editor -->
+    <rect x="98" y="499" width="1404" height="76" rx="12" fill="#ffffff"/>
+    <text x="126" y="544" class="cell">Mei Chen</text>
+    <text x="360" y="544" class="cell">mei@example.test</text>
+    <text x="667" y="544" class="cell">29</text>
+    <rect x="728" y="514" width="166" height="44" rx="10" fill="#ffffff" stroke="#12a96f" stroke-width="2"/>
+    <text x="744" y="542" fill="#20312a" font-size="15" font-weight="640">developer</text>
+    <path d="M873 533 l5 5 l5 -5" fill="none" stroke="#547068" stroke-width="1.8" stroke-linecap="round"/>
+    <text x="941" y="544" class="cell">New York</text>
+    <rect x="1120" y="523" width="49" height="30" rx="15" fill="#f1f3f2"/>
+    <circle cx="1135" cy="538" r="5" fill="#a6b1ac"/>
+    <text x="1150" y="543" fill="#68766f" font-size="13" font-weight="720">No</text>
+    <text x="1294" y="544" class="cell">2024-01-08</text>
+    <line x1="110" y1="575" x2="1490" y2="575" stroke="#edf1ef"/>
+
+    <!-- row 4 -->
+    <rect x="98" y="576" width="1404" height="64" rx="12" fill="#ffffff"/>
+    <text x="126" y="615" class="cell">John Doe</text>
+    <text x="360" y="615" class="cell">john@example.test</text>
+    <text x="667" y="615" class="cell">30</text>
+    <rect x="742" y="595" width="96" height="30" rx="15" fill="#ecf3f0"/>
+    <text x="790" y="615" text-anchor="middle" fill="#405049" font-size="13" font-weight="680">developer</text>
+    <text x="941" y="615" class="cell">Beijing</text>
+    <rect x="1120" y="595" width="55" height="30" rx="15" fill="#e7f8ef"/>
+    <circle cx="1135" cy="610" r="5" fill="#12a96f"/>
+    <text x="1150" y="615" fill="#1e664b" font-size="13" font-weight="720">Yes</text>
+    <text x="1294" y="615" class="cell">2024-01-09</text>
+    <line x1="110" y1="640" x2="1490" y2="640" stroke="#edf1ef"/>
+  </g>
+
+  <!-- footer controls within table -->
+  <g class="ui">
+    <text x="112" y="700" class="muted" font-size="15" font-weight="600">Showing 1 to 4 of 5 entries</text>
+    <g transform="translate(1242,672)">
+      <rect x="0" y="0" width="34" height="34" rx="10" fill="#f5f7f6"/>
+      <text x="17" y="22" text-anchor="middle" fill="#7c8a83" font-size="16">‹</text>
+      <rect x="44" y="0" width="38" height="34" rx="10" fill="#15251f"/>
+      <text x="63" y="22" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="760">1</text>
+      <rect x="92" y="0" width="34" height="34" rx="10" fill="#f5f7f6"/>
+      <text x="109" y="22" text-anchor="middle" fill="#7c8a83" font-size="16">›</text>
+    </g>
+  </g>
+
+  <!-- floating native dialog -->
+  <g class="ui" filter="url(#dialogShadow)">
+    <rect x="958" y="438" width="468" height="310" rx="22" fill="#ffffff" stroke="#dce5e1"/>
+    <rect x="958" y="438" width="468" height="58" rx="22" fill="#15251f"/>
+    <rect x="958" y="474" width="468" height="22" fill="#15251f"/>
+    <text x="988" y="475" fill="#ffffff" font-size="19" font-weight="760">Edit employee</text>
+    <text x="1389" y="475" text-anchor="middle" fill="#bcd2c8" font-size="20">×</text>
+
+    <text x="990" y="529" fill="#405049" font-size="12" font-weight="760" letter-spacing="0.8">NAME</text>
+    <rect x="990" y="541" width="191" height="42" rx="9" fill="#fbfcfc" stroke="#ccd8d2"/>
+    <text x="1004" y="568" fill="#25352e" font-size="14.5" font-weight="600">Lucas Martín</text>
+
+    <text x="1204" y="529" fill="#405049" font-size="12" font-weight="760" letter-spacing="0.8">ROLE</text>
+    <rect x="1204" y="541" width="190" height="42" rx="9" fill="#fbfcfc" stroke="#ccd8d2"/>
+    <text x="1218" y="568" fill="#25352e" font-size="14.5" font-weight="600">manager</text>
+    <path d="M1371 558 l5 5 l5 -5" fill="none" stroke="#617169" stroke-width="1.8" stroke-linecap="round"/>
+
+    <text x="990" y="615" fill="#405049" font-size="12" font-weight="760" letter-spacing="0.8">EMAIL</text>
+    <rect x="990" y="627" width="275" height="42" rx="9" fill="#fbfcfc" stroke="#ccd8d2"/>
+    <text x="1004" y="654" fill="#25352e" font-size="14.5" font-weight="600">lucas@example.test</text>
+
+    <text x="1288" y="615" fill="#405049" font-size="12" font-weight="760" letter-spacing="0.8">ACTIVE</text>
+    <rect x="1288" y="632" width="72" height="32" rx="16" fill="#12a96f"/>
+    <circle cx="1344" cy="648" r="12" fill="#ffffff"/>
+
+    <line x1="990" y1="690" x2="1394" y2="690" stroke="#e8eeeb"/>
+    <text x="990" y="719" fill="#7b8a83" font-size="12.5">Native &lt;dialog&gt; · validation · focus</text>
+    <rect x="1234" y="704" width="72" height="34" rx="9" fill="#ffffff" stroke="#cbd8d2"/>
+    <text x="1270" y="726" text-anchor="middle" fill="#415048" font-size="13" font-weight="720">Cancel</text>
+    <rect x="1318" y="704" width="76" height="34" rx="9" fill="#12a96f"/>
+    <text x="1356" y="726" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="760">Save</text>
+  </g>
+
+  <!-- lower feature strip -->
+  <g class="ui" transform="translate(102,812)">
+    <text x="0" y="23" fill="#496058" font-size="13" font-weight="760" letter-spacing="0.8">BUILT TO STAY OUT OF YOUR WAY</text>
+
+    <g transform="translate(342,0)">
+      <circle cx="15" cy="15" r="15" fill="#dff5e9"/>
+      <text x="15" y="20" text-anchor="middle" fill="#12855b" font-size="15" font-weight="800">💬</text>
+      <text x="40" y="20" fill="#32443c" font-size="14" font-weight="700">Native dialog</text>
+    </g>
+    <g transform="translate(510,0)">
+      <circle cx="15" cy="15" r="15" fill="#dff5e9"/>
+      <text x="15" y="20" text-anchor="middle" fill="#12855b" font-size="14" font-weight="800">📝</text>
+      <text x="40" y="20" fill="#32443c" font-size="14" font-weight="700">Inline edit</text>
+    </g>
+    <g transform="translate(654,0)">
+      <circle cx="15" cy="15" r="15" fill="#dff5e9"/>
+      <text x="15" y="20" text-anchor="middle" fill="#12855b" font-size="14" font-weight="800">🛡️</text>
+      <text x="40" y="20" fill="#32443c" font-size="14" font-weight="700">Async-safe</text>
+    </g>
+    <g transform="translate(799,0)">
+      <circle cx="15" cy="15" r="15" fill="#dff5e9"/>
+      <text x="15" y="20" text-anchor="middle" fill="#12855b" font-size="14" font-weight="800">🌐</text>
+      <text x="40" y="20" fill="#32443c" font-size="14" font-weight="700">Localization</text>
+    </g>
+    <g transform="translate(930,0)">
+      <circle cx="15" cy="15" r="15" fill="#dff5e9"/>
+      <text x="15" y="20" text-anchor="middle" fill="#12855b" font-size="14" font-weight="800">{ }</text>
+      <text x="40" y="20" fill="#32443c" font-size="14" font-weight="700">Typed fields</text>
+    </g>
+    <g transform="translate(1088,0)">
+      <rect width="282" height="34" rx="17" fill="#15251f"/>
+      <text x="141" y="22" text-anchor="middle" fill="#eaf8f1" font-size="13" font-weight="720">Create · Edit · Remove · Refresh</text>
+    </g>
+  </g>
+</svg>
