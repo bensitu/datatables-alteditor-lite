@@ -350,6 +350,10 @@ export class SearchSelect<TValue extends string | number> {
     this.clearButtonElement.removeEventListener('click', this.handleClearClick);
     this.listboxElement.removeEventListener('mousedown', this.handleOptionMouseDown);
     this.unsubscribeDocumentPointerDown();
+    updateSearchSelectAria(this.inputElement, false, undefined);
+    this.inputElement.removeAttribute('aria-autocomplete');
+    this.inputElement.removeAttribute('aria-controls');
+    this.inputElement.removeAttribute('aria-expanded');
     this.optionElementByToken.clear();
     this.optionElementCacheByToken.clear();
     this.listboxElement.replaceChildren();
@@ -601,6 +605,7 @@ export class SearchSelect<TValue extends string | number> {
       }
 
       optionElement.textContent = option.label;
+      optionElement.classList.remove('dt-alteditor-lite-search-select__option--active');
       updateSearchSelectOptionAria(
         optionElement,
         token === this.selectedToken,
@@ -677,12 +682,14 @@ export class SearchSelect<TValue extends string | number> {
   }
 
   private setActiveToken(token: string | undefined): void {
-    for (const [optionToken, optionElement] of this.optionElementByToken) {
-      optionElement.classList.toggle(
-        'dt-alteditor-lite-search-select__option--active',
-        optionToken === token,
-      );
+    if (this.activeToken !== token) {
+      this.optionElementByToken
+        .get(this.activeToken ?? '')
+        ?.classList.remove('dt-alteditor-lite-search-select__option--active');
     }
+    this.optionElementByToken
+      .get(token ?? '')
+      ?.classList.add('dt-alteditor-lite-search-select__option--active');
 
     this.activeToken = token;
     const activeOptionElement =

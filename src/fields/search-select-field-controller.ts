@@ -71,7 +71,7 @@ export function createSearchSelectFieldController<TFormValues extends object>(
       searchSelect.destroy();
     },
   };
-  // The managed foundation is intentionally type-erased after runtime validation.
+  // Field configurations are validated before the controller is constructed.
   const foundationConfig = config as unknown as VisibleFieldConfig<
     TFormValues,
     string | number | undefined
@@ -89,11 +89,11 @@ export function createSearchSelectFieldController<TFormValues extends object>(
     requiredMessage: language.validation.required,
   });
   const describedBy = searchSelect.inputElement.getAttribute('aria-describedby');
+  const descriptionIds = new Set(describedBy?.split(/\s+/u) ?? []);
+  descriptionIds.add(searchSelect.instructionsId);
   searchSelect.inputElement.setAttribute(
     'aria-describedby',
-    describedBy === null
-      ? searchSelect.instructionsId
-      : `${describedBy} ${searchSelect.instructionsId}`,
+    [...descriptionIds].filter((id) => id.length > 0).join(' '),
   );
 
   searchSelect.setDisabled(config.disabled ?? false);

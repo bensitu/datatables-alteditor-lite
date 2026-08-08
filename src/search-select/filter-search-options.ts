@@ -6,6 +6,10 @@ export interface SearchOptionEntry<TValue extends string | number> {
   readonly option: SelectOption<TValue>;
 }
 
+const normalizedLabelByOption = new WeakMap<SelectOption, Map<string, string>>();
+
+const labelCollatorByLocale = new Map<string, Intl.Collator>();
+
 function normalizeSearchText(text: string, locale: string): string {
   const compatibilityText = text.normalize('NFKD').replace(/\p{M}+/gu, '');
 
@@ -17,19 +21,44 @@ function normalizeSearchText(text: string, locale: string): string {
 }
 
 function createLabelCollator(locale: string): Intl.Collator {
+  const existingCollator = labelCollatorByLocale.get(locale);
+  if (existingCollator !== undefined) {
+    return existingCollator;
+  }
+
+  let collator: Intl.Collator;
   try {
-    return new Intl.Collator(locale, {
+    collator = new Intl.Collator(locale, {
       numeric: true,
       sensitivity: 'base',
       usage: 'sort',
     });
   } catch {
-    return new Intl.Collator(undefined, {
+    collator = new Intl.Collator(undefined, {
       numeric: true,
       sensitivity: 'base',
       usage: 'sort',
     });
   }
+  labelCollatorByLocale.set(locale, collator);
+  return collator;
+}
+
+function normalizedOptionLabel(option: SelectOption, locale: string): string {
+  let normalizedByLocale = normalizedLabelByOption.get(option);
+  if (normalizedByLocale === undefined) {
+    normalizedByLocale = new Map<string, string>();
+    normalizedLabelByOption.set(option, normalizedByLocale);
+  }
+
+  const existingLabel = normalizedByLocale.get(locale);
+  if (existingLabel !== undefined) {
+    return existingLabel;
+  }
+
+  const normalizedLabel = normalizeSearchText(option.label, locale);
+  normalizedByLocale.set(locale, normalizedLabel);
+  return normalizedLabel;
 }
 
 /**
@@ -53,7 +82,7 @@ export function filterSearchOptions<TValue extends string | number>(
   const shouldFilter = normalizedQuery.length >= searchThreshold;
   const filteredEntries = shouldFilter
     ? entries.filter(({ option }) =>
-        normalizeSearchText(option.label, locale).includes(normalizedQuery),
+        normalizedOptionLabel(option, locale).includes(normalizedQuery),
       )
     : [...entries];
 
