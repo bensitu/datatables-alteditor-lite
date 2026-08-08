@@ -17,6 +17,7 @@ export interface InlineEditSession<TRow extends object, TFormValues extends obje
   readonly controller: ManagedFieldController<TFormValues>;
   readonly host: InlineEditView;
   readonly interactionToken: InteractionToken;
+  readonly lifecycleAbortController: AbortController;
   readonly normalizedOriginalValue: unknown;
   readonly originalActiveElement: Element | null;
   readonly sessionId: number;

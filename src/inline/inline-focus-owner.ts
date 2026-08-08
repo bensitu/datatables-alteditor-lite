@@ -22,16 +22,21 @@ export function focusInlineCellOrTable<TRow extends object>(
       cellApi.focus();
       return;
     }
-    if (cellNode.tabIndex < 0) {
-      cellNode.tabIndex = -1;
-    }
-    cellNode.focus();
+    focusWithTemporaryTabIndex(cellNode);
     return;
   }
-  if (tableElement.tabIndex < 0) {
-    tableElement.tabIndex = -1;
+  focusWithTemporaryTabIndex(tableElement);
+}
+
+function focusWithTemporaryTabIndex(element: HTMLElement): void {
+  const existingTabIndex = element.getAttribute('tabindex');
+  if (element.tabIndex < 0 && existingTabIndex === null) {
+    element.setAttribute('tabindex', '-1');
   }
-  tableElement.focus();
+  element.focus();
+  if (existingTabIndex === null) {
+    element.removeAttribute('tabindex');
+  }
 }
 
 /** Returns focus to a still-connected element outside the closing host. */

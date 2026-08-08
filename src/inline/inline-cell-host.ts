@@ -21,7 +21,7 @@ export class InlineCellHost<TFormValues extends object> implements InlineEditVie
     private readonly controller: ManagedFieldController<TFormValues>,
     private readonly field: Readonly<FieldConfig<TFormValues>>,
     private readonly tableElement: HTMLTableElement,
-    private readonly handlers: Readonly<InlineEditViewHandlers>,
+    _handlers: Readonly<InlineEditViewHandlers>,
     className?: string,
   ) {
     this.element = document.createElement('div');
@@ -41,7 +41,6 @@ export class InlineCellHost<TFormValues extends object> implements InlineEditVie
     controlElement.append(controller.element);
     this.element.append(controlElement);
     this.primaryControl = controller.element.querySelector('input, select, textarea');
-    this.element.addEventListener('keydown', this.handleViewKeyDown);
   }
 
   public focus(): void {
@@ -106,19 +105,10 @@ export class InlineCellHost<TFormValues extends object> implements InlineEditVie
       return;
     }
     this.isDestroyed = true;
-    this.element.removeEventListener('keydown', this.handleViewKeyDown);
     this.originalContent?.discard();
     this.originalContent = undefined;
     this.mountedCell?.classList.remove('alteditor-lite-cell--editing');
     this.mountedCell = undefined;
     this.element.remove();
   }
-
-  private readonly handleViewKeyDown = (event: KeyboardEvent): void => {
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      this.handlers.onCancel('escape');
-    }
-  };
 }

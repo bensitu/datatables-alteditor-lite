@@ -294,6 +294,7 @@ export class InlineEditSessionController<
         controller,
         host,
         interactionToken,
+        lifecycleAbortController: new AbortController(),
         normalizedOriginalValue,
         originalActiveElement: document.activeElement,
         sessionId: (this.nextSessionId += 1),
@@ -371,8 +372,10 @@ export class InlineEditSessionController<
       throw new EditorOperationBusyError();
     }
 
-    const candidate = await Promise.resolve(session.controller.getValue());
-    if (this.session !== session) {
+    const candidate = await Promise.resolve(
+      session.controller.getValue(session.lifecycleAbortController.signal),
+    );
+    if (session.lifecycleAbortController.signal.aborted || this.session !== session) {
       return;
     }
     if (Object.is(candidate, session.normalizedOriginalValue)) {
@@ -525,7 +528,7 @@ export class InlineEditSessionController<
     this.alertDialog?.destroy();
     this.arguments_.table.off('.altEditorLiteInline');
     if (this.session !== undefined) {
-      this.cleanupSession('api', true, false);
+      this.cleanupSession('api', true, ownsInlineFocus(this.session.host.element));
     }
     this.transitionTo({ status: 'destroyed' });
     this.focusStateMachine.transition({ type: 'destroyed' });
@@ -707,7 +710,7 @@ export class InlineEditSessionController<
     this.changeAbortController?.abort();
     this.arguments_.operationOwner.abort('inline');
     if (this.session !== undefined) {
-      this.cleanupSession('redraw', false, false);
+      this.cleanupSession('redraw', false, ownsInlineFocus(this.session.host.element));
     } else if (this.state.status === 'activating') {
       this.transitionTo({ status: 'idle' });
     }
@@ -745,13 +748,18 @@ export class InlineEditSessionController<
     if (intent === undefined) {
       return;
     }
-
-    event.preventDefault();
-    event.stopPropagation();
     if (intent.type === 'cancel') {
+      event.preventDefault();
+      event.stopPropagation();
       void this.cancel('escape');
       return;
     }
+    if (this.state.status !== 'editing' && this.state.status !== 'error') {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
     if (intent.type === 'submit-and-move') {
       const navigationIntent = createInlineNavigationIntent(
         this.arguments_.table,
@@ -1049,6 +1057,7 @@ export class InlineEditSessionController<
     this.activeAlertToken = undefined;
     this.alertDialog?.close();
     this.session = undefined;
+    session.lifecycleAbortController.abort();
     this.changeAbortController?.abort();
     this.changeAbortController = undefined;
     session.host.element.removeEventListener('keydown', this.handleKeyDown);
