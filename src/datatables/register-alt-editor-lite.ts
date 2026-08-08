@@ -34,11 +34,16 @@ interface RegistrationRecord {
  */
 export function registerAltEditorLite(dataTable: DataTablesStatic): void {
   const registeredDataTable: RegisteredDataTable = dataTable;
-  const majorVersion = dataTable.version.split('.')[0];
+  const runtime: unknown = dataTable;
+  const version =
+    (typeof runtime === 'object' && runtime !== null) || typeof runtime === 'function'
+      ? (runtime as { readonly version?: unknown }).version
+      : undefined;
+  const majorVersion = typeof version === 'string' ? version.split('.')[0] : undefined;
 
   if (majorVersion !== '3') {
     throw new EditorConfigurationError(
-      `DataTables 3.x is required; received "${dataTable.version}".`,
+      `DataTables 3.x is required; received "${typeof version === 'string' ? version : 'unknown'}".`,
     );
   }
 
