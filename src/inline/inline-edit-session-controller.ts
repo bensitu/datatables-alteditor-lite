@@ -406,17 +406,21 @@ export class InlineEditSessionController<
           }),
       commit: async (row, rowIndex, request) => {
         if (this.arguments_.options.updateMode === 'refresh') {
-          await this.arguments_.drawOwnership.runWhile('refresh', async () => {
-            await Promise.resolve(
-              this.arguments_.editorOptions.operations?.refresh?.(
-                this.arguments_.operationOwner.context(
-                  this.arguments_.table,
-                  request,
-                  'refresh',
+          await this.arguments_.drawOwnership.runWhile(
+            'refresh',
+            request.abortController.signal,
+            async () => {
+              await Promise.resolve(
+                this.arguments_.editorOptions.operations?.refresh?.(
+                  this.arguments_.operationOwner.context(
+                    this.arguments_.table,
+                    request,
+                    'refresh',
+                  ),
                 ),
-              ),
-            );
-          });
+              );
+            },
+          );
           return Object.freeze({ row });
         }
 

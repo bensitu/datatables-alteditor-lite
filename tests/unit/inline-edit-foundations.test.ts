@@ -178,6 +178,26 @@ describe('owned DataTables draws', () => {
     expect(owner.ownsDraw()).toBe(false);
   });
 
+  it('rejects when a synchronous draw event is followed by an exception', async () => {
+    let drawListener: (() => void) | undefined;
+    const table = {
+      off: vi.fn(),
+      one: vi.fn((_eventName: string, listener: () => void) => {
+        drawListener = listener;
+        return table;
+      }),
+    } as unknown as Api<Record<string, unknown>>;
+    const owner = new DrawOwnership(table);
+
+    await expect(
+      owner.runWithDraw('dialog-edit-success', new AbortController().signal, () => {
+        drawListener?.();
+        throw new Error('Draw listener failed.');
+      }),
+    ).rejects.toThrow('Draw listener failed.');
+    expect(owner.ownsDraw()).toBe(false);
+  });
+
   it('settles a pending draw when ownership is destroyed', async () => {
     const owner = new DrawOwnership(createDrawTableStub());
     const pendingDraw = owner.runWithDraw(
@@ -192,7 +212,21 @@ describe('owned DataTables draws', () => {
     await pendingDraw;
     expect(owner.ownsDraw()).toBe(false);
     await expect(
-      owner.runWhile('refresh', () => Promise.resolve()),
+      owner.runWhile('refresh', new AbortController().signal, () => Promise.resolve()),
     ).rejects.toBeInstanceOf(EditorDestroyedError);
+  });
+
+  it('settles a pending asynchronous refresh when ownership is destroyed', async () => {
+    const owner = new DrawOwnership(createDrawTableStub());
+    const pendingRefresh = owner.runWhile(
+      'refresh',
+      new AbortController().signal,
+      () => new Promise<void>(() => undefined),
+    );
+
+    owner.destroy();
+
+    await pendingRefresh;
+    expect(owner.ownsDraw()).toBe(false);
   });
 });

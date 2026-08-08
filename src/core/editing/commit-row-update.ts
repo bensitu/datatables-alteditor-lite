@@ -35,8 +35,8 @@ export async function commitRowUpdate<TRow extends object>(
   signal: AbortSignal,
   reason: 'dialog-edit-success' | 'inline-edit-success',
 ): Promise<Readonly<EditCommitResult<TRow>>> {
-  table.row(rowIndex).data(row);
   await drawOwnership.runWithDraw(reason, signal, () => {
+    table.row(rowIndex).data(row);
     table.draw(false);
   });
   return Object.freeze({ row, rowIndex });

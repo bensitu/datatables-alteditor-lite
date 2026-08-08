@@ -20,6 +20,8 @@ export class DrawOwnership<TRow extends object> {
 
   private isDestroyed = false;
 
+  private readonly lifecycleAbortController = new AbortController();
+
   private readonly pendingDraws = new Set<() => void>();
 
   public constructor(private readonly table: Api<TRow>) {}
@@ -43,6 +45,8 @@ export class DrawOwnership<TRow extends object> {
     }
     await new Promise<void>((resolve, reject) => {
       let isSettled = false;
+      let isInvokingDraw = false;
+      let didDraw = false;
       const cleanup = (): void => {
         signal.removeEventListener('abort', handleAbort);
         this.table.off('draw.altEditorLiteOwnedDraw', handleDraw);
@@ -60,6 +64,10 @@ export class DrawOwnership<TRow extends object> {
         finish();
       };
       const handleDraw = (): void => {
+        if (isInvokingDraw) {
+          didDraw = true;
+          return;
+        }
         finish();
       };
 
@@ -71,12 +79,15 @@ export class DrawOwnership<TRow extends object> {
         return;
       }
       try {
+        isInvokingDraw = true;
         draw();
-      } catch (error: unknown) {
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- A synchronous draw listener can settle before draw() throws.
-        if (isSettled) {
-          return;
+        isInvokingDraw = false;
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- DataTables can dispatch the registered listener synchronously inside draw().
+        if (didDraw) {
+          finish();
         }
+      } catch (error: unknown) {
+        isInvokingDraw = false;
         isSettled = true;
         cleanup();
         reject(
@@ -93,12 +104,54 @@ export class DrawOwnership<TRow extends object> {
   /** Marks redraws performed by a consumer-owned asynchronous refresh. */
   public async runWhile(
     reason: DrawOwnershipReason,
+    signal: AbortSignal,
     action: () => Promise<void>,
   ): Promise<void> {
     this.assertActive();
     const token = this.acquire(reason);
     try {
-      await action();
+      if (signal.aborted) {
+        return;
+      }
+      await new Promise<void>((resolve, reject) => {
+        let isSettled = false;
+        const lifecycleSignal = this.lifecycleAbortController.signal;
+        const cleanup = (): void => {
+          signal.removeEventListener('abort', handleAbort);
+          lifecycleSignal.removeEventListener('abort', handleAbort);
+        };
+        const settle = (callback: () => void): void => {
+          if (isSettled) {
+            return;
+          }
+          isSettled = true;
+          cleanup();
+          callback();
+        };
+        const handleAbort = (): void => {
+          settle(resolve);
+        };
+
+        signal.addEventListener('abort', handleAbort, { once: true });
+        lifecycleSignal.addEventListener('abort', handleAbort, { once: true });
+        void action().then(
+          () => {
+            settle(resolve);
+          },
+          (error: unknown) => {
+            settle(() => {
+              reject(
+                error instanceof Error
+                  ? error
+                  : new Error('Asynchronous refresh failed.', { cause: error }),
+              );
+            });
+          },
+        );
+        if (signal.aborted || lifecycleSignal.aborted) {
+          handleAbort();
+        }
+      });
     } finally {
       this.release(token);
     }
@@ -107,6 +160,7 @@ export class DrawOwnership<TRow extends object> {
   /** Releases resources and prevents future owned draws. */
   public destroy(): void {
     this.isDestroyed = true;
+    this.lifecycleAbortController.abort();
     this.sequence += 1;
     this.activeToken = undefined;
     for (const finish of [...this.pendingDraws]) {
