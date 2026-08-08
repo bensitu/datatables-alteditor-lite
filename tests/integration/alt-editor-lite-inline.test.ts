@@ -682,7 +682,14 @@ describe('AltEditorLite inline interaction and redraw behavior', () => {
     api
       .cell('#row-a', 0)
       .node()
-      .dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+      .dispatchEvent(new MouseEvent('dblclick', { bubbles: true, button: 2, detail: 2 }));
+    await Promise.resolve();
+    expect(editor.getInlineState().status).toBe('idle');
+
+    api
+      .cell('#row-a', 0)
+      .node()
+      .dispatchEvent(new MouseEvent('dblclick', { bubbles: true, button: 0, detail: 2 }));
     await vi.waitFor(() => {
       expect(editor.getInlineState().status).toBe('editing');
     });

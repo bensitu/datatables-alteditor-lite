@@ -11,7 +11,7 @@ export class InlineDoubleClickActivation<
   public attach(context: InlineActivationContext<TRow, TFormValues>): () => void {
     let isAttached = true;
     const handleDoubleClick = (event: MouseEvent): void => {
-      if (context.signal.aborted) {
+      if (context.signal.aborted || event.button !== 0 || event.detail < 2) {
         return;
       }
       const target = resolveInlineActivationTarget(
