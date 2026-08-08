@@ -12,6 +12,7 @@ export function readFileAsDataUrl(file: File, signal: AbortSignal): Promise<stri
 
   return new Promise<string>((resolve, reject) => {
     const fileReader = new FileReader();
+    let isSettled = false;
 
     const removeListeners = (): void => {
       signal.removeEventListener('abort', abortRead);
@@ -20,10 +21,18 @@ export function readFileAsDataUrl(file: File, signal: AbortSignal): Promise<stri
       fileReader.removeEventListener('load', resolveLoad);
     };
     const rejectAbort = (): void => {
+      if (isSettled) {
+        return;
+      }
+      isSettled = true;
       removeListeners();
       reject(new DOMException('The file read was aborted.', 'AbortError'));
     };
     const rejectError = (): void => {
+      if (isSettled) {
+        return;
+      }
+      isSettled = true;
       const fileError =
         fileReader.error ??
         new DOMException('The selected file could not be read.', 'NotReadableError');
@@ -31,6 +40,10 @@ export function readFileAsDataUrl(file: File, signal: AbortSignal): Promise<stri
       reject(fileError);
     };
     const resolveLoad = (): void => {
+      if (isSettled) {
+        return;
+      }
+      isSettled = true;
       const result = fileReader.result;
       removeListeners();
 
@@ -46,14 +59,22 @@ export function readFileAsDataUrl(file: File, signal: AbortSignal): Promise<stri
       }
     };
     const abortRead = (): void => {
-      fileReader.abort();
+      if (fileReader.readyState === FileReader.LOADING) {
+        fileReader.abort();
+      } else {
+        rejectAbort();
+      }
     };
 
     signal.addEventListener('abort', abortRead, { once: true });
     fileReader.addEventListener('abort', rejectAbort, { once: true });
     fileReader.addEventListener('error', rejectError, { once: true });
     fileReader.addEventListener('load', resolveLoad, { once: true });
-    fileReader.readAsDataURL(file);
+    if (signal.aborted) {
+      rejectAbort();
+    } else {
+      fileReader.readAsDataURL(file);
+    }
   });
 }
 
@@ -68,7 +89,14 @@ export async function readFilesAsDataUrls(
   files: readonly File[],
   signal: AbortSignal,
 ): Promise<readonly string[]> {
-  return await Promise.all(
-    files.map(async (file) => await readFileAsDataUrl(file, signal)),
-  );
+  const batchAbortController = new AbortController();
+  const batchSignal = AbortSignal.any([signal, batchAbortController.signal]);
+  try {
+    return await Promise.all(
+      files.map(async (file) => await readFileAsDataUrl(file, batchSignal)),
+    );
+  } catch (error: unknown) {
+    batchAbortController.abort();
+    throw error;
+  }
 }
