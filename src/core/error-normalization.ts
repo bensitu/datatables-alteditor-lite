@@ -4,7 +4,11 @@ import type { AltEditorLiteLanguage } from './alt-editor-lite-language.js';
 
 function isAbortError(error: unknown): boolean {
   try {
-    return error instanceof Error && error.name === 'AbortError';
+    return (
+      typeof error === 'object' &&
+      error !== null &&
+      Reflect.get(error, 'name') === 'AbortError'
+    );
   } catch {
     return false;
   }

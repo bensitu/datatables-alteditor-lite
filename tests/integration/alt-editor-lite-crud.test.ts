@@ -840,6 +840,28 @@ describe('AltEditorLite Refresh and optional selection boundary', () => {
     expect(editor.getState().status).toBe('ready');
   });
 
+  it('completes the Refresh event sequence after callback cancellation', async () => {
+    const { editor, tableElement } = createCrudEditor('cancelled-refresh', {
+      operations: {
+        refresh: () => {
+          throw new DOMException('Cancelled.', 'AbortError');
+        },
+      },
+    });
+    const phases: string[] = [];
+    const errorListener = vi.fn();
+    tableElement.addEventListener('alteditor-lite:refresh', (event) => {
+      phases.push((event as CustomEvent<{ readonly phase: string }>).detail.phase);
+    });
+    tableElement.addEventListener('alteditor-lite:error', errorListener);
+
+    await editor.refreshTable();
+
+    expect(phases).toEqual(['start', 'complete']);
+    expect(errorListener).not.toHaveBeenCalled();
+    expect(editor.getState()).toEqual({ status: 'ready' });
+  });
+
   it('requires Select only when no explicit selector is supplied', async () => {
     const unavailableMessage = 'Selection support is unavailable.';
     const { editor } = createCrudEditor('no-select', {

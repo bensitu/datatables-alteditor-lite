@@ -39,6 +39,13 @@ describe('operation error normalization', () => {
     expect(
       normalizeOperationError(namedAbortError, activeSignal(), ENGLISH_LANGUAGE),
     ).toBeInstanceOf(InternalOperationAbort);
+    expect(
+      normalizeOperationError(
+        new DOMException('Cancelled.', 'AbortError'),
+        activeSignal(),
+        ENGLISH_LANGUAGE,
+      ),
+    ).toBeInstanceOf(InternalOperationAbort);
 
     const cancelledPublicError = new AltEditorLiteError({
       code: 'LATE_FAILURE',

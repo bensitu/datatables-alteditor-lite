@@ -1425,24 +1425,21 @@ export class AltEditorLite<
         this.language,
       );
       if (operationError instanceof InternalOperationAbort) {
-        this.releaseOperation(request);
-        this.releaseRefreshInteraction();
-        this.transitionTo({ status: 'ready' });
-        return;
-      }
-
-      this.reportOperationError(
-        operationError,
-        {
-          committed: false,
-          mode: 'api',
-          operation: 'refresh',
-          phase: 'persistence',
-        },
-        true,
-      );
-      if (!this.ownsOperation(request)) {
-        return;
+        didSucceed = false;
+      } else {
+        this.reportOperationError(
+          operationError,
+          {
+            committed: false,
+            mode: 'api',
+            operation: 'refresh',
+            phase: 'persistence',
+          },
+          true,
+        );
+        if (!this.ownsOperation(request)) {
+          return;
+        }
       }
     }
 
