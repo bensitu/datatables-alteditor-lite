@@ -74,6 +74,13 @@ export class EditorFormController<
 
   private readonly activeChangeAbortControllers = new Map<string, AbortController>();
 
+  private readonly activeFieldValidationAbortControllers = new Map<
+    string,
+    AbortController
+  >();
+
+  private readonly invalidMessage: string;
+
   private activeValidationAbortController: AbortController | undefined;
 
   private controllers: ManagedFieldController<TFormValues>[] = [];
@@ -97,6 +104,7 @@ export class EditorFormController<
     this.element.className = 'dt-alteditor-lite-form';
     this.element.id = `${instanceId}-form`;
     this.element.noValidate = true;
+    this.invalidMessage = language.validation.invalid;
 
     this.submissionErrorElement = document.createElement('div');
     this.submissionErrorElement.className = 'dt-alteditor-lite-form__submission-error';
@@ -184,6 +192,7 @@ export class EditorFormController<
       async () => await collectFormValues(this.controllers, signal),
       signal,
       this.validateUnique,
+      this.invalidMessage,
     );
 
     if (!this.validationSequence.isCurrent(requestSequence) || signal.aborted) {
@@ -244,6 +253,11 @@ export class EditorFormController<
         }
 
         isFieldDestroyed = true;
+        this.activeChangeAbortControllers.get(name)?.abort();
+        this.activeChangeAbortControllers.delete(name);
+        this.activeFieldValidationAbortControllers.get(name)?.abort();
+        this.activeFieldValidationAbortControllers.delete(name);
+        this.activeValidationAbortController?.abort();
         managedController.destroy();
         this.controllerByName.delete(name);
         this.fieldControllerByName.delete(name);
@@ -266,6 +280,8 @@ export class EditorFormController<
   /** Maps and displays an operation error. */
   public showSubmissionError(error: AltEditorLiteError): void {
     this.assertActive();
+    this.submissionErrorElement.textContent = '';
+    this.submissionErrorElement.hidden = true;
     const submissionMessages: string[] = [];
     let hasKnownFieldError = false;
 
@@ -311,6 +327,10 @@ export class EditorFormController<
       abortController.abort();
     }
     this.activeChangeAbortControllers.clear();
+    for (const abortController of this.activeFieldValidationAbortControllers.values()) {
+      abortController.abort();
+    }
+    this.activeFieldValidationAbortControllers.clear();
     this.activeValidationAbortController?.abort();
     this.validationSequence.invalidate();
 
@@ -339,6 +359,11 @@ export class EditorFormController<
       return;
     }
 
+    const controller = this.controllerByName.get(fieldName);
+    if (controller === undefined) {
+      return;
+    }
+
     this.activeChangeAbortControllers.get(fieldName)?.abort();
     const changeAbortController = new AbortController();
     this.activeChangeAbortControllers.set(fieldName, changeAbortController);
@@ -346,18 +371,12 @@ export class EditorFormController<
       changeAbortController.signal,
       this.lifecycleAbortController.signal,
     ]);
-    const controller = this.controllerByName.get(fieldName);
-
-    if (controller === undefined) {
-      return;
-    }
-
     try {
       const values = await collectFormValues(this.controllers, signal);
       await controller.runOnChange(values, signal);
     } catch (error: unknown) {
       if (!signal.aborted) {
-        this.showSubmissionError(
+        const operationError =
           error instanceof AltEditorLiteError
             ? error
             : new AltEditorLiteError({
@@ -365,7 +384,9 @@ export class EditorFormController<
                 code: 'FIELD_CHANGE',
                 message: 'A field change callback failed.',
                 retryable: true,
-              }),
+              });
+        controller.showError(
+          operationError.fieldErrors?.[fieldName] ?? operationError.message,
         );
       }
     } finally {
@@ -379,34 +400,58 @@ export class EditorFormController<
     controller: ManagedFieldController<TFormValues>,
   ): Promise<FieldValidationResult> {
     this.assertActive();
+    this.activeValidationAbortController?.abort();
+    this.activeFieldValidationAbortControllers.get(controller.name)?.abort();
+    const validationAbortController = new AbortController();
+    this.activeFieldValidationAbortControllers.set(
+      controller.name,
+      validationAbortController,
+    );
     controller.clearError();
     const nativeResult = controller.validateNative();
 
     if (!nativeResult.valid) {
-      controller.showError(nativeResult.message ?? 'Enter a valid value.');
+      controller.showError(nativeResult.message ?? this.invalidMessage);
+      this.activeFieldValidationAbortControllers.delete(controller.name);
       return nativeResult;
     }
 
-    const validationAbortController = new AbortController();
     const signal = AbortSignal.any([
       validationAbortController.signal,
       this.lifecycleAbortController.signal,
     ]);
-    const values = await collectFormValues(this.controllers, signal);
-    const customResult = await controller.validateCustom(values, signal);
+    try {
+      const values = await collectFormValues(this.controllers, signal);
+      const customResult = await controller.validateCustom(values, signal);
+      if (signal.aborted) {
+        return { valid: false };
+      }
 
-    if (!customResult.valid) {
-      controller.showError(customResult.message ?? 'Enter a valid value.');
+      if (!customResult.valid) {
+        controller.showError(customResult.message ?? this.invalidMessage);
+        return customResult;
+      }
+
+      const uniqueMessage = this.validateUnique?.(values)[controller.name];
+      if (uniqueMessage !== undefined) {
+        const uniqueResult = { message: uniqueMessage, valid: false } as const;
+        controller.showError(uniqueMessage);
+        return uniqueResult;
+      }
+
       return customResult;
+    } catch (error: unknown) {
+      if (signal.aborted) {
+        return { valid: false };
+      }
+      throw error;
+    } finally {
+      if (
+        this.activeFieldValidationAbortControllers.get(controller.name) ===
+        validationAbortController
+      ) {
+        this.activeFieldValidationAbortControllers.delete(controller.name);
+      }
     }
-
-    const uniqueMessage = this.validateUnique?.(values)[controller.name];
-    if (uniqueMessage !== undefined) {
-      const uniqueResult = { message: uniqueMessage, valid: false } as const;
-      controller.showError(uniqueMessage);
-      return uniqueResult;
-    }
-
-    return customResult;
   }
 }

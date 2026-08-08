@@ -253,6 +253,17 @@ describe('FormController', () => {
       form.element.querySelector('.dt-alteditor-lite-form__submission-error')
         ?.textContent,
     ).toBe('Submission failed. Unknown field error.');
+
+    form.showSubmissionError(
+      new AltEditorLiteError({
+        fieldErrors: { 'profile.name': 'Replacement field error.' },
+        message: 'Replacement submission failed.',
+      }),
+    );
+    expect(
+      form.element.querySelector<HTMLElement>('.dt-alteditor-lite-form__submission-error')
+        ?.hidden,
+    ).toBe(true);
   });
 
   it('runs onChange with a live signal and ignores no owned listeners after destroy', async () => {
@@ -378,7 +389,7 @@ describe('FormController', () => {
     expect(form.getField('profile.name')).toBeNull();
   });
 
-  it('reports field change callback failures and clears submission-only errors', async () => {
+  it('reports field change callback failures beside the changed field', async () => {
     const form = createForm();
     const inputElement = form.getField('profile.name')?.element.querySelector('input');
     const submissionError = form.element.querySelector<HTMLElement>(
@@ -390,7 +401,11 @@ describe('FormController', () => {
     inputElement?.dispatchEvent(new Event('input', { bubbles: true }));
 
     await vi.waitFor(() => {
-      expect(submissionError?.textContent).toBe('A field change callback failed.');
+      expect(
+        form
+          .getField('profile.name')
+          ?.element.querySelector('.dt-alteditor-lite-field__error')?.textContent,
+      ).toBe('A field change callback failed.');
     });
     form.clearErrors();
     expect(submissionError?.hidden).toBe(true);
@@ -406,8 +421,48 @@ describe('FormController', () => {
     });
     inputElement?.dispatchEvent(new Event('input', { bubbles: true }));
     await vi.waitFor(() => {
-      expect(submissionError?.textContent).toBe('Change failed.');
+      expect(
+        form
+          .getField('profile.name')
+          ?.element.querySelector('.dt-alteditor-lite-field__error')?.textContent,
+      ).toBe('Change failed.');
     });
+  });
+
+  it('discards an explicitly superseded field validation result', async () => {
+    let releaseFirstValidation: ((result: FieldValidationResult) => void) | undefined;
+    const firstValidation = new Promise<FieldValidationResult>((resolve) => {
+      releaseFirstValidation = resolve;
+    });
+    let validationCount = 0;
+    activeForm = buildEditorForm(
+      [
+        {
+          defaultValue: 'Ready',
+          label: 'Name',
+          name: 'profile.name',
+          type: 'text',
+          validate: () => {
+            validationCount += 1;
+            return validationCount === 1 ? firstValidation : { valid: true };
+          },
+        },
+      ],
+      'field-validation',
+      ENGLISH_LANGUAGE,
+    );
+    document.body.append(activeForm.element);
+    const field = activeForm.getField('profile.name');
+
+    const supersededValidation = field?.validate();
+    await vi.waitFor(() => {
+      expect(validationCount).toBe(1);
+    });
+    await expect(field?.validate()).resolves.toEqual({ valid: true });
+    releaseFirstValidation?.({ message: 'Stale result.', valid: false });
+
+    await expect(supersededValidation).resolves.toEqual({ valid: false });
+    expect(field?.element.querySelector('[aria-invalid="true"]')).toBeNull();
   });
 
   it('discards a validation result superseded by a newer request', async () => {

@@ -23,6 +23,7 @@ export type LocalUniqueValidator<TFormValues extends object> = (
  * @param collectValues - Lazy collection performed only after native validity.
  * @param signal - Validation request signal.
  * @param validateUnique - Optional table-scoped local uniqueness check.
+ * @param invalidMessage - Localized fallback for invalid fields.
  * @returns Stable field-error mapping.
  */
 export async function validateEditorForm<TFormValues extends object>(
@@ -30,6 +31,7 @@ export async function validateEditorForm<TFormValues extends object>(
   collectValues: () => Promise<Readonly<EditorValues<TFormValues>>>,
   signal: AbortSignal,
   validateUnique?: LocalUniqueValidator<TFormValues>,
+  invalidMessage = 'Enter a valid value.',
 ): Promise<FormValidationResult> {
   const fieldErrors: Record<string, string> = {};
 
@@ -40,7 +42,7 @@ export async function validateEditorForm<TFormValues extends object>(
 
     const validationResult = controller.validateNative();
     if (!validationResult.valid) {
-      fieldErrors[controller.name] = validationResult.message ?? 'Enter a valid value.';
+      fieldErrors[controller.name] = validationResult.message ?? invalidMessage;
     }
   }
 
@@ -73,8 +75,7 @@ export async function validateEditorForm<TFormValues extends object>(
 
   for (const customResult of customResults) {
     if (!customResult.result.valid) {
-      fieldErrors[customResult.name] =
-        customResult.result.message ?? 'Enter a valid value.';
+      fieldErrors[customResult.name] = customResult.result.message ?? invalidMessage;
     }
   }
 
