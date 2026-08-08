@@ -20,6 +20,7 @@ import {
   normalizeOperationError,
 } from '../core/error-normalization.js';
 import { isColumnVisiblyAvailable } from '../datatables/column-visibility.js';
+import { resolveUniqueRowIndexById } from '../datatables/row-id-resolution.js';
 import { EditorAlertDialog } from '../dialog/editor-alert-dialog.js';
 import { createFieldController } from '../fields/create-field-controller.js';
 import { INLINE_FIELD_PRESENTATION } from '../fields/field-controller-presentation.js';
@@ -957,7 +958,16 @@ export class InlineEditSessionController<
   ): Promise<void> {
     if (navigationIntent !== undefined) {
       try {
-        await this.open(navigationIntent.rowSelector, navigationIntent.columnIndex);
+        const navigationRowIndex =
+          navigationIntent.rowId === undefined
+            ? navigationIntent.rowIndex
+            : resolveUniqueRowIndexById(this.arguments_.table, navigationIntent.rowId);
+        if (navigationRowIndex === undefined) {
+          throw new EditorTargetUnavailableError(
+            this.arguments_.language.inline.targetUnavailable,
+          );
+        }
+        await this.open(navigationRowIndex, navigationIntent.columnIndex);
         return;
       } catch {
         // The committed cell or table receives focus below.
@@ -991,7 +1001,13 @@ export class InlineEditSessionController<
         this.arguments_.language.inline.targetUnavailable,
       );
     }
-    const row = this.arguments_.table.row(`#${summary.rowId}`);
+    const rowIndexById = resolveUniqueRowIndexById(this.arguments_.table, summary.rowId);
+    if (rowIndexById === undefined) {
+      throw new EditorTargetUnavailableError(
+        this.arguments_.language.inline.targetUnavailable,
+      );
+    }
+    const row = this.arguments_.table.row(rowIndexById);
     const rowIndex = row.index();
     const column = this.arguments_.table.column(summary.columnIndex);
     if (
@@ -1005,7 +1021,13 @@ export class InlineEditSessionController<
         this.arguments_.language.inline.targetUnavailable,
       );
     }
-    return this.arguments_.table.cell(rowIndex, summary.columnIndex).node();
+    const cellNode = this.arguments_.table.cell(rowIndex, summary.columnIndex).node();
+    if (!(cellNode instanceof HTMLTableCellElement) || !cellNode.isConnected) {
+      throw new EditorTargetUnavailableError(
+        this.arguments_.language.inline.targetUnavailable,
+      );
+    }
+    return cellNode;
   }
 
   private cleanupSession(

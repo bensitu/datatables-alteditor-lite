@@ -7,6 +7,8 @@ import {
   type RemoveTargetSnapshot,
 } from '../core/editor-snapshot.js';
 
+import { resolveUniqueRowIndexById } from './row-id-resolution.js';
+
 import type { Api } from 'datatables.net';
 
 /**
@@ -38,8 +40,7 @@ function resolveStableRowId<TRow extends object>(
     return undefined;
   }
 
-  const rowById = table.row(`#${rowId}`);
-  return rowById.any() && rowById.index() === rowIndex ? rowId : undefined;
+  return resolveUniqueRowIndexById(table, rowId) === rowIndex ? rowId : undefined;
 }
 
 function assertRowIndex(
@@ -145,7 +146,11 @@ function resolveSnapshotRowIndex<TRow extends object>(
   targetUnavailableMessage: string,
 ): number {
   if (rowId !== undefined) {
-    const rowById = table.row(`#${rowId}`);
+    const rowIndexById = resolveUniqueRowIndexById(table, rowId);
+    if (rowIndexById === undefined) {
+      throw new EditorTargetUnavailableError(targetUnavailableMessage);
+    }
+    const rowById = table.row(rowIndexById);
     const resolvedIndex = rowById.index();
     if (
       rowById.any() &&

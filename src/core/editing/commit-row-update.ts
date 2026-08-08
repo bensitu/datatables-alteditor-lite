@@ -1,4 +1,5 @@
 import { isColumnVisiblyAvailable } from '../../datatables/column-visibility.js';
+import { resolveUniqueRowIndexById } from '../../datatables/row-id-resolution.js';
 import { EditorTargetUnavailableError } from '../alt-editor-lite-error.js';
 
 import type { DrawOwnership } from './draw-ownership.js';
@@ -22,8 +23,7 @@ function resolveStableRowId<TRow extends object>(
   if (typeof rowId !== 'string' || rowId.length === 0) {
     return undefined;
   }
-  const rowById = table.row(`#${rowId}`);
-  return rowById.any() && rowById.index() === rowIndex ? rowId : undefined;
+  return resolveUniqueRowIndexById(table, rowId) === rowIndex ? rowId : undefined;
 }
 
 /** Replaces one canonical row and waits for the corresponding public draw. */
@@ -83,10 +83,14 @@ export function resolveLogicalCellTarget<TRow extends object>(
   target: Readonly<LogicalCellTarget<TRow>>,
   unavailableMessage: string,
 ): HTMLTableCellElement {
-  const rowApi =
+  const rowIndexById =
     target.rowId === undefined
-      ? table.row(target.rowIndex)
-      : table.row(`#${target.rowId}`);
+      ? undefined
+      : resolveUniqueRowIndexById(table, target.rowId);
+  if (target.rowId !== undefined && rowIndexById === undefined) {
+    throw new EditorTargetUnavailableError(unavailableMessage);
+  }
+  const rowApi = table.row(rowIndexById ?? target.rowIndex);
   const resolvedRowIndex = rowApi.index();
   const column = table.column(target.columnIndex);
   if (
@@ -102,7 +106,7 @@ export function resolveLogicalCellTarget<TRow extends object>(
 
   const cellNode = table.cell(resolvedRowIndex, target.columnIndex).node() as
     HTMLTableCellElement | null | undefined;
-  if (cellNode?.isConnected !== true) {
+  if (!(cellNode instanceof HTMLTableCellElement) || !cellNode.isConnected) {
     throw new EditorTargetUnavailableError(unavailableMessage);
   }
   return cellNode;

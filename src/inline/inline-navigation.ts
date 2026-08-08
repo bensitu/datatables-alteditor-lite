@@ -1,4 +1,5 @@
 import { isColumnVisiblyAvailable } from '../datatables/column-visibility.js';
+import { resolveUniqueRowIndexById } from '../datatables/row-id-resolution.js';
 
 import { isInlineFieldEligible } from './inline-field-capability.js';
 
@@ -11,7 +12,8 @@ import type { Api, SelectorModifier } from 'datatables.net';
 export interface InlineNavigationIntent {
   readonly columnIndex: number;
   readonly direction: 'forward' | 'backward';
-  readonly rowSelector: number | string;
+  readonly rowId?: string;
+  readonly rowIndex: number;
 }
 
 /** Finds the next eligible cell on the current DataTables page. */
@@ -58,10 +60,13 @@ export function createInlineNavigationIntent<
   const rowApi = table.row(next.rowIndex);
   const rowId = rowApi.id();
   const hasStableRowId =
-    typeof rowId === 'string' && rowId.length > 0 && table.row(`#${rowId}`).any();
+    typeof rowId === 'string' &&
+    rowId.length > 0 &&
+    resolveUniqueRowIndexById(table, rowId) === next.rowIndex;
   return Object.freeze({
     columnIndex: next.columnIndex,
     direction,
-    rowSelector: hasStableRowId ? `#${rowId}` : next.rowIndex,
+    ...(hasStableRowId ? { rowId } : {}),
+    rowIndex: next.rowIndex,
   });
 }

@@ -219,6 +219,25 @@ describe('AltEditorLite programmatic inline editing', () => {
     ]);
   });
 
+  it('restores the committed cell when the row id contains selector characters', async () => {
+    const specialRow = { id: 'row:a.b[0]', name: 'Special', rank: 1 };
+    const { api } = createTestTable('special-row-id', {
+      data: [specialRow],
+    });
+    const editor = new AltEditorLite<TestRow, InlineValues>(api, {
+      editMode: 'inlineDoubleClick',
+      fields,
+    });
+    editors.add(editor);
+
+    await editor.openInlineEdit(0, 0);
+    replaceInlineValue('Updated special');
+    await editor.submitInlineEdit();
+
+    expect(api.row(0).data().name).toBe('Updated special');
+    expect(document.activeElement).toBe(api.cell(0, 0).node());
+  });
+
   it('keeps other editor operations blocked until the inline session ends', async () => {
     const { editor } = createInlineEditor({
       clientSide: {
