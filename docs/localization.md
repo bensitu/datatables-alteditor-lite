@@ -9,7 +9,7 @@ AltEditorLite keeps translation data separate from its implementation. English i
 the built-in fallback, and every included language is stored as a JSON file under
 `src/locales/`. The build discovers those files automatically and produces:
 
-- unchanged JSON resources in `dist/locales/`;
+- unchanged JSON resources in `dist/esm/locales/`;
 - ESM modules such as `datatables-alteditor-lite/locales/ja`;
 - optional Browser Global registration bundles.
 
@@ -81,6 +81,8 @@ invalid language shape is non-retryable. Requests time out after 10 seconds and
 responses are limited to 64 KiB. A caller-provided `AbortSignal` is forwarded and
 can cancel the request earlier. When a response includes a `Content-Type` header,
 it must identify `application/json` or an `application/*+json` media type.
+Relative URLs and absolute HTTP or HTTPS URLs are supported. Other absolute URL
+schemes are rejected before a request is made.
 
 Templates must retain their placeholders. For example, `dialog.removeCount`
 contains `{count}`, `accessibility.searchSelectResults` contains `{count}`, and
@@ -107,7 +109,7 @@ used by the main bundle in production:
 
 ```js
 const language = await DataTablesAltEditorLite.loadEditorLanguage(
-  'https://cdn.jsdelivr.net/npm/datatables-alteditor-lite@<version>/dist/locales/ja.json',
+  'https://cdn.jsdelivr.net/npm/datatables-alteditor-lite@<version>/dist/esm/locales/ja.json',
 );
 ```
 

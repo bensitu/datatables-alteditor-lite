@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2026-08-09
+
+### Changed
+
+- Published ESM entry points, declarations, and JSON languages under `dist/esm/`,
+  with Browser Global scripts, styles, and language bundles under `dist/umd/`.
+  Package metadata now identifies both the default jsDelivr script and stylesheet.
+- Create, Remove, and Refresh now safely cancel an active Inline session before
+  continuing instead of requiring a separate manual cancellation.
+- Updated the live demonstration with separate Dialog and Inline employee tables,
+  an always-visible rendered-control workflow table, coordinated side panels, and
+  direct comparison between Inline and Dialog editing.
+
+### Fixed
+
+- Prevented stale Inline submissions, duplicate interaction release, late work
+  after cancellation, unowned redraw mutations, selector-sensitive row lookup,
+  and unresolved refresh ownership during destruction.
+- Completed cancelled dialog and refresh lifecycles consistently, restored focus
+  more reliably, handled dialog cancellation synchronously, and prevented alert
+  presentation failures from leaving editing state busy.
+- Isolated field change and validation cancellation by field, cleared stale form
+  errors, localized validation fallbacks, and displayed field callback failures
+  beside the affected control.
+- Normalized finite decimal number values, preserved readonly and required radio
+  semantics, cancelled related file reads after failure, and handled cyclic
+  collected values safely.
+- Improved SearchSelect filtering and active-option updates, removed stale ARIA
+  state on destruction, and prevented duplicate descriptive references.
+- Improved destructive-button contrast in dark color schemes and retained compact
+  Inline input, checkbox, border, and row-height presentation.
+- Rejected unsupported language resource URL schemes and malformed DataTables
+  version metadata with stable public errors.
+- Corrected documentation, CDN examples, local Demo loading, Pages assembly, and
+  browser tests for the current distribution paths and editing behavior.
+
 ## [0.2.0] - 2026-08-07
 
 ### Added

@@ -108,5 +108,6 @@ come from the owning editor's resolved `language` object.
 The Edit button is visible only in Dialog mode. In Inline mode its registered
 global definition remains available to other tables, but the instance-specific
 button is hidden, disabled, removed from keyboard navigation, and marked
-`aria-hidden`. All visible buttons remain disabled while Inline editing owns the
-table; they do not cancel the active cell.
+`aria-hidden`. Create, Remove, and Refresh remain available when their normal
+requirements are met. Invoking one of them safely cancels the active Inline cell
+before the requested action starts.

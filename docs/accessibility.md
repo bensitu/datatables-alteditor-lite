@@ -37,6 +37,11 @@ reduced-motion behavior, a 320 px layout, and high-zoom wrapping. Applications
 must preserve the supplied labels and maintain sufficient contrast when
 overriding CSS variables.
 
+Dialog focus containment covers native controls in the dialog's light DOM.
+Applications that insert iframe content or focusable controls inside Shadow DOM
+must provide containment within that embedded focus context and return focus to
+the dialog when leaving it.
+
 ## Inline focus and controls
 
 Inline Edit mounts one native control in the owned cell. Its label remains

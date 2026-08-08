@@ -64,15 +64,16 @@ distribution files:
 ```html
 <link
   rel="stylesheet"
-  href="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/alt-editor-lite.min.css"
+  href="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/umd/alt-editor-lite.min.css"
 />
-<script src="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/datatables-alteditor-lite.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/umd/datatables-alteditor-lite.min.js"></script>
 ```
 
 The unversioned URLs follow the latest published package. Pin the same package
 version in both URLs for production, for example by inserting `@<version>` after
 the package name. The script exposes `globalThis.DataTablesAltEditorLite`; it does
-not bundle DataTables.
+not bundle DataTables. Package metadata declares the browser script and stylesheet
+separately so jsDelivr can identify both default assets.
 
 ## Quick start
 
@@ -188,8 +189,9 @@ await editor.openInlineEdit('#user-42', 'displayName:name');
 
 Enter submits, Escape cancels, and Tab submits before moving to the next eligible
 visible cell on the current page. Dialog Edit is unavailable in this mode; Create,
-Remove, and Refresh retain their normal capabilities. Updates are non-optimistic
-and reuse the shared Edit persistence transaction. See
+Remove, and Refresh retain their normal capabilities and safely cancel an active
+Inline session before starting. Updates are non-optimistic and reuse the shared
+Edit persistence transaction. See
 [Editing](docs/editing.md) and [Lifecycle hooks](docs/hooks.md).
 
 ## Persistence operations
@@ -252,12 +254,12 @@ scripts before the AltEditorLite browser bundle:
 ```html
 <link
   rel="stylesheet"
-  href="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/alt-editor-lite.min.css"
+  href="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/umd/alt-editor-lite.min.css"
 />
 <script src="dataTables.js"></script>
 <script src="dataTables.buttons.js"></script>
 <script src="dataTables.select.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/datatables-alteditor-lite.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/umd/datatables-alteditor-lite.min.js"></script>
 ```
 
 The public API is available at `globalThis.DataTablesAltEditorLite`. Included
@@ -287,7 +289,7 @@ Create, Edit, and Remove follow `open → submit → success | error → close` 
 dialog closes. Refresh publishes start and complete phases. See
 [Events](docs/events.md) for detail types and ordering.
 
-## Demo and development
+## Demo
 
 The [live demo](https://bensitu.github.io/datatables-alteditor-lite/examples/demo/)
 uses the Browser Global distribution, the official DataTables CDN, an Ajax JSON
@@ -295,22 +297,7 @@ data source, asynchronous persistence, and external languages. It presents
 separate Dialog and double-click Inline employee tables, followed by a synchronous
 workflow table with rendered controls and a live editing-mode switch.
 
-For a local repository preview:
-
-```bash
-npm ci
-npm run build
-npm run demo
-```
-
-Run the complete repository checks with:
-
-```bash
-npm run check
-```
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for repository conventions and
-[SECURITY.md](SECURITY.md) for private vulnerability reporting.
+See [SECURITY.md](SECURITY.md) for private vulnerability reporting.
 
 ## Project status and attribution
 

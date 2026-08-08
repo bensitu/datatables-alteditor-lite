@@ -102,9 +102,10 @@ removes the captured rows locally after confirmation.
 
 ## Refresh
 
-`refreshTable()` does not open a dialog and is mutually exclusive with dialog
-operations. By default, Ajax tables wait for the public reload callback and local
-tables redraw without resetting paging. DataTables does not expose an
+`refreshTable()` does not open a dialog, safely cancels an active Inline session,
+and remains mutually exclusive with dialog operations. By default, Ajax tables
+wait for the public reload callback and local tables redraw without resetting
+paging. DataTables does not expose an
 `AbortSignal` parameter for `ajax.reload()`, so aborting editor ownership cannot
 guarantee cancellation of that transport.
 

@@ -36,9 +36,9 @@ available after destruction.
 
 `openEditDialog()` rejects with `EditorConfigurationError` in
 `inlineDoubleClick` mode. Inline methods reject in `dialog` mode, while the
-synchronous Inline state getters throw the same error immediately. Active Inline
-editing blocks Create, Remove, Refresh, and other mutually exclusive operations
-with `EditorOperationBusyError` until the cell is submitted or cancelled.
+synchronous Inline state getters throw the same error immediately. Create,
+Remove, and Refresh safely cancel an active Inline session before starting.
+Operations already owned by a dialog or refresh remain mutually exclusive.
 
 The registered DataTables method retrieves an existing editor and never creates
 one:
@@ -114,7 +114,11 @@ properties.
 `FieldController<TValue>` provides `element`, `getValue`, `setValue`,
 `setDisabled`, `focus`, `validate`, `clearError`, `showError`, and `destroy`.
 SearchSelect controllers additionally provide `setOptions`. `FormController` and
-`FormValidationResult` are exported for typed integrations.
+`FormValidationResult` are exported for typed integrations. Calling a field
+controller's `destroy()` cancels that field's pending change and validation work,
+removes it from the current form, and makes subsequent `getField()` calls for the
+same path return `null`. Use it only when the field should be removed for the
+remainder of that dialog lifecycle.
 
 ## Localization
 

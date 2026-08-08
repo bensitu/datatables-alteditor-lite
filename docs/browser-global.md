@@ -21,7 +21,7 @@ from jsDelivr:
     />
     <link
       rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/alt-editor-lite.min.css"
+      href="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/umd/alt-editor-lite.min.css"
     />
   </head>
   <body>
@@ -36,7 +36,7 @@ from jsDelivr:
     </table>
 
     <script src="https://cdn.datatables.net/v/dt/dt-3.0.1/datatables.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/datatables-alteditor-lite.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/umd/datatables-alteditor-lite.min.js"></script>
     <script>
       const table = new DataTable('#users', {
         columns: [{ data: 'name' }, { data: 'email' }],
@@ -81,11 +81,14 @@ browser bundle third, and any included language registration bundles last. The
 stylesheet may load in the document head, but it must be present before an editor
 is shown.
 
-The npm package publishes these Browser Global files under `dist/`:
+The npm package publishes these Browser Global files under `dist/umd/`:
 
 - `alt-editor-lite.css` and `alt-editor-lite.min.css`;
 - `datatables-alteditor-lite.js` and `datatables-alteditor-lite.min.js`;
-- JSON, ESM, and Browser Global language resources under `dist/locales/`.
+- Browser Global language resources under `dist/umd/locales/`.
+
+ESM entry points, declarations, and JSON language resources are published under
+`dist/esm/`.
 
 For self-hosting, copy the required `dist/` files and use equivalent local URLs:
 
@@ -102,7 +105,7 @@ The constructor, language loader, and language registry are available through
 Included language registration bundles must load after the main browser bundle:
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/locales/datatables-alteditor-lite.ja.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/umd/locales/datatables-alteditor-lite.ja.min.js"></script>
 ```
 
 ```js

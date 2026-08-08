@@ -3,7 +3,8 @@
 AltEditorLite provides complete-form Dialog editing and compact editing for one
 cell at a time. Set one `editMode` for each editor instance. Both presentations
 use the same non-optimistic update transaction and are mutually exclusive with
-other operations on the owned table.
+operations already in progress on the owned table. Starting Create, Remove, or
+Refresh safely cancels an active Inline session before continuing.
 
 | `editMode`          | Dialog Edit | Double-click Inline Edit |
 | ------------------- | ----------- | ------------------------ |
@@ -160,6 +161,11 @@ view invalid, and open a plain-text modal alert. Closing the alert restores focu
 to the current control when it is still mounted, so the value can be corrected
 and retried. Alert focus transfer never triggers a blur submission.
 
+When `tabAction` is `none`, Tab keeps its normal browser focus behavior. Moving
+focus out of the Inline control can therefore still invoke the configured
+`blurAction`; set `blurAction: 'none'` as well when Tab must leave without an
+editor action.
+
 An `onChange` failure is retained only for the input revision that produced it.
 It is reported through the normal error channels without opening an alert
 immediately. Submission checks the latest retained failure after field
@@ -271,10 +277,9 @@ possible; and prevents late DOM, DataTables, focus, or event work.
 ## DataTables extension boundaries
 
 - Buttons and Select are supported through their existing optional integrations.
-  Dialog Edit is hidden in Inline mode. All visible editor buttons are disabled
-  during an active inline session, and the session does not clear selection.
-  Clicking another editor action does not cancel Inline editing; submit or cancel
-  the current cell before starting another operation.
+  Dialog Edit is hidden in Inline mode. Create, Remove, and Refresh safely cancel
+  an active Inline session before starting, while preserving the current
+  DataTables selection until the requested action applies its normal behavior.
 - KeyTable has basic coexistence. Consumed control keys stop before KeyTable
   handles them, and post-commit focus uses a public cell focus method when
   available. Typing-to-edit and `keys.editor` integration are not provided.

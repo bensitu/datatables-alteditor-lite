@@ -120,9 +120,8 @@ An editor uses either Dialog Edit or Inline Edit. The default `dialog` mode make
 `openEditDialog()` available and rejects Inline methods. The
 `inlineDoubleClick` mode makes Inline methods and double-click activation
 available, hides the Dialog Edit button, and rejects `openEditDialog()`. Create,
-Remove, and Refresh retain their normal capabilities in both modes. While an
-Inline session is active, other editor operations remain blocked until the
-session is submitted or cancelled.
+Remove, and Refresh retain their normal capabilities in both modes. Starting one
+of those actions safely cancels an active Inline session before continuing.
 
 ## Rendered DataTables columns
 
