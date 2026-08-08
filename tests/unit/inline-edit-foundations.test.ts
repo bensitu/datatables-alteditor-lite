@@ -69,6 +69,13 @@ describe('inline interaction foundations', () => {
     expect(owner.owns(second)).toBe(true);
   });
 
+  it('does not create operation requests after ownership is destroyed', () => {
+    const owner = new OperationOwner();
+    owner.destroy();
+
+    expect(() => owner.begin('edit', 'inline')).toThrow(EditorDestroyedError);
+  });
+
   it('accepts only declared inline lifecycle transitions', () => {
     expect(
       canTransitionInlineEditState(

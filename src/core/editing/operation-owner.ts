@@ -1,3 +1,4 @@
+import { EditorDestroyedError } from '../alt-editor-lite-error.js';
 import { RequestSequence } from '../request-sequence.js';
 
 import type { OperationContext } from '../alt-editor-lite-options.js';
@@ -31,6 +32,9 @@ export class OperationOwner {
     mode: EditorOperationMode,
     target?: Readonly<EditorOperationTarget>,
   ): OwnedOperationRequest {
+    if (this.isDestroyed) {
+      throw new EditorDestroyedError();
+    }
     this.abort();
     const request: OwnedOperationRequest = {
       abortController: new AbortController(),
