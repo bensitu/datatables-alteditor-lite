@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { resolveLanguage } from '../../src/core/alt-editor-lite-language.js';
 import { loadEditorLanguage } from '../../src/localization/editor-language-resource.js';
 import { getLocale, registerLocale } from '../../src/localization/locale-registry.js';
 
@@ -11,6 +12,15 @@ afterEach(() => {
 });
 
 describe('external editor language resources', () => {
+  it('rejects invalid inline language values at runtime', () => {
+    expect(() => resolveLanguage({ actions: { create: 42 } } as never)).toThrow(
+      'Editor language overrides must be non-empty strings.',
+    );
+    expect(() => resolveLanguage({ locale: 'invalid_locale' })).toThrow(
+      'Editor language locale must be a valid BCP 47 identifier.',
+    );
+  });
+
   it('loads partial JSON, canonicalizes its locale, and applies English fallbacks', async () => {
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
       new Response(

@@ -1,5 +1,7 @@
 import englishLanguage from '../locales/en.json' with { type: 'json' };
 
+import { EditorConfigurationError } from './alt-editor-lite-error.js';
+
 import type { DeepPartial } from './editor-values.js';
 
 /**
@@ -104,10 +106,16 @@ function mergeDefinedLanguageText<TSection extends Readonly<Record<string, strin
   const merged = { ...fallback };
 
   if (overrides !== undefined) {
+    const runtimeOverrides = overrides as Readonly<Record<string, unknown>>;
     for (const key of Object.keys(fallback) as (keyof TSection)[]) {
-      const value = overrides[key];
+      const value = runtimeOverrides[String(key)];
       if (value !== undefined) {
-        merged[key] = value;
+        if (typeof value !== 'string' || value.trim().length === 0) {
+          throw new EditorConfigurationError(
+            'Editor language overrides must be non-empty strings.',
+          );
+        }
+        merged[key] = value as TSection[keyof TSection];
       }
     }
   }
@@ -124,8 +132,23 @@ function mergeDefinedLanguageText<TSection extends Readonly<Record<string, strin
 export function resolveLanguage(
   language: Readonly<PartialEditorLanguage> | undefined,
 ): Readonly<AltEditorLiteLanguage> {
+  const locale = language?.locale ?? ENGLISH_LANGUAGE.locale;
+  if (typeof locale !== 'string' || locale.trim().length === 0) {
+    throw new EditorConfigurationError(
+      'Editor language locale must be a valid BCP 47 identifier.',
+    );
+  }
+  let canonicalLocale: string;
+  try {
+    canonicalLocale = Intl.getCanonicalLocales(locale)[0] ?? ENGLISH_LANGUAGE.locale;
+  } catch (cause: unknown) {
+    throw new EditorConfigurationError(
+      'Editor language locale must be a valid BCP 47 identifier.',
+      cause,
+    );
+  }
   return {
-    locale: language?.locale ?? ENGLISH_LANGUAGE.locale,
+    locale: canonicalLocale,
     actions: mergeDefinedLanguageText(ENGLISH_LANGUAGE.actions, language?.actions),
     dialog: mergeDefinedLanguageText(ENGLISH_LANGUAGE.dialog, language?.dialog),
     buttons: mergeDefinedLanguageText(ENGLISH_LANGUAGE.buttons, language?.buttons),
