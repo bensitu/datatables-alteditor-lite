@@ -886,6 +886,19 @@ describe('AltEditorLite inline interaction and redraw behavior', () => {
     ).toBe('redraw');
   });
 
+  it('stops submission when an external draw closes the session during value reading', async () => {
+    const { api, editor } = createInlineEditor();
+
+    await editor.openInlineEdit('#row-a', 0);
+    replaceInlineValue('Discarded Alpha');
+    const submission = editor.submitInlineEdit();
+    api.draw(false);
+
+    await expect(submission).resolves.toBeUndefined();
+    expect(editor.getInlineState()).toEqual({ status: 'idle' });
+    expect(api.row('#row-a').data().name).toBe('Alpha');
+  });
+
   it('supports consumer-owned refresh mode with stable row-id focus recovery', async () => {
     const { api, tableElement } = createTestTable();
     let updatedName = 'Alpha';

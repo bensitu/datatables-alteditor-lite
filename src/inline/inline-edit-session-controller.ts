@@ -371,6 +371,9 @@ export class InlineEditSessionController<
     }
 
     const candidate = await Promise.resolve(session.controller.getValue());
+    if (this.session !== session) {
+      return;
+    }
     if (Object.is(candidate, session.normalizedOriginalValue)) {
       this.cleanupSession('unchanged', true, true);
       return;
