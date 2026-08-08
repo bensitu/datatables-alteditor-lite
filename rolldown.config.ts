@@ -75,24 +75,22 @@ function createEsmLocaleConfig(localeName: string): RolldownOptions {
     external: [...peerPackageNames],
     plugins: [createLocaleEntryPlugin(localeName, false)],
     output: {
-      file: `dist/locales/${localeName}.js`,
+      file: `dist/esm/locales/${localeName}.js`,
       format: 'es',
       sourcemap: true,
     },
   };
 }
 
-function createBrowserGlobalLocaleConfig(
-  localeName: string,
-  isMinified: boolean,
-): RolldownOptions {
+function createUmdLocaleConfig(localeName: string, isMinified: boolean): RolldownOptions {
   const entryId = `virtual:alteditor-lite-language:${localeName}:browser`;
   return {
     input: entryId,
     plugins: [createLocaleEntryPlugin(localeName, true)],
     output: {
-      file: `dist/locales/datatables-alteditor-lite.${localeName}${isMinified ? '.min' : ''}.js`,
-      format: 'iife',
+      file: `dist/umd/locales/datatables-alteditor-lite.${localeName}${isMinified ? '.min' : ''}.js`,
+      name: 'DataTablesAltEditorLite',
+      format: 'umd',
       minify: isMinified,
       sourcemap: true,
     },
@@ -105,28 +103,28 @@ const coreEsmConfig: RolldownOptions = {
   },
   external: [...peerPackageNames],
   output: {
-    dir: 'dist',
+    dir: 'dist/esm',
     entryFileNames: '[name].js',
     format: 'es',
     sourcemap: true,
   },
 };
 
-const coreBrowserGlobalConfig: RolldownOptions = {
+const coreUmdConfig: RolldownOptions = {
   input: 'src/browser-global.ts',
   output: {
-    file: 'dist/datatables-alteditor-lite.js',
-    format: 'iife',
+    file: 'dist/umd/datatables-alteditor-lite.js',
+    format: 'umd',
     name: 'DataTablesAltEditorLite',
     sourcemap: true,
   },
 };
 
-const minifiedCoreBrowserGlobalConfig: RolldownOptions = {
+const minifiedCoreUmdConfig: RolldownOptions = {
   input: 'src/browser-global.ts',
   output: {
-    file: 'dist/datatables-alteditor-lite.min.js',
-    format: 'iife',
+    file: 'dist/umd/datatables-alteditor-lite.min.js',
+    format: 'umd',
     minify: true,
     name: 'DataTablesAltEditorLite',
     sourcemap: true,
@@ -136,10 +134,10 @@ const minifiedCoreBrowserGlobalConfig: RolldownOptions = {
 export default defineConfig([
   coreEsmConfig,
   ...localeNames.map((localeName) => createEsmLocaleConfig(localeName)),
-  coreBrowserGlobalConfig,
-  minifiedCoreBrowserGlobalConfig,
+  coreUmdConfig,
+  minifiedCoreUmdConfig,
   ...localeNames.flatMap((localeName) => [
-    createBrowserGlobalLocaleConfig(localeName, false),
-    createBrowserGlobalLocaleConfig(localeName, true),
+    createUmdLocaleConfig(localeName, false),
+    createUmdLocaleConfig(localeName, true),
   ]),
 ]);

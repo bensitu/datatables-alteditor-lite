@@ -24,25 +24,25 @@
     "node": "^20.19.0 || ^22.13.0 || >=24.0.0"
   },
   "sideEffects": [
-    "./dist/alt-editor-lite.css",
-    "./dist/index.js"
+    "./dist/umd/alt-editor-lite.css",
+    "./dist/esm/index.js"
   ],
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "unpkg": "./dist/datatables-alteditor-lite.min.js",
-  "jsdelivr": "./dist/datatables-alteditor-lite.min.js",
-  "style": "./dist/alt-editor-lite.min.css",
+  "main": "./dist/esm/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
+  "unpkg": "./dist/umd/datatables-alteditor-lite.min.js",
+  "jsdelivr": "./dist/umd/datatables-alteditor-lite.min.js",
+  "style": "./dist/umd/alt-editor-lite.min.css",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "types": "./dist/esm/index.d.ts",
+      "import": "./dist/esm/index.js"
     },
-    "./style.css": "./dist/alt-editor-lite.css",
-    "./locales/*.json": "./dist/locales/*.json",
+    "./style.css": "./dist/umd/alt-editor-lite.css",
+    "./locales/*.json": "./dist/esm/locales/*.json",
     "./locales/*": {
-      "types": "./dist/locales/*.d.ts",
-      "import": "./dist/locales/*.js"
+      "types": "./dist/esm/locales/*.d.ts",
+      "import": "./dist/esm/locales/*.js"
     }
   },
   "publishConfig": {

@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const sourceDirectory = resolve(projectRoot, 'src/locales');
-const outputDirectory = resolve(projectRoot, 'dist/locales');
+const outputDirectory = resolve(projectRoot, 'dist/esm/locales');
 const sourceEntries = await readdir(sourceDirectory, { withFileTypes: true });
 const localeFileNames = sourceEntries
   .filter((entry) => entry.isFile() && extname(entry.name) === '.json')
@@ -110,7 +110,7 @@ await Promise.all(
   localeFileNames.flatMap((fileName) => {
     const localeName = fileName.slice(0, -'.json'.length);
     const exportName = localeExportName(fileName);
-    const declaration = `import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
+    const declaration = `import type { AltEditorLiteLanguage } from '../../core/alt-editor-lite-language.js';
 
 declare const language: Readonly<AltEditorLiteLanguage>;
 
