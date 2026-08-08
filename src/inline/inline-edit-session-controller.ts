@@ -325,8 +325,8 @@ export class InlineEditSessionController<
         this.cleanupSession('api', true, false, false);
       } else {
         activationController?.destroy();
+        this.arguments_.interactionCoordinator.release(interactionToken);
       }
-      this.arguments_.interactionCoordinator.release(interactionToken);
       if (this.activationInteractionToken === interactionToken) {
         this.activationInteractionToken = undefined;
       }
