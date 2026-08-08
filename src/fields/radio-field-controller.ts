@@ -87,6 +87,7 @@ export function createRadioFieldController<
     inputElement.setAttribute('aria-readonly', String(isReadOnly));
     applyAllowedFieldAttributes(inputElement, config.attributes);
     inputElement.addEventListener('click', preventReadOnlyMutation);
+    inputElement.addEventListener('keydown', preventReadOnlyMutation);
     inputElement.addEventListener('change', onUserChange);
 
     optionLabel.className = 'dt-alteditor-lite-radio__option';
@@ -212,6 +213,7 @@ export function createRadioFieldController<
       isDestroyed = true;
       for (const inputElement of inputElements) {
         inputElement.removeEventListener('click', preventReadOnlyMutation);
+        inputElement.removeEventListener('keydown', preventReadOnlyMutation);
         inputElement.removeEventListener('change', onUserChange);
       }
       fieldElement.remove();

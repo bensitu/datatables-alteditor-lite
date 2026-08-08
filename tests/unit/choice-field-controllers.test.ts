@@ -175,6 +175,13 @@ describe('radio field controller', () => {
     const clickEvent = new MouseEvent('click', { bubbles: true, cancelable: true });
     inputElement?.dispatchEvent(clickEvent);
     expect(clickEvent.defaultPrevented).toBe(true);
+    const keydownEvent = new KeyboardEvent('keydown', {
+      bubbles: true,
+      cancelable: true,
+      key: 'ArrowRight',
+    });
+    inputElement?.dispatchEvent(keydownEvent);
+    expect(keydownEvent.defaultPrevented).toBe(true);
 
     const emptyController = createRadio({
       label: 'Empty',
