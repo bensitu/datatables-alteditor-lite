@@ -39,6 +39,18 @@ describe('operation error normalization', () => {
     expect(
       normalizeOperationError(namedAbortError, activeSignal(), ENGLISH_LANGUAGE),
     ).toBeInstanceOf(InternalOperationAbort);
+
+    const cancelledPublicError = new AltEditorLiteError({
+      code: 'LATE_FAILURE',
+      message: 'Late failure.',
+    });
+    expect(
+      normalizeOperationError(
+        cancelledPublicError,
+        abortController.signal,
+        ENGLISH_LANGUAGE,
+      ),
+    ).toBeInstanceOf(InternalOperationAbort);
   });
 
   it('does not expose messages from structured objects or Error subclasses', () => {

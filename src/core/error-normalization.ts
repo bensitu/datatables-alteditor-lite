@@ -44,12 +44,12 @@ export function normalizeOperationError(
   signal: AbortSignal,
   language: Readonly<AltEditorLiteLanguage>,
 ): AltEditorLiteError | InternalOperationAbort {
-  if (isAltEditorLiteError(rawError)) {
-    return rawError;
-  }
-
   if (signal.aborted || isAbortError(rawError)) {
     return new InternalOperationAbort();
+  }
+
+  if (isAltEditorLiteError(rawError)) {
+    return rawError;
   }
 
   return new AltEditorLiteError({
