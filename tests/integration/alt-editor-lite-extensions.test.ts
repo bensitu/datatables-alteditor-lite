@@ -127,7 +127,7 @@ function createExtensionEditor(
     layout: {
       topStart: {
         buttons: [
-          'altEditorLiteCreate',
+          { attr: { tabindex: '7' }, extend: 'altEditorLiteCreate' },
           'altEditorLiteEdit',
           'altEditorLiteRemove',
           'altEditorLiteRefresh',
@@ -211,6 +211,7 @@ describe('optional Buttons and Select integration', () => {
     const refreshButton = buttonByText(tableElement, '刷新');
 
     expect(createButton.title).toBe('新建行');
+    expect(createButton.getAttribute('tabindex')).toBe('7');
     expect(editButton.title).toBe('请选择且仅选择一行进行编辑。');
     expect(removeButton.title).toBe('请至少选择一行进行删除。');
     expect(refreshButton.title).toBe('刷新');

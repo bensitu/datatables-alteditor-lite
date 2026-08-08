@@ -140,7 +140,7 @@ interface ButtonController {
 }
 
 interface ButtonNode {
-  attr(name: string, value: string): unknown;
+  attr(name: string, value?: string): unknown;
   attrRemove(name: string): unknown;
   css(name: string, value: string): unknown;
 }
@@ -282,6 +282,9 @@ function createButtonDefinition(
     enabled: false,
     init(this: ButtonController, table: Api<object>, buttonNode: ButtonNode): void {
       const tableElement = table.table().node();
+      const initialTabIndexValue = buttonNode.attr('tabindex');
+      const initialTabIndex =
+        typeof initialTabIndexValue === 'string' ? initialTabIndexValue : undefined;
       let currentState = unavailableButtonState();
       const updateButton = (): void => {
         const editor = findEditor(table, instanceLookups);
@@ -297,7 +300,11 @@ function createButtonDefinition(
         buttonNode.attr('aria-disabled', String(!buttonState.enabled));
         buttonNode.attr('title', buttonState.title);
         if (buttonState.visible) {
-          buttonNode.attrRemove('tabindex');
+          if (initialTabIndex === undefined) {
+            buttonNode.attrRemove('tabindex');
+          } else {
+            buttonNode.attr('tabindex', initialTabIndex);
+          }
         } else {
           buttonNode.attr('tabindex', '-1');
         }
