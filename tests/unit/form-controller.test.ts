@@ -33,7 +33,9 @@ interface FormValues {
 }
 
 const changeCallback =
-  vi.fn<(value: string, context: FieldChangeContext<FormValues>) => void>();
+  vi.fn<
+    (value: string, context: FieldChangeContext<FormValues>) => void | Promise<void>
+  >();
 const fields = [
   {
     defaultValue: '',
@@ -272,6 +274,37 @@ describe('FormController', () => {
       form.destroy();
     }).not.toThrow();
     activeForm = undefined;
+  });
+
+  it('cancels an older onChange only when the same field changes again', async () => {
+    let firstSignal: AbortSignal | undefined;
+    let finishFirstChange: (() => void) | undefined;
+    changeCallback.mockImplementationOnce(
+      (_value, context) =>
+        new Promise<void>((resolve) => {
+          firstSignal = context.signal;
+          finishFirstChange = resolve;
+        }),
+    );
+    const form = createForm();
+    const nameInput = form
+      .getField('profile.name')
+      ?.element.querySelector<HTMLInputElement>('input');
+    const emailInput = form
+      .getField('email')
+      ?.element.querySelector<HTMLInputElement>('input');
+
+    nameInput?.dispatchEvent(new Event('input', { bubbles: true }));
+    await vi.waitFor(() => {
+      expect(firstSignal).toBeDefined();
+    });
+    emailInput?.dispatchEvent(new Event('input', { bubbles: true }));
+    await Promise.resolve();
+    expect(firstSignal?.aborted).toBe(false);
+
+    nameInput?.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(firstSignal?.aborted).toBe(true);
+    finishFirstChange?.();
   });
 
   it('marks the form busy without changing collected values', async () => {

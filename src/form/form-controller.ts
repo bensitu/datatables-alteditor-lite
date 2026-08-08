@@ -72,7 +72,7 @@ export class EditorFormController<
 
   private readonly validationSequence = new RequestSequence();
 
-  private activeChangeAbortController: AbortController | undefined;
+  private readonly activeChangeAbortControllers = new Map<string, AbortController>();
 
   private activeValidationAbortController: AbortController | undefined;
 
@@ -307,7 +307,10 @@ export class EditorFormController<
 
     this.isDestroyed = true;
     this.lifecycleAbortController.abort();
-    this.activeChangeAbortController?.abort();
+    for (const abortController of this.activeChangeAbortControllers.values()) {
+      abortController.abort();
+    }
+    this.activeChangeAbortControllers.clear();
     this.activeValidationAbortController?.abort();
     this.validationSequence.invalidate();
 
@@ -336,9 +339,9 @@ export class EditorFormController<
       return;
     }
 
-    this.activeChangeAbortController?.abort();
+    this.activeChangeAbortControllers.get(fieldName)?.abort();
     const changeAbortController = new AbortController();
-    this.activeChangeAbortController = changeAbortController;
+    this.activeChangeAbortControllers.set(fieldName, changeAbortController);
     const signal = AbortSignal.any([
       changeAbortController.signal,
       this.lifecycleAbortController.signal,
@@ -364,6 +367,10 @@ export class EditorFormController<
                 retryable: true,
               }),
         );
+      }
+    } finally {
+      if (this.activeChangeAbortControllers.get(fieldName) === changeAbortController) {
+        this.activeChangeAbortControllers.delete(fieldName);
       }
     }
   }
