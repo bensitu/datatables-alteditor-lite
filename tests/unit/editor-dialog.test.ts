@@ -207,4 +207,30 @@ describe('EditorDialog', () => {
       controller.destroy();
     }).not.toThrow();
   });
+
+  it('replaces open content without retaining the previous submit listener', () => {
+    const { controller, dialogElement } = createDialog();
+    const confirmationSubmit = vi.fn();
+    const formSubmit = vi.fn();
+    controller.openConfirmation(document.createElement('div'), 'Remove', 'Remove', {
+      onRequestClose: vi.fn(),
+      onSubmit: confirmationSubmit,
+    });
+
+    const formElement = document.createElement('form');
+    formElement.id = 'replacement-form';
+    controller.openForm(formElement, 'Edit', 'Save', {
+      onRequestClose: vi.fn(),
+      onSubmit: formSubmit,
+    });
+    formElement.dispatchEvent(
+      new SubmitEvent('submit', { bubbles: true, cancelable: true }),
+    );
+
+    expect(confirmationSubmit).not.toHaveBeenCalled();
+    expect(formSubmit).toHaveBeenCalledOnce();
+    controller.close();
+    expect(getButton(dialogElement, 'submit').hasAttribute('form')).toBe(false);
+    controller.destroy();
+  });
 });

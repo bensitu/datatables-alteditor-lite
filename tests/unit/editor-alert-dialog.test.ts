@@ -49,4 +49,35 @@ describe('EditorAlertDialog', () => {
     expect(dialog.open).toBe(false);
     alert.destroy();
   });
+
+  it('restores the opening target when destroyed while open', () => {
+    const trigger = document.createElement('button');
+    const table = document.createElement('table');
+    document.body.append(trigger, table);
+    trigger.focus();
+    const alert = new EditorAlertDialog(table, 'destroy-alert-test', ENGLISH_LANGUAGE);
+    const dialog = document.querySelector<HTMLDialogElement>(
+      '.dt-alteditor-lite-dialog--alert',
+    );
+    if (dialog === null) {
+      throw new Error('Expected an alert dialog.');
+    }
+    Object.defineProperty(dialog, 'showModal', {
+      configurable: true,
+      value(): void {
+        dialog.open = true;
+      },
+    });
+    Object.defineProperty(dialog, 'close', {
+      configurable: true,
+      value(): void {
+        dialog.open = false;
+      },
+    });
+
+    void alert.open({ message: 'Message', title: 'Title' });
+    alert.destroy();
+
+    expect(document.activeElement).toBe(trigger);
+  });
 });

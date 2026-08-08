@@ -66,6 +66,7 @@ export class EditorDialog {
     submitLabel: string,
     callbacks: EditorDialogCallbacks,
   ): void {
+    this.close();
     this.configureOpenContent(formElement, title, submitLabel, false, callbacks);
     this.formElement = formElement;
     this.template.submitButton.setAttribute('form', formElement.id);
@@ -88,6 +89,7 @@ export class EditorDialog {
     submitLabel: string,
     callbacks: EditorDialogCallbacks,
   ): void {
+    this.close();
     this.configureOpenContent(contentElement, title, submitLabel, true, callbacks);
     this.template.submitButton.removeAttribute('form');
     this.template.submitButton.type = 'button';
@@ -220,6 +222,7 @@ export class EditorDialog {
   private detachForm(): void {
     this.formElement?.removeEventListener('submit', this.handleSubmit);
     this.formElement = undefined;
+    this.template.submitButton.removeAttribute('form');
   }
 
   private attachViewportListeners(): void {

@@ -112,6 +112,17 @@ describe('DialogFocusScope', () => {
     expect(backwardTab.defaultPrevented).toBe(true);
     expect(document.activeElement).toBe(lastButton);
 
+    dialogElement.tabIndex = -1;
+    dialogElement.focus();
+    const rootTab = new KeyboardEvent('keydown', {
+      bubbles: true,
+      cancelable: true,
+      key: 'Tab',
+    });
+    dialogElement.dispatchEvent(rootTab);
+    expect(rootTab.defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(firstButton);
+
     const escapeEvent = new KeyboardEvent('keydown', {
       bubbles: true,
       cancelable: true,

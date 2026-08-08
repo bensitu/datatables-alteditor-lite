@@ -244,17 +244,13 @@ export class DialogFocusScope {
     const firstElement = focusableElements[0];
     const lastElement = focusableElements.at(-1);
     const activeElement = document.activeElement;
+    const hasContainedFocus =
+      activeElement !== this.dialogElement && this.dialogElement.contains(activeElement);
 
-    if (
-      event.shiftKey &&
-      (activeElement === firstElement || !this.dialogElement.contains(activeElement))
-    ) {
+    if (event.shiftKey && (activeElement === firstElement || !hasContainedFocus)) {
       event.preventDefault();
       lastElement?.focus();
-    } else if (
-      !event.shiftKey &&
-      (activeElement === lastElement || !this.dialogElement.contains(activeElement))
-    ) {
+    } else if (!event.shiftKey && (activeElement === lastElement || !hasContainedFocus)) {
       event.preventDefault();
       firstElement?.focus();
     }

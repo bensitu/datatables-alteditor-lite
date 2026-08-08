@@ -82,6 +82,7 @@ export class EditorAlertDialog {
     }
     this.resolveOpen?.();
     this.resolveOpen = undefined;
+    this.focusScope.deactivate(true);
     this.focusScope.destroy();
     this.template.dialogElement.removeEventListener('cancel', this.handleCancel);
     this.template.closeButton.removeEventListener('click', this.handleClose);
