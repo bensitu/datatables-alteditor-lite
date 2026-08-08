@@ -4,7 +4,6 @@ import {
   AltEditorLite,
   AltEditorLiteError,
   EditorConfigurationError,
-  EditorOperationBusyError,
   type FieldConfig,
   type AltEditorLiteOptions,
   type BeforeOpenContext,
@@ -238,7 +237,7 @@ describe('AltEditorLite programmatic inline editing', () => {
     expect(document.activeElement).toBe(api.cell(0, 0).node());
   });
 
-  it('keeps other editor operations blocked until the inline session ends', async () => {
+  it('closes an active inline session before supported editor actions', async () => {
     const { editor } = createInlineEditor({
       clientSide: {
         createRow: () => ({ id: 'row-c', name: 'Gamma', rank: 3 }),
@@ -247,17 +246,20 @@ describe('AltEditorLite programmatic inline editing', () => {
       fields,
     });
     await editor.openInlineEdit('#row-a', 0);
-
-    await expect(editor.openCreateDialog()).rejects.toBeInstanceOf(
-      EditorOperationBusyError,
-    );
-    await expect(editor.openRemoveDialog('#row-b')).rejects.toBeInstanceOf(
-      EditorOperationBusyError,
-    );
-    await expect(editor.refreshTable()).rejects.toBeInstanceOf(EditorOperationBusyError);
-
-    await editor.cancelInlineEdit();
     await editor.refreshTable();
+    expect(editor.getInlineState().status).toBe('idle');
+
+    await editor.openInlineEdit('#row-a', 0);
+    await editor.openCreateDialog();
+    expect(editor.getInlineState().status).toBe('idle');
+    expect(editor.getState()).toMatchObject({ action: 'create', status: 'open' });
+    await editor.closeDialog();
+
+    await editor.openInlineEdit('#row-a', 0);
+    await editor.openRemoveDialog('#row-b');
+    expect(editor.getInlineState().status).toBe('idle');
+    expect(editor.getState()).toMatchObject({ action: 'remove', status: 'open' });
+    await editor.closeDialog();
   });
 
   it('defers the latest change callback failure until submission', async () => {

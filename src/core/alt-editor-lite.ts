@@ -261,13 +261,14 @@ export class AltEditorLite<
   public async openCreateDialog(): Promise<void> {
     try {
       this.assertActive();
-      this.assertReady();
-      this.acquireDialogInteraction();
       if (!this.hasCreateCapability()) {
         throw new EditorConfigurationError(
           'Create requires operations.create or clientSide.createRow.',
         );
       }
+      await this.closeInlineBeforeOperation();
+      this.assertReady();
+      this.acquireDialogInteraction();
 
       if (!(await this.runDialogBeforeOpen('create'))) {
         this.releaseDialogInteraction();
@@ -356,6 +357,7 @@ export class AltEditorLite<
   public async openRemoveDialog(rowSelectors?: RowSelector<TRow>): Promise<void> {
     try {
       this.assertActive();
+      await this.closeInlineBeforeOperation();
       this.assertReady();
       this.acquireDialogInteraction();
       const rowIndexes = this.resolveRequestedRowIndexes(rowSelectors);
@@ -427,15 +429,16 @@ export class AltEditorLite<
    *
    * @returns A promise settled after the current public refresh completes.
    */
-  public refreshTable(): Promise<void> {
+  public async refreshTable(): Promise<void> {
     try {
       this.assertActive();
+      await this.closeInlineBeforeOperation();
       this.assertReady();
       this.refreshInteractionToken = this.interactionCoordinator.acquire('refresh');
-      return this.runRefresh();
+      await this.runRefresh();
     } catch (error: unknown) {
       this.releaseRefreshInteraction();
-      return Promise.reject(normalizeRejectedReason(error));
+      throw normalizeRejectedReason(error);
     }
   }
 
@@ -574,6 +577,12 @@ export class AltEditorLite<
       this.interactionCoordinator.current() !== 'none'
     ) {
       throw new EditorOperationBusyError();
+    }
+  }
+
+  private async closeInlineBeforeOperation(): Promise<void> {
+    if (this.inlineController.isEditing()) {
+      await this.inlineController.cancel();
     }
   }
 
@@ -1518,8 +1527,10 @@ export class AltEditorLite<
   }
 
   private getIntegrationButtonState(): EditorButtonState {
+    const interactionOwner = this.interactionCoordinator.current();
     const isReady =
-      this.state.status === 'ready' && this.interactionCoordinator.current() === 'none';
+      this.state.status === 'ready' &&
+      (interactionOwner === 'none' || interactionOwner === 'inline');
     const hasSelect = this.selectIntegration.available();
     const selectedRowCount = hasSelect
       ? this.selectIntegration.selectedRowIndexes().length
