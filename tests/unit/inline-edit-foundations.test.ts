@@ -114,6 +114,10 @@ describe('inline interaction foundations', () => {
 
     focusState.transition({ type: 'validation-started' });
     focusState.transition({ type: 'alert-requested' });
+    focusState.transition({ type: 'alert-open-failed' });
+    expect(focusState.shouldApplyBlurAction()).toBe(true);
+    focusState.transition({ type: 'validation-started' });
+    focusState.transition({ type: 'alert-requested' });
     focusState.transition({ type: 'alert-opened' });
     expect(focusState.shouldApplyBlurAction()).toBe(false);
 

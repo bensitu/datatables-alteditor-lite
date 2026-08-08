@@ -27,6 +27,7 @@ const transitions: Readonly<
     destroyed: 'destroyed',
   },
   'alert-opening': {
+    'alert-open-failed': 'editing',
     'alert-opened': 'alert-open',
     'cleanup-started': 'cleanup',
     destroyed: 'destroyed',

@@ -17,6 +17,7 @@ export type InlineFocusEvent =
   | { readonly type: 'validation-started' }
   | { readonly type: 'submission-started' }
   | { readonly type: 'alert-requested' }
+  | { readonly type: 'alert-open-failed' }
   | { readonly type: 'alert-opened' }
   | { readonly type: 'alert-close-requested' }
   | { readonly type: 'focus-restore-started' }

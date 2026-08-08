@@ -14,7 +14,7 @@ export interface InlineEditPresentationCallbacks<
   readonly restoreAfterOperationFailure: () => void;
   readonly restoreAfterValidationFailure: () => void;
   readonly setBusy: (isBusy: boolean) => void;
-  readonly showOperationError: (error: AltEditorLiteError) => void;
+  readonly showOperationError: (error: AltEditorLiteError) => void | Promise<void>;
   readonly startValidation: () => void;
   readonly validate: (
     signal: AbortSignal,
@@ -44,8 +44,8 @@ export class InlineEditPresentationAdapter<
     this.callbacks.setBusy(isBusy);
   }
 
-  public showOperationError(error: AltEditorLiteError): void {
-    this.callbacks.showOperationError(error);
+  public showOperationError(error: AltEditorLiteError): void | Promise<void> {
+    return this.callbacks.showOperationError(error);
   }
 
   public restoreAfterValidationFailure(): void {

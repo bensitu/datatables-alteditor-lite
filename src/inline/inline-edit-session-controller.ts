@@ -565,7 +565,7 @@ export class InlineEditSessionController<
           this.focusStateMachine.transition({ type: 'submission-started' });
         }
       },
-      showOperationError: (error: AltEditorLiteError) => {
+      showOperationError: async (error: AltEditorLiteError) => {
         const fieldMessage = error.fieldErrors?.[session.capture.field.name];
         if (fieldMessage !== undefined) {
           session.controller.showError(fieldMessage);
@@ -576,7 +576,7 @@ export class InlineEditSessionController<
           status: 'error',
           target: session.capture.summary,
         });
-        void this.showAlert(session, error, 'operation');
+        await this.showAlert(session, error, 'operation');
       },
       startValidation: () => {
         session.controller.clearError();
@@ -872,6 +872,10 @@ export class InlineEditSessionController<
     if (this.isDestroyed || this.session !== session) {
       return;
     }
+    const alertDialog = this.alertDialog;
+    if (alertDialog === undefined) {
+      return;
+    }
     const focusState = this.focusStateMachine.current();
     if (!['editing', 'validating', 'submitting'].includes(focusState)) {
       return;
@@ -891,15 +895,25 @@ export class InlineEditSessionController<
       unrelatedMessages.length > 0
         ? [error.message, ...unrelatedMessages].join(' ')
         : (fieldMessage ?? error.message);
-    const alertPromise = this.alertDialog?.open({
-      message,
-      title:
-        kind === 'validation'
-          ? this.arguments_.language.alert.validationTitle
-          : this.arguments_.language.alert.operationTitle,
-    });
-    if (alertPromise === undefined) {
-      return;
+    let alertPromise: Promise<void>;
+    try {
+      alertPromise = alertDialog.open({
+        message,
+        title:
+          kind === 'validation'
+            ? this.arguments_.language.alert.validationTitle
+            : this.arguments_.language.alert.operationTitle,
+      });
+    } catch (error: unknown) {
+      this.activeAlertToken = undefined;
+      if (
+        this.session === session &&
+        this.focusStateMachine.current() === 'alert-opening'
+      ) {
+        this.focusStateMachine.transition({ type: 'alert-open-failed' });
+        session.host.focus();
+      }
+      throw error;
     }
     this.focusStateMachine.transition({ type: 'alert-opened' });
     await alertPromise;

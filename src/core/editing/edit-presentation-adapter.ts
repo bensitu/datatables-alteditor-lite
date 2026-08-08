@@ -9,7 +9,7 @@ export interface EditPresentationAdapter<
   startValidation(): void;
   validate(signal: AbortSignal): Promise<Readonly<EditValidationResult<TFormValues>>>;
   setBusy(isBusy: boolean): void;
-  showOperationError(error: AltEditorLiteError): void;
+  showOperationError(error: AltEditorLiteError): void | Promise<void>;
   restoreAfterValidationFailure(): void;
   restoreAfterOperationFailure(): void;
   completeSuccess(result: Readonly<EditCommitResult<TRow>>): Promise<void>;
