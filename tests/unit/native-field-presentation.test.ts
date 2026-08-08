@@ -112,6 +112,34 @@ describe('native field presentation', () => {
     );
   });
 
+  it('uses the invalid message when a required number has bad input', () => {
+    const controller = createFieldController(
+      { label: 'Rank', name: 'rank', required: true, type: 'number' },
+      'invalid-number',
+      language,
+      () => undefined,
+    );
+    const input = controller.element.querySelector<HTMLInputElement>('input');
+    if (input === null) {
+      throw new Error('Expected a number input.');
+    }
+    input.value = '1';
+    Object.defineProperty(input, 'validity', {
+      configurable: true,
+      value: { badInput: true, valueMissing: true },
+    });
+    Object.defineProperty(input, 'checkValidity', {
+      configurable: true,
+      value: () => false,
+    });
+
+    expect(controller.validateNative()).toEqual({
+      message: 'Localized invalid value.',
+      valid: false,
+    });
+    controller.destroy();
+  });
+
   it('groups a checkbox before its visible label on one semantic row', () => {
     activeForm = buildEditorForm(
       [{ label: 'Active', name: 'active', type: 'checkbox' }],
