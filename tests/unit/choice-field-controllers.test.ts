@@ -163,6 +163,25 @@ describe('radio field controller', () => {
     expect(inputElements[1]?.disabled).toBe(true);
   });
 
+  it('places the native required constraint on an enabled radio option', () => {
+    const controller = createRadio({
+      label: 'Choice',
+      name: 'choice',
+      options: [
+        { disabled: true, label: 'Disabled', value: 'disabled' },
+        { label: 'Allowed', value: 'allowed' },
+      ],
+      required: true,
+      type: 'radio',
+    });
+    const inputElements = [
+      ...controller.element.querySelectorAll<HTMLInputElement>('input'),
+    ];
+
+    expect(inputElements[0]?.required).toBe(false);
+    expect(inputElements[1]?.required).toBe(true);
+  });
+
   it('prevents readonly clicks and handles an empty defensive option list', () => {
     const readonlyController = createRadio({
       label: 'Choice',

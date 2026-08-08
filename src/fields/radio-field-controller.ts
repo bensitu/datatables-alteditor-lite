@@ -39,6 +39,9 @@ export function createRadioFieldController<
   const descriptionId = `${fieldId}-description`;
   const errorId = `${fieldId}-error`;
   const isReadOnly = config.readonly ?? false;
+  const requiredOptionIndex = config.options.findIndex(
+    (option) => option.disabled !== true,
+  );
   let isDestroyed = false;
 
   fieldElement.className = 'dt-alteditor-lite-field';
@@ -83,7 +86,8 @@ export function createRadioFieldController<
     inputElement.type = 'radio';
     inputElement.value = token;
     inputElement.disabled = (config.disabled ?? false) || (option.disabled ?? false);
-    inputElement.required = (config.required ?? false) && optionIndex === 0;
+    inputElement.required =
+      config.required === true && optionIndex === requiredOptionIndex;
     inputElement.setAttribute('aria-readonly', String(isReadOnly));
     applyAllowedFieldAttributes(inputElement, config.attributes);
     inputElement.addEventListener('click', preventReadOnlyMutation);
