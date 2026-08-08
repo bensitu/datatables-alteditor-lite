@@ -10,8 +10,11 @@ const dataTablesScriptPath = resolve(
   repositoryRoot,
   'node_modules/datatables.net/js/dataTables.js',
 );
-const browserBundlePath = resolve(repositoryRoot, 'dist/datatables-alteditor-lite.js');
-const stylesheetPath = resolve(repositoryRoot, 'dist/alt-editor-lite.css');
+const browserBundlePath = resolve(
+  repositoryRoot,
+  'dist/umd/datatables-alteditor-lite.js',
+);
+const stylesheetPath = resolve(repositoryRoot, 'dist/umd/alt-editor-lite.css');
 
 type EditorFixtureVariant = 'basic' | 'file' | 'slow-validation';
 
