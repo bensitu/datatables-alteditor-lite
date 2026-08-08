@@ -98,7 +98,7 @@ function createUndefinedNumberController<TFormValues extends object>(
   const readValue = (): number | undefined => {
     const normalizedValue = normalizeNumberValue(inputElement.value, undefined);
     if (!normalizedValue.valid) {
-      return Number.NaN;
+      return undefined;
     }
 
     return normalizedValue.value ?? undefined;
@@ -125,11 +125,8 @@ function createUndefinedNumberController<TFormValues extends object>(
       inputElement.readOnly = isReadOnly;
     },
     validateNative: (): FieldValidationResult => {
-      const normalizedValue = readValue();
-      if (
-        (typeof normalizedValue === 'number' && Number.isNaN(normalizedValue)) ||
-        !inputElement.checkValidity()
-      ) {
+      const normalizedValue = normalizeNumberValue(inputElement.value, undefined);
+      if (!normalizedValue.valid || !inputElement.checkValidity()) {
         return {
           valid: false,
         };
@@ -163,7 +160,7 @@ function createNullNumberController<TFormValues extends object>(
   const readValue = (): number | null => {
     const normalizedValue = normalizeNumberValue(inputElement.value, null);
     if (!normalizedValue.valid) {
-      return Number.NaN;
+      return null;
     }
 
     return normalizedValue.value ?? null;
@@ -190,11 +187,8 @@ function createNullNumberController<TFormValues extends object>(
       inputElement.readOnly = isReadOnly;
     },
     validateNative: (): FieldValidationResult => {
-      const normalizedValue = readValue();
-      if (
-        (typeof normalizedValue === 'number' && Number.isNaN(normalizedValue)) ||
-        !inputElement.checkValidity()
-      ) {
+      const normalizedValue = normalizeNumberValue(inputElement.value, null);
+      if (!normalizedValue.valid || !inputElement.checkValidity()) {
         return {
           valid: false,
         };

@@ -29,9 +29,17 @@ describe('field value normalization', () => {
       valid: true,
       value: 12.5,
     });
+    const negativeZero = normalizeNumberValue('-0', undefined);
+    expect(negativeZero).toEqual({ valid: true, value: 0 });
+    expect(negativeZero.valid && Object.is(negativeZero.value, -0)).toBe(false);
     expect(normalizeNumberValue('not-a-number', undefined)).toEqual({
       valid: false,
     });
+    for (const unsupportedValue of [' 1 ', 'Infinity', '0x1f', '0b101']) {
+      expect(normalizeNumberValue(unsupportedValue, undefined)).toEqual({
+        valid: false,
+      });
+    }
   });
 
   it('round-trips typed select tokens without string coercion', () => {
