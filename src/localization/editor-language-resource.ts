@@ -12,11 +12,34 @@ import {
 const placeholderPattern = /\{[^{}]+\}/gu;
 const LANGUAGE_REQUEST_TIMEOUT_MS = 10_000;
 const MAX_LANGUAGE_RESOURCE_BYTES = 64 * 1024;
+const ABSOLUTE_SCHEME_PATTERN = /^[a-z][a-z\d+.-]*:/iu;
 
 interface LanguageRequestLifetime {
   readonly signal: AbortSignal;
   readonly timedOut: () => boolean;
   dispose(): void;
+}
+
+function assertSupportedLanguageResource(resource: RequestInfo | URL): void {
+  const resourceUrl =
+    resource instanceof URL
+      ? resource.href
+      : typeof Request !== 'undefined' && resource instanceof Request
+        ? resource.url
+        : typeof resource === 'string'
+          ? resource
+          : '';
+  if (
+    resourceUrl.length > 0 &&
+    ABSOLUTE_SCHEME_PATTERN.test(resourceUrl) &&
+    !/^https?:/iu.test(resourceUrl)
+  ) {
+    throw new EditorLanguageLoadError(
+      'Editor language resources must use an HTTP or HTTPS URL.',
+      undefined,
+      false,
+    );
+  }
 }
 
 function createLanguageRequestLifetime(
@@ -232,6 +255,7 @@ export async function loadEditorLanguage(
   resource: RequestInfo | URL,
   requestInit?: RequestInit,
 ): Promise<Readonly<AltEditorLiteLanguage>> {
+  assertSupportedLanguageResource(resource);
   const requestLifetime = createLanguageRequestLifetime(resource, requestInit);
   try {
     let response: Response;

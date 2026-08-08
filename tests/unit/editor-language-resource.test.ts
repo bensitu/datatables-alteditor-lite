@@ -58,6 +58,20 @@ describe('external editor language resources', () => {
     );
   });
 
+  it('rejects non-network language resource schemes before fetching', async () => {
+    const fetchMock = vi.fn<typeof fetch>();
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(
+      loadEditorLanguage('data:application/json,{"locale":"en"}'),
+    ).rejects.toMatchObject({
+      code: 'LANGUAGE_LOAD',
+      message: 'Editor language resources must use an HTTP or HTTPS URL.',
+      retryable: false,
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it('reports invalid JSON and invalid placeholders as non-retryable', async () => {
     const fetchMock = vi
       .fn<typeof fetch>()
