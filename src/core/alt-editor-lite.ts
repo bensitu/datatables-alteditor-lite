@@ -642,19 +642,21 @@ export class AltEditorLite<
         abortController.signal,
         this.language,
       );
-      if (!(error instanceof InternalOperationAbort)) {
-        this.reportOperationError(
-          error,
-          {
-            committed: false,
-            mode: 'dialog',
-            operation,
-            phase: 'open',
-            ...(target === undefined ? {} : { target }),
-          },
-          true,
-        );
+      if (error instanceof InternalOperationAbort) {
+        return false;
       }
+
+      this.reportOperationError(
+        error,
+        {
+          committed: false,
+          mode: 'dialog',
+          operation,
+          phase: 'open',
+          ...(target === undefined ? {} : { target }),
+        },
+        true,
+      );
       throw error;
     } finally {
       if (this.activeOpenAbortController === abortController) {

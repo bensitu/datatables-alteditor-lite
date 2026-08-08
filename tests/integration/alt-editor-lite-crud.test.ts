@@ -160,6 +160,32 @@ function confirmRemove(): void {
 }
 
 describe('AltEditorLite form opening', () => {
+  it('treats closing during beforeOpen as a completed cancellation', async () => {
+    const beforeOpen = createDeferred<boolean>();
+    const onError = vi.fn();
+    const { editor } = createCrudEditor('cancel-before-open', {
+      hooks: {
+        beforeOpen: () => beforeOpen.promise,
+        onError,
+      },
+    });
+
+    const opening = editor.openEditDialog('#row-a');
+    await vi.waitFor(() => {
+      expect(editor.getState()).toEqual({ status: 'ready' });
+    });
+    await editor.closeDialog();
+    beforeOpen.resolve(true);
+
+    await expect(opening).resolves.toBeUndefined();
+    expect(editor.getState()).toEqual({ status: 'ready' });
+    expect(onError).not.toHaveBeenCalled();
+
+    await editor.openEditDialog('#row-a');
+    expect(editor.getState()).toEqual({ action: 'edit', status: 'open' });
+    await editor.closeDialog();
+  });
+
   it('recovers and publishes an error when source values cannot populate a field', async () => {
     const invalidRow = {
       id: 'row-null',
