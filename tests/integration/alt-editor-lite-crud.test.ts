@@ -776,9 +776,9 @@ describe('AltEditorLite Refresh and optional selection boundary', () => {
     });
 
     const refreshRequest = editor.refreshTable();
-    expect(ajaxRequestCount).toBe(2);
-    await Promise.resolve();
-    await Promise.resolve();
+    await vi.waitFor(() => {
+      expect(ajaxRequestCount).toBe(2);
+    });
     expect(editor.getState().status).toBe('refreshing');
     expect(completeRefreshRequest).toBeTypeOf('function');
 

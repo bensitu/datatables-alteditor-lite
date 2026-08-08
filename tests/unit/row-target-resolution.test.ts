@@ -23,7 +23,6 @@ interface MutableMockRow {
   nodeSelectable?: boolean;
   reportedIndex?: number | null;
   readonly rowId: string | undefined;
-  readonly selectableRowId?: string | null;
 }
 
 interface MockTable {
@@ -38,19 +37,12 @@ function createMockTable(rows: readonly MutableMockRow[]): MockTable {
     const target =
       typeof selector === 'number'
         ? rows.find((candidate) => candidate.index === selector)
-        : typeof selector === 'string' && selector.startsWith('#')
+        : selector instanceof HTMLTableRowElement
           ? rows.find(
               (candidate) =>
-                (candidate.selectableRowId === undefined
-                  ? candidate.rowId
-                  : candidate.selectableRowId) === selector.slice(1),
+                candidate.nodeSelectable !== false && candidate.node === selector,
             )
-          : selector instanceof HTMLTableRowElement
-            ? rows.find(
-                (candidate) =>
-                  candidate.nodeSelectable !== false && candidate.node === selector,
-              )
-            : undefined;
+          : undefined;
 
     return {
       any: () => target !== undefined,
@@ -65,7 +57,14 @@ function createMockTable(rows: readonly MutableMockRow[]): MockTable {
   };
 
   return {
-    api: { row } as unknown as Api<TestRow>,
+    api: {
+      row,
+      rows: () => ({
+        indexes: () => ({
+          toArray: () => rows.map((candidate) => candidate.index),
+        }),
+      }),
+    } as unknown as Api<TestRow>,
     selectors,
   };
 }
@@ -107,53 +106,50 @@ describe('row target resolution', () => {
     ).toThrow(EditorTargetUnavailableError);
   });
 
-  it('retains a row id only when its public selector resolves the same index', () => {
+  it('retains a row id only when it is non-empty and unique', () => {
     const emptyIdRow: MutableMockRow = {
       data: { id: 'empty', name: 'Empty' },
       index: 0,
       node: null,
       rowId: '',
     };
-    const missingIdRow: MutableMockRow = {
-      data: { id: 'missing', name: 'Missing' },
+    const uniqueIdRow: MutableMockRow = {
+      data: { id: 'unique', name: 'Unique' },
       index: 1,
       node: null,
-      rowId: 'missing-id',
-      selectableRowId: null,
+      rowId: 'unique-id',
     };
-    const mismatchedIdRow: MutableMockRow = {
-      data: { id: 'mismatch', name: 'Mismatch' },
+    const firstDuplicateRow: MutableMockRow = {
+      data: { id: 'duplicate-a', name: 'Duplicate A' },
       index: 2,
       node: null,
       rowId: 'shared-id',
-      selectableRowId: null,
     };
-    const otherRow: MutableMockRow = {
-      data: { id: 'other', name: 'Other' },
+    const secondDuplicateRow: MutableMockRow = {
+      data: { id: 'duplicate-b', name: 'Duplicate B' },
       index: 3,
       node: null,
-      rowId: 'other-id',
-      selectableRowId: 'shared-id',
+      rowId: 'shared-id',
     };
     const { api } = createMockTable([
       emptyIdRow,
-      missingIdRow,
-      mismatchedIdRow,
-      otherRow,
+      uniqueIdRow,
+      firstDuplicateRow,
+      secondDuplicateRow,
     ]);
 
     expect(captureEditTarget(api, 0, 'Target unavailable.').snapshot.rowId).toBe(
       undefined,
     );
     expect(captureEditTarget(api, 1, 'Target unavailable.').snapshot.rowId).toBe(
-      undefined,
+      'unique-id',
     );
     expect(captureEditTarget(api, 2, 'Target unavailable.').snapshot.rowId).toBe(
       undefined,
     );
   });
 
-  it('uses the public row-id selector before node or index fallbacks', () => {
+  it('uses the unique row-id scan before node or index fallbacks', () => {
     const tableElement = document.createElement('table');
     const rowNode = createOwnedRowNode(tableElement);
     const sourceRow = { id: 'row-a', name: 'Alpha' };
@@ -168,8 +164,9 @@ describe('row target resolution', () => {
     selectors.length = 0;
 
     expect(resolveEditTarget(api, tableElement, capture, 'Target unavailable.')).toBe(4);
-    expect(selectors[0]).toBe('#row-a');
+    expect(selectors).not.toContain('#row-a');
     expect(selectors).not.toContain(rowNode);
+    expect(selectors.every((selector) => selector === 4)).toBe(true);
   });
 
   it('resolves a connected owned row node when no stable row id exists', () => {
@@ -230,12 +227,9 @@ describe('row target resolution', () => {
   it.each([
     {
       mutate: (row: MutableMockRow) => {
-        Object.defineProperty(row, 'selectableRowId', {
-          configurable: true,
-          value: null,
-        });
+        Object.defineProperty(row, 'rowId', { configurable: true, value: undefined });
       },
-      name: 'missing row-id selector',
+      name: 'missing row id',
     },
     {
       mutate: (row: MutableMockRow) => {
