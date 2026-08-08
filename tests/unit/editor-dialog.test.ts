@@ -110,7 +110,7 @@ describe('EditorDialog', () => {
     controller.destroy();
   });
 
-  it('defers Escape handling and rechecks dialog ownership', async () => {
+  it('handles Escape synchronously while the dialog is interactive', () => {
     const { controller, dialogElement } = createDialog();
     const onRequestClose = vi.fn();
     const contentElement = document.createElement('div');
@@ -120,32 +120,15 @@ describe('EditorDialog', () => {
     });
 
     const firstCancelEvent = new Event('cancel', { cancelable: true });
-    dialogElement.dispatchEvent(firstCancelEvent);
     controller.setBusy(true);
-    await Promise.resolve();
+    dialogElement.dispatchEvent(firstCancelEvent);
     expect(firstCancelEvent.defaultPrevented).toBe(true);
     expect(onRequestClose).not.toHaveBeenCalled();
 
     controller.setBusy(false);
     const secondCancelEvent = new Event('cancel', { cancelable: true });
     dialogElement.dispatchEvent(secondCancelEvent);
-    await Promise.resolve();
     expect(onRequestClose).toHaveBeenCalledWith('escape');
-
-    const staleClose = vi.fn();
-    controller.close();
-    controller.openConfirmation(document.createElement('div'), 'First', 'Confirm', {
-      onRequestClose: staleClose,
-      onSubmit: vi.fn(),
-    });
-    dialogElement.dispatchEvent(new Event('cancel', { cancelable: true }));
-    controller.close();
-    controller.openConfirmation(document.createElement('div'), 'Second', 'Confirm', {
-      onRequestClose: vi.fn(),
-      onSubmit: vi.fn(),
-    });
-    await Promise.resolve();
-    expect(staleClose).not.toHaveBeenCalled();
     controller.destroy();
   });
 

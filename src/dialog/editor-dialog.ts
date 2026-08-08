@@ -264,18 +264,8 @@ export class EditorDialog {
 
   private readonly handleNativeCancel = (event: Event): void => {
     event.preventDefault();
-    const currentCallbacks = this.callbacks;
-    if (!this.isBusy && currentCallbacks !== undefined) {
-      queueMicrotask(() => {
-        if (
-          !this.isDestroyed &&
-          !this.isBusy &&
-          this.template.dialogElement.open &&
-          this.callbacks === currentCallbacks
-        ) {
-          currentCallbacks.onRequestClose('escape');
-        }
-      });
+    if (!this.isBusy && this.callbacks !== undefined) {
+      this.callbacks.onRequestClose('escape');
     }
   };
 }
