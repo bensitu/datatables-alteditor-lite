@@ -440,11 +440,12 @@ export class EditorFormController<
       }
 
       return customResult;
-    } catch (error: unknown) {
+    } catch {
       if (signal.aborted) {
         return { valid: false };
       }
-      throw error;
+      controller.showError(this.invalidMessage);
+      return { message: this.invalidMessage, valid: false };
     } finally {
       if (
         this.activeFieldValidationAbortControllers.get(controller.name) ===

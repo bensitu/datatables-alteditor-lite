@@ -86,23 +86,16 @@ describe('validateEditorForm', () => {
     });
   });
 
-  it('aborts peer validators when one validator rejects', async () => {
+  it('maps a rejected validator to its field without cancelling peers', async () => {
     const validatorFailure = new Error('Validator service failed.');
     let peerSignal: AbortSignal | undefined;
     const peerValidator: ManagedFieldController<ValidationValues>['validateCustom'] = (
       _values,
       signal,
-    ) =>
-      new Promise<FieldValidationResult>((_resolve, reject) => {
-        peerSignal = signal;
-        signal.addEventListener(
-          'abort',
-          () => {
-            reject(new DOMException('Peer validation was aborted.', 'AbortError'));
-          },
-          { once: true },
-        );
-      });
+    ) => {
+      peerSignal = signal;
+      return Promise.resolve({ valid: true });
+    };
     const failingController = createValidationController({
       customValidator: vi.fn(() => Promise.reject(validatorFailure)),
       name: 'first',
@@ -118,7 +111,10 @@ describe('validateEditorForm', () => {
         () => Promise.resolve({ first: 'one', second: 'two' }),
         new AbortController().signal,
       ),
-    ).rejects.toBe(validatorFailure);
-    expect(peerSignal?.aborted).toBe(true);
+    ).resolves.toEqual({
+      fieldErrors: { first: 'Enter a valid value.' },
+      valid: false,
+    });
+    expect(peerSignal?.aborted).toBe(false);
   });
 });

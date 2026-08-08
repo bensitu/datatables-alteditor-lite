@@ -51,27 +51,24 @@ export async function validateEditorForm<TFormValues extends object>(
   }
 
   const values = await collectValues();
-  const validatorAbortController = new AbortController();
-  const validatorSignal = AbortSignal.any([signal, validatorAbortController.signal]);
-  let customResults: readonly {
-    readonly name: string;
-    readonly result: Awaited<
-      ReturnType<ManagedFieldController<TFormValues>['validateCustom']>
-    >;
-  }[];
-  try {
-    customResults = await Promise.all(
-      controllers
-        .filter((controller) => !controller.isDisabled())
-        .map(async (controller) => ({
-          name: controller.name,
-          result: await controller.validateCustom(values, validatorSignal),
-        })),
-    );
-  } catch (error: unknown) {
-    validatorAbortController.abort(error);
-    throw error;
-  }
+  const customResults = await Promise.all(
+    controllers
+      .filter((controller) => !controller.isDisabled())
+      .map(async (controller) => {
+        try {
+          return {
+            name: controller.name,
+            result: await controller.validateCustom(values, signal),
+          };
+        } catch {
+          signal.throwIfAborted();
+          return {
+            name: controller.name,
+            result: { message: invalidMessage, valid: false } as const,
+          };
+        }
+      }),
+  );
 
   for (const customResult of customResults) {
     if (!customResult.result.valid) {
