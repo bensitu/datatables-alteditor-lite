@@ -1,4 +1,4 @@
-import { copyFile, mkdir, readdir, rm, writeFile } from 'node:fs/promises';
+import { copyFile, cp, mkdir, rm, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -19,32 +19,16 @@ if (dirname(outputDirectory) !== projectRoot) {
 
 await rm(outputDirectory, { force: true, recursive: true });
 await Promise.all([
-  mkdir(resolve(outputDirectory, 'dist/locales'), { recursive: true }),
+  mkdir(outputDirectory, { recursive: true }),
   mkdir(resolve(outputDirectory, 'examples/demo/data'), { recursive: true }),
   mkdir(resolve(outputDirectory, 'examples/demo'), { recursive: true }),
 ]);
-const localeFileNames = (await readdir(resolve(distributionDirectory, 'locales')))
-  .filter((fileName) => fileName.endsWith('.json'))
-  .sort();
 await Promise.all([
-  copyFile(
-    resolve(distributionDirectory, 'alt-editor-lite.css'),
-    resolve(outputDirectory, 'dist/alt-editor-lite.css'),
-  ),
-  copyFile(
-    resolve(distributionDirectory, 'datatables-alteditor-lite.js'),
-    resolve(outputDirectory, 'dist/datatables-alteditor-lite.js'),
-  ),
+  cp(distributionDirectory, resolve(outputDirectory, 'dist'), { recursive: true }),
   ...demoAssetPaths.map((assetPath) =>
     copyFile(
       resolve(demoDirectory, assetPath),
       resolve(outputDirectory, 'examples/demo', assetPath),
-    ),
-  ),
-  ...localeFileNames.map((fileName) =>
-    copyFile(
-      resolve(distributionDirectory, 'locales', fileName),
-      resolve(outputDirectory, 'dist/locales', fileName),
     ),
   ),
 ]);

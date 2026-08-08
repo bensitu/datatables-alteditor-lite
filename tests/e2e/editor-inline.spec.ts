@@ -266,6 +266,17 @@ test('redraws columnDefs controls from committed inline and dialog values', asyn
 
   await page.evaluate(async () => {
     const runtimeScope = globalThis as typeof globalThis & RenderedControlsRuntime;
+    await runtimeScope.editor?.openInlineEdit('#row-a', 'schedule:name');
+  });
+  await page.locator('.alteditor-lite-inline input[type="time"]').fill('10:00');
+  await page.evaluate(async () => {
+    const runtimeScope = globalThis as typeof globalThis & RenderedControlsRuntime;
+    await runtimeScope.editor?.submitInlineEdit();
+  });
+  await expect(renderedSchedule).toHaveValue('10:00');
+
+  await page.evaluate(async () => {
+    const runtimeScope = globalThis as typeof globalThis & RenderedControlsRuntime;
     runtimeScope.useDialogEditor?.();
     await runtimeScope.editor?.openEditDialog('#row-a');
   });

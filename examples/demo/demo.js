@@ -473,7 +473,10 @@ async function getOrLoadLanguage(localeName) {
     throw new Error(`No language resource is configured for "${localeName}".`);
   }
 
-  const resourceUrl = new URL(`../../dist/locales/${languageFileName}`, document.baseURI);
+  const resourceUrl = new URL(
+    `../../dist/esm/locales/${languageFileName}`,
+    document.baseURI,
+  );
   return registerLocale(await loadEditorLanguage(resourceUrl));
 }
 
