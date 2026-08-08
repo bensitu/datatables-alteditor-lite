@@ -397,9 +397,10 @@ test('integrates Buttons and Select while preserving the opening target', async 
   await expect(page.evaluate(() => 'jQuery' in globalThis)).resolves.toBe(false);
 });
 
-test('has no serious or critical axe violations in Edit and Remove dialogs', async ({
+test('has no serious or critical axe violations in dark Edit and Remove dialogs', async ({
   page,
 }) => {
+  await page.emulateMedia({ colorScheme: 'dark' });
   await createCrudFixture(page);
   await page.locator('#edit-explicit').click();
   const editScan = await new AxeBuilder({ page }).include('dialog').analyze();

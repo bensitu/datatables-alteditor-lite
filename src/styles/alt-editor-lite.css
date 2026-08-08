@@ -3,6 +3,7 @@
   --dt-alteditor-lite-spacing: 1rem;
   --dt-alteditor-lite-border-radius: 0.5rem;
   --dt-alteditor-lite-error-color: #b42318;
+  --dt-alteditor-lite-error-text-color: #fff;
   --dt-alteditor-lite-overlay-color: rgb(0 0 0 / 45%);
   --dt-alteditor-lite-surface-color: Canvas;
   --dt-alteditor-lite-text-color: CanvasText;
@@ -112,7 +113,7 @@
 }
 
 .dt-alteditor-lite-dialog__button--destructive {
-  color: #fff;
+  color: var(--dt-alteditor-lite-error-text-color);
   background: var(--dt-alteditor-lite-error-color);
   border-color: var(--dt-alteditor-lite-error-color);
 }
@@ -408,6 +409,7 @@ textarea.dt-alteditor-lite-field__control {
 @media (prefers-color-scheme: dark) {
   :root {
     --dt-alteditor-lite-error-color: #ffb4ab;
+    --dt-alteditor-lite-error-text-color: #410002;
     --dt-alteditor-lite-primary-color: #8ecaff;
     --dt-alteditor-lite-primary-text-color: #001d32;
     --dt-alteditor-lite-popup-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 55%);
