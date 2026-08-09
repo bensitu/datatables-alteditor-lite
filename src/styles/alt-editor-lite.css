@@ -234,17 +234,22 @@
   inset-block-start: 50%;
   inset-inline-end: 0.25rem;
   display: inline-grid;
-  width: 2rem;
-  height: 2rem;
-  padding: 0.35rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0.2rem;
   color: var(--dt-alteditor-lite-primary-color);
   cursor: pointer;
-  background: var(--dt-alteditor-lite-surface-color);
-  border: 1px solid var(--dt-alteditor-lite-border-color);
-  border-radius: calc(var(--dt-alteditor-lite-border-radius) / 1.5);
-  box-shadow: var(--dt-alteditor-lite-popup-shadow);
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  opacity: 0.65;
   transform: translateY(-50%);
   place-items: center;
+}
+
+.alteditor-lite-inline-hover__trigger:hover,
+.alteditor-lite-inline-hover__trigger:focus-visible {
+  opacity: 1;
 }
 
 .alteditor-lite-inline-hover__trigger svg,
@@ -320,8 +325,16 @@
   .alteditor-lite-inline__action {
     color: ButtonText;
     background: ButtonFace;
-    border-color: ButtonText;
     forced-color-adjust: auto;
+  }
+
+  .alteditor-lite-inline-hover__trigger {
+    outline: 1px solid ButtonText;
+    opacity: 1;
+  }
+
+  .alteditor-lite-inline__action {
+    border-color: ButtonText;
   }
 }
 
