@@ -8,4 +8,6 @@ export interface InlineActivationStrategy<
   attach(context: InlineActivationContext<TRow, TFormValues>): () => void;
   hide?(): void;
   presentCell?(cell: HTMLTableCellElement | undefined): void;
+  resume?(): void;
+  suspend?(): void;
 }

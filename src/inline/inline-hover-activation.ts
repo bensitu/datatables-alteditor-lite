@@ -16,6 +16,8 @@ export class InlineHoverActivation<
 > implements InlineActivationStrategy<TRow, TFormValues> {
   private context: InlineActivationContext<TRow, TFormValues> | undefined;
 
+  private isSuspended = false;
+
   private pendingTouchCell: HTMLTableCellElement | undefined;
 
   private touchFallbackTimer: number | undefined;
@@ -31,6 +33,9 @@ export class InlineHoverActivation<
     };
     const activateTrigger = (event: Event): void => {
       event.stopPropagation();
+      if (this.isSuspended) {
+        return;
+      }
       const cell = this.trigger.currentCell();
       if (cell === undefined || context.signal.aborted) {
         return;
@@ -47,7 +52,7 @@ export class InlineHoverActivation<
       }
     };
     const handlePointerMove = (event: PointerEvent): void => {
-      if (event.pointerType === 'touch' || context.signal.aborted) {
+      if (this.isSuspended || event.pointerType === 'touch' || context.signal.aborted) {
         return;
       }
       if (event.target instanceof Node && this.trigger.element.contains(event.target)) {
@@ -71,7 +76,7 @@ export class InlineHoverActivation<
       }
     };
     const handlePointerUp = (event: PointerEvent): void => {
-      if (event.pointerType !== 'touch' || context.signal.aborted) {
+      if (this.isSuspended || event.pointerType !== 'touch' || context.signal.aborted) {
         return;
       }
       if (event.target instanceof Node && this.trigger.element.contains(event.target)) {
@@ -95,6 +100,7 @@ export class InlineHoverActivation<
           this.touchFallbackTimer = undefined;
           if (
             this.pendingTouchCell !== cell ||
+            this.isSuspended ||
             context.signal.aborted ||
             resolveInlineCellTarget(
               context.table,
@@ -110,6 +116,11 @@ export class InlineHoverActivation<
       }
     };
     const handleClick = (event: MouseEvent): void => {
+      if (this.isSuspended) {
+        this.clearTouchFallback();
+        this.pendingTouchCell = undefined;
+        return;
+      }
       const cell = this.pendingTouchCell;
       if (cell === undefined) {
         return;
@@ -125,6 +136,7 @@ export class InlineHoverActivation<
         queueMicrotask(() => {
           if (
             this.pendingTouchCell !== cell ||
+            this.isSuspended ||
             context.signal.aborted ||
             resolveInlineCellTarget(
               context.table,
@@ -144,6 +156,7 @@ export class InlineHoverActivation<
       queueMicrotask(() => {
         if (
           this.pendingTouchCell !== cell ||
+          this.isSuspended ||
           context.signal.aborted ||
           resolveInlineCellTarget(
             context.table,
@@ -233,7 +246,12 @@ export class InlineHoverActivation<
     this.clearTouchFallback();
     this.pendingTouchCell = undefined;
     const context = this.context;
-    if (cell === undefined || context === undefined || context.signal.aborted) {
+    if (
+      this.isSuspended ||
+      cell === undefined ||
+      context === undefined ||
+      context.signal.aborted
+    ) {
       this.trigger.hide();
       return;
     }
@@ -248,6 +266,15 @@ export class InlineHoverActivation<
       return;
     }
     this.trigger.moveTo(cell);
+  }
+
+  public resume(): void {
+    this.isSuspended = false;
+  }
+
+  public suspend(): void {
+    this.isSuspended = true;
+    this.hide();
   }
 
   private clearTouchFallback(): void {

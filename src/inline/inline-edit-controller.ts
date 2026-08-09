@@ -46,9 +46,10 @@ export class InlineEditController<TRow extends object, TFormValues extends objec
       mappings: mappingRegistry.mappings,
       onSessionEnd: () => {
         this.keyTableIntegration.restore();
+        presentation.activationStrategy.resume?.();
       },
       onSessionStart: () => {
-        presentation.activationStrategy.hide?.();
+        presentation.activationStrategy.suspend?.();
         this.keyTableIntegration.suspend();
       },
       viewFactory: presentation.viewFactory,

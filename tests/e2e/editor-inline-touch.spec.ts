@@ -125,6 +125,9 @@ test('reveals one trigger before editing and keeps explicit touch resolution', a
   const input = page.getByRole('textbox', { name: 'Name' });
   await expect(input).toHaveValue('Alpha');
   await input.fill('Touch Alpha');
+  await page.locator('#row-b td').first().tap();
+  await expect(page.locator('.alteditor-lite-inline-hover__trigger')).toHaveCount(0);
+  await expect(page.locator('.alteditor-lite-inline')).toHaveCount(1);
   await page.getByRole('button', { name: 'Outside' }).tap();
   await expect(page.locator('.alteditor-lite-inline')).toHaveCount(1);
   await page.getByRole('button', { name: 'Submit' }).tap();

@@ -643,6 +643,40 @@ describe('AltEditorLite hover inline editing', () => {
     expect(api.row('#row-a').data().name).toBe('Hover Alpha');
   });
 
+  it('suspends hover discovery while editing and resumes after cancel', async () => {
+    const { api, editor, tableElement } = createInlineEditor({
+      editMode: 'inlineHover',
+      fields,
+    });
+    const activeCell = api.cell('#row-a', 0).node();
+    const otherCell = api.cell('#row-b', 0).node();
+
+    revealTrigger(activeCell).click();
+    await vi.waitFor(() => {
+      expect(editor.getInlineState().status).toBe('editing');
+    });
+
+    dispatchPointerEvent(activeCell, 'pointermove', 'mouse');
+    expect(
+      tableElement.querySelector('.alteditor-lite-inline-hover__trigger'),
+    ).toBeNull();
+
+    dispatchPointerEvent(otherCell, 'pointermove', 'mouse');
+    dispatchPointerEvent(otherCell, 'pointerup', 'touch');
+    otherCell.click();
+    await Promise.resolve();
+    expect(
+      tableElement.querySelector('.alteditor-lite-inline-hover__trigger'),
+    ).toBeNull();
+
+    await editor.cancelInlineEdit();
+    expect(editor.getInlineState().status).toBe('idle');
+    expect(
+      tableElement.querySelector('.alteditor-lite-inline-hover__trigger'),
+    ).toBeNull();
+    expect(revealTrigger(otherCell).isConnected).toBe(true);
+  });
+
   it('cancels without persistence and refuses external operations until resolved', async () => {
     const update = vi.fn(
       (values: Readonly<Partial<InlineValues>>, original: Readonly<TestRow>) => ({
