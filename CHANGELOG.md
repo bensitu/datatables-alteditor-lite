@@ -39,6 +39,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Inline input, checkbox, border, and row-height presentation.
 - Rejected unsupported language resource URL schemes and malformed DataTables
   version metadata with stable public errors.
+- Updated indirect development dependencies to js-yaml 4.3.1 and nanoid 3.3.18
+  to incorporate their current availability safeguards.
 - Corrected documentation, CDN examples, local Demo loading, Pages assembly, and
   browser tests for the current distribution paths and editing behavior.
 
