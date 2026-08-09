@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated the live demonstration with separate Dialog and Inline employee tables,
   an always-visible rendered-control workflow table, coordinated side panels, and
   direct comparison between Inline and Dialog editing.
+- Updated the development toolchain to ESLint 10.8.1 and Rolldown 1.2.3.
 
 ### Fixed
 
