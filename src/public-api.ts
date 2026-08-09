@@ -69,6 +69,7 @@ export type { BuiltinValue, DeepPartial, EditorValues } from './core/editor-valu
 export { registerAltEditorLite } from './datatables/register-alt-editor-lite.js';
 export type {
   BaseFieldConfig,
+  BaseSearchSelectFieldConfig,
   CheckboxFieldConfig,
   DateFieldConfig,
   DateTimeFieldConfig,
@@ -81,10 +82,12 @@ export type {
   FileEncoding,
   FileFieldConfig,
   HiddenFieldConfig,
+  LocalSearchSelectFieldConfig,
   MultipleFileFieldConfig,
   NumberFieldConfig,
   PasswordFieldConfig,
   RadioFieldConfig,
+  RemoteSearchSelectFieldConfig,
   SearchSelectFieldConfig,
   SelectFieldConfig,
   SelectOption,
@@ -95,6 +98,11 @@ export type {
   VisibleFieldConfig,
 } from './fields/field-config.js';
 export type {
+  SearchSelectLoadContext,
+  SearchSelectOptionLoader,
+  SearchSelectOptionResolver,
+} from './fields/search-select-data-source.js';
+export type {
   FieldController,
   FieldValidationResult,
 } from './fields/field-controller.js';
@@ -103,4 +111,5 @@ export type { FormController } from './form/form-controller.js';
 export type { FormValidationResult } from './form/validate-editor-form.js';
 export type { FieldPath } from './object-path/field-path.js';
 export type { InlineEditorOptions } from './inline/inline-edit-options.js';
+export type { InlineKeyboardShortcut } from './inline/inline-keyboard-shortcut.js';
 export type { InlineEditState, InlineTargetSummary } from './inline/inline-edit-state.js';

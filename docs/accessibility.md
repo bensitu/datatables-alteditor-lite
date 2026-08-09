@@ -28,6 +28,10 @@ The input uses `role="combobox"`, `aria-autocomplete="list"`, `aria-expanded`,
 states. Result counts and no-result states use a polite live region. The clear
 button has a localized accessible name.
 
+Remote loading exposes `aria-busy` on the SearchSelect root and a non-selectable
+loading row. Threshold guidance, load failures, and resolved selection labels use
+the same polite live status; query failures do not open an editor-level modal.
+
 Composition pauses filtering. Enter during Japanese or Chinese IME composition is
 consumed by the combobox and cannot be mistaken for option selection or dialog
 submission. Filtering resumes on `compositionend`.
@@ -50,7 +54,18 @@ plain-text modal alert. The editing cell supplies the visible focus outline, so
 the nested control does not create several competing focus rings. Checkbox and
 text-like controls use compact dimensions that retain the surrounding row height.
 
+Hover editing uses one native pencil button with a localized accessible name.
+The explicit Submit and Cancel controls are native buttons with visible focus.
+On touch, the first tap preserves normal table selection and reveals the pencil.
+When KeyTable is installed, its focused cell can expose the pencil and use the
+configured shortcut without adding a tab stop to every table cell.
+
 Focus moving to an Inline-owned SearchSelect popup or an error alert does not
 trigger the configured blur action. After an alert closes, focus returns to the
 current Inline control when it is still available; otherwise it falls back to the
 logical cell or table.
+
+The hover and action layouts use logical CSS properties for RTL, existing theme
+variables for light/dark modes, and explicit forced-colors rules. Applications
+that override these controls should preserve their names, focus visibility, and
+touch target size.

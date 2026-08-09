@@ -15,6 +15,14 @@ const browserBundlePath = resolve(
   'dist/umd/datatables-alteditor-lite.js',
 );
 const stylesheetPath = resolve(repositoryRoot, 'dist/umd/alt-editor-lite.css');
+const keyTableScriptPath = resolve(
+  repositoryRoot,
+  'node_modules/datatables.net-keytable/js/dataTables.keyTable.js',
+);
+const colReorderScriptPath = resolve(
+  repositoryRoot,
+  'node_modules/datatables.net-colreorder/js/dataTables.colReorder.js',
+);
 
 interface RenderedControlsRuntime {
   readonly editor?: {
@@ -31,7 +39,10 @@ interface RenderedControlsRuntime {
   };
 }
 
-async function createInlineFixture(page: Page): Promise<void> {
+async function createInlineFixture(
+  page: Page,
+  editMode: 'inlineDoubleClick' | 'inlineHover' = 'inlineDoubleClick',
+): Promise<void> {
   await page.setContent(`
     <!doctype html>
     <html lang="en">
@@ -81,7 +92,7 @@ async function createInlineFixture(page: Page): Promise<void> {
               type: 'number'
             }
           ],
-          editMode: 'inlineDoubleClick',
+          editMode: '${editMode}',
           operations: {
             async update(values, original) {
               await new Promise(resolve => globalThis.setTimeout(resolve, 20));
@@ -193,6 +204,50 @@ async function createRenderedControlsFixture(page: Page): Promise<void> {
   });
 }
 
+async function createExtensionInlineFixture(page: Page): Promise<void> {
+  await page.setContent(`
+    <!doctype html>
+    <html lang="en">
+      <head><title>AltEditorLite extension inline test</title></head>
+      <body>
+        <table id="extension-inline-table">
+          <thead><tr><th>Name</th><th>Rank</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </body>
+    </html>
+  `);
+  await page.addStyleTag({ path: stylesheetPath });
+  await page.addScriptTag({ path: dataTablesScriptPath });
+  await page.addScriptTag({ path: keyTableScriptPath });
+  await page.addScriptTag({ path: colReorderScriptPath });
+  await page.addScriptTag({ path: browserBundlePath });
+  await page.addScriptTag({
+    content: `
+      globalThis.tableApi = new DataTable('#extension-inline-table', {
+        colReorder: true,
+        columns: [
+          { data: 'name', name: 'name' },
+          { data: 'rank', name: 'rank' }
+        ],
+        data: [{ id: 'row-a', name: 'Alpha', rank: 1 }],
+        keys: true,
+        rowId: 'id'
+      });
+      globalThis.editor = new DataTablesAltEditorLite.AltEditorLite(
+        globalThis.tableApi,
+        {
+          editMode: 'inlineHover',
+          fields: [
+            { inlineEdit: true, label: 'Name', name: 'name', type: 'text' },
+            { inlineEdit: true, label: 'Rank', name: 'rank', type: 'number' }
+          ]
+        }
+      );
+    `,
+  });
+}
+
 test('submits and moves through eligible cells with the keyboard', async ({ page }) => {
   await createInlineFixture(page);
   await page.evaluate(async () => {
@@ -232,6 +287,55 @@ test('opens by double click and has no serious inline accessibility violations',
 
   await page.keyboard.press('Escape');
   await expect(page.locator('#row-b')).toContainText('Beta');
+});
+
+test('opens the hover pencil and exposes accessible explicit actions', async ({
+  page,
+}) => {
+  await createInlineFixture(page, 'inlineHover');
+  const cell = page.locator('#row-b td').first();
+  await cell.hover();
+  const trigger = cell.getByRole('button', { name: 'Edit cell' });
+  await expect(trigger).toBeVisible();
+  await trigger.click();
+
+  await expect(page.getByRole('textbox', { name: 'Name' })).toHaveValue('Beta');
+  await expect(page.getByRole('button', { name: 'Submit' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Cancel' })).toBeVisible();
+  const scan = await new AxeBuilder({ page }).include('.alteditor-lite-inline').analyze();
+  expect(
+    scan.violations.filter(
+      (violation) => violation.impact === 'serious' || violation.impact === 'critical',
+    ),
+  ).toEqual([]);
+
+  await page.getByRole('button', { name: 'Cancel' }).click();
+  await expect(page.locator('#row-b')).toContainText('Beta');
+});
+
+test('activates a KeyTable-focused cell and remaps after ColReorder', async ({
+  browserName,
+  page,
+}) => {
+  test.skip(browserName !== 'chromium');
+  await createExtensionInlineFixture(page);
+  const nameCell = page.locator('#row-a td').first();
+  await nameCell.click();
+  await page.keyboard.press('F2');
+  await expect(page.getByRole('textbox', { name: 'Name' })).toHaveValue('Alpha');
+  await page.getByRole('button', { name: 'Cancel' }).click();
+
+  await page.evaluate(() => {
+    const runtimeScope = globalThis as typeof globalThis & {
+      tableApi?: { colReorder: { move(from: number, to: number): void } };
+    };
+    runtimeScope.tableApi?.colReorder.move(0, 1);
+  });
+  const reorderedNameCell = page.locator('#row-a td').nth(1);
+  await reorderedNameCell.click();
+  await page.keyboard.press('F2');
+  await expect(page.getByRole('textbox', { name: 'Name' })).toHaveValue('Alpha');
+  await page.getByRole('button', { name: 'Cancel' }).click();
 });
 
 test('redraws columnDefs controls from committed inline and dialog values', async ({

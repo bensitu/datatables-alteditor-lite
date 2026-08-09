@@ -35,9 +35,10 @@ Methods that cannot run in the current state reject or throw a typed
 available after destruction.
 
 `openEditDialog()` rejects with `EditorConfigurationError` in
-`inlineDoubleClick` mode. Inline methods reject in `dialog` mode, while the
+`inlineDoubleClick` or `inlineHover` mode. Inline methods reject in `dialog` mode, while the
 synchronous Inline state getters throw the same error immediately. Create,
-Remove, and Refresh safely cancel an active Inline session before starting.
+Remove, and Refresh safely cancel an active double-click session. An active hover
+session rejects those operations until Submit or Cancel resolves it.
 Operations already owned by a dialog or refresh remain mutually exclusive.
 
 The registered DataTables method retrieves an existing editor and never creates
@@ -52,19 +53,19 @@ const editor = table.altEditorLite<TFormValues>();
 
 `AltEditorLiteOptions<TRow, TFormValues>` contains:
 
-| Property         | Type                                      | Description                                              |
-| ---------------- | ----------------------------------------- | -------------------------------------------------------- |
-| `fields`         | `readonly FieldConfig<TFormValues>[]`     | Ordered Create and Edit field definitions.               |
-| `editMode`       | `EditMode`                                | `dialog` (default) or `inlineDoubleClick`.               |
-| `operations`     | `EditorOperations<TRow, TFormValues>`     | Optional synchronous or asynchronous editor operations.  |
-| `clientSide`     | `ClientSideOperations<TRow, TFormValues>` | Optional synchronous row mappings.                       |
-| `closeOnSuccess` | `boolean`                                 | Whether successful dialog Create and Edit close.         |
-| `language`       | `PartialEditorLanguage`                   | Complete language data or overrides merged with English. |
-| `inline`         | `InlineEditorOptions<TRow, TFormValues>`  | Behavior used only with `inlineDoubleClick`.             |
-| `hooks`          | `EditorHooks<TRow, TFormValues>`          | Optional lifecycle observation and veto callbacks.       |
+| Property         | Type                                      | Description                                                |
+| ---------------- | ----------------------------------------- | ---------------------------------------------------------- |
+| `fields`         | `readonly FieldConfig<TFormValues>[]`     | Ordered Create and Edit field definitions.                 |
+| `editMode`       | `EditMode`                                | `dialog` (default), `inlineDoubleClick`, or `inlineHover`. |
+| `operations`     | `EditorOperations<TRow, TFormValues>`     | Optional synchronous or asynchronous editor operations.    |
+| `clientSide`     | `ClientSideOperations<TRow, TFormValues>` | Optional synchronous row mappings.                         |
+| `closeOnSuccess` | `boolean`                                 | Whether successful dialog Create and Edit close.           |
+| `language`       | `PartialEditorLanguage`                   | Complete language data or overrides merged with English.   |
+| `inline`         | `InlineEditorOptions<TRow, TFormValues>`  | Mapping, shortcut, and mode-specific inline behavior.      |
+| `hooks`          | `EditorHooks<TRow, TFormValues>`          | Optional lifecycle observation and veto callbacks.         |
 
-Inline options include `blurAction`, `enterAction`, `tabAction`, exact
-named-column `columns` mappings, `updateMode`, and a scoped `className`. The
+Inline options include `blurAction`, `enterAction`, `tabAction`,
+`keyboardActivation`, exact named-column `columns` mappings, `updateMode`, and a scoped `className`. The
 object is optional in Inline mode and invalid in Dialog mode. See
 [Editing](editing.md) for supported field types,
 selector requirements, and extension boundaries. Lifecycle hooks are described
@@ -106,7 +107,8 @@ Shared properties include `name`, `defaultValue`, `editable`, `visible`,
 `unique`.
 Visible controls also support `label`, `description`, `required`, and `readonly`.
 
-The package exports every concrete configuration type, `SelectOption`,
+The package exports every concrete configuration type, `SelectOption`, remote
+SearchSelect loader/resolver/context types, `InlineKeyboardShortcut`,
 `FieldPath`, `FieldValue`, `FieldChangeCallback`, `FieldValidator`, and their
 callback context types. See [Fields](fields.md) for value types and field-specific
 properties.

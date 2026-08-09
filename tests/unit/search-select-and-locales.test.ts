@@ -22,6 +22,42 @@ import { SearchSelect } from '../../src/search-select/search-select.js';
 
 import type { AltEditorLiteLanguage } from '../../src/core/alt-editor-lite-language.js';
 
+interface Deferred<TValue> {
+  readonly promise: Promise<TValue>;
+  resolve(value: TValue): void;
+  reject(reason: unknown): void;
+}
+
+function createDeferred<TValue>(): Deferred<TValue> {
+  let resolvePromise: ((value: TValue) => void) | undefined;
+  let rejectPromise: ((reason: unknown) => void) | undefined;
+  return {
+    promise: new Promise<TValue>((resolve, reject) => {
+      resolvePromise = resolve;
+      rejectPromise = reject;
+    }),
+    reject(reason): void {
+      rejectPromise?.(reason);
+    },
+    resolve(value): void {
+      resolvePromise?.(value);
+    },
+  };
+}
+
+const searchSelectMessages = {
+  clear: 'Clear',
+  instructions: 'Choose an option.',
+  loading: 'Loading',
+  loadError: 'Load error',
+  noResults: 'No results',
+  placeholder: 'Select',
+  results: '{count} results',
+  searchPlaceholder: 'Search',
+  searchTooShort: 'Enter {count} characters',
+  selection: '{label} selected',
+} as const;
+
 function languageLeaves(
   value: Readonly<AltEditorLiteLanguage>,
 ): ReadonlyMap<string, string> {
@@ -123,10 +159,13 @@ describe('SearchSelect document events', () => {
         messages: {
           clear: 'Clear',
           instructions: 'Choose an option.',
+          loading: 'Loading',
+          loadError: 'Load error',
           noResults: 'No results',
           placeholder: 'Select',
           results: '{count} results',
           searchPlaceholder: 'Search',
+          searchTooShort: 'Enter {count} characters',
           selection: '{label} selected',
         },
         onCommit: vi.fn(),
@@ -161,10 +200,13 @@ describe('SearchSelect document events', () => {
       messages: {
         clear: 'Clear',
         instructions: 'Choose an option.',
+        loading: 'Loading',
+        loadError: 'Load error',
         noResults: 'No results',
         placeholder: 'Select',
         results: '{count} results',
         searchPlaceholder: 'Search',
+        searchTooShort: 'Enter {count} characters',
         selection: '{label} selected',
       },
       onCommit: vi.fn(),
@@ -194,6 +236,151 @@ describe('SearchSelect document events', () => {
     ).toBe(initialAlphaOption);
     searchSelect.destroy();
     searchSelect.element.remove();
+  });
+});
+
+describe('SearchSelect remote request ownership', () => {
+  it('keeps synchronous value identity while stale resolutions are ignored', async () => {
+    const first = createDeferred<{ readonly label: string; readonly value: number }>();
+    const second = createDeferred<{ readonly label: string; readonly value: number }>();
+    const signals: AbortSignal[] = [];
+    const resolveOption = vi.fn((value: number, { signal }: { signal: AbortSignal }) => {
+      signals.push(signal);
+      return value === 1 ? first.promise : second.promise;
+    });
+    const searchSelect = new SearchSelect<number>({
+      allowClear: true,
+      allowManualValue: false,
+      debounceMs: 0,
+      fieldId: 'remote-resolve',
+      loadOptions: () => [],
+      locale: 'en',
+      messages: searchSelectMessages,
+      onCommit: vi.fn(),
+      resolveOption,
+      searchThreshold: 0,
+      sortOptions: false,
+    });
+
+    searchSelect.setValue(1);
+    expect(searchSelect.getValue()).toBe(1);
+    searchSelect.setValue(2);
+    expect(searchSelect.getValue()).toBe(2);
+    expect(signals[0]?.aborted).toBe(true);
+
+    second.resolve({ label: 'Second', value: 2 });
+    await vi.waitFor(() => {
+      expect(searchSelect.inputElement.value).toBe('Second');
+    });
+    first.resolve({ label: 'Stale first', value: 1 });
+    await Promise.resolve();
+    expect(searchSelect.inputElement.value).toBe('Second');
+    searchSelect.destroy();
+  });
+
+  it('aborts old searches and prevents ignored signals from winning', async () => {
+    const first =
+      createDeferred<readonly { readonly label: string; readonly value: string }[]>();
+    const second =
+      createDeferred<readonly { readonly label: string; readonly value: string }[]>();
+    const signals: AbortSignal[] = [];
+    const loadOptions = vi.fn((query: string, { signal }: { signal: AbortSignal }) => {
+      signals.push(signal);
+      return query === 'a' ? first.promise : second.promise;
+    });
+    const searchSelect = new SearchSelect<string>({
+      allowClear: true,
+      allowManualValue: false,
+      debounceMs: 0,
+      fieldId: 'remote-search',
+      loadOptions,
+      locale: 'en',
+      messages: searchSelectMessages,
+      onCommit: vi.fn(),
+      resolveOption: () => undefined,
+      searchThreshold: 0,
+      sortOptions: false,
+    });
+    document.body.append(searchSelect.element);
+
+    searchSelect.inputElement.value = 'a';
+    searchSelect.inputElement.dispatchEvent(new Event('input', { bubbles: true }));
+    searchSelect.inputElement.value = 'ab';
+    searchSelect.inputElement.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(signals[0]?.aborted).toBe(true);
+    second.resolve([{ label: 'Current', value: 'current' }]);
+    await vi.waitFor(() => {
+      expect(searchSelect.listboxElement.textContent).toContain('Current');
+    });
+    first.resolve([{ label: 'Stale', value: 'stale' }]);
+    await Promise.resolve();
+    expect(searchSelect.listboxElement.textContent).not.toContain('Stale');
+    searchSelect.destroy();
+  });
+
+  it('lets seed updates hydrate a pending selection without a value change', async () => {
+    const pending = createDeferred<{ readonly label: string; readonly value: number }>();
+    const onCommit = vi.fn();
+    let resolveSignal: AbortSignal | undefined;
+    const searchSelect = new SearchSelect<number>({
+      allowClear: true,
+      allowManualValue: false,
+      debounceMs: 0,
+      fieldId: 'remote-seed',
+      loadOptions: () => [],
+      locale: 'en',
+      messages: searchSelectMessages,
+      onCommit,
+      resolveOption: (_value, { signal }) => {
+        resolveSignal = signal;
+        return pending.promise;
+      },
+      searchThreshold: 0,
+      sortOptions: false,
+    });
+
+    searchSelect.setValue(7);
+    searchSelect.setOptions([{ label: 'Seed seven', value: 7 }]);
+    expect(resolveSignal?.aborted).toBe(true);
+    expect(searchSelect.inputElement.value).toBe('Seed seven');
+    expect(searchSelect.getValue()).toBe(7);
+    expect(onCommit).not.toHaveBeenCalled();
+
+    pending.resolve({ label: 'Stale seven', value: 7 });
+    await Promise.resolve();
+    expect(searchSelect.inputElement.value).toBe('Seed seven');
+    searchSelect.destroy();
+  });
+
+  it('announces thresholds and query failures without losing the selection', async () => {
+    const loadOptions = vi.fn(() => Promise.reject(new Error('Unavailable')));
+    const searchSelect = new SearchSelect<string>({
+      allowClear: true,
+      allowManualValue: false,
+      debounceMs: 0,
+      fieldId: 'remote-errors',
+      loadOptions,
+      locale: 'en',
+      messages: searchSelectMessages,
+      onCommit: vi.fn(),
+      options: [{ label: 'Existing', value: 'existing' }],
+      resolveOption: () => undefined,
+      searchThreshold: 2,
+      sortOptions: false,
+    });
+    searchSelect.setValue('existing');
+    document.body.append(searchSelect.element);
+    searchSelect.inputElement.focus();
+    expect(searchSelect.listboxElement.textContent).toContain('2');
+    expect(loadOptions).not.toHaveBeenCalled();
+
+    searchSelect.inputElement.value = 'ab';
+    searchSelect.inputElement.dispatchEvent(new Event('input', { bubbles: true }));
+    await vi.waitFor(() => {
+      expect(searchSelect.listboxElement.textContent).toContain('Load error');
+    });
+    expect(searchSelect.element.getAttribute('aria-busy')).toBe('false');
+    searchSelect.destroy();
   });
 });
 

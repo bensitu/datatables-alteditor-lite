@@ -7,6 +7,7 @@ import {
 
 import type {
   SearchSelectFieldConfig,
+  RemoteSearchSelectFieldConfig,
   SelectOption,
   VisibleFieldConfig,
 } from './field-config.js';
@@ -33,23 +34,39 @@ export function createSearchSelectFieldController<TFormValues extends object>(
   language: Readonly<AltEditorLiteLanguage>,
   onUserChange: () => void,
 ): ManagedFieldController<TFormValues> {
+  const remoteConfig =
+    config.loadOptions === undefined
+      ? undefined
+      : (config as unknown as RemoteSearchSelectFieldConfig<
+          TFormValues,
+          string | number
+        >);
   const searchSelect = new SearchSelect<string | number>({
     allowClear: config.allowClear ?? false,
     allowManualValue: config.allowManualValue ?? false,
-    debounceMs: config.debounceMs ?? 0,
+    debounceMs: config.debounceMs ?? (config.loadOptions === undefined ? 0 : 250),
     fieldId,
     locale: language.locale,
     messages: {
       clear: language.searchSelect.clear,
       instructions: language.accessibility.searchSelectInstructions,
       noResults: language.searchSelect.noResults,
+      loading: language.searchSelect.loading,
+      loadError: language.searchSelect.loadError,
       placeholder: language.searchSelect.placeholder,
       results: language.accessibility.searchSelectResults,
       searchPlaceholder: language.searchSelect.searchPlaceholder,
       selection: language.accessibility.searchSelectSelection,
+      searchTooShort: language.searchSelect.searchTooShort,
     },
     onCommit: onUserChange,
-    options: config.options,
+    options: config.options ?? [],
+    ...(remoteConfig === undefined
+      ? {}
+      : {
+          loadOptions: remoteConfig.loadOptions,
+          resolveOption: remoteConfig.resolveOption,
+        }),
     searchThreshold: config.searchThreshold ?? 0,
     sortOptions: config.sortOptions ?? false,
   });

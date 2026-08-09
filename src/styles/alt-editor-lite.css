@@ -224,6 +224,79 @@
   width: 100%;
 }
 
+.dt-alteditor-lite-inline-hover-target {
+  position: relative;
+}
+
+.alteditor-lite-inline-hover__trigger {
+  position: absolute;
+  z-index: 2;
+  inset-block-start: 50%;
+  inset-inline-end: 0.25rem;
+  display: inline-grid;
+  width: 2rem;
+  height: 2rem;
+  padding: 0.35rem;
+  color: var(--dt-alteditor-lite-primary-color);
+  cursor: pointer;
+  background: var(--dt-alteditor-lite-surface-color);
+  border: 1px solid var(--dt-alteditor-lite-border-color);
+  border-radius: calc(var(--dt-alteditor-lite-border-radius) / 1.5);
+  box-shadow: var(--dt-alteditor-lite-popup-shadow);
+  transform: translateY(-50%);
+  place-items: center;
+}
+
+.alteditor-lite-inline-hover__trigger svg,
+.alteditor-lite-inline__action svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentcolor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.alteditor-lite-inline--actions {
+  gap: 0.25rem;
+}
+
+.alteditor-lite-inline--actions .alteditor-lite-inline__control {
+  flex: 1 1 auto;
+}
+
+.alteditor-lite-inline__actions {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 0.15rem;
+  padding-inline-end: 0.15rem;
+}
+
+.alteditor-lite-inline__action {
+  display: inline-grid;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0.3rem;
+  color: var(--dt-alteditor-lite-text-color);
+  cursor: pointer;
+  background: var(--dt-alteditor-lite-surface-color);
+  border: 1px solid var(--dt-alteditor-lite-border-color);
+  border-radius: calc(var(--dt-alteditor-lite-border-radius) / 2);
+  place-items: center;
+}
+
+.alteditor-lite-inline__action--submit {
+  color: var(--dt-alteditor-lite-primary-text-color);
+  background: var(--dt-alteditor-lite-primary-color);
+  border-color: var(--dt-alteditor-lite-primary-color);
+}
+
+.alteditor-lite-inline__action:disabled {
+  cursor: progress;
+  opacity: 0.65;
+}
+
 .alteditor-lite-inline--busy {
   cursor: progress;
   opacity: 0.75;
@@ -241,6 +314,14 @@
   .alteditor-lite-cell--editing,
   .alteditor-lite-cell--editing:has(.alteditor-lite-inline--invalid) {
     outline-color: Highlight;
+  }
+
+  .alteditor-lite-inline-hover__trigger,
+  .alteditor-lite-inline__action {
+    color: ButtonText;
+    background: ButtonFace;
+    border-color: ButtonText;
+    forced-color-adjust: auto;
   }
 }
 
@@ -324,7 +405,8 @@ textarea.dt-alteditor-lite-field__control {
 }
 
 .dt-alteditor-lite-search-select__option,
-.dt-alteditor-lite-search-select__no-results {
+.dt-alteditor-lite-search-select__no-results,
+.dt-alteditor-lite-search-select__feedback {
   min-height: 2.25rem;
   padding: 0.5rem 0.625rem;
   overflow-wrap: anywhere;
@@ -351,6 +433,19 @@ textarea.dt-alteditor-lite-field__control {
   opacity: 0.75;
 }
 
+.dt-alteditor-lite-search-select__feedback {
+  opacity: 0.8;
+}
+
+.dt-alteditor-lite-search-select__feedback--error,
+.dt-alteditor-lite-search-select--error > .dt-alteditor-lite-field__control {
+  color: var(--dt-alteditor-lite-error-color);
+}
+
+.dt-alteditor-lite-search-select[aria-busy='true'] {
+  cursor: progress;
+}
+
 .dt-alteditor-lite-visually-hidden {
   position: absolute;
   width: 1px;
@@ -369,6 +464,20 @@ textarea.dt-alteditor-lite-field__control {
 .dt-alteditor-lite-search-select__clear:focus-visible {
   outline: 3px solid var(--dt-alteditor-lite-focus-color);
   outline-offset: 2px;
+}
+
+.alteditor-lite-inline-hover__trigger:focus-visible,
+.alteditor-lite-inline__action:focus-visible {
+  outline: 3px solid var(--dt-alteditor-lite-focus-color);
+  outline-offset: 2px;
+}
+
+@media (pointer: coarse) {
+  .alteditor-lite-inline-hover__trigger,
+  .alteditor-lite-inline__action {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
 }
 
 .alteditor-lite-inline .dt-alteditor-lite-field__control:not([type='checkbox']) {

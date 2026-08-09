@@ -33,7 +33,10 @@
     "placeholder": "オプションを選択",
     "searchPlaceholder": "オプションを検索",
     "noResults": "一致するオプションがありません",
-    "clear": "選択を解除"
+    "clear": "選択を解除",
+    "loading": "オプションを読み込んでいます…",
+    "loadError": "オプションを読み込めませんでした。新しい検索を入力して再試行してください。",
+    "searchTooShort": "検索するには {count} 文字以上入力してください。"
   },
   "accessibility": {
     "searchSelectInstructions": "矢印キーでオプションを移動できます。",
@@ -41,6 +44,7 @@
     "searchSelectSelection": "{label} を選択しました。"
   },
   "inline": {
+    "editCell": "セルを編集",
     "unavailable": "このセルではインライン編集を利用できません。",
     "unsupportedField": "このフィールドはインライン編集に対応していません。",
     "targetUnavailable": "編集中のセルは利用できなくなりました。"

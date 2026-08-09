@@ -82,8 +82,12 @@ beforeAll(async () => {
   });
 
   const buttonsRuntimeSpecifier = 'datatables.net-buttons';
+  const colReorderRuntimeSpecifier = 'datatables.net-colreorder';
+  const keyTableRuntimeSpecifier = 'datatables.net-keytable';
   const selectRuntimeSpecifier = 'datatables.net-select';
   await import(buttonsRuntimeSpecifier);
+  await import(colReorderRuntimeSpecifier);
+  await import(keyTableRuntimeSpecifier);
   await import(selectRuntimeSpecifier);
   registerAltEditorLite(DataTable);
 });
@@ -310,5 +314,86 @@ describe('optional Buttons and Select integration', () => {
     expect(api.row('#row-b').any()).toBe(false);
     expect(api.row('#row-c').any()).toBe(true);
     expect('jQuery' in globalThis).toBe(false);
+  });
+});
+
+describe('optional KeyTable and ColReorder integration', () => {
+  interface CellFocusApi {
+    focus(): void;
+  }
+
+  interface ExtensionTableApi {
+    readonly colReorder: {
+      move(from: number, to: number): void;
+    };
+    readonly keys: {
+      enable(state: true | 'navigation-only'): void;
+      enabled(): true | false | 'navigation-only';
+    };
+  }
+
+  const inlineFields = fields.map((field) => ({
+    ...field,
+    inlineEdit: true,
+  })) satisfies readonly FieldConfig<ExtensionValues>[];
+
+  it('opens the focused cell with F2 and restores the exact KeyTable state', async () => {
+    const { api } = createTestTable('keytable-inline', {
+      columns: [
+        { data: 'name', name: 'name' },
+        { data: 'rank', name: 'rank' },
+      ],
+      keys: true,
+    });
+    const extensionApi = api as unknown as ExtensionTableApi;
+    extensionApi.keys.enable('navigation-only');
+    const editor = new AltEditorLite<TestRow, ExtensionValues>(api, {
+      editMode: 'inlineHover',
+      fields: inlineFields,
+    });
+    activeEditors.add(editor);
+
+    (api.cell('#row-a', 0) as unknown as CellFocusApi).focus();
+    const cell = api.cell('#row-a', 0).node();
+    expect(cell.querySelector('.alteditor-lite-inline-hover__trigger')).not.toBeNull();
+    cell.dispatchEvent(
+      new KeyboardEvent('keydown', { bubbles: true, cancelable: true, key: 'F2' }),
+    );
+    await vi.waitFor(() => {
+      expect(editor.getInlineState().status).toBe('editing');
+    });
+    expect(extensionApi.keys.enabled()).toBe(false);
+
+    await editor.cancelInlineEdit();
+    expect(extensionApi.keys.enabled()).toBe('navigation-only');
+  });
+
+  it('rebuilds mappings after completed column reorder without recreating the editor', async () => {
+    const { api } = createTestTable('colreorder-inline', {
+      colReorder: true,
+      columns: [
+        { data: 'name', name: 'name' },
+        { data: 'rank', name: 'rank' },
+      ],
+      keys: true,
+    });
+    const extensionApi = api as unknown as ExtensionTableApi;
+    const editor = new AltEditorLite<TestRow, ExtensionValues>(api, {
+      editMode: 'inlineHover',
+      fields: inlineFields,
+    });
+    activeEditors.add(editor);
+
+    extensionApi.colReorder.move(0, 1);
+    const nameCell = api.cell('#row-a', 1).node();
+    nameCell.dispatchEvent(new MouseEvent('pointermove', { bubbles: true }));
+    nameCell
+      .querySelector<HTMLButtonElement>('.alteditor-lite-inline-hover__trigger')
+      ?.click();
+    await vi.waitFor(() => {
+      expect(editor.getInlineState().status).toBe('editing');
+    });
+    expect(nameCell.querySelector<HTMLInputElement>('input')?.value).toBe('Alpha');
+    await editor.cancelInlineEdit();
   });
 });

@@ -511,9 +511,279 @@ describe('AltEditorLite programmatic inline editing', () => {
   });
 });
 
+describe('AltEditorLite hover inline editing', () => {
+  function dispatchPointerEvent(
+    target: EventTarget,
+    type: string,
+    pointerType: 'mouse' | 'touch',
+  ): MouseEvent {
+    const event = new MouseEvent(type, { bubbles: true, cancelable: true });
+    Object.defineProperty(event, 'pointerType', {
+      configurable: true,
+      value: pointerType,
+    });
+    target.dispatchEvent(event);
+    return event;
+  }
+
+  function revealTrigger(cell: HTMLTableCellElement): HTMLButtonElement {
+    cell.dispatchEvent(new MouseEvent('pointermove', { bubbles: true }));
+    const trigger = cell.querySelector<HTMLButtonElement>(
+      '.alteditor-lite-inline-hover__trigger',
+    );
+    if (trigger === null) {
+      throw new Error('Expected a hover edit trigger.');
+    }
+    return trigger;
+  }
+
+  it('reveals the pencil after an unclaimed touch compatibility click', async () => {
+    const { api, editor } = createInlineEditor({ editMode: 'inlineHover', fields });
+    const cell = api.cell('#row-a', 0).node();
+
+    dispatchPointerEvent(cell, 'pointerup', 'touch');
+    expect(cell.querySelector('.alteditor-lite-inline-hover__trigger')).toBeNull();
+    const click = new MouseEvent('click', { bubbles: true, cancelable: true });
+    cell.dispatchEvent(click);
+    await Promise.resolve();
+
+    expect(click.defaultPrevented).toBe(false);
+    const trigger = cell.querySelector<HTMLButtonElement>(
+      '.alteditor-lite-inline-hover__trigger',
+    );
+    expect(trigger).not.toBeNull();
+    if (trigger === null) {
+      throw new Error('Expected a touch edit trigger.');
+    }
+    dispatchPointerEvent(trigger, 'pointerup', 'touch');
+    expect(trigger.isConnected).toBe(true);
+    trigger.click();
+    await vi.waitFor(() => {
+      expect(editor.getInlineState().status).toBe('editing');
+    });
+    await editor.cancelInlineEdit();
+  });
+
+  it('contains a mismatched compatibility click and clears touch discovery', async () => {
+    const { api, tableElement } = createInlineEditor({
+      editMode: 'inlineHover',
+      fields,
+    });
+    const cell = api.cell('#row-a', 0).node();
+    const header = tableElement.tHead?.querySelector('th');
+    if (header === null || header === undefined) {
+      throw new Error('Expected a table header.');
+    }
+
+    dispatchPointerEvent(cell, 'pointerup', 'touch');
+    const mismatchedClick = new MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+    });
+    header.dispatchEvent(mismatchedClick);
+    await Promise.resolve();
+
+    expect(mismatchedClick.defaultPrevented).toBe(true);
+    expect(cell.querySelector('.alteditor-lite-inline-hover__trigger')).not.toBeNull();
+    dispatchPointerEvent(tableElement, 'pointerleave', 'touch');
+    expect(cell.querySelector('.alteditor-lite-inline-hover__trigger')).not.toBeNull();
+    dispatchPointerEvent(tableElement, 'pointerleave', 'mouse');
+    expect(cell.querySelector('.alteditor-lite-inline-hover__trigger')).toBeNull();
+
+    dispatchPointerEvent(cell, 'pointerup', 'touch');
+    header.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    await Promise.resolve();
+    expect(cell.querySelector('.alteditor-lite-inline-hover__trigger')).not.toBeNull();
+    dispatchPointerEvent(document.body, 'pointerdown', 'touch');
+    expect(cell.querySelector('.alteditor-lite-inline-hover__trigger')).toBeNull();
+  });
+
+  it('opens only from the shared trigger and resolves through explicit actions', async () => {
+    const update = vi.fn(
+      (values: Readonly<Partial<InlineValues>>, original: Readonly<TestRow>) => ({
+        ...original,
+        name: values.name ?? original.name,
+      }),
+    );
+    const { api, editor } = createInlineEditor({
+      editMode: 'inlineHover',
+      fields,
+      operations: { update },
+    });
+    const cell = api.cell('#row-a', 0).node();
+
+    cell.click();
+    expect(editor.isInlineEditing()).toBe(false);
+    const trigger = revealTrigger(cell);
+    trigger.click();
+
+    await vi.waitFor(() => {
+      expect(editor.getInlineState().status).toBe('editing');
+    });
+    expect(cell.querySelector('.alteditor-lite-inline--actions')).not.toBeNull();
+    expect(cell.querySelector('.alteditor-lite-inline-hover__trigger')).toBeNull();
+
+    replaceInlineValue('Hover Alpha');
+    const input = cell.querySelector<HTMLInputElement>('input');
+    input?.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Escape' }));
+    input?.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Enter' }));
+    input?.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Tab' }));
+    input?.dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
+    await Promise.resolve();
+    expect(editor.getInlineState().status).toBe('editing');
+    expect(update).not.toHaveBeenCalled();
+
+    cell
+      .querySelector<HTMLButtonElement>('[data-alteditor-lite-inline-action="submit"]')
+      ?.click();
+    await vi.waitFor(() => {
+      expect(editor.getInlineState().status).toBe('idle');
+    });
+    expect(update).toHaveBeenCalledOnce();
+    expect(api.row('#row-a').data().name).toBe('Hover Alpha');
+  });
+
+  it('cancels without persistence and refuses external operations until resolved', async () => {
+    const update = vi.fn(
+      (values: Readonly<Partial<InlineValues>>, original: Readonly<TestRow>) => ({
+        ...original,
+        name: values.name ?? original.name,
+      }),
+    );
+    const { api, editor } = createInlineEditor({
+      clientSide: {
+        createRow: () => ({ id: 'row-new', name: 'New', rank: 3 }),
+      },
+      editMode: 'inlineHover',
+      fields,
+      operations: { update },
+    });
+    const cell = api.cell('#row-a', 0).node();
+    revealTrigger(cell).click();
+    await vi.waitFor(() => {
+      expect(editor.getInlineState().status).toBe('editing');
+    });
+    replaceInlineValue('Discarded');
+
+    await expect(editor.openCreateDialog()).rejects.toMatchObject({
+      code: 'OPERATION_BUSY',
+    });
+    expect(editor.getInlineState().status).toBe('editing');
+    cell
+      .querySelector<HTMLButtonElement>('[data-alteditor-lite-inline-action="cancel"]')
+      ?.click();
+    await vi.waitFor(() => {
+      expect(editor.getInlineState().status).toBe('idle');
+    });
+    expect(update).not.toHaveBeenCalled();
+    expect(api.row('#row-a').data().name).toBe('Alpha');
+  });
+
+  it('disables both actions while validation and persistence are pending', async () => {
+    const pending = createDeferred<TestRow>();
+    const { api } = createTestTable('inline-hover-busy');
+    const editor = new AltEditorLite<TestRow, InlineValues>(api, {
+      editMode: 'inlineHover',
+      fields,
+      operations: { update: () => pending.promise },
+    });
+    editors.add(editor);
+    const cell = api.cell('#row-a', 0).node();
+    revealTrigger(cell).click();
+    await vi.waitFor(() => {
+      expect(editor.getInlineState().status).toBe('editing');
+    });
+    replaceInlineValue('Pending Alpha');
+    const submitButton = cell.querySelector<HTMLButtonElement>(
+      '[data-alteditor-lite-inline-action="submit"]',
+    );
+    const cancelButton = cell.querySelector<HTMLButtonElement>(
+      '[data-alteditor-lite-inline-action="cancel"]',
+    );
+    submitButton?.click();
+    await vi.waitFor(() => {
+      expect(submitButton?.disabled).toBe(true);
+      expect(cancelButton?.disabled).toBe(true);
+    });
+
+    pending.resolve({ id: 'row-a', name: 'Pending Alpha', rank: 1 });
+    await vi.waitFor(() => {
+      expect(editor.getInlineState().status).toBe('idle');
+    });
+  });
+
+  it('selects remote options through the shared transaction and aborts on cancel', async () => {
+    let searchSignal: AbortSignal | undefined;
+    const pendingSearch =
+      createDeferred<readonly { readonly label: string; readonly value: number }[]>();
+    const remoteFields = [
+      fields[0],
+      {
+        allowClear: true,
+        debounceMs: 0,
+        inlineEdit: true,
+        label: 'Rank',
+        loadOptions: (_query: string, { signal }: { signal: AbortSignal }) => {
+          searchSignal = signal;
+          return pendingSearch.promise;
+        },
+        name: 'rank',
+        resolveOption: (value: number) =>
+          Promise.resolve({ label: `Rank ${String(value)}`, value }),
+        type: 'search-select',
+      },
+    ] as const satisfies readonly FieldConfig<InlineValues>[];
+    const { api, editor } = createInlineEditor({
+      editMode: 'inlineHover',
+      fields: remoteFields,
+    });
+    const cell = api.cell('#row-a', 1).node();
+    revealTrigger(cell).click();
+    await vi.waitFor(() => {
+      expect(editor.getInlineState().status).toBe('editing');
+    });
+    const input = cell.querySelector<HTMLInputElement>('input[role="combobox"]');
+    input?.focus();
+    await vi.waitFor(() => {
+      expect(searchSignal).toBeDefined();
+    });
+
+    cell
+      .querySelector<HTMLButtonElement>('[data-alteditor-lite-inline-action="cancel"]')
+      ?.click();
+    await vi.waitFor(() => {
+      expect(editor.getInlineState().status).toBe('idle');
+    });
+    expect(searchSignal?.aborted).toBe(true);
+    pendingSearch.resolve([{ label: 'Rank 2', value: 2 }]);
+    await Promise.resolve();
+    expect(cell.querySelector('.dt-alteditor-lite-search-select')).toBeNull();
+
+    revealTrigger(cell).click();
+    await vi.waitFor(() => {
+      expect(editor.getInlineState().status).toBe('editing');
+    });
+    const nextInput = cell.querySelector<HTMLInputElement>('input[role="combobox"]');
+    nextInput?.focus();
+    await vi.waitFor(() => {
+      expect(cell.querySelector('[role="listbox"]')?.textContent).toContain('Rank 2');
+    });
+    nextInput?.dispatchEvent(
+      new KeyboardEvent('keydown', { bubbles: true, cancelable: true, key: 'Enter' }),
+    );
+    cell
+      .querySelector<HTMLButtonElement>('[data-alteditor-lite-inline-action="submit"]')
+      ?.click();
+    await vi.waitFor(() => {
+      expect(editor.getInlineState().status).toBe('idle');
+    });
+    expect(api.row('#row-a').data().rank).toBe(2);
+  });
+});
+
 describe('AltEditorLite inline configuration', () => {
   const invalidConfigurations: readonly [string, object, object?][] = [
-    ['unknown edit mode', { editMode: 'inlineHover', fields }],
+    ['unknown edit mode', { editMode: 'inlineTap', fields }],
     ['inline options in dialog mode', { fields, inline: {} }],
     [
       'unknown blur action',

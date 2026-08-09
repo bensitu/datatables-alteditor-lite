@@ -110,18 +110,19 @@ Persistence contexts identify the initiating `mode` as `dialog`, `inline`, or
 same mode and target information. Policies that must decline opening or submission
 belong in `beforeOpen` and `beforeSubmit`; DOM events remain observation-only.
 
-Inline editing requires `editMode: 'inlineDoubleClick'` and `inlineEdit: true` on
-at least one eligible field. The optional `inline` object adjusts blur, keyboard,
+Inline editing requires `editMode: 'inlineDoubleClick'` or `inlineHover` and
+`inlineEdit: true` on at least one eligible field. The optional `inline` object adjusts interaction, shortcut,
 column mapping, commit, and styling behavior; it does not enable the mode. Inline
 editing does not introduce a separate field list, cell-specific persistence
 callback, optimistic row mutation, jQuery API, or private DataTables setting.
 
 An editor uses either Dialog Edit or Inline Edit. The default `dialog` mode makes
 `openEditDialog()` available and rejects Inline methods. The
-`inlineDoubleClick` mode makes Inline methods and double-click activation
-available, hides the Dialog Edit button, and rejects `openEditDialog()`. Create,
-Remove, and Refresh retain their normal capabilities in both modes. Starting one
-of those actions safely cancels an active Inline session before continuing.
+`inlineDoubleClick` mode provides fast double-click behavior. `inlineHover`
+provides a pencil for hover/touch discovery, explicit Submit/Cancel actions, and
+focused-cell keyboard activation when KeyTable is present. Both hide Dialog Edit
+and reject `openEditDialog()`. Create, Remove, and Refresh cancel a double-click
+session, but require a hover session to be explicitly resolved first.
 
 ## Rendered DataTables columns
 
@@ -138,8 +139,8 @@ complete rendered-control contract and safe renderer guidance.
 An application may also treat a rendered control as an editing shortcut. Handle
 its change event, resolve the owning cell through the public DataTables API, and
 route the requested value through the editor presentation selected for that table.
-The live demo uses Inline Edit in `inlineDoubleClick` mode and opens the Edit dialog
-in `dialog` mode; the renderer itself never becomes the canonical data source.
+The live demo includes `inlineDoubleClick`, `inlineHover`, and `dialog`; the
+renderer itself never becomes the canonical data source.
 
 Inline validation, change-callback, persistence, commit, and target errors use a
 plain-text modal alert. The current candidate remains in the cell. Closing the
@@ -150,7 +151,7 @@ it does not close the Inline session or publish an additional close event.
 
 The package targets modern evergreen browsers with native `<dialog>`, including
 the Chromium, Firefox, and WebKit engines exercised by the automated browser
-suite.
+suite, plus mobile Chromium and mobile WebKit touch profiles.
 The published Node engine range applies to installation, builds, and server-side
 tooling; the runtime itself is browser code.
 

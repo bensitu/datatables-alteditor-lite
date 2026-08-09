@@ -72,7 +72,9 @@ The unversioned jsDelivr URLs follow the latest package. Pin the same
 `datatables-alteditor-lite` version in both URLs for production. Select a
 compatible DataTables build through the
 [DataTables download builder](https://datatables.net/download/) when Buttons,
-Select, or another extension is needed.
+Select, KeyTable, ColReorder, or another extension is needed. Load optional
+extensions before constructing an editor; hover keyboard and live reorder support
+are detected at runtime.
 
 ## Load order and published files
 

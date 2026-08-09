@@ -52,6 +52,9 @@ export interface AltEditorLiteLanguage {
     readonly searchPlaceholder: string;
     readonly noResults: string;
     readonly clear: string;
+    readonly loading: string;
+    readonly loadError: string;
+    readonly searchTooShort: string;
   };
   /** Labels and announcements exposed to assistive technology. */
   readonly accessibility: {
@@ -61,6 +64,7 @@ export interface AltEditorLiteLanguage {
   };
   /** Text announced or displayed by inline cell editing. */
   readonly inline: {
+    readonly editCell: string;
     readonly unavailable: string;
     readonly unsupportedField: string;
     readonly targetUnavailable: string;

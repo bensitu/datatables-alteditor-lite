@@ -33,7 +33,10 @@
     "placeholder": "Select an option",
     "searchPlaceholder": "Search options",
     "noResults": "No matching options",
-    "clear": "Clear selection"
+    "clear": "Clear selection",
+    "loading": "Loading options…",
+    "loadError": "Options could not be loaded. Enter a new search to retry.",
+    "searchTooShort": "Enter at least {count} characters to search."
   },
   "accessibility": {
     "searchSelectInstructions": "Use the arrow keys to navigate options.",
@@ -41,6 +44,7 @@
     "searchSelectSelection": "{label} selected."
   },
   "inline": {
+    "editCell": "Edit cell",
     "unavailable": "Inline editing is not available for this cell.",
     "unsupportedField": "This field does not support inline editing.",
     "targetUnavailable": "The edited cell is no longer available."

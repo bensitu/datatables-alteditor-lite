@@ -27,7 +27,6 @@ import { INLINE_FIELD_PRESENTATION } from '../fields/field-controller-presentati
 
 import { InlineEditPresentationAdapter } from './inline-edit-presentation-adapter.js';
 import { assertInlineEditStateTransition } from './inline-edit-state-transition.js';
-import { BareInlineEditViewFactory } from './inline-edit-view-factory.js';
 import {
   focusInlineCellOrTable,
   ownsInlineFocus,
@@ -52,6 +51,7 @@ import type { InlineEditSession } from './inline-edit-session.js';
 import type { InlineEditState, InlineTargetSummary } from './inline-edit-state.js';
 import type { InlineEditViewFactory } from './inline-edit-view-factory.js';
 import type { InlineFocusRestoreToken } from './inline-focus-state.js';
+import type { ResolvedInlineInteractionBehavior } from './inline-interaction-behavior.js';
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type {
   AltEditorLiteOptions,
@@ -104,7 +104,10 @@ export interface InlineEditSessionControllerArguments<
     publishEvent: boolean,
   ) => void;
   readonly notifyIntegration: () => void;
-  readonly viewFactory?: InlineEditViewFactory<TFormValues>;
+  readonly interactionBehavior: Readonly<ResolvedInlineInteractionBehavior>;
+  readonly viewFactory: InlineEditViewFactory<TFormValues>;
+  readonly onSessionStart?: () => void;
+  readonly onSessionEnd?: () => void;
 }
 
 function asInlineEventTarget(
@@ -164,8 +167,7 @@ export class InlineEditSessionController<
     this.fieldsByName = new Map<string, Readonly<FieldConfig<TFormValues>>>(
       arguments_.fields.map((field) => [field.name, field]),
     );
-    this.viewFactory =
-      arguments_.viewFactory ?? new BareInlineEditViewFactory<TFormValues>();
+    this.viewFactory = arguments_.viewFactory;
     this.alertDialog = arguments_.enabled
       ? new EditorAlertDialog(
           arguments_.tableElement,
@@ -302,6 +304,7 @@ export class InlineEditSessionController<
       activationController = undefined;
       this.activationInteractionToken = undefined;
       host.mount(capture.cellNode);
+      this.arguments_.onSessionStart?.();
       host.element.addEventListener('keydown', this.handleKeyDown);
       host.element.addEventListener('focusout', this.handleFocusOut);
       host.element.addEventListener('click', this.stopOwnedPointerEvent);
@@ -587,6 +590,7 @@ export class InlineEditSessionController<
         await this.showAlert(session, error, 'operation');
       },
       startValidation: () => {
+        session.host.setActionBusy?.(true);
         session.controller.clearError();
         session.host.setInvalid(false);
         this.transitionTo({
@@ -727,9 +731,9 @@ export class InlineEditSessionController<
       ) {
         return;
       }
-      if (this.arguments_.options.blurAction === 'submit') {
+      if (this.arguments_.interactionBehavior.blurAction === 'submit') {
         void this.submit().catch(() => undefined);
-      } else if (this.arguments_.options.blurAction === 'cancel') {
+      } else if (this.arguments_.interactionBehavior.blurAction === 'cancel') {
         void this.cancel('cancel');
       }
     });
@@ -740,10 +744,16 @@ export class InlineEditSessionController<
     if (session === undefined) {
       return;
     }
+    if (
+      event.target instanceof Element &&
+      event.target.closest('[data-alteditor-lite-inline-action]') !== null
+    ) {
+      return;
+    }
     const intent = resolveInlineKeyboardIntent(
       event,
       session.capture.field,
-      this.arguments_.options,
+      this.arguments_.interactionBehavior,
     );
     if (intent === undefined) {
       return;
@@ -1084,6 +1094,7 @@ export class InlineEditSessionController<
     session.host.destroy();
     session.controller.destroy();
     this.arguments_.interactionCoordinator.release(session.interactionToken);
+    this.arguments_.onSessionEnd?.();
     if (this.state.status !== 'destroyed') {
       this.transitionTo({ status: 'idle' });
     }

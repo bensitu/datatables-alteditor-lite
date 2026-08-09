@@ -19,6 +19,14 @@
       integrity="sha384-uXbAfES9n5YrNCdy3ViYN39cjPqno6hxcjNzT8mE1UB1u3/fel9ruy/MA2QKmIVM"
       crossorigin="anonymous"
     />
+    <link
+      rel="stylesheet"
+      href="https://cdn.datatables.net/colreorder/3.0.0/css/colReorder.dataTables.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.datatables.net/keytable/3.0.0/css/keyTable.dataTables.min.css"
+    />
     <link rel="stylesheet" href="../../dist/umd/alt-editor-lite.css" />
     <link rel="stylesheet" href="./demo.css" />
   </head>
@@ -193,6 +201,72 @@
       </div>
 
       <div class="demo-workspace">
+        <section class="demo-table-panel" aria-labelledby="hover-employees-title">
+          <div class="demo-section-heading">
+            <div>
+              <p class="demo-eyebrow">Hover, touch, and keyboard inline editing</p>
+              <h2 id="hover-employees-title">Reorderable employee directory</h2>
+            </div>
+            <p class="demo-section-heading__hint">
+              Hover or tap an eligible cell for its pencil, focus with KeyTable and press
+              F2, or drag a heading before editing the reordered column.
+            </p>
+          </div>
+          <div class="demo-table-scroll">
+            <table id="employees-hover">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Age</th>
+                  <th>Role</th>
+                  <th>Remote office</th>
+                  <th>Active</th>
+                  <th>Start date</th>
+                </tr>
+              </thead>
+            </table>
+          </div>
+        </section>
+
+        <aside class="demo-inline-guide" aria-labelledby="hover-guide-title">
+          <div>
+            <p class="demo-eyebrow">Explicit inline interaction</p>
+            <h2 id="hover-guide-title">Discover, edit, confirm</h2>
+            <p>
+              The office field loads matching options asynchronously and resolves the
+              existing office label independently.
+            </p>
+          </div>
+          <ol class="demo-inline-steps">
+            <li>
+              <span aria-hidden="true">01</span>
+              <p class="demo-inline-step-copy">
+                <strong>Discover</strong> Hover, tap, or focus an eligible cell.
+              </p>
+            </li>
+            <li>
+              <span aria-hidden="true">02</span>
+              <p class="demo-inline-step-copy">
+                <strong>Edit</strong> Use the pencil or press <kbd>F2</kbd>.
+              </p>
+            </li>
+            <li>
+              <span aria-hidden="true">03</span>
+              <p class="demo-inline-step-copy">
+                <strong>Resolve</strong> Choose Submit or Cancel explicitly.
+              </p>
+            </li>
+          </ol>
+          <div class="demo-inline-keys" aria-label="Hover inline editing actions">
+            <p class="demo-inline-key"><kbd>F2</kbd><span>Edit focused cell</span></p>
+            <p class="demo-inline-key"><kbd>✓</kbd><span>Submit</span></p>
+            <p class="demo-inline-key"><kbd>×</kbd><span>Cancel</span></p>
+          </div>
+        </aside>
+      </div>
+
+      <div class="demo-workspace">
         <section class="demo-table-panel" aria-labelledby="inline-employees-title">
           <div class="demo-section-heading">
             <div>
@@ -338,6 +412,8 @@
       integrity="sha384-b9sLyS42cyAKVjjpDX2rmV6hiiLJYPbElLTFtzL/GYTl8p7k5nfyDWO4cSxENIn3"
       crossorigin="anonymous"
     ></script>
+    <script src="https://cdn.datatables.net/colreorder/3.0.0/js/dataTables.colReorder.min.js"></script>
+    <script src="https://cdn.datatables.net/keytable/3.0.0/js/dataTables.keyTable.min.js"></script>
     <script src="../../dist/umd/datatables-alteditor-lite.js"></script>
     <script src="./demo.js"></script>
   </body>

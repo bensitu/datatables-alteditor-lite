@@ -23,3 +23,18 @@ editor.getField<number | undefined>('officeId')?.setOptions?.([
 ```
 
 Numeric values stay numeric. Use no more than 5,000 local options.
+
+Remote fields use separate query and existing-value callbacks:
+
+```ts
+const remoteOfficeField = {
+  label: 'Office',
+  loadOptions: (query, { signal }) => searchOffices(query, signal),
+  name: 'officeId',
+  resolveOption: (value, { signal }) => getOffice(value, signal),
+  type: 'search-select',
+} as const satisfies SearchSelectFieldConfig<EmployeeForm, number>;
+```
+
+Both paths are cancellable and stale results are ignored. A single configured or
+returned result is limited to 5,000 options.

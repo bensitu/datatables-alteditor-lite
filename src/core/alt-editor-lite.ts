@@ -17,9 +17,10 @@ import { createRemoveConfirmation } from '../dialog/create-remove-confirmation.j
 import { EditorDialog } from '../dialog/editor-dialog.js';
 import { validateFieldConfigurations } from '../fields/validate-field-configurations.js';
 import { buildEditorForm } from '../form/build-editor-form.js';
-import { createInlineColumnMappings } from '../inline/inline-column-mapping.js';
+import { InlineColumnMappingRegistry } from '../inline/inline-column-mapping-registry.js';
 import { InlineEditController } from '../inline/inline-edit-controller.js';
 import { resolveInlineOptions } from '../inline/inline-edit-options.js';
+import { createInlineEditPresentation } from '../inline/inline-edit-presentation.js';
 import { validateInlineConfiguration } from '../inline/validate-inline-configuration.js';
 import { createInstanceId } from '../instance/create-instance-id.js';
 import {
@@ -211,10 +212,15 @@ export class AltEditorLite<
         dispatchEditorIntegrationUpdate(this.tableElement);
       });
       const inlineOptions = resolveInlineOptions(options.inline);
-      const inlineMappings = createInlineColumnMappings(
+      const inlineMappingRegistry = new InlineColumnMappingRegistry(
         table,
         options.fields,
         inlineOptions,
+      );
+      const inlinePresentation = createInlineEditPresentation<TRow, TFormValues>(
+        editMode,
+        inlineOptions,
+        this.language,
       );
       this.inlineController = new InlineEditController({
         drawOwnership: this.drawOwnership,
@@ -226,12 +232,13 @@ export class AltEditorLite<
         instanceId: this.instanceId,
         interactionCoordinator: this.interactionCoordinator,
         language: this.language,
-        mappings: inlineMappings,
+        mappingRegistry: inlineMappingRegistry,
         notifyIntegration: () => {
           dispatchEditorIntegrationUpdate(this.tableElement);
         },
         operationOwner: this.operationOwner,
         options: inlineOptions,
+        presentation: inlinePresentation,
         reportError: (error, context, publishEvent) => {
           this.reportOperationError(error, context, publishEvent);
         },
@@ -266,7 +273,7 @@ export class AltEditorLite<
           'Create requires operations.create or clientSide.createRow.',
         );
       }
-      await this.closeInlineBeforeOperation();
+      await this.inlineController.prepareForExternalOperation();
       this.assertReady();
       this.acquireDialogInteraction();
 
@@ -357,7 +364,7 @@ export class AltEditorLite<
   public async openRemoveDialog(rowSelectors?: RowSelector<TRow>): Promise<void> {
     try {
       this.assertActive();
-      await this.closeInlineBeforeOperation();
+      await this.inlineController.prepareForExternalOperation();
       this.assertReady();
       this.acquireDialogInteraction();
       const rowIndexes = this.resolveRequestedRowIndexes(rowSelectors);
@@ -432,7 +439,7 @@ export class AltEditorLite<
   public async refreshTable(): Promise<void> {
     try {
       this.assertActive();
-      await this.closeInlineBeforeOperation();
+      await this.inlineController.prepareForExternalOperation();
       this.assertReady();
       this.refreshInteractionToken = this.interactionCoordinator.acquire('refresh');
       await this.runRefresh();
@@ -577,12 +584,6 @@ export class AltEditorLite<
       this.interactionCoordinator.current() !== 'none'
     ) {
       throw new EditorOperationBusyError();
-    }
-  }
-
-  private async closeInlineBeforeOperation(): Promise<void> {
-    if (this.inlineController.isEditing()) {
-      await this.inlineController.cancel();
     }
   }
 
@@ -1530,7 +1531,9 @@ export class AltEditorLite<
     const interactionOwner = this.interactionCoordinator.current();
     const isReady =
       this.state.status === 'ready' &&
-      (interactionOwner === 'none' || interactionOwner === 'inline');
+      (interactionOwner === 'none' ||
+        (interactionOwner === 'inline' &&
+          this.inlineController.allowsExternalOperation()));
     const hasSelect = this.selectIntegration.available();
     const selectedRowCount = hasSelect
       ? this.selectIntegration.selectedRowIndexes().length

@@ -53,15 +53,17 @@ exist.
 English strings. Applications can define it inline or await `loadEditorLanguage`
 for an external JSON resource before constructing the editor.
 
-`editMode` selects the Edit presentation. It accepts `dialog` (the default) or
-`inlineDoubleClick`. Dialog mode enables `openEditDialog()` and does not accept
-an `inline` object. Inline mode enables double-click and programmatic single-cell
+`editMode` selects the Edit presentation. It accepts `dialog` (the default),
+`inlineDoubleClick`, or `inlineHover`. Dialog mode enables `openEditDialog()` and
+does not accept an `inline` object. Inline modes enable programmatic single-cell
 editing while making Dialog Edit unavailable.
 
-`inline` configures behavior for `inlineDoubleClick`. It supports `blurAction`,
-`enterAction`, `tabAction`, exact named-column `columns` mappings, `updateMode`,
-and a safe additional `className`. It is optional in Inline mode and rejected in
-Dialog mode. See [Editing](editing.md).
+`inline` supports `keyboardActivation`, exact named-column `columns` mappings,
+`updateMode`, and a safe additional `className`. `inlineDoubleClick` also supports
+`blurAction`, `enterAction`, and `tabAction`. `inlineHover` requires those actions
+to be `none` when explicitly configured because its native Submit and Cancel
+buttons own resolution. It is optional in Inline mode and rejected in Dialog
+mode. See [Editing](editing.md).
 
 `hooks` configures `beforeOpen`, `beforeSubmit`, `afterSuccess`, and `onError`.
 See [Lifecycle hooks](hooks.md).
@@ -88,7 +90,8 @@ requires both `operations.update` and `operations.refresh`.
 
 ## Optional extensions
 
-Buttons and Select are optional peers and are never imported as runtime
+Buttons and Select are optional peers. KeyTable and ColReorder are also detected
+at runtime when applications install them; none are imported as production
 requirements.
 
 The registered button names are:
@@ -109,5 +112,6 @@ The Edit button is visible only in Dialog mode. In Inline mode its registered
 global definition remains available to other tables, but the instance-specific
 button is hidden, disabled, removed from keyboard navigation, and marked
 `aria-hidden`. Create, Remove, and Refresh remain available when their normal
-requirements are met. Invoking one of them safely cancels the active Inline cell
-before the requested action starts.
+requirements are met. They safely cancel an active `inlineDoubleClick` cell.
+During `inlineHover`, they stay unavailable until Submit or Cancel resolves the
+current candidate.

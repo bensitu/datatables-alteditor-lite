@@ -44,7 +44,9 @@ function assertValidDefaultValue<TFormValues extends object>(
     case 'search-select': {
       isValid =
         defaultValue === undefined ||
-        hasConfiguredOption(config.options, defaultValue) ||
+        (typeof config.loadOptions === 'function' &&
+          (typeof defaultValue === 'string' || typeof defaultValue === 'number')) ||
+        hasConfiguredOption(config.options ?? [], defaultValue) ||
         (config.allowManualValue === true && typeof defaultValue === 'string');
       break;
     }
@@ -142,9 +144,7 @@ export function validateFieldConfigurations<TFormValues extends object>(
     }
 
     if (
-      (config.type === 'select' ||
-        config.type === 'radio' ||
-        config.type === 'search-select') &&
+      (config.type === 'select' || config.type === 'radio') &&
       config.options.length === 0
     ) {
       throw new EditorConfigurationError(
@@ -152,25 +152,40 @@ export function validateFieldConfigurations<TFormValues extends object>(
       );
     }
 
-    if (
-      config.type === 'select' ||
-      config.type === 'radio' ||
-      config.type === 'search-select'
-    ) {
+    if (config.type === 'select' || config.type === 'radio') {
       assertUniqueOptionValues<string | number>(config.options);
     }
 
     if (config.type === 'search-select') {
-      if (config.options.length > SEARCH_SELECT_MAX_OPTION_COUNT) {
+      const options = config.options ?? [];
+      const loadOptions: unknown = config.loadOptions;
+      const resolveOption: unknown = config.resolveOption;
+      const hasLoader = typeof loadOptions === 'function';
+      const hasResolver = typeof resolveOption === 'function';
+      const hasRemoteConfiguration =
+        loadOptions !== undefined || resolveOption !== undefined;
+      const isRemote = hasRemoteConfiguration && hasLoader && hasResolver;
+      if (hasRemoteConfiguration && !isRemote) {
+        throw new EditorConfigurationError(
+          `Remote SearchSelect field "${config.name}" requires loadOptions and resolveOption.`,
+        );
+      }
+      if (!isRemote && options.length === 0) {
+        throw new EditorConfigurationError(
+          `Field "${config.name}" requires at least one option.`,
+        );
+      }
+      if (options.length > SEARCH_SELECT_MAX_OPTION_COUNT) {
         throw new EditorConfigurationError(
           `Field "${config.name}" exceeds the ${String(SEARCH_SELECT_MAX_OPTION_COUNT)}-option SearchSelect limit.`,
         );
       }
+      assertUniqueOptionValues<string | number>(options);
       assertNonNegativeInteger(config.searchThreshold, 'searchThreshold', config.name);
       assertNonNegativeInteger(config.debounceMs, 'debounceMs', config.name);
       if (
         config.allowManualValue === true &&
-        config.options.some(({ value }) => typeof value !== 'string')
+        options.some(({ value }) => typeof value !== 'string')
       ) {
         throw new EditorConfigurationError(
           `Field "${config.name}" can allow manual values only with string options.`,

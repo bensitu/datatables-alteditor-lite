@@ -2,17 +2,23 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   EditorDestroyedError,
+  EditorConfigurationError,
   EditorOperationBusyError,
 } from '../../src/core/alt-editor-lite-error.js';
 import { DrawOwnership } from '../../src/core/editing/draw-ownership.js';
 import { InteractionCoordinator } from '../../src/core/editing/interaction-coordinator.js';
 import { OperationOwner } from '../../src/core/editing/operation-owner.js';
 import { isColumnVisiblyAvailable } from '../../src/datatables/column-visibility.js';
+import { normalizeKeyTableEnabledState } from '../../src/datatables/key-table-inline-integration.js';
 import {
   assertInlineEditStateTransition,
   canTransitionInlineEditState,
 } from '../../src/inline/inline-edit-state-transition.js';
 import { InlineFocusStateMachine } from '../../src/inline/inline-focus-state-machine.js';
+import {
+  matchesInlineKeyboardShortcut,
+  resolveInlineKeyboardShortcut,
+} from '../../src/inline/inline-keyboard-shortcut.js';
 import { InlineOriginalContent } from '../../src/inline/inline-original-content.js';
 
 import type { Api } from 'datatables.net';
@@ -158,6 +164,37 @@ describe('inline interaction foundations', () => {
     table.remove();
     expect(staleContent.restore()).toBe(false);
     expect(cell.childNodes).toHaveLength(0);
+  });
+
+  it('validates and exactly matches focused-cell keyboard shortcuts', () => {
+    expect(resolveInlineKeyboardShortcut(undefined)).toEqual({ key: 'F2' });
+    expect(() => resolveInlineKeyboardShortcut({ key: 'Tab' })).toThrow(
+      EditorConfigurationError,
+    );
+    const shortcut = resolveInlineKeyboardShortcut({ ctrlKey: true, key: 'e' });
+    if (shortcut === false) {
+      throw new Error('Expected a resolved shortcut.');
+    }
+    expect(
+      matchesInlineKeyboardShortcut(
+        new KeyboardEvent('keydown', { ctrlKey: true, key: 'e' }),
+        shortcut,
+      ),
+    ).toBe(true);
+    expect(
+      matchesInlineKeyboardShortcut(
+        new KeyboardEvent('keydown', { ctrlKey: false, key: 'e' }),
+        shortcut,
+      ),
+    ).toBe(false);
+  });
+
+  it('normalizes every restorable KeyTable enabled state', () => {
+    expect(normalizeKeyTableEnabledState(true)).toBe(true);
+    expect(normalizeKeyTableEnabledState(false)).toBe(false);
+    expect(normalizeKeyTableEnabledState('navigation-only')).toBe('navigation-only');
+    expect(normalizeKeyTableEnabledState('tab-only')).toBe('tab-only');
+    expect(normalizeKeyTableEnabledState('unknown')).toBeUndefined();
   });
 });
 

@@ -3,7 +3,7 @@
 Every field supports the optional `inlineEdit` eligibility flag. It defaults to
 `false`. Text, email, number, date, time, datetime-local, checkbox, select,
 textarea, and SearchSelect fields can participate when the editor uses
-`inlineDoubleClick` and the field is editable, enabled, visible, writable, and
+`inlineDoubleClick` or `inlineHover` and the field is editable, enabled, visible, writable, and
 mapped to a column.
 Password, radio, file, and hidden fields remain dialog-only. See
 [Editing](editing.md).
@@ -66,8 +66,9 @@ the final uniqueness constraint.
 
 ## SearchSelect
 
-SearchSelect is a local, single-value combobox. It does not provide a remote data
-source, multiple-selection mode, or virtualization.
+SearchSelect is a typed single-value combobox with local and remote data sources.
+It does not provide multiple selection, pagination, infinite scrolling, or
+virtualization.
 
 ```ts
 const officeField = {
@@ -95,9 +96,34 @@ the same type are rejected.
 active locale. `allowClear` returns `undefined`. `allowManualValue` is available
 only for string-valued configurations; manual numeric parsing is not supported.
 
+Remote fields provide both callbacks. `loadOptions` owns query results;
+`resolveOption` independently hydrates the label for an existing value. Each
+callback receives an `AbortSignal`:
+
+```ts
+const remoteOfficeField = {
+  allowClear: true,
+  debounceMs: 250,
+  label: 'Office',
+  loadOptions: (query, { signal }) => searchOffices(query, signal),
+  name: 'officeId',
+  options: [{ label: 'Tokyo', value: 10 }], // optional seed/cache
+  resolveOption: (value, { signal }) => getOffice(value, signal),
+  searchThreshold: 2,
+  type: 'search-select',
+} as const;
+```
+
+`setValue()` and `getValue()` remain synchronous. A remote value is available
+immediately while its label resolves in the background. Search and resolution
+use separate cancellation and revision ownership, so a consumer that ignores the
+signal still cannot let a stale result overwrite current state. Loading,
+threshold, and query errors stay inside the combobox through `aria-busy`, its
+listbox, and a polite live status.
+
 Use at most 1,000 options for the best experience. The enforced and documented
-hard limit is 5,000 local options. Large remote datasets and virtualization are
-not supported.
+hard limit is 5,000 options in any configured or returned result. Remote loaders
+must narrow results to that bound.
 
 While a form is open, a SearchSelect controller exposes `setOptions(options)`:
 
@@ -105,8 +131,11 @@ While a form is open, a SearchSelect controller exposes `setOptions(options)`:
 editor.getField<number | undefined>('officeId')?.setOptions?.(nextOffices);
 ```
 
-The exact current value is retained when it still exists. If it disappears, the
-field clears and runs its normal `onChange` callback with a non-error state.
+For local fields, the exact current value is retained when it still exists; if it
+disappears, the field clears and runs `onChange`. For remote fields, `setOptions()`
+updates only the seed/cache and never replaces the loader or resolver. A matching
+seed immediately hydrates the selected label, invalidates an older resolver, and
+does not emit a value change.
 
 ## Files
 

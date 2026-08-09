@@ -102,7 +102,8 @@ removes the captured rows locally after confirmation.
 
 ## Refresh
 
-`refreshTable()` does not open a dialog, safely cancels an active Inline session,
+`refreshTable()` does not open a dialog, safely cancels an active double-click
+Inline session, and rejects while a hover Inline session awaits Submit or Cancel,
 and remains mutually exclusive with dialog operations. By default, Ajax tables
 wait for the public reload callback and local tables redraw without resetting
 paging. DataTables does not expose an

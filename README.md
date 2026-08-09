@@ -21,17 +21,17 @@ jQuery or UI-framework runtime dependency.
 
 - Native `<dialog>` forms with focus containment, restoration, responsive layout,
   and accessible validation feedback
-- Optional single-cell inline editing with exact column mapping, validation, and
-  keyboard navigation
+- Single-cell double-click or hover/touch editing with exact column mapping,
+  explicit actions, validation, and optional KeyTable activation
 - Create, Edit, Remove, and Ajax-aware or local Refresh operations
 - Non-optimistic asynchronous persistence with `AbortSignal`
 - Stable Edit and Remove target snapshots that fail closed when row identity
   changes
 - Text, email, password, number, date, time, datetime-local, textarea, checkbox,
-  radio, select, local SearchSelect, file, and hidden fields
+  radio, select, local or remote SearchSelect, file, and hidden fields
 - Typed option identity, safe nested field paths, custom validation, and optional
   local uniqueness checks
-- Optional DataTables Buttons and Select integration
+- Optional DataTables Buttons, Select, KeyTable, and ColReorder integration
 - External JSON languages, inline overrides, and included English, Japanese,
   Simplified Chinese, and Spanish resources
 - ESM and Browser Global distributions with responsive light and dark CSS
@@ -161,8 +161,10 @@ the same table element.
 ## Editing modes
 
 Dialog Edit is available by default for complete forms. Each editor selects one
-Edit presentation through `editMode`. Choose `inlineDoubleClick`, mark at least
-one eligible field, then use double click or the public API:
+Edit presentation through `editMode`. Choose `inlineDoubleClick` for compact
+fast editing, or `inlineHover` for a discoverable pencil and explicit Submit /
+Cancel actions. Mark at least one eligible field, then use its gesture, an
+optional focused-cell shortcut, or the public API:
 
 ```ts
 const editor = new AltEditorLite<UserRow, UserForm>(table, {
@@ -188,10 +190,12 @@ await editor.openInlineEdit('#user-42', 'displayName:name');
 ```
 
 Enter submits, Escape cancels, and Tab submits before moving to the next eligible
-visible cell on the current page. Dialog Edit is unavailable in this mode; Create,
-Remove, and Refresh retain their normal capabilities and safely cancel an active
-Inline session before starting. Updates are non-optimistic and reuse the shared
-Edit persistence transaction. See
+visible cell in `inlineDoubleClick`. In `inlineHover`, the default F2 shortcut
+edits a KeyTable-focused cell, while Submit and Cancel are the normal resolution
+controls; blur, Tab, Enter, and Escape leave the session active. Create, Remove,
+and Refresh require an active hover session to be resolved first. Completed
+ColReorder operations rebuild mappings without recreating the editor. Updates are
+non-optimistic and reuse the shared Edit persistence transaction. See
 [Editing](docs/editing.md) and [Lifecycle hooks](docs/hooks.md).
 
 ## Persistence operations
@@ -294,8 +298,9 @@ dialog closes. Refresh publishes start and complete phases. See
 The [live demo](https://bensitu.github.io/datatables-alteditor-lite/examples/demo/)
 uses the Browser Global distribution, the official DataTables CDN, an Ajax JSON
 data source, asynchronous persistence, and external languages. It presents
-separate Dialog and double-click Inline employee tables, followed by a synchronous
-workflow table with rendered controls and a live editing-mode switch.
+separate Dialog, double-click Inline, and hover/touch Inline employee tables. The
+hover example combines Select, KeyTable, ColReorder, and a remote SearchSelect;
+the workflow table demonstrates rendered controls and a live editing-mode switch.
 
 See [SECURITY.md](SECURITY.md) for private vulnerability reporting.
 
@@ -307,7 +312,9 @@ extensions remain separate dependencies distributed under their own terms.
 
 ## Buy Me A Coffee
 
-[!["Buy Me A Coffee"](https://cdn.buymeacoffee.com/buttons/v2/arial-yellow.png)](https://www.buymeacoffee.com/bensitu)
+<a href="https://www.buymeacoffee.com/bensitu">
+    <img src="https://cdn.buymeacoffee.com/buttons/v2/arial-yellow.png" alt="Buy Me A Coffee" width="200" />
+</a>
 
 ## License
 

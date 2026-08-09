@@ -16,6 +16,10 @@ import { revealSearchSelectOption } from './search-select-positioning.js';
 
 import type { SearchOptionEntry } from './filter-search-options.js';
 import type { SelectOption } from '../fields/field-config.js';
+import type {
+  SearchSelectOptionLoader,
+  SearchSelectOptionResolver,
+} from '../fields/search-select-data-source.js';
 
 /** Maximum supported local option count without virtualization. */
 export const SEARCH_SELECT_MAX_OPTION_COUNT = 5000;
@@ -29,6 +33,9 @@ export interface SearchSelectMessages {
   readonly results: string;
   readonly searchPlaceholder: string;
   readonly selection: string;
+  readonly loading: string;
+  readonly loadError: string;
+  readonly searchTooShort: string;
 }
 
 /** Construction arguments for one local single-value SearchSelect. */
@@ -40,7 +47,9 @@ export interface SearchSelectArguments<TValue extends string | number> {
   readonly locale: string;
   readonly messages: Readonly<SearchSelectMessages>;
   readonly onCommit: () => void;
-  readonly options: readonly SelectOption<TValue>[];
+  readonly options?: readonly SelectOption<TValue>[];
+  readonly loadOptions?: SearchSelectOptionLoader<TValue>;
+  readonly resolveOption?: SearchSelectOptionResolver<TValue>;
   readonly searchThreshold: number;
   readonly sortOptions: boolean;
 }
@@ -120,6 +129,10 @@ export class SearchSelect<TValue extends string | number> {
 
   private isReadOnly = false;
 
+  private isLoading = false;
+
+  private isResolving = false;
+
   private manualValue: string | undefined;
 
   private readonly clearButtonElement: HTMLButtonElement;
@@ -129,6 +142,10 @@ export class SearchSelect<TValue extends string | number> {
   private readonly messages: Readonly<SearchSelectMessages>;
 
   private readonly onCommit: () => void;
+
+  private readonly loadOptions: SearchSelectOptionLoader<TValue> | undefined;
+
+  private readonly resolveOption: SearchSelectOptionResolver<TValue> | undefined;
 
   private readonly optionElementByToken = new Map<string, HTMLDivElement>();
 
@@ -152,12 +169,38 @@ export class SearchSelect<TValue extends string | number> {
 
   private selectedToken: string | undefined;
 
+  private selectedValue: TValue | undefined;
+
+  private selectedResolvedOption: SelectOption<TValue> | undefined;
+
+  private seedOptions: readonly SelectOption<TValue>[];
+
+  private currentRemoteOptions: readonly SelectOption<TValue>[] = [];
+
+  private searchAbortController: AbortController | undefined;
+
+  private resolveAbortController: AbortController | undefined;
+
+  private searchRevision = 0;
+
+  private resolveRevision = 0;
+
   private tokenMap: OptionTokenMap<TValue>;
 
   /** Creates an unmounted SearchSelect subtree. */
   public constructor(configuration: SearchSelectArguments<TValue>) {
-    assertSupportedOptionCount(configuration.options.length);
-    this.tokenMap = new OptionTokenMap(configuration.options);
+    const options = configuration.options ?? [];
+    assertSupportedOptionCount(options.length);
+    if (
+      (configuration.loadOptions === undefined) !==
+      (configuration.resolveOption === undefined)
+    ) {
+      throw new EditorConfigurationError(
+        'Remote SearchSelect requires loadOptions and resolveOption.',
+      );
+    }
+    this.seedOptions = options;
+    this.tokenMap = new OptionTokenMap(options);
     this.shouldAllowClear = configuration.allowClear;
     this.shouldAllowManualValue = configuration.allowManualValue;
     this.shouldSortOptions = configuration.sortOptions;
@@ -166,11 +209,14 @@ export class SearchSelect<TValue extends string | number> {
     this.debounceMs = configuration.debounceMs;
     this.messages = configuration.messages;
     this.onCommit = configuration.onCommit;
+    this.loadOptions = configuration.loadOptions;
+    this.resolveOption = configuration.resolveOption;
     this.listboxId = `${configuration.fieldId}-listbox`;
     this.instructionsId = `${configuration.fieldId}-instructions`;
 
     this.element = document.createElement('div');
     this.element.className = 'dt-alteditor-lite-search-select';
+    this.element.setAttribute('aria-busy', 'false');
 
     this.inputElement = document.createElement('input');
     this.inputElement.type = 'text';
@@ -223,11 +269,7 @@ export class SearchSelect<TValue extends string | number> {
 
   /** Reads the exact selected option value or committed manual string. */
   public getValue(): TValue | undefined {
-    if (this.selectedToken !== undefined) {
-      return this.tokenMap.valueForToken(this.selectedToken);
-    }
-
-    return this.manualValue as TValue | undefined;
+    return this.selectedValue ?? (this.manualValue as TValue | undefined);
   }
 
   /** Writes an exact option value, manual string, or clear state. */
@@ -244,11 +286,15 @@ export class SearchSelect<TValue extends string | number> {
     }
 
     const typedValue = value as TValue;
+    const option = this.findKnownOption(typedValue);
     const token = this.tokenMap.tokenForValue(typedValue);
-    if (token !== undefined) {
+    if (option !== undefined) {
+      this.selectedValue = typedValue;
+      this.selectedResolvedOption = option;
       this.selectedToken = token;
       this.manualValue = undefined;
-      this.inputElement.value = this.tokenMap.optionForToken(token)?.label ?? '';
+      this.inputElement.value = option.label;
+      this.cancelResolveRequest();
       this.updateClearButton();
       if (this.isOpen) {
         this.renderOptions('');
@@ -256,8 +302,21 @@ export class SearchSelect<TValue extends string | number> {
       return;
     }
 
+    if (this.isRemote()) {
+      this.selectedValue = typedValue;
+      this.selectedResolvedOption = undefined;
+      this.selectedToken = undefined;
+      this.manualValue = undefined;
+      this.inputElement.value = '';
+      this.updateClearButton();
+      this.startResolve(typedValue);
+      return;
+    }
+
     if (this.shouldAllowManualValue && typeof value === 'string') {
       this.selectedToken = undefined;
+      this.selectedValue = undefined;
+      this.selectedResolvedOption = undefined;
       this.manualValue = value;
       this.inputElement.value = value;
       this.updateClearButton();
@@ -283,11 +342,37 @@ export class SearchSelect<TValue extends string | number> {
         'SearchSelect manual values require string-valued options.',
       );
     }
-    const previousSelectedValue =
-      this.selectedToken === undefined
-        ? undefined
-        : this.tokenMap.valueForToken(this.selectedToken);
+    if (this.isRemote()) {
+      this.assertRemoteOptions(options);
+      this.seedOptions = [...options];
+      const selectedValue = this.selectedValue;
+      if (selectedValue !== undefined) {
+        const selectedOption = this.findOption(options, selectedValue);
+        if (selectedOption !== undefined) {
+          this.cancelResolveRequest();
+          this.selectedResolvedOption = selectedOption;
+          this.inputElement.value = selectedOption.label;
+        } else if (
+          this.selectedResolvedOption === undefined &&
+          this.resolveAbortController === undefined
+        ) {
+          this.startResolve(selectedValue);
+        }
+      }
+      if (this.isOpen && this.currentRemoteOptions.length === 0) {
+        this.setCurrentOptions(options);
+        this.filteredEntries = this.tokenMap.entries().map(([token, option]) => ({
+          option,
+          token,
+        }));
+        this.renderOptionElements();
+      }
+      return;
+    }
+
+    const previousSelectedValue = this.selectedValue;
     const nextTokenMap = new OptionTokenMap(options);
+    this.seedOptions = [...options];
     this.tokenMap = nextTokenMap;
     this.optionElementByToken.clear();
     this.optionElementCacheByToken.clear();
@@ -300,6 +385,8 @@ export class SearchSelect<TValue extends string | number> {
         this.onCommit();
       } else {
         this.selectedToken = nextToken;
+        this.selectedValue = previousSelectedValue;
+        this.selectedResolvedOption = nextTokenMap.optionForToken(nextToken);
         this.inputElement.value = nextTokenMap.optionForToken(nextToken)?.label ?? '';
       }
     }
@@ -337,6 +424,8 @@ export class SearchSelect<TValue extends string | number> {
 
     this.isDestroyed = true;
     this.cancelScheduledRender();
+    this.cancelSearchRequest();
+    this.cancelResolveRequest();
     this.inputElement.removeEventListener('focus', this.handleFocus);
     this.inputElement.removeEventListener('blur', this.handleBlur);
     this.inputElement.removeEventListener('input', this.handleInput);
@@ -401,12 +490,23 @@ export class SearchSelect<TValue extends string | number> {
   };
 
   private readonly handleFocus = (): void => {
+    if (
+      this.isRemote() &&
+      this.selectedValue !== undefined &&
+      this.selectedResolvedOption === undefined &&
+      this.resolveAbortController === undefined
+    ) {
+      this.startResolve(this.selectedValue);
+    }
     this.open();
   };
 
   private readonly handleInput = (): void => {
     const hasCommittedValue = this.getValue() !== undefined;
+    this.cancelResolveRequest();
     this.selectedToken = undefined;
+    this.selectedValue = undefined;
+    this.selectedResolvedOption = undefined;
     this.manualValue = undefined;
     this.updateClearButton();
 
@@ -506,7 +606,10 @@ export class SearchSelect<TValue extends string | number> {
 
   private clear(shouldNotify: boolean): void {
     const hasCommittedValue = this.getValue() !== undefined;
+    this.cancelResolveRequest();
     this.selectedToken = undefined;
+    this.selectedValue = undefined;
+    this.selectedResolvedOption = undefined;
     this.manualValue = undefined;
     this.activeToken = undefined;
     this.inputElement.value = '';
@@ -523,6 +626,7 @@ export class SearchSelect<TValue extends string | number> {
   }
 
   private close(): void {
+    this.cancelSearchRequest();
     this.isOpen = false;
     this.listboxElement.hidden = true;
     this.inputElement.placeholder = this.messages.placeholder;
@@ -531,7 +635,7 @@ export class SearchSelect<TValue extends string | number> {
   }
 
   private commitManualValue(): void {
-    if (!this.shouldAllowManualValue || this.selectedToken !== undefined) {
+    if (!this.shouldAllowManualValue || this.selectedValue !== undefined) {
       return;
     }
 
@@ -579,6 +683,10 @@ export class SearchSelect<TValue extends string | number> {
   }
 
   private renderOptions(query: string): void {
+    if (this.isRemote()) {
+      this.startRemoteSearch(query);
+      return;
+    }
     const entries = this.tokenMap.entries().map(([token, option]) => ({
       option,
       token,
@@ -590,6 +698,10 @@ export class SearchSelect<TValue extends string | number> {
       this.searchThreshold,
       this.shouldSortOptions,
     );
+    this.renderOptionElements();
+  }
+
+  private renderOptionElements(): void {
     this.optionElementByToken.clear();
     const optionFragment = document.createDocumentFragment();
 
@@ -671,6 +783,9 @@ export class SearchSelect<TValue extends string | number> {
     }
 
     this.selectedToken = token;
+    this.selectedValue = option.value;
+    this.selectedResolvedOption = option;
+    this.cancelResolveRequest();
     this.manualValue = undefined;
     this.inputElement.value = option.label;
     this.resultStatusElement.textContent = formatAnnouncement(this.messages.selection, {
@@ -701,5 +816,259 @@ export class SearchSelect<TValue extends string | number> {
   private updateClearButton(): void {
     this.clearButtonElement.hidden =
       !this.shouldAllowClear || this.getValue() === undefined;
+  }
+
+  private isRemote(): boolean {
+    return this.loadOptions !== undefined && this.resolveOption !== undefined;
+  }
+
+  private findOption(
+    options: readonly SelectOption<TValue>[],
+    value: TValue,
+  ): SelectOption<TValue> | undefined {
+    return options.find((option) => Object.is(option.value, value));
+  }
+
+  private findKnownOption(value: TValue): SelectOption<TValue> | undefined {
+    if (Object.is(this.selectedResolvedOption?.value, value)) {
+      return this.selectedResolvedOption;
+    }
+    return (
+      this.findOption(this.seedOptions, value) ??
+      this.findOption(this.currentRemoteOptions, value) ??
+      this.tokenMap.optionForToken(this.tokenMap.tokenForValue(value) ?? '')
+    );
+  }
+
+  private assertRemoteOptions(
+    options: readonly SelectOption<TValue>[],
+  ): readonly SelectOption<TValue>[] {
+    assertSupportedOptionCount(options.length);
+    for (const option of options) {
+      if (
+        (typeof option.value !== 'string' && typeof option.value !== 'number') ||
+        typeof option.label !== 'string'
+      ) {
+        throw new EditorConfigurationError(
+          'Remote SearchSelect returned an invalid option.',
+        );
+      }
+    }
+    // Construction also rejects duplicate typed values.
+    new OptionTokenMap(options);
+    return options;
+  }
+
+  private setCurrentOptions(options: readonly SelectOption<TValue>[]): void {
+    this.currentRemoteOptions = [...options];
+    this.tokenMap = new OptionTokenMap(options);
+    this.selectedToken =
+      this.selectedValue === undefined
+        ? undefined
+        : this.tokenMap.tokenForValue(this.selectedValue);
+    if (this.selectedValue !== undefined) {
+      const selectedOption = this.findOption(options, this.selectedValue);
+      if (selectedOption !== undefined) {
+        this.cancelResolveRequest();
+        this.selectedResolvedOption = selectedOption;
+        this.inputElement.value = selectedOption.label;
+      }
+    }
+  }
+
+  private cancelSearchRequest(): void {
+    this.searchRevision += 1;
+    this.searchAbortController?.abort();
+    this.searchAbortController = undefined;
+    this.isLoading = false;
+    this.updateBusyState();
+  }
+
+  private startRemoteSearch(query: string): void {
+    const loader = this.loadOptions;
+    if (loader === undefined || this.isDestroyed || !this.isOpen) {
+      return;
+    }
+    this.cancelSearchRequest();
+    const normalizedQuery = query.trim();
+    if (normalizedQuery.length < this.searchThreshold) {
+      this.renderRemoteFeedback(
+        'threshold',
+        formatAnnouncement(this.messages.searchTooShort, {
+          count: String(this.searchThreshold),
+        }),
+      );
+      return;
+    }
+
+    const abortController = new AbortController();
+    this.searchAbortController = abortController;
+    const revision = this.searchRevision;
+    this.isLoading = true;
+    this.updateBusyState();
+    this.renderRemoteFeedback('loading', this.messages.loading);
+    let loadResult: ReturnType<SearchSelectOptionLoader<TValue>>;
+    try {
+      loadResult = loader(query, { signal: abortController.signal });
+    } catch {
+      this.searchAbortController = undefined;
+      this.isLoading = false;
+      this.updateBusyState();
+      this.element.classList.add('dt-alteditor-lite-search-select--error');
+      this.renderRemoteFeedback('error', this.messages.loadError);
+      return;
+    }
+    void Promise.resolve(loadResult).then(
+      (options) => {
+        if (
+          this.isDestroyed ||
+          abortController.signal.aborted ||
+          revision !== this.searchRevision ||
+          !this.isOpen
+        ) {
+          return;
+        }
+        this.searchAbortController = undefined;
+        this.isLoading = false;
+        this.updateBusyState();
+        try {
+          const validatedOptions = this.assertRemoteOptions(options);
+          this.setCurrentOptions(validatedOptions);
+          this.filteredEntries = this.tokenMap.entries().map(([token, option]) => ({
+            option,
+            token,
+          }));
+          this.element.classList.remove('dt-alteditor-lite-search-select--error');
+          this.renderOptionElements();
+        } catch {
+          this.element.classList.add('dt-alteditor-lite-search-select--error');
+          this.renderRemoteFeedback('error', this.messages.loadError);
+        }
+      },
+      () => {
+        if (
+          this.isDestroyed ||
+          abortController.signal.aborted ||
+          revision !== this.searchRevision ||
+          !this.isOpen
+        ) {
+          return;
+        }
+        this.searchAbortController = undefined;
+        this.isLoading = false;
+        this.updateBusyState();
+        this.element.classList.add('dt-alteditor-lite-search-select--error');
+        this.renderRemoteFeedback('error', this.messages.loadError);
+      },
+    );
+  }
+
+  private renderRemoteFeedback(
+    state: 'loading' | 'error' | 'threshold',
+    message: string,
+  ): void {
+    this.filteredEntries = [];
+    this.optionElementByToken.clear();
+    const feedback = document.createElement('div');
+    feedback.className = `dt-alteditor-lite-search-select__feedback dt-alteditor-lite-search-select__feedback--${state}`;
+    feedback.textContent = message;
+    this.listboxElement.replaceChildren(feedback);
+    this.resultStatusElement.textContent = message;
+    this.setActiveToken(undefined);
+  }
+
+  private cancelResolveRequest(): void {
+    this.resolveRevision += 1;
+    this.resolveAbortController?.abort();
+    this.resolveAbortController = undefined;
+    this.isResolving = false;
+    this.updateBusyState();
+  }
+
+  private startResolve(value: TValue): void {
+    const resolver = this.resolveOption;
+    if (resolver === undefined || this.isDestroyed) {
+      return;
+    }
+    this.cancelResolveRequest();
+    const abortController = new AbortController();
+    this.resolveAbortController = abortController;
+    const revision = this.resolveRevision;
+    this.isResolving = true;
+    this.updateBusyState();
+    this.resultStatusElement.textContent = this.messages.loading;
+    let resolveResult: ReturnType<SearchSelectOptionResolver<TValue>>;
+    try {
+      resolveResult = resolver(value, { signal: abortController.signal });
+    } catch {
+      this.resolveAbortController = undefined;
+      this.isResolving = false;
+      this.updateBusyState();
+      this.showResolveError();
+      return;
+    }
+    void Promise.resolve(resolveResult).then(
+      (option) => {
+        if (
+          this.isDestroyed ||
+          abortController.signal.aborted ||
+          revision !== this.resolveRevision ||
+          !Object.is(this.selectedValue, value)
+        ) {
+          return;
+        }
+        this.resolveAbortController = undefined;
+        this.isResolving = false;
+        this.updateBusyState();
+        if (option === undefined) {
+          return;
+        }
+        try {
+          this.assertRemoteOptions([option]);
+        } catch {
+          this.showResolveError();
+          return;
+        }
+        if (!Object.is(option.value, value)) {
+          this.showResolveError();
+          return;
+        }
+        this.selectedResolvedOption = option;
+        this.selectedToken = this.tokenMap.tokenForValue(value);
+        this.inputElement.value = option.label;
+        this.element.classList.remove('dt-alteditor-lite-search-select--error');
+        this.resultStatusElement.textContent = formatAnnouncement(
+          this.messages.selection,
+          { label: option.label },
+        );
+        this.updateClearButton();
+      },
+      () => {
+        if (
+          this.isDestroyed ||
+          abortController.signal.aborted ||
+          revision !== this.resolveRevision ||
+          !Object.is(this.selectedValue, value)
+        ) {
+          return;
+        }
+        this.resolveAbortController = undefined;
+        this.isResolving = false;
+        this.updateBusyState();
+        this.showResolveError();
+      },
+    );
+  }
+
+  private showResolveError(): void {
+    this.element.classList.add('dt-alteditor-lite-search-select--error');
+    this.resultStatusElement.textContent = this.messages.loadError;
+    if (this.isOpen) {
+      this.renderRemoteFeedback('error', this.messages.loadError);
+    }
+  }
+
+  private updateBusyState(): void {
+    this.element.setAttribute('aria-busy', String(this.isLoading || this.isResolving));
   }
 }

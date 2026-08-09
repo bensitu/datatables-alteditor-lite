@@ -21,6 +21,8 @@ import {
   type InlineEditorOptions,
   type InlineEditState,
   type OperationContext,
+  type RemoteSearchSelectFieldConfig,
+  type LocalSearchSelectFieldConfig,
   type SearchSelectFieldConfig,
 } from '../../src/index.js';
 import en from '../../src/locales/en.json' with { type: 'json' };
@@ -115,9 +117,21 @@ expectAssignable<AltEditorLiteOptions<Row, FormValues>>({
   editMode: 'inlineDoubleClick',
   fields: [],
 });
-expectNotAssignable<AltEditorLiteOptions<Row, FormValues>>({
+expectAssignable<AltEditorLiteOptions<Row, FormValues>>({
   editMode: 'inlineHover',
   fields: [],
+});
+expectAssignable<InlineEditorOptions<Row, FormValues>>({
+  keyboardActivation: { key: 'F2' },
+});
+expectAssignable<InlineEditorOptions<Row, FormValues>>({
+  keyboardActivation: { ctrlKey: true, key: 'e' },
+});
+expectAssignable<InlineEditorOptions<Row, FormValues>>({
+  keyboardActivation: false,
+});
+expectNotAssignable<InlineEditorOptions<Row, FormValues>>({
+  keyboardActivation: { key: 2 },
 });
 expectNotAssignable<InlineEditorOptions<Row, FormValues>>({ enabled: true });
 expectNotAssignable<InlineEditorOptions<Row, FormValues>>({ activation: 'dblclick' });
@@ -313,6 +327,38 @@ const mixedSearchSelect = {
 } as const satisfies SearchSelectFieldConfig<FormValues, string | number>;
 expectType<1 | '1' | undefined>({} as FieldValue<typeof mixedSearchSelect>);
 expectAssignable<FieldConfig<FormValues>>(mixedSearchSelect);
+
+const remoteSearchSelect = {
+  label: 'Remote role',
+  loadOptions: (_query, context) => {
+    expectType<AbortSignal>(context.signal);
+    return Promise.resolve([{ label: 'Administrator', value: 7 }]);
+  },
+  name: 'role',
+  resolveOption: (value, context) => {
+    expectType<number>(value);
+    expectType<AbortSignal>(context.signal);
+    return Promise.resolve({ label: 'Administrator', value });
+  },
+  type: 'search-select',
+} as const satisfies RemoteSearchSelectFieldConfig<FormValues, number>;
+expectAssignable<SearchSelectFieldConfig<FormValues, number>>(remoteSearchSelect);
+expectAssignable<FieldConfig<FormValues>>(remoteSearchSelect);
+
+expectNotAssignable<RemoteSearchSelectFieldConfig<FormValues, number>>({
+  label: 'Remote role',
+  loadOptions: () => [],
+  name: 'role',
+  type: 'search-select',
+});
+expectNotAssignable<LocalSearchSelectFieldConfig<FormValues, number>>({
+  label: 'Local role',
+  loadOptions: () => [],
+  name: 'role',
+  options: [{ label: 'Administrator', value: 7 }],
+  resolveOption: () => ({ label: 'Administrator', value: 7 }),
+  type: 'search-select',
+});
 
 const roleController = editor.getField<number | undefined>('role');
 roleController?.setOptions?.([{ label: 'Administrator', value: 7 }]);

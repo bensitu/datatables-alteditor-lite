@@ -1,4 +1,4 @@
-import { supportsInlineField } from './inline-field-capability.js';
+import { isInlineFieldEligible } from './inline-field-capability.js';
 
 import type { ResolvedInlineEditorOptions } from './inline-edit-options.js';
 import type { FieldConfig } from '../fields/field-config.js';
@@ -57,7 +57,7 @@ export function createInlineColumnMappings<
     }
 
     const field = fieldsByName.get(configuredFieldName);
-    if (field?.inlineEdit !== true || !supportsInlineField(field)) {
+    if (field === undefined || !isInlineFieldEligible(field)) {
       continue;
     }
 

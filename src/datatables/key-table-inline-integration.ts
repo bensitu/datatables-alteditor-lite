@@ -1,0 +1,173 @@
+import { resolveInlineCellTarget } from '../inline/inline-activation.js';
+import { matchesInlineKeyboardShortcut } from '../inline/inline-keyboard-shortcut.js';
+
+import type { InlineActivationTarget } from '../inline/inline-activation.js';
+import type { InlineColumnMapping } from '../inline/inline-column-mapping.js';
+import type { InlineKeyboardShortcut } from '../inline/inline-keyboard-shortcut.js';
+import type { Api } from 'datatables.net';
+
+export type KeyTableEnabledState = true | false | 'navigation-only' | 'tab-only';
+
+interface KeyTableApiSurface {
+  readonly disable: () => unknown;
+  readonly enable: (state?: true | 'navigation-only' | 'tab-only') => unknown;
+  readonly enabled: () => unknown;
+}
+
+interface KeyTableOwner {
+  readonly keys?: Partial<KeyTableApiSurface>;
+}
+
+interface CellApiSurface {
+  readonly index: () => { readonly column?: number; readonly row?: number } | undefined;
+  readonly node: () => unknown;
+}
+
+/** Narrows the exact KeyTable state that can be restored after editing. */
+export function normalizeKeyTableEnabledState(
+  value: unknown,
+): KeyTableEnabledState | undefined {
+  return value === true ||
+    value === false ||
+    value === 'navigation-only' ||
+    value === 'tab-only'
+    ? value
+    : undefined;
+}
+
+function resolveKeysApi(table: object): KeyTableApiSurface | undefined {
+  const keys = (table as KeyTableOwner).keys;
+  return typeof keys?.enabled === 'function' &&
+    typeof keys.enable === 'function' &&
+    typeof keys.disable === 'function'
+    ? (keys as KeyTableApiSurface)
+    : undefined;
+}
+
+function isCellApiSurface(value: unknown): value is CellApiSurface {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'index' in value &&
+    typeof value.index === 'function' &&
+    'node' in value &&
+    typeof value.node === 'function'
+  );
+}
+
+/** Tracks KeyTable focus and owns the configured native activation shortcut. */
+export class KeyTableInlineIntegration<TRow extends object, TFormValues extends object> {
+  private readonly keys: KeyTableApiSurface | undefined;
+
+  private focusedCell: HTMLTableCellElement | undefined;
+
+  private previousState: KeyTableEnabledState | undefined;
+
+  private isAttached = false;
+
+  public constructor(
+    private readonly table: Api<TRow>,
+    private readonly tableElement: HTMLTableElement,
+    private readonly mappings: ReadonlyMap<
+      number,
+      Readonly<InlineColumnMapping<TFormValues>>
+    >,
+    private readonly shortcut: Readonly<InlineKeyboardShortcut> | false,
+    private readonly onActivate: (target: Readonly<InlineActivationTarget>) => void,
+    private readonly onFocusCell: (cell: HTMLTableCellElement | undefined) => void,
+  ) {
+    this.keys = resolveKeysApi(table);
+  }
+
+  public attach(): void {
+    if (this.keys === undefined || this.isAttached) {
+      return;
+    }
+    this.isAttached = true;
+    this.table.on(
+      'key-focus.altEditorLiteInlineKeyboard key-refocus.altEditorLiteInlineKeyboard',
+      this.handleKeyFocus,
+    );
+    this.table.on('key-blur.altEditorLiteInlineKeyboard', this.handleKeyBlur);
+    document.addEventListener('keydown', this.handleKeyDown, true);
+  }
+
+  public suspend(): void {
+    if (this.keys === undefined || this.previousState !== undefined) {
+      return;
+    }
+    const state = normalizeKeyTableEnabledState(this.keys.enabled());
+    if (state === undefined) {
+      return;
+    }
+    this.previousState = state;
+    this.keys.disable();
+  }
+
+  public restore(): void {
+    const state = this.previousState;
+    this.previousState = undefined;
+    if (this.keys === undefined || state === undefined) {
+      return;
+    }
+    if (state === false) {
+      this.keys.disable();
+    } else {
+      this.keys.enable(state);
+    }
+  }
+
+  public refreshFocusedCell(): void {
+    this.onFocusCell(this.focusedCell);
+  }
+
+  public destroy(): void {
+    if (!this.isAttached) {
+      this.restore();
+      return;
+    }
+    this.isAttached = false;
+    this.restore();
+    this.table.off('.altEditorLiteInlineKeyboard');
+    document.removeEventListener('keydown', this.handleKeyDown, true);
+    this.focusedCell = undefined;
+  }
+
+  private readonly handleKeyFocus = (...eventArguments: unknown[]): void => {
+    const cellApi = eventArguments.find(isCellApiSurface);
+    const cell = cellApi?.node();
+    this.focusedCell =
+      cell instanceof HTMLTableCellElement && cell.closest('table') === this.tableElement
+        ? cell
+        : undefined;
+    this.onFocusCell(this.focusedCell);
+  };
+
+  private readonly handleKeyBlur = (): void => {
+    this.focusedCell = undefined;
+    this.onFocusCell(undefined);
+  };
+
+  private readonly handleKeyDown = (event: KeyboardEvent): void => {
+    const cell = this.focusedCell;
+    if (
+      this.shortcut === false ||
+      cell === undefined ||
+      !matchesInlineKeyboardShortcut(event, this.shortcut)
+    ) {
+      return;
+    }
+    const target = resolveInlineCellTarget(
+      this.table,
+      this.tableElement,
+      cell,
+      this.mappings,
+    );
+    if (target === undefined) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    this.onActivate(target);
+  };
+}

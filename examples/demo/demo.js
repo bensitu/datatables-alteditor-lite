@@ -108,6 +108,26 @@ const fieldConfigurations = [
   },
   { defaultValue: 'distribution-example', name: 'source', type: 'hidden' },
 ];
+const hoverFieldConfigurations = fieldConfigurations.map((field) =>
+  field.type === 'search-select'
+    ? {
+        ...field,
+        debounceMs: 250,
+        loadOptions: async (query, { signal }) => {
+          await waitForLatency(signal);
+          const normalizedQuery = query.trim().toLocaleLowerCase();
+          return offices.filter(({ label }) =>
+            label.toLocaleLowerCase().includes(normalizedQuery),
+          );
+        },
+        options: offices.slice(0, 2),
+        resolveOption: async (value, { signal }) => {
+          await waitForLatency(signal);
+          return offices.find((option) => option.value === value);
+        },
+      }
+    : field,
+);
 const workflowFields = [
   {
     inlineEdit: true,
@@ -184,6 +204,7 @@ const localeSelect = document.querySelector('#locale-select');
 const localeStatus = document.querySelector('#locale-status');
 const dialogEmployeeTableElement = document.querySelector('#employees');
 const inlineEmployeeTableElement = document.querySelector('#employees-inline');
+const hoverEmployeeTableElement = document.querySelector('#employees-hover');
 const workflowTableElement = document.querySelector('#workflows');
 const workflowInlineStatus = document.querySelector('#workflow-inline-status');
 const workflowModeIndicator = document.querySelector('#workflow-mode-indicator');
@@ -195,6 +216,7 @@ let currentLanguage;
 let currentLocaleName = 'en';
 let dialogEmployeeEditor;
 let inlineEmployeeEditor;
+let hoverEmployeeEditor;
 let workflowEditor;
 let workflowEditMode = 'inlineDoubleClick';
 let isSwitchingWorkflowMode = false;
@@ -232,7 +254,7 @@ function renderSupportWindowControl(supportWindow, type) {
   return `<input class="demo-rendered-control demo-rendered-support-window" data-alteditor-lite-ignore-inline aria-label="Rendered support window" type="time" value="${escapeHtmlAttribute(supportWindow)}">`;
 }
 
-function createEmployeeTable(selector) {
+function createEmployeeTable(selector, additionalOptions = {}) {
   return new DataTable(selector, {
     ajax: {
       dataSrc: '',
@@ -271,11 +293,17 @@ function createEmployeeTable(selector) {
     },
     rowId: (row) => `employee-${String(row.id)}`,
     select: { style: 'multi' },
+    ...additionalOptions,
   });
 }
 
 const dialogEmployeeTable = createEmployeeTable('#employees');
 const inlineEmployeeTable = createEmployeeTable('#employees-inline');
+const hoverEmployeeTable = createEmployeeTable('#employees-hover', {
+  colReorder: true,
+  keys: true,
+  select: { style: 'single' },
+});
 const workflowTable = new DataTable('#workflows', {
   columns: [
     { data: 'title', name: 'title' },
@@ -380,7 +408,7 @@ function assertUniqueEmail(table, email, excludedId) {
 function createEmployeeEditor(table, editMode, language) {
   return new AltEditorLite(table, {
     editMode,
-    fields: fieldConfigurations,
+    fields: editMode === 'inlineHover' ? hoverFieldConfigurations : fieldConfigurations,
     language,
     operations: {
       async create(values, context) {
@@ -494,9 +522,12 @@ function describeEditorState(editor, editMode) {
 function updateState() {
   const dialogState = describeEditorState(dialogEmployeeEditor, 'dialog');
   const inlineState = describeEditorState(inlineEmployeeEditor, 'inlineDoubleClick');
-  editorState.textContent = `dialog:${dialogState} · inline:${inlineState}`;
+  const hoverState = describeEditorState(hoverEmployeeEditor, 'inlineHover');
+  editorState.textContent = `dialog:${dialogState} · inline:${inlineState} · hover:${hoverState}`;
   editorState.dataset.state =
-    dialogState === 'error' || inlineState === 'error' ? 'error' : 'ready';
+    dialogState === 'error' || inlineState === 'error' || hoverState === 'error'
+      ? 'error'
+      : 'ready';
 }
 
 function appendEvent(event) {
@@ -553,6 +584,7 @@ function updateWorkflowModeUi() {
 function recreateEditors(language) {
   dialogEmployeeEditor?.destroy();
   inlineEmployeeEditor?.destroy();
+  hoverEmployeeEditor?.destroy();
   workflowEditor?.destroy();
   dialogEmployeeEditor = createEmployeeEditor(dialogEmployeeTable, 'dialog', language);
   inlineEmployeeEditor = createEmployeeEditor(
@@ -560,6 +592,7 @@ function recreateEditors(language) {
     'inlineDoubleClick',
     language,
   );
+  hoverEmployeeEditor = createEmployeeEditor(hoverEmployeeTable, 'inlineHover', language);
   workflowEditor = createWorkflowEditor(language);
   workflowTable.row('#workflow-1').select();
   updateWorkflowModeUi();
@@ -668,6 +701,7 @@ async function applyRenderedWorkflowValue(renderedControl, fieldName, fieldLabel
 
 registerEventSource(dialogEmployeeTableElement, 'dialog table');
 registerEventSource(inlineEmployeeTableElement, 'inline table');
+registerEventSource(hoverEmployeeTableElement, 'hover table');
 registerEventSource(workflowTableElement, 'workflow table');
 
 const englishLanguage = getLocale('en');

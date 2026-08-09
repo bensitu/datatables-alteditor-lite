@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-08-10
+
+### Added
+
+- Hover- and touch-discoverable single-cell editing with one cell-local pencil,
+  native Submit and Cancel actions, and explicit session resolution.
+- Configurable focused-cell keyboard activation through optional KeyTable, with
+  F2 as the default shortcut and exact extension-state restoration.
+- Live inline column mapping rebuilds after completed ColReorder operations.
+- Remote SearchSelect loading and existing-value resolution with independent
+  cancellation, stale-result protection, seed options, and accessible status.
+- Mobile Chromium and mobile WebKit touch coverage and a combined hover,
+  KeyTable, ColReorder, Select, and remote SearchSelect demonstration.
+
+### Changed
+
+- Composed inline activation, view, keyboard/focus behavior, and operation
+  conflict policy per edit mode while retaining one shared Edit transaction.
+- Preserved `dialog` as the default, existing `inlineDoubleClick` behavior, local
+  SearchSelect configuration, optional DataTables extensions, and the no-jQuery
+  runtime boundary.
+
 ## [0.2.1] - 2026-08-09
 
 ### Changed

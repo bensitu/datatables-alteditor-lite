@@ -1,7 +1,9 @@
 # Localization
 
-Language resources include the `inline` section for unavailable or unsupported
-targets and the `alert` section for validation and operation error titles. Alert
+Language resources include `inline.editCell` for the hover pencil and the
+SearchSelect `loading`, `loadError`, and `searchTooShort` messages. The `inline`
+section also covers unavailable or unsupported targets, and the `alert` section
+contains validation and operation error titles. Alert
 messages come from normalized errors and field validation. The Close button uses
 `actions.close`. Partial resources may omit these keys and inherit English text.
 
@@ -86,6 +88,7 @@ schemes are rejected before a request is made.
 
 Templates must retain their placeholders. For example, `dialog.removeCount`
 contains `{count}`, `accessibility.searchSelectResults` contains `{count}`, and
+`searchSelect.searchTooShort` contains `{count}` while
 `accessibility.searchSelectSelection` contains `{label}`.
 
 ## Browser Global usage

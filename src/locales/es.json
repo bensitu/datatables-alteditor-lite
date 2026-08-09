@@ -33,7 +33,10 @@
     "placeholder": "Selecciona una opción",
     "searchPlaceholder": "Buscar opciones",
     "noResults": "No hay opciones coincidentes",
-    "clear": "Borrar selección"
+    "clear": "Borrar selección",
+    "loading": "Cargando opciones…",
+    "loadError": "No se pudieron cargar las opciones. Escribe una nueva búsqueda para reintentarlo.",
+    "searchTooShort": "Escribe al menos {count} caracteres para buscar."
   },
   "accessibility": {
     "searchSelectInstructions": "Usa las flechas para recorrer las opciones.",
@@ -41,6 +44,7 @@
     "searchSelectSelection": "Se ha seleccionado {label}."
   },
   "inline": {
+    "editCell": "Editar celda",
     "unavailable": "La edición en línea no está disponible para esta celda.",
     "unsupportedField": "Este campo no admite edición en línea.",
     "targetUnavailable": "La celda editada ya no está disponible."

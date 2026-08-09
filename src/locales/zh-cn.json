@@ -33,7 +33,10 @@
     "placeholder": "请选择",
     "searchPlaceholder": "搜索选项",
     "noResults": "没有匹配的选项",
-    "clear": "清除选择"
+    "clear": "清除选择",
+    "loading": "正在加载选项…",
+    "loadError": "无法加载选项。请输入新的搜索内容以重试。",
+    "searchTooShort": "请至少输入 {count} 个字符进行搜索。"
   },
   "accessibility": {
     "searchSelectInstructions": "使用方向键浏览选项。",
@@ -41,6 +44,7 @@
     "searchSelectSelection": "已选择 {label}。"
   },
   "inline": {
+    "editCell": "编辑单元格",
     "unavailable": "此单元格不可进行行内编辑。",
     "unsupportedField": "此字段不支持行内编辑。",
     "targetUnavailable": "正在编辑的单元格已不可用。"

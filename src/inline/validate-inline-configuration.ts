@@ -108,9 +108,7 @@ export function validateInlineConfiguration<
 
   if (editMode === 'dialog') {
     if (inline !== undefined) {
-      throw new EditorConfigurationError(
-        'inline options require editMode "inlineDoubleClick".',
-      );
+      throw new EditorConfigurationError('inline options require an inline editMode.');
     }
     return;
   }
@@ -122,9 +120,20 @@ export function validateInlineConfiguration<
   assertClassName(inline?.className);
   assertExplicitMappings(table, options.fields, inline?.columns);
 
+  if (
+    editMode === 'inlineHover' &&
+    ((inline?.blurAction !== undefined && inline.blurAction !== 'none') ||
+      (inline?.enterAction !== undefined && inline.enterAction !== 'none') ||
+      (inline?.tabAction !== undefined && inline.tabAction !== 'none'))
+  ) {
+    throw new EditorConfigurationError(
+      'inlineHover requires blurAction, enterAction, and tabAction to be "none" when configured.',
+    );
+  }
+
   if (!options.fields.some(isInlineFieldEligible)) {
     throw new EditorConfigurationError(
-      'inlineDoubleClick mode requires at least one supported inlineEdit field.',
+      'Inline editing requires at least one supported inlineEdit field.',
     );
   }
 

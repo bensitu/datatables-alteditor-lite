@@ -1,3 +1,6 @@
+import { resolveInlineKeyboardShortcut } from './inline-keyboard-shortcut.js';
+
+import type { InlineKeyboardShortcut } from './inline-keyboard-shortcut.js';
 import type { FieldPath } from '../object-path/field-path.js';
 
 /** Configuration for single-cell inline editing. */
@@ -12,6 +15,7 @@ export interface InlineEditorOptions<
   readonly columns?: Readonly<Record<string, FieldPath<TFormValues> | false>>;
   readonly updateMode?: 'replace-row' | 'refresh';
   readonly className?: string;
+  readonly keyboardActivation?: Readonly<InlineKeyboardShortcut> | false;
 }
 
 /** Fully resolved inline behavior used by the runtime controller. */
@@ -22,6 +26,7 @@ export interface ResolvedInlineEditorOptions<TFormValues extends object> {
   readonly columns: Readonly<Record<string, FieldPath<TFormValues> | false>>;
   readonly updateMode: 'replace-row' | 'refresh';
   readonly className?: string;
+  readonly keyboardActivation: Readonly<InlineKeyboardShortcut> | false;
 }
 
 /** Default behavior used by the inline Edit presentation. */
@@ -40,6 +45,7 @@ export function resolveInlineOptions<TRow extends object, TFormValues extends ob
     blurAction: options?.blurAction ?? DEFAULT_INLINE_OPTIONS.blurAction,
     columns: Object.freeze({ ...(options?.columns ?? {}) }),
     enterAction: options?.enterAction ?? DEFAULT_INLINE_OPTIONS.enterAction,
+    keyboardActivation: resolveInlineKeyboardShortcut(options?.keyboardActivation),
     tabAction: options?.tabAction ?? DEFAULT_INLINE_OPTIONS.tabAction,
     updateMode: options?.updateMode ?? DEFAULT_INLINE_OPTIONS.updateMode,
     ...(options?.className === undefined ? {} : { className: options.className }),

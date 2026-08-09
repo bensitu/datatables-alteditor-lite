@@ -1,4 +1,4 @@
-import type { ResolvedInlineEditorOptions } from './inline-edit-options.js';
+import type { ResolvedInlineInteractionBehavior } from './inline-interaction-behavior.js';
 import type { FieldConfig } from '../fields/field-config.js';
 
 /** Action owned by the inline host for one keyboard event. */
@@ -14,16 +14,16 @@ export type InlineKeyboardIntent =
 export function resolveInlineKeyboardIntent<TFormValues extends object>(
   event: KeyboardEvent,
   field: Readonly<FieldConfig<TFormValues>>,
-  options: Readonly<ResolvedInlineEditorOptions<TFormValues>>,
+  behavior: Readonly<ResolvedInlineInteractionBehavior>,
 ): Readonly<InlineKeyboardIntent> | undefined {
   if (event.defaultPrevented || event.isComposing) {
     return undefined;
   }
-  if (event.key === 'Escape') {
+  if (event.key === 'Escape' && behavior.escapeAction === 'cancel') {
     return Object.freeze({ type: 'cancel' });
   }
-  if (event.key === 'Tab' && options.tabAction !== 'none') {
-    return options.tabAction === 'submit-and-move'
+  if (event.key === 'Tab' && behavior.tabAction !== 'none') {
+    return behavior.tabAction === 'submit-and-move'
       ? Object.freeze({
           direction: event.shiftKey ? 'backward' : 'forward',
           type: 'submit-and-move',
@@ -32,7 +32,7 @@ export function resolveInlineKeyboardIntent<TFormValues extends object>(
   }
   if (
     event.key !== 'Enter' ||
-    options.enterAction === 'none' ||
+    behavior.enterAction === 'none' ||
     field.type === 'select'
   ) {
     return undefined;

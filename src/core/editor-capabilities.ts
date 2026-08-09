@@ -16,7 +16,7 @@ export function resolveEditorCapabilities(
   return Object.freeze({
     createDialog: true,
     editDialog: editMode === 'dialog',
-    inlineEdit: editMode === 'inlineDoubleClick',
+    inlineEdit: editMode === 'inlineDoubleClick' || editMode === 'inlineHover',
     refresh: true,
     removeDialog: true,
   });

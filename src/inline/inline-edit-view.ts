@@ -9,6 +9,7 @@ export interface InlineEditView {
   readonly element: HTMLElement;
   mount(cell: HTMLTableCellElement): void;
   focus(): void;
+  setActionBusy?(isBusy: boolean): void;
   setBusy(isBusy: boolean): void;
   setInvalid(isInvalid: boolean): void;
   unmount(options: Readonly<{ restoreOriginalContent: boolean }>): void;

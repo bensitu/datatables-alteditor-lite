@@ -6,4 +6,6 @@ export interface InlineActivationStrategy<
   TFormValues extends object,
 > {
   attach(context: InlineActivationContext<TRow, TFormValues>): () => void;
+  hide?(): void;
+  presentCell?(cell: HTMLTableCellElement | undefined): void;
 }

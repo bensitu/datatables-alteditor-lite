@@ -1,5 +1,9 @@
 import type { FieldValidationResult } from './field-controller.js';
 import type { MaybePromise } from './field-value.js';
+import type {
+  SearchSelectOptionLoader,
+  SearchSelectOptionResolver,
+} from './search-select-data-source.js';
 import type { EditorValues } from '../core/editor-values.js';
 import type { FieldPath } from '../object-path/field-path.js';
 
@@ -195,22 +199,48 @@ export interface SelectFieldConfig<
   readonly allowClear?: boolean;
 }
 
-interface BaseSearchSelectFieldConfig<
+export interface BaseSearchSelectFieldConfig<
   TFormValues extends object,
   TValue extends string | number,
 > extends VisibleFieldConfig<TFormValues, TValue | undefined> {
   readonly type: 'search-select';
-  /** Local options available to the single-value combobox. */
-  readonly options: readonly SelectOption<TValue>[];
   /** Whether the current selection can be cleared. */
   readonly allowClear?: boolean;
   /** Whether matching options are sorted with the active locale. */
   readonly sortOptions?: boolean;
-  /** Minimum query length before local filtering starts. */
+  /** Minimum query length before filtering or remote loading starts. */
   readonly searchThreshold?: number;
-  /** Delay applied to local filtering after text input. */
+  /** Delay applied after text input. Remote fields default to 250ms. */
   readonly debounceMs?: number;
 }
+
+type SearchSelectManualValueConstraint<TValue extends string | number> = [
+  TValue,
+] extends [string]
+  ? { readonly allowManualValue?: boolean }
+  : { readonly allowManualValue?: false };
+
+/** SearchSelect backed entirely by configured local options. */
+export type LocalSearchSelectFieldConfig<
+  TFormValues extends object,
+  TValue extends string | number = string,
+> = BaseSearchSelectFieldConfig<TFormValues, TValue> &
+  SearchSelectManualValueConstraint<TValue> & {
+    readonly options: readonly SelectOption<TValue>[];
+    readonly loadOptions?: never;
+    readonly resolveOption?: never;
+  };
+
+/** SearchSelect backed by cancellable remote loading and value resolution. */
+export type RemoteSearchSelectFieldConfig<
+  TFormValues extends object,
+  TValue extends string | number = string,
+> = BaseSearchSelectFieldConfig<TFormValues, TValue> &
+  SearchSelectManualValueConstraint<TValue> & {
+    readonly options?: readonly SelectOption<TValue>[];
+    readonly loadOptions: SearchSelectOptionLoader<TValue>;
+    readonly resolveOption: SearchSelectOptionResolver<TValue>;
+  };
 
 /**
  * Local searchable single-select configuration.
@@ -220,13 +250,9 @@ interface BaseSearchSelectFieldConfig<
 export type SearchSelectFieldConfig<
   TFormValues extends object,
   TValue extends string | number = string,
-> = [TValue] extends [string]
-  ? BaseSearchSelectFieldConfig<TFormValues, TValue> & {
-      readonly allowManualValue?: boolean;
-    }
-  : BaseSearchSelectFieldConfig<TFormValues, TValue> & {
-      readonly allowManualValue?: false;
-    };
+> =
+  | LocalSearchSelectFieldConfig<TFormValues, TValue>
+  | RemoteSearchSelectFieldConfig<TFormValues, TValue>;
 
 /** Hidden string value configuration. */
 export interface HiddenFieldConfig<TFormValues extends object> extends BaseFieldConfig<

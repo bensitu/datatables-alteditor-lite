@@ -6,6 +6,7 @@ import { validateFieldConfigurations } from '../../src/fields/validate-field-con
 import { buildEditorForm } from '../../src/form/build-editor-form.js';
 
 import type { FieldChangeContext, FieldConfig } from '../../src/fields/field-config.js';
+import type { SearchSelectLoadContext } from '../../src/fields/search-select-data-source.js';
 import type { FormController } from '../../src/form/form-controller.js';
 
 interface SearchFormValues {
@@ -244,6 +245,62 @@ describe('SearchSelect field integration', () => {
     expect(form.getField('officeId')).toBeNull();
     expect(document.querySelector('[data-field-name="officeId"]')).toBeNull();
   });
+
+  it('resolves existing remote values and selects asynchronously loaded options', async () => {
+    const remoteChange = vi.fn();
+    const loadOptions = vi.fn((query: string, context: SearchSelectLoadContext) => {
+      void context;
+      return Promise.resolve(
+        [
+          { label: 'Tokyo', value: 2 },
+          { label: 'Zürich', value: 3 },
+        ].filter((option) => option.label.toLowerCase().includes(query.toLowerCase())),
+      );
+    });
+    activeForm = buildEditorForm<SearchFormValues>(
+      [
+        {
+          allowClear: true,
+          defaultValue: 2,
+          label: 'Remote office',
+          loadOptions,
+          name: 'officeId',
+          onChange: remoteChange,
+          resolveOption: (value: number) =>
+            Promise.resolve(value === 2 ? { label: 'Tokyo', value: 2 } : undefined),
+          type: 'search-select',
+        },
+      ],
+      'remote-search-select-test',
+      ENGLISH_LANGUAGE,
+    );
+    document.body.append(activeForm.element);
+    const field = activeForm.getField('officeId');
+    const input = field?.element.querySelector<HTMLInputElement>('input');
+    if (field === null || input === null || input === undefined) {
+      throw new Error('Expected a remote SearchSelect field.');
+    }
+
+    expect(field.getValue()).toBe(2);
+    await vi.waitFor(() => {
+      expect(input.value).toBe('Tokyo');
+    });
+    expect(remoteChange).not.toHaveBeenCalled();
+
+    input.focus();
+    input.value = 'z';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    await vi.waitFor(() => {
+      expect(loadOptions.mock.calls.at(-1)?.[0]).toBe('z');
+      expect(loadOptions.mock.calls.at(-1)?.[1].signal).toBeInstanceOf(AbortSignal);
+      expect(field.element.querySelector('[role="listbox"]')?.textContent).toContain(
+        'Zürich',
+      );
+    });
+    input.dispatchEvent(keyboardEvent('Enter'));
+    expect(field.getValue()).toBe(3);
+    expect((await activeForm.collect()).officeId).toBe(3);
+  });
 });
 
 describe('SearchSelect runtime configuration', () => {
@@ -302,6 +359,28 @@ describe('SearchSelect runtime configuration', () => {
 
     expect(() => {
       validateFieldConfigurations([invalidField]);
+    }).toThrow(EditorConfigurationError);
+  });
+
+  it('requires both remote callbacks while allowing an optional empty seed', () => {
+    const remoteField = {
+      label: 'Office',
+      loadOptions: () => [],
+      name: 'officeId',
+      resolveOption: () => undefined,
+      type: 'search-select',
+    } as const satisfies FieldConfig<SearchFormValues>;
+    expect(() => {
+      validateFieldConfigurations([remoteField]);
+    }).not.toThrow();
+
+    expect(() => {
+      validateFieldConfigurations([
+        {
+          ...remoteField,
+          resolveOption: undefined,
+        } as unknown as FieldConfig<SearchFormValues>,
+      ]);
     }).toThrow(EditorConfigurationError);
   });
 });
