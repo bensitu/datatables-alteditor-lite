@@ -120,10 +120,35 @@ test('reveals one trigger before editing and keeps explicit touch resolution', a
   await expect(page.locator('.alteditor-lite-inline')).toHaveCount(0);
   const trigger = cell.getByRole('button', { name: 'Edit cell' });
   await expect(trigger).toBeVisible();
+  const triggerLayout = await trigger.evaluate((element) => {
+    const icon = element.querySelector('svg');
+    if (icon === null) {
+      throw new Error('Expected a Pencil icon.');
+    }
+    return {
+      iconWidth: icon.getBoundingClientRect().width,
+      triggerWidth: element.getBoundingClientRect().width,
+    };
+  });
+  expect(triggerLayout.iconWidth).toBeLessThan(triggerLayout.triggerWidth * 0.6);
   await trigger.tap();
 
   const input = page.getByRole('textbox', { name: 'Name' });
   await expect(input).toHaveValue('Alpha');
+  const actionLayout = await page
+    .locator('.alteditor-lite-inline')
+    .evaluate((element) => {
+      const inputElement = element.querySelector('input');
+      const action = element.querySelector('.alteditor-lite-inline__action');
+      if (inputElement === null || action === null) {
+        throw new Error('Expected touch inline controls.');
+      }
+      return {
+        actionHeight: action.getBoundingClientRect().height,
+        inputHeight: inputElement.getBoundingClientRect().height,
+      };
+    });
+  expect(actionLayout.actionHeight).toBeLessThanOrEqual(actionLayout.inputHeight);
   await input.fill('Touch Alpha');
   await page.locator('#row-b td').first().tap();
   await expect(page.locator('.alteditor-lite-inline-hover__trigger')).toHaveCount(0);

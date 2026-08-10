@@ -50,7 +50,7 @@ async function createInlineFixture(
       <body>
         <main>
           <table id="inline-table">
-            <thead><tr><th>Name</th><th>Rank</th></tr></thead>
+            <thead><tr><th>Name</th><th>Rank</th><th>Start date</th></tr></thead>
             <tbody></tbody>
           </table>
         </main>
@@ -65,11 +65,12 @@ async function createInlineFixture(
       globalThis.tableApi = new DataTable('#inline-table', {
         columns: [
           { data: 'name', name: 'displayName' },
-          { data: 'rank', name: 'rank' }
+          { data: 'rank', name: 'rank' },
+          { data: 'startDate', name: 'startDate' }
         ],
         data: [
-          { id: 'row-a', name: 'Alpha', rank: 1 },
-          { id: 'row-b', name: 'Beta', rank: 2 }
+          { id: 'row-a', name: 'Alpha', rank: 1, startDate: '2024-01-09' },
+          { id: 'row-b', name: 'Beta', rank: 2, startDate: '2025-02-10' }
         ],
         rowId: 'id'
       });
@@ -90,6 +91,13 @@ async function createInlineFixture(
               name: 'rank',
               required: true,
               type: 'number'
+            },
+            {
+              inlineEdit: true,
+              label: 'Start date',
+              name: 'startDate',
+              required: true,
+              type: 'date'
             }
           ],
           editMode: '${editMode}',
@@ -99,10 +107,60 @@ async function createInlineFixture(
               return {
                 ...original,
                 name: values.name ?? original.name,
-                rank: values.rank ?? original.rank
+                rank: values.rank ?? original.rank,
+                startDate: values.startDate ?? original.startDate
               };
             }
           }
+        }
+      );
+    `,
+  });
+}
+
+async function createSearchSelectInlineFixture(page: Page): Promise<void> {
+  await page.setContent(`
+    <!doctype html>
+    <html lang="en">
+      <head><title>AltEditorLite SearchSelect inline browser test</title></head>
+      <body>
+        <main>
+          <table id="search-select-inline-table">
+            <thead><tr><th>Office</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </main>
+      </body>
+    </html>
+  `);
+  await page.addStyleTag({ path: stylesheetPath });
+  await page.addScriptTag({ path: dataTablesScriptPath });
+  await page.addScriptTag({ path: browserBundlePath });
+  await page.addScriptTag({
+    content: `
+      globalThis.tableApi = new DataTable('#search-select-inline-table', {
+        columns: [{ data: 'office', name: 'office' }],
+        data: [{ id: 'row-a', office: 'beijing' }],
+        rowId: 'id'
+      });
+      globalThis.editor = new DataTablesAltEditorLite.AltEditorLite(
+        globalThis.tableApi,
+        {
+          editMode: 'inlineHover',
+          fields: [
+            {
+              allowClear: true,
+              inlineEdit: true,
+              label: 'Office',
+              name: 'office',
+              options: [
+                { label: 'Tokyo', value: 'tokyo' },
+                { label: 'Beijing', value: 'beijing' },
+                { label: 'London', value: 'london' }
+              ],
+              type: 'search-select'
+            }
+          ]
         }
       );
     `,
@@ -302,6 +360,17 @@ test('opens the hover pencil and exposes accessible explicit actions', async ({
   await expect(page.getByRole('textbox', { name: 'Name' })).toHaveValue('Beta');
   await expect(page.getByRole('button', { name: 'Submit' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Cancel' })).toBeVisible();
+  const editingBorder = await cell.evaluate((element) => {
+    const style = getComputedStyle(element, '::after');
+    return {
+      color: style.borderLeftColor,
+      style: style.borderLeftStyle,
+      width: Number.parseFloat(style.borderLeftWidth),
+    };
+  });
+  expect(editingBorder.style).toBe('solid');
+  expect(editingBorder.width).toBeGreaterThan(0);
+  expect(editingBorder.color).not.toBe('rgba(0, 0, 0, 0)');
   const scan = await new AxeBuilder({ page }).include('.alteditor-lite-inline').analyze();
   expect(
     scan.violations.filter(
@@ -311,6 +380,130 @@ test('opens the hover pencil and exposes accessible explicit actions', async ({
 
   await page.getByRole('button', { name: 'Cancel' }).click();
   await expect(page.locator('#row-b')).toContainText('Beta');
+});
+
+test('keeps the hover input usable in a narrow column', async ({ page }) => {
+  await createInlineFixture(page, 'inlineHover');
+  await page.addStyleTag({
+    content: `
+      #inline-table_wrapper {
+        width: 14rem;
+      }
+
+      #inline-table {
+        table-layout: fixed;
+        width: 14rem !important;
+      }
+
+      #inline-table colgroup col:nth-child(2),
+      #inline-table th:nth-child(2),
+      #inline-table td:nth-child(2) {
+        width: 4rem !important;
+      }
+    `,
+  });
+  const cell = page.locator('#row-b td').nth(1);
+  await cell.hover();
+  await cell.getByRole('button', { name: 'Edit cell' }).click();
+
+  const layout = await page.locator('.alteditor-lite-inline').evaluate((element) => {
+    const input = element.querySelector('input');
+    const action = element.querySelector('.alteditor-lite-inline__action');
+    const actions = element.querySelectorAll('.alteditor-lite-inline__action');
+    const cellElement = element.closest('td');
+    const lastAction = actions.item(actions.length - 1);
+    if (input === null || action === null || cellElement === null) {
+      throw new Error('Expected a mounted narrow inline editor.');
+    }
+    const cellRect = cellElement.getBoundingClientRect();
+    const inputRect = input.getBoundingClientRect();
+    const actionRect = action.getBoundingClientRect();
+    const lastActionRect = lastAction.getBoundingClientRect();
+    return {
+      actionTop: actionRect.top,
+      actionWidth: actionRect.width,
+      bottomGap: cellRect.bottom - actionRect.bottom,
+      cellWidth: cellRect.width,
+      inputBottom: inputRect.bottom,
+      inputWidth: inputRect.width,
+      rightGap: cellRect.right - lastActionRect.right,
+    };
+  });
+
+  expect(layout.cellWidth).toBeLessThan(96);
+  expect(layout.inputWidth).toBeGreaterThanOrEqual(layout.actionWidth);
+  expect(layout.actionTop).toBeGreaterThanOrEqual(layout.inputBottom);
+  expect(layout.bottomGap).toBeGreaterThanOrEqual(2);
+  expect(layout.rightGap).toBeGreaterThanOrEqual(2);
+  await page.getByRole('spinbutton', { name: 'Rank' }).fill('7');
+  await page.getByRole('button', { name: 'Cancel' }).click();
+});
+
+test('moves actions clear of a constrained native date control', async ({ page }) => {
+  await createInlineFixture(page, 'inlineHover');
+  await page.addStyleTag({
+    content: `
+      #inline-table_wrapper,
+      #inline-table {
+        width: 24rem !important;
+      }
+
+      #inline-table colgroup col:nth-child(3),
+      #inline-table th:nth-child(3),
+      #inline-table td:nth-child(3) {
+        width: 9rem !important;
+      }
+    `,
+  });
+  const cell = page.locator('#row-b td').nth(2);
+  await cell.hover();
+  await cell.getByRole('button', { name: 'Edit cell' }).click();
+
+  const layout = await page.locator('.alteditor-lite-inline').evaluate((element) => {
+    const input = element.querySelector('input[type="date"]');
+    const actions = element.querySelector('.alteditor-lite-inline__actions');
+    if (input === null || actions === null) {
+      throw new Error('Expected a mounted date inline editor.');
+    }
+    const inputRect = input.getBoundingClientRect();
+    const actionsRect = actions.getBoundingClientRect();
+    return {
+      actionsTop: actionsRect.top,
+      inputBottom: inputRect.bottom,
+    };
+  });
+
+  expect(layout.actionsTop).toBeGreaterThanOrEqual(layout.inputBottom);
+  await page.getByRole('button', { name: 'Cancel' }).click();
+});
+
+test('keeps a SearchSelect popup above the editing cell border', async ({ page }) => {
+  await createSearchSelectInlineFixture(page);
+  await page.addStyleTag({ content: '#row-a td { height: 8rem; }' });
+  const cell = page.locator('#row-a td').first();
+  await cell.hover();
+  await cell.getByRole('button', { name: 'Edit cell' }).click();
+  await page.getByRole('combobox', { name: 'Office' }).click();
+  await expect(page.getByRole('listbox')).toBeVisible();
+
+  const layers = await cell.evaluate((element) => {
+    const listbox = element.querySelector('.dt-alteditor-lite-search-select__listbox');
+    if (listbox === null) {
+      throw new Error('Expected an open SearchSelect popup.');
+    }
+    const cellRect = element.getBoundingClientRect();
+    const listboxRect = listbox.getBoundingClientRect();
+    return {
+      borderCrossesPopup:
+        cellRect.bottom > listboxRect.top && cellRect.bottom < listboxRect.bottom,
+      borderZIndex: Number.parseInt(getComputedStyle(element, '::after').zIndex, 10),
+      popupZIndex: Number.parseInt(getComputedStyle(listbox).zIndex, 10),
+    };
+  });
+
+  expect(layers.borderCrossesPopup).toBe(true);
+  expect(layers.popupZIndex).toBeGreaterThan(layers.borderZIndex);
+  await page.getByRole('button', { name: 'Cancel' }).click();
 });
 
 test('activates a KeyTable-focused cell and remaps after ColReorder', async ({

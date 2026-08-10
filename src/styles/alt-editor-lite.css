@@ -199,11 +199,21 @@
   box-shadow: 0 0 0 1px var(--dt-alteditor-lite-error-color);
 }
 
-.alteditor-lite-cell--editing {
+table[class~='dataTable'] tbody td.alteditor-lite-cell--editing {
+  position: relative;
   padding-block: 0;
   padding-inline: 0;
-  outline: 2px solid var(--dt-alteditor-lite-focus-color);
-  outline-offset: -2px;
+  outline: 0;
+}
+
+table[class~='dataTable'] tbody td.alteditor-lite-cell--editing::after {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  box-sizing: border-box;
+  pointer-events: none;
+  content: '';
+  border: 2px solid var(--dt-alteditor-lite-focus-color);
 }
 
 .alteditor-lite-inline {
@@ -264,25 +274,51 @@
 }
 
 .alteditor-lite-inline--actions {
+  flex-wrap: wrap;
   gap: 0.25rem;
 }
 
 .alteditor-lite-inline--actions .alteditor-lite-inline__control {
-  flex: 1 1 auto;
+  flex: 1 1 4rem;
+}
+
+.alteditor-lite-inline--actions
+  .alteditor-lite-inline__control:has(
+    .dt-alteditor-lite-field__control:is(
+      [type='date'],
+      [type='datetime-local'],
+      [type='month'],
+      [type='time'],
+      [type='week']
+    )
+  ) {
+  flex-basis: 11rem;
 }
 
 .alteditor-lite-inline__actions {
+  box-sizing: border-box;
   display: inline-flex;
-  flex: 0 0 auto;
-  gap: 0.15rem;
-  padding-inline-end: 0.15rem;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  max-width: 100%;
+  gap: 0.125rem;
+  margin-inline-start: auto;
+  padding-block: 0.25rem;
+  padding-inline-end: 0.25rem;
+}
+
+.alteditor-lite-inline--actions:has(.dt-alteditor-lite-search-select),
+.alteditor-lite-inline--actions:has(.dt-alteditor-lite-search-select)
+  .alteditor-lite-inline__actions {
+  flex-wrap: nowrap;
 }
 
 .alteditor-lite-inline__action {
   display: inline-grid;
-  width: 1.75rem;
-  height: 1.75rem;
-  padding: 0.3rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0.25rem;
   color: var(--dt-alteditor-lite-text-color);
   cursor: pointer;
   background: var(--dt-alteditor-lite-surface-color);
@@ -311,14 +347,18 @@
   outline: 0;
 }
 
-.alteditor-lite-cell--editing:has(.alteditor-lite-inline--invalid) {
-  outline-color: var(--dt-alteditor-lite-error-color);
+table[class~='dataTable']
+  tbody
+  td.alteditor-lite-cell--editing:has(.alteditor-lite-inline--invalid)::after {
+  border-color: var(--dt-alteditor-lite-error-color);
 }
 
 @media (forced-colors: active) {
-  .alteditor-lite-cell--editing,
-  .alteditor-lite-cell--editing:has(.alteditor-lite-inline--invalid) {
-    outline-color: Highlight;
+  table[class~='dataTable'] tbody td.alteditor-lite-cell--editing::after,
+  table[class~='dataTable']
+    tbody
+    td.alteditor-lite-cell--editing:has(.alteditor-lite-inline--invalid)::after {
+    border-color: Highlight;
   }
 
   .alteditor-lite-inline-hover__trigger,
@@ -485,14 +525,6 @@ textarea.dt-alteditor-lite-field__control {
   outline-offset: 2px;
 }
 
-@media (pointer: coarse) {
-  .alteditor-lite-inline-hover__trigger,
-  .alteditor-lite-inline__action {
-    width: 2.75rem;
-    height: 2.75rem;
-  }
-}
-
 .alteditor-lite-inline .dt-alteditor-lite-field__control:not([type='checkbox']) {
   height: 2rem;
   min-height: 2rem;
@@ -515,13 +547,45 @@ textarea.dt-alteditor-lite-field__control {
 }
 
 .alteditor-lite-inline .dt-alteditor-lite-search-select__clear {
-  inset-block-start: 0.125rem;
+  inset-block-start: 50%;
+  transform: translateY(-50%);
+}
+
+.alteditor-lite-inline .dt-alteditor-lite-search-select__listbox {
+  z-index: 4;
 }
 
 .alteditor-lite-inline .dt-alteditor-lite-field__control:focus-visible,
 .alteditor-lite-inline .dt-alteditor-lite-search-select__clear:focus-visible {
   outline: 0;
   box-shadow: none;
+}
+
+@media (pointer: coarse) {
+  .alteditor-lite-inline-hover__trigger,
+  .alteditor-lite-inline__action {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .alteditor-lite-inline-hover__trigger svg,
+  .alteditor-lite-inline__action svg {
+    width: 1.125rem;
+    height: 1.125rem;
+  }
+
+  .alteditor-lite-inline {
+    min-height: 2.5rem;
+  }
+
+  .alteditor-lite-inline .dt-alteditor-lite-field__control:not([type='checkbox']) {
+    height: 2.5rem;
+    min-height: 2.5rem;
+  }
+
+  .alteditor-lite-inline .dt-alteditor-lite-checkbox {
+    min-height: 2.5rem;
+  }
 }
 
 .dt-alteditor-lite-dialog[aria-busy='true'] .dt-alteditor-lite-dialog__button:disabled {
