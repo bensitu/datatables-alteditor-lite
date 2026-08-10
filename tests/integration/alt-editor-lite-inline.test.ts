@@ -983,6 +983,44 @@ describe('AltEditorLite inline configuration', () => {
 });
 
 describe('AltEditorLite inline interaction and redraw behavior', () => {
+  it('opens from a same-cell touch double tap without claiming other taps', async () => {
+    const { api, editor } = createInlineEditor();
+    const firstCell = api.cell('#row-a', 0).node();
+    const otherCell = api.cell('#row-a', 1).node();
+    const dispatchTouchPointer = (
+      target: EventTarget,
+      type: 'pointerdown' | 'pointerup',
+    ): MouseEvent => {
+      const event = new MouseEvent(type, { bubbles: true, cancelable: true });
+      Object.defineProperties(event, {
+        isPrimary: { value: true },
+        pointerId: { value: 1 },
+        pointerType: { value: 'touch' },
+      });
+      target.dispatchEvent(event);
+      return event;
+    };
+    const tap = (cell: HTMLTableCellElement): readonly [MouseEvent, MouseEvent] => [
+      dispatchTouchPointer(cell, 'pointerdown'),
+      dispatchTouchPointer(cell, 'pointerup'),
+    ];
+
+    tap(firstCell);
+    expect(editor.getInlineState().status).toBe('idle');
+    tap(otherCell);
+    expect(editor.getInlineState().status).toBe('idle');
+    tap(firstCell);
+    expect(editor.getInlineState().status).toBe('idle');
+    const [secondPointerDown, secondPointerUp] = tap(firstCell);
+
+    expect(secondPointerDown.defaultPrevented).toBe(true);
+    expect(secondPointerUp.defaultPrevented).toBe(true);
+    await vi.waitFor(() => {
+      expect(editor.getInlineState().status).toBe('editing');
+    });
+    await editor.cancelInlineEdit();
+  });
+
   it('supports delegated double-click activation and Enter submission', async () => {
     const { api, editor } = createInlineEditor();
     api

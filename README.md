@@ -162,8 +162,9 @@ the same table element.
 
 Dialog Edit is available by default for complete forms. Each editor selects one
 Edit presentation through `editMode`. Choose `inlineDoubleClick` for compact
-fast editing, or `inlineHover` for a discoverable pencil and explicit Submit /
-Cancel actions. Mark at least one eligible field, then use its gesture, an
+fast editing by mouse double-click or touch double-tap, or `inlineHover` for a
+discoverable pencil and explicit Submit / Cancel actions. Mark at least one
+eligible field, then use its gesture, an
 optional focused-cell shortcut, or the public API:
 
 ```ts

@@ -42,5 +42,10 @@ export default defineConfig({
       testMatch: /editor-inline-touch\.spec\.ts/,
       use: { ...devices['iPhone 13'] },
     },
+    {
+      name: 'tablet-webkit',
+      testMatch: /editor-inline-touch\.spec\.ts/,
+      use: { ...devices['iPad Pro 11'] },
+    },
   ],
 });

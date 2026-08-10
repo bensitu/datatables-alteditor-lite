@@ -56,7 +56,9 @@ text-like controls use compact dimensions that retain the surrounding row height
 
 Hover editing uses one native pencil button with a localized accessible name.
 The explicit Submit and Cancel controls are native buttons with visible focus.
-On touch, the first tap preserves normal table selection and reveals the pencil.
+Double-click editing recognizes two taps on the same eligible cell without
+claiming a single tap. On touch, the first hover-mode tap preserves normal table
+selection and reveals the pencil.
 When KeyTable is installed, its focused cell can expose the pencil and use the
 configured shortcut without adding a tab stop to every table cell.
 

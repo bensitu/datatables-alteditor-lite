@@ -7,11 +7,11 @@ operations already in progress on the owned table. Double-click sessions retain
 automatic cancellation before Create, Remove, or Refresh; hover sessions must be
 resolved with Submit or Cancel first.
 
-| `editMode`          | Dialog Edit | Inline Edit | Activation                   |
-| ------------------- | ----------- | ----------- | ---------------------------- |
-| `dialog` (default)  | Available   | Unavailable | Dialog action                |
-| `inlineDoubleClick` | Unavailable | Available   | Double-click, keyboard, API  |
-| `inlineHover`       | Unavailable | Available   | Pencil, touch, keyboard, API |
+| `editMode`          | Dialog Edit | Inline Edit | Activation                      |
+| ------------------- | ----------- | ----------- | ------------------------------- |
+| `dialog` (default)  | Available   | Unavailable | Dialog action                   |
+| `inlineDoubleClick` | Unavailable | Available   | Double-click/tap, keyboard, API |
+| `inlineHover`       | Unavailable | Available   | Pencil, touch, keyboard, API    |
 
 Create, Remove, and Refresh remain available in both modes when their normal
 requirements are met.
@@ -113,11 +113,13 @@ paths, render results, and function data sources are never used to infer a field
 
 ### Activation and public methods
 
-`inlineDoubleClick` opens from a double-click. `inlineHover` moves one native
-pencil into the eligible cell under a fine pointer. On touch, the first tap keeps
-normal Select/KeyTable behavior and reveals the pencil; tapping the pencil opens
-editing. A normal cell-body click never starts hover editing. Programmatic
-activation bypasses the gesture strategy:
+`inlineDoubleClick` opens from a mouse double-click or two taps on the same
+eligible cell. A single tap and taps that move between cells retain normal table
+behavior. `inlineHover` moves one native pencil into the eligible cell under a
+fine pointer. On touch, the first tap keeps normal Select/KeyTable behavior and
+reveals the pencil; tapping the pencil opens editing. A normal cell-body click
+never starts hover editing. Programmatic activation bypasses the gesture
+strategy:
 
 ```ts
 await editor.openInlineEdit('#user-42', 'displayName:name');

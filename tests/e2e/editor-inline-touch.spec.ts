@@ -19,7 +19,10 @@ const browserBundlePath = resolve(
 );
 const stylesheetPath = resolve(repositoryRoot, 'dist/umd/alt-editor-lite.css');
 
-async function createTouchFixture(page: Page): Promise<void> {
+async function createTouchFixture(
+  page: Page,
+  editMode: 'inlineDoubleClick' | 'inlineHover' = 'inlineHover',
+): Promise<void> {
   await page.setContent(`
     <!doctype html>
     <html lang="en">
@@ -57,7 +60,7 @@ async function createTouchFixture(page: Page): Promise<void> {
       globalThis.editor = new DataTablesAltEditorLite.AltEditorLite(
         globalThis.tableApi,
         {
-          editMode: 'inlineHover',
+          editMode: '${editMode}',
           fields: [
             {
               inlineEdit: true,
@@ -106,6 +109,24 @@ async function createTouchFixture(page: Page): Promise<void> {
     `,
   });
 }
+
+test('opens inlineDoubleClick editing from a double tap', async ({ page }) => {
+  await createTouchFixture(page, 'inlineDoubleClick');
+  const cell = page.locator('#row-a td').first();
+  const otherCell = page.locator('#row-a td').nth(1);
+
+  await cell.tap();
+  await expect(page.locator('.alteditor-lite-inline')).toHaveCount(0);
+  await otherCell.tap();
+  await expect(page.locator('.alteditor-lite-inline')).toHaveCount(0);
+  await cell.tap();
+  await expect(page.locator('.alteditor-lite-inline')).toHaveCount(0);
+  await cell.tap();
+
+  await expect(page.getByRole('textbox', { name: 'Name' })).toHaveValue('Alpha');
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.alteditor-lite-inline')).toHaveCount(0);
+});
 
 test('reveals one trigger before editing and keeps explicit touch resolution', async ({
   page,

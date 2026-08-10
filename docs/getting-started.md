@@ -118,11 +118,12 @@ callback, optimistic row mutation, jQuery API, or private DataTables setting.
 
 An editor uses either Dialog Edit or Inline Edit. The default `dialog` mode makes
 `openEditDialog()` available and rejects Inline methods. The
-`inlineDoubleClick` mode provides fast double-click behavior. `inlineHover`
-provides a pencil for hover/touch discovery, explicit Submit/Cancel actions, and
-focused-cell keyboard activation when KeyTable is present. Both hide Dialog Edit
-and reject `openEditDialog()`. Create, Remove, and Refresh cancel a double-click
-session, but require a hover session to be explicitly resolved first.
+`inlineDoubleClick` mode provides fast mouse double-click and touch double-tap
+behavior. `inlineHover` provides a pencil for hover/touch discovery, explicit
+Submit/Cancel actions, and focused-cell keyboard activation when KeyTable is
+present. Both hide Dialog Edit and reject `openEditDialog()`. Create, Remove, and
+Refresh cancel a double-click session, but require a hover session to be
+explicitly resolved first.
 
 ## Rendered DataTables columns
 
@@ -151,7 +152,7 @@ it does not close the Inline session or publish an additional close event.
 
 The package targets modern evergreen browsers with native `<dialog>`, including
 the Chromium, Firefox, and WebKit engines exercised by the automated browser
-suite, plus mobile Chromium and mobile WebKit touch profiles.
+suite, plus mobile Chromium and phone/tablet WebKit touch profiles.
 The published Node engine range applies to installation, builds, and server-side
 tooling; the runtime itself is browser code.
 
