@@ -41,6 +41,7 @@ import {
   resolveLanguage,
   type AltEditorLiteLanguage,
 } from './alt-editor-lite-language.js';
+import { assertCompleteRow, isPromiseLike } from './complete-row-result.js';
 import { resolveEditMode } from './edit-mode.js';
 import { commitRowUpdate } from './editing/commit-row-update.js';
 import { DrawOwnership } from './editing/draw-ownership.js';
@@ -88,36 +89,12 @@ interface UniqueFieldLookup {
   readonly pathSegments: readonly string[];
 }
 
-function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
-  return (
-    value !== null &&
-    (typeof value === 'object' || typeof value === 'function') &&
-    'then' in value &&
-    typeof value.then === 'function'
-  );
-}
-
 function normalizeRejectedReason(error: unknown): Error {
   return error instanceof Error
     ? error
     : new Error('AltEditorLite failed with a non-Error value.', {
         cause: error,
       });
-}
-
-function assertCompleteRow(
-  rowCandidate: unknown,
-  callbackName: string,
-): asserts rowCandidate is object {
-  if (
-    typeof rowCandidate !== 'object' ||
-    rowCandidate === null ||
-    Array.isArray(rowCandidate)
-  ) {
-    throw new EditorConfigurationError(
-      `${callbackName} must return a complete row object.`,
-    );
-  }
 }
 
 /**

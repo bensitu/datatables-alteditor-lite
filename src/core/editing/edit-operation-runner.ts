@@ -2,6 +2,7 @@ import {
   type AltEditorLiteError,
   EditorConfigurationError,
 } from '../alt-editor-lite-error.js';
+import { assertCompleteRow, isPromiseLike } from '../complete-row-result.js';
 import {
   InternalOperationAbort,
   normalizeOperationError,
@@ -22,30 +23,6 @@ import type { EditPresentationAdapter } from './edit-presentation-adapter.js';
 import type { EditCommitResult, EditTransaction } from './edit-transaction.js';
 import type { OperationOwner, OwnedOperationRequest } from './operation-owner.js';
 import type { Api } from 'datatables.net';
-
-function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
-  return (
-    value !== null &&
-    (typeof value === 'object' || typeof value === 'function') &&
-    'then' in value &&
-    typeof value.then === 'function'
-  );
-}
-
-function assertCompleteRow(
-  rowCandidate: unknown,
-  callbackName: string,
-): asserts rowCandidate is object {
-  if (
-    typeof rowCandidate !== 'object' ||
-    rowCandidate === null ||
-    Array.isArray(rowCandidate)
-  ) {
-    throw new EditorConfigurationError(
-      `${callbackName} must return a complete row object.`,
-    );
-  }
-}
 
 /** Terminal result returned to dialog and inline presentation callers. */
 export type EditOperationResult<TRow extends object> =
