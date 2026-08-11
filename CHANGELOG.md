@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added maintained coexistence coverage for the DataTables 3 release lines of
   AutoFill, ColumnControl, Responsive, RowReorder, and SearchBuilder across
   extension operations, editing, and destruction.
+- Synchronized ColumnControl SearchList options and Responsive layout calculations
+  after successful CRUD presentation cleanup, including completed Inline teardown.
 
 ### Fixed
 

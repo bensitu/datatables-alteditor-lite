@@ -112,6 +112,17 @@ compatible with DataTables 3. CardView is not part of this project's optional
 test dependencies. These boundaries avoid loading an incompatible or separately
 distributed extension solely for compatibility checks.
 
+After a successful Create, Edit, or Remove operation, registered extensions with
+derived table state are synchronized through their public APIs:
+
+- `columns().columnControl.searchList('refresh')` reloads dynamic SearchList
+  options.
+- `responsive.recalc()` recalculates the Responsive layout.
+
+The calls run after the Dialog presentation has returned to a stable state or the
+Inline session has been unmounted. API detection is runtime-only; AltEditorLite
+does not import either extension as a production dependency.
+
 The registered button names are:
 
 ```text

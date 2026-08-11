@@ -317,7 +317,10 @@ possible; and prevents late DOM, DataTables, focus, or event work.
   integration are not provided.
 - Responsive supports the main table cell only. Child-row representations and
   columns hidden by either DataTables or Responsive are unavailable. A responsive
-  visibility change cancels the active inline session.
+  visibility change cancels the active inline session. After a successful CRUD
+  operation, Responsive recalculation runs only after Inline cleanup completes.
+- ColumnControl dynamic SearchList options are refreshed after successful CRUD
+  operations through its public API. Inline cleanup completes before the refresh.
 - Scroller redraw and node recycling cause safe cancellation. Applications should
   verify their row-height and server data configuration in supported browsers.
 - FixedColumns clone cells are not supported; activation is limited to cells

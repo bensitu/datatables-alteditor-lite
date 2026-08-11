@@ -13,6 +13,7 @@ import {
   type RemoveTargetCapture,
 } from '../datatables/row-target-resolution.js';
 import { SelectIntegration } from '../datatables/select-integration.js';
+import { synchronizeExtensionStateAfterCommit } from '../datatables/synchronize-extension-state.js';
 import { createRemoveConfirmation } from '../dialog/create-remove-confirmation.js';
 import { EditorDialog } from '../dialog/editor-dialog.js';
 import { validateFieldConfigurations } from '../fields/validate-field-configurations.js';
@@ -212,6 +213,9 @@ export class AltEditorLite<
         mappingRegistry: inlineMappingRegistry,
         notifyIntegration: () => {
           dispatchEditorIntegrationUpdate(this.tableElement);
+        },
+        synchronizeCommittedExtensionState: () => {
+          synchronizeExtensionStateAfterCommit(this.table);
         },
         operationOwner: this.operationOwner,
         options: inlineOptions,
@@ -1181,6 +1185,7 @@ export class AltEditorLite<
 
       this.releaseOperation(request);
       this.closeAfterSuccess('remove');
+      synchronizeExtensionStateAfterCommit(this.table);
       await this.runAfterSuccessHook({
         mode: 'dialog',
         operation: 'remove',
@@ -1246,13 +1251,14 @@ export class AltEditorLite<
     this.releaseOperation(request);
     if (this.options.closeOnSuccess ?? true) {
       this.closeAfterSuccess(action);
-      return;
+    } else {
+      form.setBusy(false);
+      this.dialog.setBusy(false);
+      this.dialog.setSubmitAvailable(true);
+      this.transitionTo({ action, status: 'open' });
     }
 
-    form.setBusy(false);
-    this.dialog.setBusy(false);
-    this.dialog.setSubmitAvailable(true);
-    this.transitionTo({ action, status: 'open' });
+    synchronizeExtensionStateAfterCommit(this.table);
   }
 
   private completeSuccessfulEditPresentation(
@@ -1260,13 +1266,14 @@ export class AltEditorLite<
   ): void {
     if (this.options.closeOnSuccess ?? true) {
       this.closeAfterSuccess('edit');
-      return;
+    } else {
+      form.setBusy(false);
+      this.dialog.setBusy(false);
+      this.dialog.setSubmitAvailable(true);
+      this.transitionTo({ action: 'edit', status: 'open' });
     }
 
-    form.setBusy(false);
-    this.dialog.setBusy(false);
-    this.dialog.setSubmitAvailable(true);
-    this.transitionTo({ action: 'edit', status: 'open' });
+    synchronizeExtensionStateAfterCommit(this.table);
   }
 
   private createDialogEditTarget(

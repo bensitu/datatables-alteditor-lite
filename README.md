@@ -31,7 +31,8 @@ jQuery or UI-framework runtime dependency.
   radio, select, local or remote SearchSelect, file, and hidden fields
 - Typed option identity, safe nested field paths, custom validation, and optional
   local uniqueness checks
-- Optional DataTables Buttons, Select, KeyTable, and ColReorder integration
+- Optional Buttons, Select, KeyTable, and ColReorder integration, plus
+  post-commit ColumnControl and Responsive synchronization
 - External JSON languages, inline overrides, and included English, Japanese,
   Simplified Chinese, and Spanish resources
 - ESM and Browser Global distributions with responsive light and dark CSS

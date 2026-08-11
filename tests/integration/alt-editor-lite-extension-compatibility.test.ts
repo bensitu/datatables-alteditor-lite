@@ -92,6 +92,11 @@ const fields = [
   },
 ] satisfies readonly FieldConfig<ExtensionValues>[];
 
+const inlineFields = fields.map((field) => ({
+  ...field,
+  inlineEdit: true,
+})) satisfies readonly FieldConfig<ExtensionValues>[];
+
 const activeEditors = new Set<AltEditorLite<TestRow, ExtensionValues>>();
 let originalShowModalDescriptor: PropertyDescriptor | undefined;
 let originalCloseDescriptor: PropertyDescriptor | undefined;
@@ -181,6 +186,16 @@ function submitForm(): void {
   );
 }
 
+function replaceInlineValue(value: string): void {
+  const input = document.querySelector<HTMLInputElement>('.alteditor-lite-inline input');
+  if (input === null) {
+    throw new Error('Expected an open inline input.');
+  }
+
+  input.value = value;
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
 async function editFirstRow(
   api: Api<TestRow>,
   editor: AltEditorLite<TestRow, ExtensionValues>,
@@ -232,14 +247,36 @@ describe('DataTables 3 extension compatibility', () => {
     const { api, tableElement } = createTestTable('responsive-compatibility', {
       responsive: true,
     });
-    const editor = createEditor(api);
+    const editor = new AltEditorLite<TestRow, ExtensionValues>(api, {
+      editMode: 'inlineDoubleClick',
+      fields: inlineFields,
+    });
+    activeEditors.add(editor);
     const extensionTable = api as unknown as TableWithResponsive;
 
     extensionTable.responsive.rebuild();
     extensionTable.responsive.recalc();
     expect(typeof extensionTable.responsive.hasHidden()).toBe('boolean');
 
-    await editFirstRow(api, editor, 'Responsive edit');
+    const originalRecalculate = extensionTable.responsive.recalc.bind(
+      extensionTable.responsive,
+    );
+    const inlineStatesAtRecalculation: string[] = [];
+    const recalculate = vi
+      .spyOn(extensionTable.responsive, 'recalc')
+      .mockImplementation(() => {
+        inlineStatesAtRecalculation.push(editor.getInlineState().status);
+        return originalRecalculate();
+      });
+
+    await editor.openInlineEdit('#row-a', 0);
+    replaceInlineValue('Responsive edit');
+    await editor.submitInlineEdit();
+
+    expect(api.row('#row-a').data().name).toBe('Responsive edit');
+    expect(recalculate).toHaveBeenCalledOnce();
+    expect(inlineStatesAtRecalculation).toEqual(['idle']);
+    recalculate.mockRestore();
     destroyEditor(editor);
 
     expect(() => extensionTable.responsive.recalc()).not.toThrow();
@@ -295,6 +332,10 @@ describe('DataTables 3 extension compatibility', () => {
     expect(searchListText).toContain('Second option');
 
     await editFirstRow(api, editor, 'ColumnControl edit');
+    const refreshedSearchListText =
+      tableElement.querySelector('.dtcc-list')?.textContent ?? '';
+    expect(refreshedSearchListText).toContain('ColumnControl edit');
+    expect(refreshedSearchListText).not.toContain('First option');
     destroyEditor(editor);
 
     expect(() =>

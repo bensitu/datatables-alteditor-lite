@@ -104,6 +104,7 @@ export interface InlineEditSessionControllerArguments<
     publishEvent: boolean,
   ) => void;
   readonly notifyIntegration: () => void;
+  readonly synchronizeCommittedExtensionState: () => void;
   readonly interactionBehavior: Readonly<ResolvedInlineInteractionBehavior>;
   readonly viewFactory: InlineEditViewFactory<TFormValues>;
   readonly onSessionStart?: () => void;
@@ -543,6 +544,7 @@ export class InlineEditSessionController<
     return new InlineEditPresentationAdapter<TRow, TFormValues>({
       completeSuccess: async () => {
         this.cleanupSession('success', false, false);
+        this.arguments_.synchronizeCommittedExtensionState();
         await this.restorePostCommitFocus(session, navigationIntent);
       },
       restoreAfterOperationFailure: () => undefined,
