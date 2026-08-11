@@ -19,9 +19,7 @@ import type { Api, ColumnSelector, RowSelector } from 'datatables.net';
 /** Exact row, column, field, and DOM identity owned by one inline session. */
 export interface InlineTargetCapture<TRow extends object, TFormValues extends object> {
   readonly rowCapture: EditTargetCapture<TRow>;
-  readonly column: Readonly<InlineColumnMapping<TFormValues>> & {
-    readonly visibleIndex: number;
-  };
+  readonly column: Readonly<InlineColumnMapping<TFormValues>>;
   readonly field: Readonly<FieldConfig<TFormValues>>;
   readonly originalValue: unknown;
   readonly cellNode: HTMLTableCellElement;
@@ -99,7 +97,7 @@ export function captureInlineTarget<TRow extends object, TFormValues extends obj
 
   return {
     cellNode,
-    column: Object.freeze({ ...mapping, visibleIndex }),
+    column: mapping,
     field,
     originalValue: getPathValue(rowCapture.sourceRow, mapping.fieldName),
     rowCapture,

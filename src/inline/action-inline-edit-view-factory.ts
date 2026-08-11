@@ -22,7 +22,6 @@ export class ActionInlineEditViewFactory<
       context.controller,
       context.field,
       context.tableElement,
-      handlers,
       context.className,
     );
     return new ActionInlineEditView(

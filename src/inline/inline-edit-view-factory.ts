@@ -9,7 +9,6 @@ export interface InlineEditViewContext<TFormValues extends object> {
   readonly className?: string;
   readonly controller: ManagedFieldController<TFormValues>;
   readonly field: Readonly<FieldConfig<TFormValues>>;
-  readonly fieldId: string;
   readonly tableElement: HTMLTableElement;
 }
 
@@ -25,15 +24,11 @@ export interface InlineEditViewFactory<TFormValues extends object> {
 export class BareInlineEditViewFactory<
   TFormValues extends object,
 > implements InlineEditViewFactory<TFormValues> {
-  public create(
-    context: Readonly<InlineEditViewContext<TFormValues>>,
-    handlers: Readonly<InlineEditViewHandlers>,
-  ): InlineEditView {
+  public create(context: Readonly<InlineEditViewContext<TFormValues>>): InlineEditView {
     return new InlineCellHost(
       context.controller,
       context.field,
       context.tableElement,
-      handlers,
       context.className,
     );
   }

@@ -1,6 +1,6 @@
 import { InlineOriginalContent } from './inline-original-content.js';
 
-import type { InlineEditView, InlineEditViewHandlers } from './inline-edit-view.js';
+import type { InlineEditView } from './inline-edit-view.js';
 import type { FieldConfig } from '../fields/field-config.js';
 import type { ManagedFieldController } from '../fields/managed-field-controller.js';
 
@@ -21,7 +21,6 @@ export class InlineCellHost<TFormValues extends object> implements InlineEditVie
     private readonly controller: ManagedFieldController<TFormValues>,
     private readonly field: Readonly<FieldConfig<TFormValues>>,
     private readonly tableElement: HTMLTableElement,
-    _handlers: Readonly<InlineEditViewHandlers>,
     className?: string,
   ) {
     this.element = document.createElement('div');

@@ -271,7 +271,6 @@ export class InlineEditSessionController<
         this.arguments_.language.inline.targetUnavailable,
       );
 
-      const fieldId = `${this.arguments_.instanceId}-inline-${String(capture.summary.rowIndex)}-${String(capture.summary.columnIndex)}`;
       const host = this.viewFactory.create(
         {
           ...(this.arguments_.options.className === undefined
@@ -279,7 +278,6 @@ export class InlineEditSessionController<
             : { className: this.arguments_.options.className }),
           controller,
           field: capture.field,
-          fieldId,
           tableElement: this.arguments_.tableElement,
         },
         {
