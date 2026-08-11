@@ -214,9 +214,6 @@ export class AltEditorLite<
         notifyIntegration: () => {
           dispatchEditorIntegrationUpdate(this.tableElement);
         },
-        synchronizeCommittedExtensionState: () => {
-          synchronizeExtensionStateAfterCommit(this.table);
-        },
         operationOwner: this.operationOwner,
         options: inlineOptions,
         presentation: inlinePresentation,

@@ -21,6 +21,7 @@ import {
 } from '../core/error-normalization.js';
 import { isColumnVisiblyAvailable } from '../datatables/column-visibility.js';
 import { resolveUniqueRowIndexById } from '../datatables/row-id-resolution.js';
+import { synchronizeExtensionStateAfterCommit } from '../datatables/synchronize-extension-state.js';
 import { EditorAlertDialog } from '../dialog/editor-alert-dialog.js';
 import { createFieldController } from '../fields/create-field-controller.js';
 import { INLINE_FIELD_PRESENTATION } from '../fields/field-controller-presentation.js';
@@ -104,7 +105,6 @@ export interface InlineEditSessionControllerArguments<
     publishEvent: boolean,
   ) => void;
   readonly notifyIntegration: () => void;
-  readonly synchronizeCommittedExtensionState: () => void;
   readonly interactionBehavior: Readonly<ResolvedInlineInteractionBehavior>;
   readonly viewFactory: InlineEditViewFactory<TFormValues>;
   readonly onSessionStart?: () => void;
@@ -544,7 +544,7 @@ export class InlineEditSessionController<
     return new InlineEditPresentationAdapter<TRow, TFormValues>({
       completeSuccess: async () => {
         this.cleanupSession('success', false, false);
-        this.arguments_.synchronizeCommittedExtensionState();
+        synchronizeExtensionStateAfterCommit(this.arguments_.table);
         await this.restorePostCommitFocus(session, navigationIntent);
       },
       restoreAfterOperationFailure: () => undefined,
