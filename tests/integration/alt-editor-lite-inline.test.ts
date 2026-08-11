@@ -474,6 +474,31 @@ describe('AltEditorLite programmatic inline editing', () => {
     expect(editor.getInlineState()).toEqual({ status: 'idle' });
   });
 
+  it('preserves the activation focus target while beforeOpen is pending', async () => {
+    const pending = createDeferred<undefined>();
+    const beforeOpen = vi.fn(() => pending.promise);
+    const { editor } = createInlineEditor({
+      fields,
+      hooks: { beforeOpen },
+      editMode: 'inlineDoubleClick',
+    });
+    const activationTarget = document.createElement('button');
+    const laterTarget = document.createElement('button');
+    document.body.append(activationTarget, laterTarget);
+    activationTarget.focus();
+
+    const opening = editor.openInlineEdit('#row-a', 0);
+    await vi.waitFor(() => {
+      expect(beforeOpen).toHaveBeenCalledOnce();
+    });
+    laterTarget.focus();
+    pending.resolve(undefined);
+    await opening;
+    await editor.cancelInlineEdit();
+
+    expect(document.activeElement).toBe(activationTarget);
+  });
+
   it('cleans up a mounted session when control focus fails during open', async () => {
     const onError = vi.fn();
     const { api, editor, tableElement } = createInlineEditor({

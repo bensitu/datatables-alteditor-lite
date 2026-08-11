@@ -201,6 +201,7 @@ export class InlineEditSessionController<
       throw new EditorOperationBusyError();
     }
 
+    const originalActiveElement = document.activeElement;
     const capture = captureInlineTarget(
       this.arguments_.table,
       this.arguments_.tableElement,
@@ -298,7 +299,7 @@ export class InlineEditSessionController<
         interactionToken,
         lifecycleAbortController: new AbortController(),
         normalizedOriginalValue,
-        originalActiveElement: document.activeElement,
+        originalActiveElement,
         sessionId: (this.nextSessionId += 1),
       };
       activationController = undefined;
