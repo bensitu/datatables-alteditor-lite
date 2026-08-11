@@ -94,6 +94,24 @@ Buttons and Select are optional peers. KeyTable and ColReorder are also detected
 at runtime when applications install them; none are imported as production
 requirements.
 
+The maintained DataTables 3 compatibility coverage uses the following extension
+release lines. Each entry is initialized with a real DataTable, performs a public
+extension operation and an Edit operation, and verifies editor and table
+destruction.
+
+| Extension     | DataTables 3 release line | Verified operation                         |
+| ------------- | ------------------------- | ------------------------------------------ |
+| AutoFill      | 3.x                       | Disable and re-enable filling              |
+| ColumnControl | 2.x                       | Replace SearchList options                 |
+| Responsive    | 4.x                       | Rebuild breakpoints and recalculate widths |
+| RowReorder    | 2.x                       | Disable and re-enable drag activation      |
+| SearchBuilder | 2.x                       | Apply and clear predefined criteria        |
+
+SearchPanes is not included because its currently published release line is not
+compatible with DataTables 3. CardView is not part of this project's optional
+test dependencies. These boundaries avoid loading an incompatible or separately
+distributed extension solely for compatibility checks.
+
 The registered button names are:
 
 ```text

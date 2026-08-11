@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2026-08-12
+
+### Changed
+
+- Consolidated complete-row callback validation and removed unused inline view
+  construction state without changing the public API.
+- Added maintained coexistence coverage for the DataTables 3 release lines of
+  AutoFill, ColumnControl, Responsive, RowReorder, and SearchBuilder across
+  extension operations, editing, and destruction.
+
+### Fixed
+
+- Enabled touch double-tap activation for `inlineDoubleClick` on phone and tablet
+  layouts while preserving normal single-tap table interaction.
+- Refined `inlineHover` controls for narrow columns, wrapped action layouts,
+  temporal inputs, and SearchSelect popups while preserving cell borders and
+  reducing action and pencil sizing across desktop and mobile layouts.
+- Rejected unsupported runtime field types with a stable configuration error and
+  limited incompatible hover-action messages to the options actually configured.
+- Recursively froze array values supplied to inline callbacks and preserved the
+  original focus target while asynchronous inline opening work was pending.
+- Added subresource integrity metadata to the versioned DataTables extension
+  assets used by the hosted demonstration.
+
 ## [0.3.0] - 2026-08-10
 
 ### Added
@@ -26,22 +50,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Preserved `dialog` as the default, existing `inlineDoubleClick` behavior, local
   SearchSelect configuration, optional DataTables extensions, and the no-jQuery
   runtime boundary.
-- Consolidated complete-row callback validation and removed unused inline view
-  construction state without changing the public API.
-
-### Fixed
-
-- Enabled touch double-tap activation for `inlineDoubleClick` on phone and tablet
-  layouts while preserving normal single-tap table interaction.
-- Refined `inlineHover` controls for narrow columns, wrapped action layouts,
-  temporal inputs, and SearchSelect popups while preserving cell borders and
-  reducing action and pencil sizing across desktop and mobile layouts.
-- Rejected unsupported runtime field types with a stable configuration error and
-  limited incompatible hover-action messages to the options actually configured.
-- Recursively froze array values supplied to inline callbacks and preserved the
-  original focus target while asynchronous inline opening work was pending.
-- Added subresource integrity metadata to the versioned DataTables extension
-  assets used by the hosted demonstration.
 
 ## [0.2.1] - 2026-08-09
 
