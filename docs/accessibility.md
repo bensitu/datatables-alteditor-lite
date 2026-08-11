@@ -67,6 +67,11 @@ trigger the configured blur action. After an alert closes, focus returns to the
 current Inline control when it is still available; otherwise it falls back to the
 logical cell or table.
 
+An explicit cancellation returns focus to the connected element that initiated
+Inline opening. That origin is captured before asynchronous opening work begins,
+so an intermediate focus change does not replace the intended restoration
+target.
+
 The hover and action layouts use logical CSS properties for RTL, existing theme
 variables for light/dark modes, and explicit forced-colors rules. Applications
 that override these controls should preserve their names, focus visibility, and

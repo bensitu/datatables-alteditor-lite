@@ -23,3 +23,9 @@ guarantee uniqueness for server-side or concurrently changing datasets.
 The Browser Global build has no jQuery dependency and supports a strict same-origin
 Content Security Policy. See the root [Security Policy](../SECURITY.md) for private
 vulnerability reporting.
+
+Production pages that load scripts or styles from a CDN should pin exact versions
+and provide independently verified Subresource Integrity metadata with anonymous
+cross-origin loading, or self-host the exact assets. Embedding restrictions such
+as CSP `frame-ancestors` must be delivered through an HTTP response header;
+browser metadata cannot enforce that directive.

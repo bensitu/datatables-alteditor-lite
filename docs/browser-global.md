@@ -74,7 +74,9 @@ compatible DataTables build through the
 [DataTables download builder](https://datatables.net/download/) when Buttons,
 Select, KeyTable, ColReorder, or another extension is needed. Load optional
 extensions before constructing an editor; hover keyboard and live reorder support
-are detected at runtime.
+are detected at runtime. For externally hosted production assets, add
+independently verified Subresource Integrity metadata and
+`crossorigin="anonymous"`, or self-host the exact files.
 
 ## Load order and published files
 

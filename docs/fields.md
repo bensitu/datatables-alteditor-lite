@@ -3,13 +3,16 @@
 Every field supports the optional `inlineEdit` eligibility flag. It defaults to
 `false`. Text, email, number, date, time, datetime-local, checkbox, select,
 textarea, and SearchSelect fields can participate when the editor uses
-`inlineDoubleClick` or `inlineHover` and the field is editable, enabled, visible, writable, and
-mapped to a column.
-Password, radio, file, and hidden fields remain dialog-only. See
-[Editing](editing.md).
+`inlineDoubleClick` or `inlineHover` and the field is editable, enabled, visible,
+writable, and mapped to a column. Password, radio, file, and hidden fields remain
+dialog-only. See [Editing](editing.md).
 
 Every field has a safe dot-separated `name`. Segments that can mutate object
-prototypes are rejected. Visible fields require a non-empty label.
+prototypes are rejected. Paths contain at most five property segments. Numeric
+and bracketed array indices are not supported. The default local Edit merge
+recreates an edited nested branch as plain objects; applications that require a
+class instance in that branch should return the reconstructed row from an Update
+callback. Visible fields require a non-empty label.
 
 Supported field types are:
 
@@ -42,6 +45,17 @@ The `attributes` option accepts only attributes applicable to the configured
 control. For example, `min`, `max`, and `step` are accepted for number and temporal
 inputs, while a radio field rejects unrelated attributes such as `placeholder`.
 Event handlers, styles, and arbitrary data attributes are not applied.
+
+## Change callbacks
+
+Text-like and number controls notify `onChange` for each native input event.
+Before a dialog callback runs, the editor collects all enabled field values so
+the callback context contains the current complete value shape. Inline callbacks
+receive the complete declared values from the canonical row with the current
+candidate overlaid. Keep per-input work small, use the supplied `AbortSignal`,
+and debounce or cache application-owned network work when appropriate. A newer
+change aborts the preceding callback for the same field and prevents stale
+results from replacing current state.
 
 ## Local uniqueness
 

@@ -116,11 +116,14 @@ properties.
 `FieldController<TValue>` provides `element`, `getValue`, `setValue`,
 `setDisabled`, `focus`, `validate`, `clearError`, `showError`, and `destroy`.
 SearchSelect controllers additionally provide `setOptions`. `FormController` and
-`FormValidationResult` are exported for typed integrations. Calling a field
-controller's `destroy()` cancels that field's pending change and validation work,
-removes it from the current form, and makes subsequent `getField()` calls for the
-same path return `null`. Use it only when the field should be removed for the
-remainder of that dialog lifecycle.
+`FormValidationResult` are exported for typed integrations. Call `validate()`
+before treating an imperative `getValue()` result as valid. In particular, a
+transiently invalid number control normalizes to its configured empty value; the
+validation result distinguishes that state from a valid cleared value. Calling
+a field controller's `destroy()` cancels that field's pending change and
+validation work, removes it from the current form, and makes subsequent
+`getField()` calls for the same path return `null`. Use it only when the field
+should be removed for the remainder of that dialog lifecycle.
 
 ## Localization
 

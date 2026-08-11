@@ -172,6 +172,11 @@ After success, focus is resolved from the committed row and column after the dra
 A pre-draw input, host, or cell node is never reused as the focus target. If the
 cell is unavailable, focus falls back to the table.
 
+An explicit cancellation returns focus to the connected element that initiated
+opening. The editor captures that element before running `beforeOpen` or
+asynchronous field normalization, so focus changes made while opening is pending
+do not replace the restoration target.
+
 ### Blur behavior
 
 In `inlineDoubleClick`, `blurAction` defaults to `submit`. It also accepts
@@ -197,7 +202,9 @@ validation; a newer input clears a stale failure.
 The editing value comes from the canonical row through the declared field path,
 not from displayed cell text. Validation receives complete values built from
 declared, collectable fields in the original row with the current candidate
-overlaid.
+overlaid. Plain objects and arrays in those values are recursively frozen before
+callbacks run. Browser host objects such as `File` are retained and are not
+frozen.
 
 Validation order is:
 

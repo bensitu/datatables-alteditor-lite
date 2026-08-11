@@ -37,7 +37,10 @@ Operation contexts include the public DataTables API, an `AbortSignal`, the oper
 
 ## beforeSubmit
 
-`beforeSubmit(values, context)` runs after native, custom, and local uniqueness validation. Values are recursively frozen plain data. Return `false` to keep the presentation open without publishing submit or calling persistence.
+`beforeSubmit(values, context)` runs after native, custom, and local uniqueness
+validation. Plain objects and arrays in `values` are recursively frozen, while
+browser host objects such as `File` retain their normal identity. Return `false`
+to keep the presentation open without publishing submit or calling persistence.
 
 The hook is veto-only: it cannot return replacement values and cannot bypass validation.
 

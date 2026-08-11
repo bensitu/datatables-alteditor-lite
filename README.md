@@ -71,9 +71,12 @@ distribution files:
 
 The unversioned URLs follow the latest published package. Pin the same package
 version in both URLs for production, for example by inserting `@<version>` after
-the package name. The script exposes `globalThis.DataTablesAltEditorLite`; it does
-not bundle DataTables. Package metadata declares the browser script and stylesheet
-separately so jsDelivr can identify both default assets.
+the package name. For externally hosted production assets, add independently
+verified Subresource Integrity metadata and `crossorigin="anonymous"`, or
+self-host the exact files. The script exposes
+`globalThis.DataTablesAltEditorLite`; it does not bundle DataTables. Package
+metadata declares the browser script and stylesheet separately so jsDelivr can
+identify both default assets.
 
 ## Quick start
 
