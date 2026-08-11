@@ -73,6 +73,14 @@ describe('field runtime configuration', () => {
     expectInvalidField({ name: 'title', type: 'text' });
   });
 
+  it('rejects unsupported runtime field types with a configuration error', () => {
+    expect(() => {
+      validateFieldConfigurations([
+        { label: 'Title', name: 'title', type: 'unsupported' } as never,
+      ]);
+    }).toThrow('Unsupported field type "unsupported".');
+  });
+
   it('rejects empty choice lists for native select and radio fields', () => {
     expectInvalidField({ label: 'Choice', name: 'choice', options: [], type: 'select' });
     expectInvalidField({ label: 'Choice', name: 'choice', options: [], type: 'radio' });

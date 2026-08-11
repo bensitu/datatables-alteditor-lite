@@ -942,6 +942,18 @@ describe('AltEditorLite inline configuration', () => {
     ).toThrow(EditorConfigurationError);
   });
 
+  it('identifies only the incompatible hover actions', () => {
+    const { api } = createTestTable('invalid-inline-hover-actions');
+    expect(
+      () =>
+        new AltEditorLite<TestRow, InlineValues>(api, {
+          editMode: 'inlineHover',
+          fields,
+          inline: { blurAction: 'submit' },
+        }),
+    ).toThrow('inlineHover requires blurAction to be "none" when configured.');
+  });
+
   it('does not infer a field from a function data source', async () => {
     const { api } = createTestTable('inline-function-source', {
       columns: [{ data: (row: TestRow) => row.name }, { data: 'rank' }],

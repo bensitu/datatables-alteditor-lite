@@ -37,6 +37,16 @@ function assertClassName(className: unknown): void {
   }
 }
 
+function formatPropertyNames(propertyNames: readonly string[]): string {
+  if (propertyNames.length < 2) {
+    return propertyNames[0] ?? '';
+  }
+  if (propertyNames.length === 2) {
+    return propertyNames.join(' and ');
+  }
+  return `${propertyNames.slice(0, -1).join(', ')}, and ${propertyNames.at(-1) ?? ''}`;
+}
+
 function assertExplicitMappings<TRow extends object, TFormValues extends object>(
   table: Api<TRow>,
   fields: readonly FieldConfig<TFormValues>[],
@@ -120,14 +130,23 @@ export function validateInlineConfiguration<
   assertClassName(inline?.className);
   assertExplicitMappings(table, options.fields, inline?.columns);
 
-  if (
-    editMode === 'inlineHover' &&
-    ((inline?.blurAction !== undefined && inline.blurAction !== 'none') ||
-      (inline?.enterAction !== undefined && inline.enterAction !== 'none') ||
-      (inline?.tabAction !== undefined && inline.tabAction !== 'none'))
-  ) {
+  const incompatibleHoverActions =
+    editMode === 'inlineHover'
+      ? [
+          inline?.blurAction !== undefined && inline.blurAction !== 'none'
+            ? 'blurAction'
+            : undefined,
+          inline?.enterAction !== undefined && inline.enterAction !== 'none'
+            ? 'enterAction'
+            : undefined,
+          inline?.tabAction !== undefined && inline.tabAction !== 'none'
+            ? 'tabAction'
+            : undefined,
+        ].filter((propertyName): propertyName is string => propertyName !== undefined)
+      : [];
+  if (incompatibleHoverActions.length > 0) {
     throw new EditorConfigurationError(
-      'inlineHover requires blurAction, enterAction, and tabAction to be "none" when configured.',
+      `inlineHover requires ${formatPropertyNames(incompatibleHoverActions)} to be "none" when configured.`,
     );
   }
 

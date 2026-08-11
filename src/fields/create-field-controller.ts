@@ -9,6 +9,7 @@ import { createRadioFieldController } from './radio-field-controller.js';
 import { createSearchSelectFieldController } from './search-select-field-controller.js';
 import { createSelectFieldController } from './select-field-controller.js';
 import { createTextareaFieldController } from './textarea-field-controller.js';
+import { throwUnsupportedFieldType } from './unsupported-field-type.js';
 
 import type { FieldConfig } from './field-config.js';
 import type { FieldControllerPresentation } from './field-controller-presentation.js';
@@ -114,6 +115,8 @@ export function createFieldController<TFormValues extends object>(
         onUserChange,
       );
       break;
+    default:
+      controller = throwUnsupportedFieldType(config);
   }
 
   if (presentation.label === 'visually-hidden') {

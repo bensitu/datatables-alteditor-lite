@@ -4,6 +4,7 @@ import { SEARCH_SELECT_MAX_OPTION_COUNT } from '../search-select/search-select.j
 
 import { assertAllowedFieldAttributes } from './field-attributes.js';
 import { assertUniqueOptionValues } from './option-token-map.js';
+import { throwUnsupportedFieldType } from './unsupported-field-type.js';
 
 import type { FieldConfig } from './field-config.js';
 
@@ -12,6 +13,30 @@ function hasConfiguredOption(
   value: unknown,
 ): boolean {
   return options.some((option) => Object.is(option.value, value));
+}
+
+function assertSupportedFieldType<TFormValues extends object>(
+  config: FieldConfig<TFormValues>,
+): void {
+  switch (config.type) {
+    case 'checkbox':
+    case 'date':
+    case 'datetime-local':
+    case 'email':
+    case 'file':
+    case 'hidden':
+    case 'number':
+    case 'password':
+    case 'radio':
+    case 'search-select':
+    case 'select':
+    case 'text':
+    case 'textarea':
+    case 'time':
+      return;
+    default:
+      throwUnsupportedFieldType(config);
+  }
 }
 
 function assertValidDefaultValue<TFormValues extends object>(
@@ -68,6 +93,8 @@ function assertValidDefaultValue<TFormValues extends object>(
       isValid = typeof defaultValue === 'string';
       break;
     }
+    default:
+      throwUnsupportedFieldType(config);
   }
 
   if (!isValid) {
@@ -120,6 +147,7 @@ export function validateFieldConfigurations<TFormValues extends object>(
   const configuredNames = new Set<string>();
 
   for (const config of fields) {
+    assertSupportedFieldType(config);
     parseFieldPath(config.name);
 
     if (configuredNames.has(config.name)) {
