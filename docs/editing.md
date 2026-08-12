@@ -1,26 +1,27 @@
 # Editing
 
 AltEditorLite provides complete-form Dialog editing and compact editing for one
-cell at a time. Set one `editMode` for each editor instance. Both presentations
-use the same non-optimistic update transaction and are mutually exclusive with
-operations already in progress on the owned table. Double-click sessions retain
-automatic cancellation before Create, Remove, or Refresh; hover sessions must be
-resolved with Submit or Cancel first.
+cell at a time. These capabilities are composable: applications can enable
+Dialog only, Inline only, or both on one editor. Both presentations use the same
+non-optimistic Update transaction and remain mutually exclusive with work already
+in progress on the owned table.
 
-| `editMode`          | Dialog Edit | Inline Edit | Activation                      |
-| ------------------- | ----------- | ----------- | ------------------------------- |
-| `dialog` (default)  | Available   | Unavailable | Dialog action                   |
-| `inlineDoubleClick` | Unavailable | Available   | Double-click/tap, keyboard, API |
-| `inlineHover`       | Unavailable | Available   | Pencil, touch, keyboard, API    |
+| Configuration                   | Dialog Edit | Inline Edit | Typical use                        |
+| ------------------------------- | ----------- | ----------- | ---------------------------------- |
+| Default                         | Available   | Unavailable | Complete forms                     |
+| Dialog enabled, Inline disabled | Available   | Unavailable | Explicit Dialog-only configuration |
+| Dialog disabled, Inline enabled | Unavailable | Available   | Compact cell editing               |
+| Dialog enabled, Inline enabled  | Available   | Available   | Complete forms plus quick updates  |
 
-Create, Remove, and Refresh remain available in both modes when their normal
-requirements are met.
+Create, Remove, and Refresh remain available when their normal requirements are
+met, regardless of which Edit presentations are enabled.
 
 ## Dialog editing
 
-Dialog Create and Remove are available in either mode. Dialog Edit requires
-`editMode: 'dialog'`. These workflows are available through the public methods or
-the optional DataTables Buttons integration:
+Dialog Create and Remove are independent of Edit presentation. Dialog Edit
+requires `editing.dialog.enabled` to be true, which is the default. These
+workflows are available through public methods or the optional DataTables Buttons
+integration:
 
 ```ts
 await editor.openCreateDialog();
@@ -39,20 +40,48 @@ appropriate for single-cell editing. Native constraints, custom validators,
 local uniqueness, lifecycle hooks, persistence, and safe error normalization run
 before DataTables is changed.
 
+`editing.dialog.template` can arrange editor-owned fields in a cloned custom
+layout. Dialog dependencies resolve after defaults or Edit source values are
+populated and before the form becomes visible. See [Dynamic forms](forms.md).
+
 The dialog keeps the originally captured Edit row even if selection later
 changes. It revalidates that identity before submission and again after
 asynchronous persistence. Successful updates replace the complete row, wait for
 the DataTables draw, close according to configuration, and restore focus to a
 connected logical target.
 
+### Hybrid interaction ownership
+
+When both Edit presentations are enabled, the same fields, validators, Update
+callback, hooks, and events serve both. The Dialog Edit button and
+`openEditDialog()` remain available, while eligible cells also support the
+configured Inline activation.
+
+Only one presentation can own interaction at a time:
+
+- an open or opening dialog causes Inline activation to reject as busy;
+- Create, Remove, Refresh, or Dialog Edit cancels an active double-click Inline
+  session before continuing;
+- a hover Inline session requires explicit Submit or Cancel, so an external
+  operation rejects while it remains active;
+- a running persistence or refresh request cannot be replaced by another editor
+  operation.
+
+Hooks and lifecycle events identify the initiating presentation with
+`mode: 'dialog'` or `mode: 'inline'`. Refresh uses `mode: 'api'`. Applications can
+apply policy by mode without constructing separate editor instances.
+
 ## Inline editing
 
-Inline editing requires `editMode: 'inlineDoubleClick'` or `inlineHover` and at
-least one eligible field with `inlineEdit: true`:
+Inline editing requires `editing.inline.enabled: true` and at least one eligible
+field with `inlineEdit: true`:
 
 ```ts
 const editor = new AltEditorLite<UserRow, UserValues>(table, {
-  editMode: 'inlineDoubleClick',
+  editing: {
+    dialog: { enabled: true },
+    inline: { activation: 'doubleClick', enabled: true },
+  },
   fields: [
     {
       inlineEdit: true,
@@ -65,9 +94,9 @@ const editor = new AltEditorLite<UserRow, UserValues>(table, {
 });
 ```
 
-The `inline` object is optional and configures behavior only. Supplying it in
-Dialog mode is a configuration error. A field may keep `inlineEdit: true` in
-Dialog mode; the flag is ignored until an Inline editor is constructed.
+The `editing.inline` object enables and configures the capability. A field may
+keep `inlineEdit: true` while Inline editing is disabled; the flag takes effect
+when the capability is enabled.
 
 An eligible field must also be editable, enabled, visible, writable, supported by
 inline editing, and mapped to an available visible column.
@@ -80,7 +109,7 @@ radio, file, and hidden fields remain available through dialogs only.
 
 Mapping uses this fixed order:
 
-1. an explicit unique DataTables column name in `inline.columns`;
+1. an explicit unique DataTables column name in `editing.inline.columns`;
 2. an exact string match between `column().dataSrc()` and the field path;
 3. unavailable.
 
@@ -95,15 +124,19 @@ const table = new DataTable<UserRow>('#users', {
 });
 
 const editor = new AltEditorLite(table, {
-  editMode: 'inlineDoubleClick',
-  fields,
-  inline: {
-    columns: {
-      actions: false,
-      displayName: 'profile.name',
-      rank: 'rank',
+  editing: {
+    dialog: { enabled: true },
+    inline: {
+      activation: 'doubleClick',
+      columns: {
+        actions: false,
+        displayName: 'profile.name',
+        rank: 'rank',
+      },
+      enabled: true,
     },
   },
+  fields,
 });
 ```
 
@@ -113,13 +146,13 @@ paths, render results, and function data sources are never used to infer a field
 
 ### Activation and public methods
 
-`inlineDoubleClick` opens from a mouse double-click or two taps on the same
-eligible cell. A single tap and taps that move between cells retain normal table
-behavior. `inlineHover` moves one native pencil into the eligible cell under a
-fine pointer. On touch, the first tap keeps normal Select/KeyTable behavior and
-reveals the pencil; tapping the pencil opens editing. A normal cell-body click
-never starts hover editing. Programmatic activation bypasses the gesture
-strategy:
+`activation: 'doubleClick'` opens from a mouse double-click or two taps on the
+same eligible cell. A single tap and taps that move between cells retain normal
+table behavior. `activation: 'hover'` moves one native pencil into the eligible
+cell under a fine pointer. On touch, the first tap keeps normal Select/KeyTable
+behavior and reveals the pencil; tapping the pencil opens editing. A normal
+cell-body click never starts hover editing. Programmatic activation bypasses the
+gesture strategy:
 
 ```ts
 await editor.openInlineEdit('#user-42', 'displayName:name');
@@ -138,13 +171,15 @@ interactive element.
 
 ### Keyboard and focus
 
-When KeyTable is available, `inline.keyboardActivation` defaults to `{ key:
-'F2' }`. Set it to `false` or use a shortcut such as `{ key: 'e', ctrlKey: true
-}`. Arrow keys, Tab, Home, End, PageUp, and PageDown are reserved, and IME
-composition never activates editing. KeyTable is disabled during editing and its
-exact prior state is restored afterward.
+When KeyTable is available, `editing.inline.keyboardActivation` defaults to
+`{ key: 'F2' }`. Set it to `false` or use a shortcut such as `{ key: 'e',
+ctrlKey: true }`. Setting it to `false` disables only focused-cell activation;
+it does not disable keyboard behavior inside an open session. Arrow keys, Tab,
+Home, End, PageUp, and PageDown are reserved, and IME composition never activates
+editing. KeyTable is disabled during editing and its exact prior state is
+restored afterward.
 
-The following compact behavior applies to `inlineDoubleClick`:
+The following compact behavior applies to double-click activation:
 
 - Enter submits single-line text-like controls when `enterAction` is `submit`.
 - Native Select and SearchSelect keep Enter for choosing the current option. Use
@@ -158,7 +193,7 @@ The following compact behavior applies to `inlineDoubleClick`:
 - Arrow keys and option selection remain owned by Select and SearchSelect
   controls.
 
-For `inlineHover`, native Submit and Cancel buttons own resolution. Blur, Tab,
+For hover activation, native Submit and Cancel buttons own resolution. Blur, Tab,
 Enter, and Escape do not submit or cancel the session. Field-owned behavior still
 applies, such as Escape closing a SearchSelect popup. Validation or persistence
 disables both actions; a failure re-enables them and retains the candidate.
@@ -179,7 +214,7 @@ do not replace the restoration target.
 
 ### Blur behavior
 
-In `inlineDoubleClick`, `blurAction` defaults to `submit`. It also accepts
+With double-click activation, `blurAction` defaults to `submit`. It also accepts
 `cancel` and `none`. Focus
 moving within an inline-owned SearchSelect or its popup does not trigger the blur
 action. Validation and operation failures retain the candidate, mark the compact
@@ -208,13 +243,20 @@ frozen.
 
 Validation order is:
 
-1. normalized candidate collection;
-2. native constraint validation;
-3. the field's custom validator;
-4. local uniqueness among currently loaded rows;
-5. the latest retained `onChange` result;
-6. `beforeSubmit`;
-7. submit event and persistence.
+1. read the normalized candidate and close immediately when it is unchanged;
+2. validate the active field's native constraints;
+3. build complete values from the canonical row and current candidate;
+4. run the active field's custom validator;
+5. check local uniqueness among currently loaded rows;
+6. await the latest active-field `onChange` result;
+7. run the shared `validateForm` callback when configured;
+8. run `beforeSubmit`;
+9. publish submit and invoke persistence.
+
+A `validateForm` error for the active path is associated with the Inline
+presentation. Errors for other paths and a global message appear in the alert
+summary because Inline does not construct the other Dialog fields. Validation
+failure leaves the candidate editable and canonical DataTables data unchanged.
 
 An unchanged normalized value closes with reason `unchanged` and does not
 validate, publish submit or success, or call persistence.
@@ -308,9 +350,10 @@ possible; and prevents late DOM, DataTables, focus, or event work.
 ## DataTables extension boundaries
 
 - Buttons and Select are supported through their existing optional integrations.
-  Dialog Edit is hidden in Inline mode. Create, Remove, and Refresh cancel an
-  active double-click session, but remain unavailable until an active hover
-  session is explicitly resolved.
+  Dialog Edit remains available when `editing.dialog.enabled` is true, including
+  Hybrid configuration. Create, Remove, Refresh, and Dialog Edit cancel an active
+  double-click session, but remain unavailable until an active hover session is
+  explicitly resolved.
 - KeyTable focused-cell events drive optional shortcut activation and pencil
   placement. The shortcut uses an owned native keydown boundary rather than
   the extension's forwarded `key` event. Typing-to-edit and `keys.editor`

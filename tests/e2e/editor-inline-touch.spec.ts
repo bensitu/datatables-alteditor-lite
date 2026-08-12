@@ -74,36 +74,38 @@ async function createTouchFixture(
             },
             {
               allowClear: true,
-              debounceMs: 0,
               inlineEdit: true,
               label: 'Rank',
-              loadOptions(query, { signal }) {
-                return new Promise((resolve, reject) => {
-                  const timer = globalThis.setTimeout(() => {
-                    resolve([
-                      { label: 'Rank 1', value: 1 },
-                      { label: 'Rank 2', value: 2 }
-                    ].filter(option => option.label.includes(query)));
-                  }, 25);
-                  signal.addEventListener('abort', () => {
-                    globalThis.clearTimeout(timer);
-                    reject(new DOMException('Aborted', 'AbortError'));
-                  }, { once: true });
-                });
-              },
               name: 'rank',
-              resolveOption(value, { signal }) {
-                return new Promise((resolve, reject) => {
-                  const timer = globalThis.setTimeout(
-                    () => resolve({ label: 'Rank ' + String(value), value }),
-                    20
-                  );
-                  signal.addEventListener('abort', () => {
-                    globalThis.clearTimeout(timer);
-                    reject(new DOMException('Aborted', 'AbortError'));
-                  }, { once: true });
-                });
+              remote: {
+                loadOptions(query, { signal }) {
+                  return new Promise((resolve, reject) => {
+                    const timer = globalThis.setTimeout(() => {
+                      resolve([
+                        { label: 'Rank 1', value: 1 },
+                        { label: 'Rank 2', value: 2 }
+                      ].filter(option => option.label.includes(query)));
+                    }, 25);
+                    signal.addEventListener('abort', () => {
+                      globalThis.clearTimeout(timer);
+                      reject(new DOMException('Aborted', 'AbortError'));
+                    }, { once: true });
+                  });
+                },
+                resolveOption(value, { signal }) {
+                  return new Promise((resolve, reject) => {
+                    const timer = globalThis.setTimeout(
+                      () => resolve({ label: 'Rank ' + String(value), value }),
+                      20
+                    );
+                    signal.addEventListener('abort', () => {
+                      globalThis.clearTimeout(timer);
+                      reject(new DOMException('Aborted', 'AbortError'));
+                    }, { once: true });
+                  });
+                }
               },
+              search: { debounceMs: 0 },
               type: 'search-select'
             }
           ]

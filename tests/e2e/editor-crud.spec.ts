@@ -24,6 +24,20 @@ const browserBundlePath = resolve(
 );
 const stylesheetPath = resolve(repositoryRoot, 'dist/umd/alt-editor-lite.css');
 
+interface DynamicFormRuntime {
+  readonly persistenceCalls?: number;
+  readonly tableApi?: {
+    row(selector: string): {
+      data(): {
+        readonly contractEnd: string;
+        readonly country: string;
+        readonly prefecture: string;
+        readonly startDate: string;
+      };
+    };
+  };
+}
+
 async function createCrudFixture(page: Page): Promise<void> {
   await page.setContent(`
     <!doctype html>
@@ -134,6 +148,159 @@ async function createCrudFixture(page: Page): Promise<void> {
   });
 }
 
+async function createDynamicFormFixture(page: Page): Promise<void> {
+  await page.setContent(`
+    <!doctype html>
+    <html lang="en">
+      <head><title>AltEditorLite dynamic form browser test</title></head>
+      <body>
+        <main>
+          <button id="edit-schedule" type="button">Edit schedule</button>
+          <template id="schedule-layout">
+            <section class="schedule-layout">
+              <fieldset>
+                <legend>Location</legend>
+                <div data-alteditor-lite-field="country"></div>
+                <div data-alteditor-lite-field="prefecture"></div>
+              </fieldset>
+              <fieldset>
+                <legend>Schedule</legend>
+                <div data-alteditor-lite-field="startDate"></div>
+                <div data-alteditor-lite-field="contractEnd"></div>
+              </fieldset>
+            </section>
+          </template>
+          <table id="schedule-table">
+            <thead>
+              <tr><th>Country</th><th>Prefecture</th><th>Start</th><th>End</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </main>
+      </body>
+    </html>
+  `);
+  await page.addStyleTag({ path: stylesheetPath });
+  await page.addScriptTag({ path: dataTablesScriptPath });
+  await page.addScriptTag({ path: browserBundlePath });
+  await page.addScriptTag({
+    content: `
+      globalThis.persistenceCalls = 0;
+      globalThis.tableApi = new DataTable('#schedule-table', {
+        columns: [
+          { data: 'country' },
+          { data: 'prefecture' },
+          { data: 'startDate' },
+          { data: 'contractEnd' }
+        ],
+        data: [{
+          contractEnd: '2026-09-01',
+          country: 'US',
+          id: 'row-a',
+          prefecture: '',
+          startDate: '2026-08-01'
+        }],
+        rowId: 'id'
+      });
+      globalThis.editor = new DataTablesAltEditorLite.AltEditorLite(
+        globalThis.tableApi,
+        {
+          dependencies: {
+            country: async (country, { signal, values }) => {
+              await new Promise((resolve, reject) => {
+                const timer = globalThis.setTimeout(resolve, 20);
+                signal.addEventListener('abort', () => {
+                  globalThis.clearTimeout(timer);
+                  reject(new DOMException('Aborted', 'AbortError'));
+                }, { once: true });
+              });
+              const options = country === 'JP'
+                ? [
+                    { label: 'Tokyo', value: 'tokyo' },
+                    { label: 'Osaka', value: 'osaka' }
+                  ]
+                : [];
+              const currentValue = options.some(option => option.value === values.prefecture)
+                ? values.prefecture
+                : options[0]?.value;
+              return {
+                prefecture: {
+                  options,
+                  required: country === 'JP',
+                  value: currentValue,
+                  visible: country === 'JP'
+                }
+              };
+            }
+          },
+          editing: {
+            dialog: { template: '#schedule-layout' }
+          },
+          fields: [
+            {
+              label: 'Country',
+              name: 'country',
+              options: [
+                { label: 'United States', value: 'US' },
+                { label: 'Japan', value: 'JP' }
+              ],
+              required: true,
+              type: 'select'
+            },
+            {
+              label: 'Prefecture',
+              name: 'prefecture',
+              options: [{ label: 'Not applicable', value: '' }],
+              type: 'select',
+              visible: false
+            },
+            {
+              label: 'Start date',
+              name: 'startDate',
+              required: true,
+              type: 'date'
+            },
+            {
+              label: 'Contract end',
+              name: 'contractEnd',
+              required: true,
+              type: 'date'
+            }
+          ],
+          operations: {
+            async update(values, original) {
+              globalThis.persistenceCalls += 1;
+              return {
+                ...original,
+                contractEnd: values.contractEnd ?? original.contractEnd,
+                country: values.country ?? original.country,
+                prefecture: values.prefecture ?? original.prefecture,
+                startDate: values.startDate ?? original.startDate
+              };
+            }
+          },
+          validateForm(values) {
+            return values.contractEnd !== undefined &&
+              values.startDate !== undefined &&
+              values.contractEnd < values.startDate
+              ? {
+                  fieldErrors: {
+                    contractEnd: 'Contract end must not precede the start date.'
+                  },
+                  message: 'Review the schedule.',
+                  valid: false
+                }
+              : { valid: true };
+          }
+        }
+      );
+      document.querySelector('#edit-schedule').addEventListener('click', () => {
+        void globalThis.editor.openEditDialog('#row-a');
+      });
+    `,
+  });
+}
+
 async function createExtensionsFixture(page: Page): Promise<void> {
   await page.setContent(`
     <!doctype html>
@@ -221,7 +388,7 @@ test('edits an explicit snapshot with keyboard only after redraw', async ({ page
   await editButton.focus();
   await page.keyboard.press('Enter');
 
-  const dialog = page.locator('dialog');
+  const dialog = page.getByRole('dialog', { name: 'Edit row' });
   const nameInput = dialog.getByRole('textbox', { exact: true, name: 'Name' });
   await expect(dialog).toBeVisible();
   await expect(nameInput).toBeFocused();
@@ -246,6 +413,78 @@ test('edits an explicit snapshot with keyboard only after redraw', async ({ page
   await expect(editButton).toBeFocused();
   await expect(page.locator('#row-a')).toContainText('Keyboard Alpha');
   await expect(page.evaluate(() => 'jQuery' in globalThis)).resolves.toBe(false);
+});
+
+test('uses a custom dynamic form and corrects cross-field validation', async ({
+  page,
+}) => {
+  await createDynamicFormFixture(page);
+  const openButton = page.getByRole('button', { name: 'Edit schedule' });
+  await openButton.focus();
+  await page.keyboard.press('Enter');
+
+  const dialog = page.getByRole('dialog', { name: 'Edit row' });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole('group', { name: 'Location' })).toBeVisible();
+  await expect(dialog.getByRole('group', { name: 'Schedule' })).toBeVisible();
+  const scan = await new AxeBuilder({ page }).include('dialog').analyze();
+  expect(
+    scan.violations.filter(
+      (violation) => violation.impact === 'serious' || violation.impact === 'critical',
+    ),
+  ).toEqual([]);
+
+  const prefecture = dialog.getByRole('combobox', { name: 'Prefecture' });
+  await expect(prefecture).toBeHidden();
+  await dialog
+    .getByRole('combobox', { name: 'Country' })
+    .selectOption({ label: 'Japan' });
+  await expect(prefecture).toBeVisible();
+  await expect(prefecture.locator('option')).toHaveText(['Tokyo', 'Osaka']);
+  await prefecture.selectOption({ label: 'Osaka' });
+
+  await dialog.getByLabel('Start date').fill('2026-09-10');
+  await dialog.getByLabel('Contract end').fill('2026-09-01');
+  await dialog.getByRole('button', { name: 'Submit' }).click();
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByText('Review the schedule.')).toBeVisible();
+  await expect(
+    dialog.getByText('Contract end must not precede the start date.'),
+  ).toBeVisible();
+  await expect(
+    page.evaluate(() => {
+      const runtimeScope = globalThis as typeof globalThis & DynamicFormRuntime;
+      return runtimeScope.persistenceCalls;
+    }),
+  ).resolves.toBe(0);
+  await expect(
+    page.evaluate(() => {
+      const runtimeScope = globalThis as typeof globalThis & DynamicFormRuntime;
+      return runtimeScope.tableApi?.row('#row-a').data();
+    }),
+  ).resolves.toMatchObject({ country: 'US', prefecture: '' });
+
+  await dialog.getByLabel('Contract end').fill('2026-10-01');
+  await dialog.getByRole('button', { name: 'Submit' }).click();
+  await expect(dialog).not.toBeVisible();
+  await expect(openButton).toBeFocused();
+  await expect(
+    page.evaluate(() => {
+      const runtimeScope = globalThis as typeof globalThis & DynamicFormRuntime;
+      return runtimeScope.persistenceCalls;
+    }),
+  ).resolves.toBe(1);
+  await expect(
+    page.evaluate(() => {
+      const runtimeScope = globalThis as typeof globalThis & DynamicFormRuntime;
+      return runtimeScope.tableApi?.row('#row-a').data();
+    }),
+  ).resolves.toMatchObject({
+    contractEnd: '2026-10-01',
+    country: 'JP',
+    prefecture: 'osaka',
+    startDate: '2026-09-10',
+  });
 });
 
 test('always confirms Remove and restores focus after keyboard activation', async ({

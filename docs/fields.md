@@ -3,9 +3,9 @@
 Every field supports the optional `inlineEdit` eligibility flag. It defaults to
 `false`. Text, email, number, date, time, datetime-local, checkbox, select,
 textarea, and SearchSelect fields can participate when the editor uses
-`inlineDoubleClick` or `inlineHover` and the field is editable, enabled, visible,
+`editing.inline.enabled: true` and the field is editable, enabled, visible,
 writable, and mapped to a column. Password, radio, file, and hidden fields remain
-dialog-only. See [Editing](editing.md).
+Dialog-only. See [Editing](editing.md).
 
 Every field has a safe dot-separated `name`. Segments that can mutate object
 prototypes are rejected. Paths contain at most five property segments. Numeric
@@ -26,7 +26,8 @@ Supported field types are:
 | `file`                                                                    | `File \| null`, data URL or `null`, or the configured multiple-value array      |
 | `hidden`                                                                  | `string`                                                                        |
 
-Disabled fields are omitted from collection. Readonly fields remain collectible.
+Disabled fields are omitted from collection. Fields configured with `readOnly:
+true` remain collectible.
 `editable: false` omits the field from Create and Edit forms. Consumer labels,
 descriptions, options, and error messages are rendered as text, never as HTML.
 Readonly controls remain focusable for accessibility and prevent normal user
@@ -56,6 +57,38 @@ candidate overlaid. Keep per-input work small, use the supplied `AbortSignal`,
 and debounce or cache application-owned network work when appropriate. A newer
 change aborts the preceding callback for the same field and prevents stale
 results from replacing current state.
+
+## Field controllers and runtime state
+
+`editor.getField(path)` returns a `FieldController<TValue>` while a Dialog form is
+open. `getValue()` always returns `Promise<TValue>`. The controller also provides
+`setValue`, `setVisible`, `setDisabled`, `setReadOnly`, `setRequired`, `focus`,
+`validate`, `clearError`, `showError`, and `destroy`.
+
+Programmatic `setValue()` uses the same representation rules as defaults and Edit
+source values. Invalid types, unavailable choice values, and unsupported file
+values throw `EditorConfigurationError`; values are never accepted through
+coercion. Runtime setters change only the active rendered form and do not modify
+the original field configuration.
+
+Select, Radio, and SearchSelect expose `ChoiceFieldController<TValue>`. Narrow a
+field controller before updating options:
+
+```ts
+const office = editor.getField('officeId');
+if (office !== null && isChoiceFieldController(office)) {
+  office.setOptions([
+    { label: 'Tokyo', value: 10 },
+    { label: 'New York', value: 30 },
+  ]);
+  const options = office.getOptions();
+}
+```
+
+Dynamic Select and Radio options retain an available current value and otherwise
+clear it. SearchSelect updates its local options or remote seed/cache with the
+same exact value identity. Changing options does not replace a remote source.
+See [Dynamic forms](forms.md) for declarative option and state changes.
 
 ## Local uniqueness
 
@@ -87,7 +120,6 @@ virtualization.
 ```ts
 const officeField = {
   allowClear: true,
-  debounceMs: 100,
   label: 'Office',
   name: 'officeId',
   options: [
@@ -95,7 +127,7 @@ const officeField = {
     { label: 'Madrid', value: 20 },
     { disabled: true, label: 'Closed', value: 30 },
   ],
-  searchThreshold: 1,
+  search: { debounceMs: 100, threshold: 1 },
   sortOptions: true,
   type: 'search-select',
 } as const;
@@ -105,51 +137,51 @@ Option values use stable DOM tokens such as `option-0`; values are never coerced
 to HTML strings. Numeric `1` and string `'1'` remain distinct. Duplicate values of
 the same type are rejected.
 
-`searchThreshold` is the minimum normalized query length before filtering starts.
-`debounceMs` delays local filtering. `sortOptions` uses an `Intl.Collator` for the
-active locale. `allowClear` returns `undefined`. `allowManualValue` is available
-only for string-valued configurations; manual numeric parsing is not supported.
+`search.threshold` is the minimum normalized query length before filtering or
+remote loading starts. `search.debounceMs` delays input work; remote fields
+default to 250 ms. `sortOptions` uses an `Intl.Collator` for the active locale.
+`allowClear` returns `undefined`. `allowManualValue` is available only for
+string-valued configurations; manual numeric parsing is not supported.
 
-Remote fields provide both callbacks. `loadOptions` owns query results;
-`resolveOption` independently hydrates the label for an existing value. Each
-callback receives an `AbortSignal`:
+Set `search: { enabled: false }` for a choice-only combobox. Its focusable control
+remains keyboard accessible, opens with Enter, Space, or ArrowDown, and exposes
+the active option through combobox/listbox ARIA without accepting filter text.
+Remote SearchSelect requires search and rejects this setting.
+
+Remote fields group both callbacks under `remote`. `remote.loadOptions` owns query
+results; `remote.resolveOption` independently hydrates the label for an existing
+value. Each callback receives an `AbortSignal`:
 
 ```ts
 const remoteOfficeField = {
   allowClear: true,
-  debounceMs: 250,
   label: 'Office',
-  loadOptions: (query, { signal }) => searchOffices(query, signal),
   name: 'officeId',
   options: [{ label: 'Tokyo', value: 10 }], // optional seed/cache
-  resolveOption: (value, { signal }) => getOffice(value, signal),
-  searchThreshold: 2,
+  remote: {
+    loadOptions: (query, { signal }) => searchOffices(query, signal),
+    resolveOption: (value, { signal }) => getOffice(value, signal),
+  },
+  search: { debounceMs: 250, threshold: 2 },
   type: 'search-select',
 } as const;
 ```
 
-`setValue()` and `getValue()` remain synchronous. A remote value is available
-immediately while its label resolves in the background. Search and resolution
-use separate cancellation and revision ownership, so a consumer that ignores the
-signal still cannot let a stale result overwrite current state. Loading,
-threshold, and query errors stay inside the combobox through `aria-busy`, its
-listbox, and a polite live status.
+`setValue()` remains synchronous and `getValue()` returns a Promise. A remote
+value is available while its label resolves. Search and resolution use separate
+cancellation and request ownership, so a consumer that ignores the signal still
+cannot let an older result overwrite current state. Loading, threshold, and query
+errors stay inside the combobox through `aria-busy`, its listbox, and a polite live
+status.
 
 Use at most 1,000 options for the best experience. The enforced and documented
 hard limit is 5,000 options in any configured or returned result. Remote loaders
 must narrow results to that bound.
 
-While a form is open, a SearchSelect controller exposes `setOptions(options)`:
-
-```ts
-editor.getField<number | undefined>('officeId')?.setOptions?.(nextOffices);
-```
-
-For local fields, the exact current value is retained when it still exists; if it
-disappears, the field clears and runs `onChange`. For remote fields, `setOptions()`
-updates only the seed/cache and never replaces the loader or resolver. A matching
-seed immediately hydrates the selected label, invalidates an older resolver, and
-does not emit a value change.
+For local fields, `setOptions()` retains the exact current value when it still
+exists; if it disappears, the field clears. For remote fields, it updates only
+the seed/cache. A matching seed immediately hydrates the selected label,
+invalidates an older resolver, and does not emit a user change.
 
 ## Files
 

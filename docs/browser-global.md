@@ -54,9 +54,25 @@ from jsDelivr:
             };
           },
         },
+        editing: {
+          dialog: { enabled: true },
+          inline: { activation: 'doubleClick', enabled: true },
+        },
         fields: [
-          { label: 'Name', name: 'name', required: true, type: 'text' },
-          { label: 'Email', name: 'email', required: true, type: 'email' },
+          {
+            inlineEdit: true,
+            label: 'Name',
+            name: 'name',
+            required: true,
+            type: 'text',
+          },
+          {
+            inlineEdit: true,
+            label: 'Email',
+            name: 'email',
+            required: true,
+            type: 'email',
+          },
         ],
       });
 

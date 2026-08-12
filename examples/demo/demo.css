@@ -438,6 +438,34 @@ main > * {
   margin-block-start: 0.625rem;
 }
 
+.demo-employee-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.demo-employee-form fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0.875rem;
+  border: 1px solid var(--demo-border);
+  border-radius: 0.75rem;
+}
+
+.demo-employee-form legend {
+  padding-inline: 0.35rem;
+  font-weight: 700;
+}
+
+.demo-employee-form__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.875rem;
+}
+
+.demo-employee-form__wide {
+  grid-column: 1 / -1;
+}
+
 .demo-inline-guide {
   display: grid;
   gap: 1rem;
@@ -1003,6 +1031,14 @@ tbody tr.selected:hover {
 
   .demo-inline-steps {
     grid-template-columns: 1fr;
+  }
+
+  .demo-employee-form__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .demo-employee-form__wide {
+    grid-column: auto;
   }
 
   .demo-footer {

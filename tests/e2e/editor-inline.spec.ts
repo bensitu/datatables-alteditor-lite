@@ -31,7 +31,6 @@ interface RenderedControlsRuntime {
     openInlineEdit(row: string, column: string): Promise<void>;
     submitInlineEdit(): Promise<void>;
   };
-  readonly useDialogEditor?: () => void;
   readonly tableApi?: {
     row(row: string): {
       data(): { readonly schedule: string; readonly status: string };
@@ -164,6 +163,7 @@ async function createSearchSelectInlineFixture(page: Page): Promise<void> {
                 { label: 'Beijing', value: 'beijing' },
                 { label: 'London', value: 'london' }
               ],
+              search: { enabled: false },
               type: 'search-select'
             }
           ]
@@ -258,24 +258,11 @@ async function createRenderedControlsFixture(page: Page): Promise<void> {
         {
           ...globalThis.editorOptions,
           editing: {
-            dialog: { enabled: false },
+            dialog: { enabled: true },
             inline: { enabled: true }
           }
         }
       );
-      globalThis.useDialogEditor = () => {
-        globalThis.editor.destroy();
-        globalThis.editor = new DataTablesAltEditorLite.AltEditorLite(
-          globalThis.tableApi,
-          {
-            ...globalThis.editorOptions,
-            editing: {
-              dialog: { enabled: true },
-              inline: { enabled: false }
-            }
-          }
-        );
-      };
     `,
   });
 }
@@ -498,13 +485,19 @@ test('moves actions clear of a constrained native date control', async ({ page }
   await page.getByRole('button', { name: 'Cancel' }).click();
 });
 
-test('keeps a SearchSelect popup above the editing cell border', async ({ page }) => {
+test('keeps a keyboard-only choice popup above the editing cell border', async ({
+  page,
+}) => {
   await createSearchSelectInlineFixture(page);
   await page.addStyleTag({ content: '#row-a td { height: 8rem; }' });
   const cell = page.locator('#row-a td').first();
   await cell.hover();
   await cell.getByRole('button', { name: 'Edit cell' }).click();
-  await page.getByRole('combobox', { name: 'Office' }).click();
+  const combobox = page.getByRole('combobox', { name: 'Office' });
+  await combobox.focus();
+  await expect(combobox).toHaveJSProperty('readOnly', true);
+  await expect(combobox).toHaveAttribute('aria-autocomplete', 'none');
+  await expect(combobox).toHaveAttribute('aria-expanded', 'true');
   await expect(page.getByRole('listbox')).toBeVisible();
 
   const layers = await cell.evaluate((element) => {
@@ -524,6 +517,9 @@ test('keeps a SearchSelect popup above the editing cell border', async ({ page }
 
   expect(layers.borderCrossesPopup).toBe(true);
   expect(layers.popupZIndex).toBeGreaterThan(layers.borderZIndex);
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Enter');
+  await expect(combobox).toHaveAttribute('aria-expanded', 'false');
   await page.getByRole('button', { name: 'Cancel' }).click();
 });
 
@@ -552,7 +548,7 @@ test('activates a KeyTable-focused cell and remaps after ColReorder', async ({
   await page.getByRole('button', { name: 'Cancel' }).click();
 });
 
-test('redraws columnDefs controls from committed inline and dialog values', async ({
+test('uses one Hybrid editor for committed inline and dialog values', async ({
   page,
 }) => {
   await createRenderedControlsFixture(page);
@@ -595,10 +591,9 @@ test('redraws columnDefs controls from committed inline and dialog values', asyn
 
   await page.evaluate(async () => {
     const runtimeScope = globalThis as typeof globalThis & RenderedControlsRuntime;
-    runtimeScope.useDialogEditor?.();
     await runtimeScope.editor?.openEditDialog('#row-a');
   });
-  const dialog = page.locator('dialog');
+  const dialog = page.getByRole('dialog', { name: 'Edit row' });
   await dialog
     .getByRole('combobox', { name: 'Status' })
     .selectOption({ label: 'Paused' });

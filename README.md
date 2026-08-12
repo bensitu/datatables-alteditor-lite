@@ -12,6 +12,7 @@ jQuery or UI-framework runtime dependency.
 [Live demo](https://bensitu.github.io/datatables-alteditor-lite/examples/demo/) ·
 [Getting started](docs/getting-started.md) · [Editing](docs/editing.md) ·
 [Configuration](docs/configuration.md) · [Fields](docs/fields.md) ·
+[Dynamic forms](docs/forms.md) ·
 [Operations](docs/operations.md) · [API reference](docs/api-reference.md) ·
 [Localization](docs/localization.md)
 
@@ -19,10 +20,12 @@ jQuery or UI-framework runtime dependency.
 
 ## Highlights
 
-- Native `<dialog>` forms with focus containment, restoration, responsive layout,
-  and accessible validation feedback
+- Native `<dialog>` forms with cloned custom layouts, focus containment,
+  restoration, and accessible validation feedback
 - Single-cell double-click or hover/touch editing with exact column mapping,
   explicit actions, validation, and optional KeyTable activation
+- Dialog and Inline Edit can be enabled together on one editor
+- Declarative dependent field state and shared cross-field validation
 - Create, Edit, Remove, and Ajax-aware or local Refresh operations
 - Non-optimistic asynchronous persistence with `AbortSignal`
 - Stable Edit and Remove target snapshots that fail closed when row identity
@@ -162,18 +165,24 @@ table.altEditorLite<UserForm>(); // AltEditorLite<UserRow, UserForm> | null
 Call `editor.destroy()` before replacing the table or creating another editor for
 the same table element.
 
-## Editing modes
+## Editing
 
-Dialog Edit is available by default for complete forms. Each editor selects one
-Edit presentation through `editMode`. Choose `inlineDoubleClick` for compact
-fast editing by mouse double-click or touch double-tap, or `inlineHover` for a
-discoverable pencil and explicit Submit / Cancel actions. Mark at least one
-eligible field, then use its gesture, an
-optional focused-cell shortcut, or the public API:
+Dialog Edit is enabled by default. Inline Edit can be added independently, so a
+single editor can provide complete Dialog forms and fast single-cell updates:
 
 ```ts
 const editor = new AltEditorLite<UserRow, UserForm>(table, {
-  editMode: 'inlineDoubleClick',
+  editing: {
+    dialog: { enabled: true },
+    inline: {
+      activation: 'doubleClick',
+      columns: {
+        actions: false,
+        displayName: 'profile.name',
+      },
+      enabled: true,
+    },
+  },
   fields: [
     {
       inlineEdit: true,
@@ -183,25 +192,36 @@ const editor = new AltEditorLite<UserRow, UserForm>(table, {
       type: 'text',
     },
   ],
-  inline: {
-    columns: {
-      displayName: 'profile.name',
-      actions: false,
-    },
-  },
 });
 
 await editor.openInlineEdit('#user-42', 'displayName:name');
+await editor.openEditDialog('#user-42');
 ```
 
-Enter submits, Escape cancels, and Tab submits before moving to the next eligible
-visible cell in `inlineDoubleClick`. In `inlineHover`, the default F2 shortcut
-edits a KeyTable-focused cell, while Submit and Cancel are the normal resolution
-controls; blur, Tab, Enter, and Escape leave the session active. Create, Remove,
-and Refresh require an active hover session to be resolved first. Completed
-ColReorder operations rebuild mappings without recreating the editor. Updates are
-non-optimistic and reuse the shared Edit persistence transaction. See
-[Editing](docs/editing.md) and [Lifecycle hooks](docs/hooks.md).
+Double-click activation uses compact Enter, Escape, Tab, and blur behavior.
+Hover activation provides a discoverable pencil and explicit Submit / Cancel
+actions; the default F2 shortcut can edit a KeyTable-focused cell. Setting
+`keyboardActivation: false` disables only focused-cell activation, not keyboard
+behavior inside an open session.
+
+An active dialog prevents Inline activation. Create, Remove, Refresh, or Dialog
+Edit safely cancel an active double-click session; an active hover session must
+be resolved explicitly. Completed ColReorder operations rebuild mappings without
+recreating the editor. All updates are non-optimistic and reuse one persistence
+transaction. See [Editing](docs/editing.md) and [Lifecycle hooks](docs/hooks.md).
+
+## Dynamic forms
+
+Dialog forms can clone an application template and place fields into
+`data-alteditor-lite-field` slots. Declarative dependencies can update options,
+values, visibility, required, read-only, and disabled state with cancellation and
+stale-result protection. A typed `validateForm` callback applies the same
+cross-field data rules to Dialog Create, Dialog Edit, and Inline Edit.
+
+Dependency value changes do not recursively run another resolver or fire the
+target field's `onChange()`. See [Dynamic forms](docs/forms.md) for template
+ownership, initial resolution, patch conflicts, validation order, and the Dialog
+versus Inline boundary.
 
 ## Persistence operations
 
@@ -278,6 +298,18 @@ use `DataTablesAltEditorLite.loadEditorLanguage(...)`.
 See [Browser Global](docs/browser-global.md) for a complete CDN quick start, load
 order, self-hosted paths, and language resources.
 
+## Migrating from v0.3.1
+
+v0.4.0 replaces mutually exclusive editing properties with composable
+configuration. Move `editMode` and the top-level `inline` object under `editing`,
+move `closeOnSuccess` to `editing.dialog.closeOnSuccess`, and rename field
+`readonly` to `readOnly`. SearchSelect now uses `search.threshold`,
+`search.debounceMs`, and a `remote` object containing `loadOptions` and
+`resolveOption`. Compatibility aliases are not provided.
+
+See the complete before-and-after examples in
+[Configuration](docs/configuration.md#migrating-from-v031).
+
 ## Events
 
 Listen directly on the owned table element. Events are observation-only, do not
@@ -302,10 +334,11 @@ dialog closes. Refresh publishes start and complete phases. See
 
 The [live demo](https://bensitu.github.io/datatables-alteditor-lite/examples/demo/)
 uses the Browser Global distribution, the official DataTables CDN, an Ajax JSON
-data source, asynchronous persistence, and external languages. It presents
-separate Dialog, double-click Inline, and hover/touch Inline employee tables. The
-hover example combines Select, KeyTable, ColReorder, and a remote SearchSelect;
-the workflow table demonstrates rendered controls and a live editing-mode switch.
+data source, asynchronous persistence, and external languages. Its employee
+directory combines Dialog and Inline Edit, a grouped custom layout, dependent
+choice fields, and cross-field date validation. Additional tables demonstrate
+hover/touch interaction, remote SearchSelect, rendered controls, and extension
+integration.
 
 See [SECURITY.md](SECURITY.md) for private vulnerability reporting.
 

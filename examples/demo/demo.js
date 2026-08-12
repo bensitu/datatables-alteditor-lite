@@ -46,6 +46,22 @@ const offices = [
   { label: 'Seoul', value: 120 },
   { disabled: true, label: 'Closed office', value: 130 },
 ];
+const employeeStatuses = [
+  { label: 'Active', value: 'active' },
+  { label: 'On leave', value: 'leave' },
+  { label: 'Inactive', value: 'inactive' },
+];
+const countries = [
+  { label: 'Japan', value: 'JP' },
+  { label: 'China', value: 'CN' },
+  { label: 'Spain', value: 'ES' },
+  { label: 'United Kingdom', value: 'GB' },
+  { label: 'United States', value: 'US' },
+];
+const japanesePrefectures = [
+  { label: 'Tokyo', value: 'tokyo' },
+  { label: 'Osaka', value: 'osaka' },
+];
 const workflowPriorities = [
   { label: 'Normal', value: 'normal' },
   { label: 'High', value: 'high' },
@@ -75,6 +91,24 @@ const fieldConfigurations = [
     type: 'number',
   },
   {
+    attributes: { min: '0', step: '1000' },
+    defaultValue: 60000,
+    inlineEdit: true,
+    label: 'Salary',
+    name: 'salary',
+    required: true,
+    type: 'number',
+  },
+  {
+    defaultValue: 'active',
+    inlineEdit: true,
+    label: 'Status',
+    name: 'status',
+    options: employeeStatuses,
+    required: true,
+    type: 'select',
+  },
+  {
     inlineEdit: true,
     label: 'Start date',
     name: 'startDate',
@@ -97,14 +131,47 @@ const fieldConfigurations = [
   },
   {
     allowClear: true,
-    debounceMs: 100,
     inlineEdit: true,
     label: 'Office',
     name: 'officeId',
     options: offices,
     required: true,
+    search: { debounceMs: 100 },
     sortOptions: true,
     type: 'search-select',
+  },
+  {
+    defaultValue: 'JP',
+    label: 'Country',
+    name: 'country',
+    options: countries,
+    required: true,
+    type: 'select',
+  },
+  {
+    label: 'Prefecture',
+    name: 'prefecture',
+    options: japanesePrefectures,
+    type: 'select',
+    visible: false,
+  },
+  {
+    defaultValue: 'employee',
+    label: 'Employment type',
+    name: 'employmentType',
+    options: [
+      { label: 'Employee', value: 'employee' },
+      { label: 'Contractor', value: 'contractor' },
+    ],
+    required: true,
+    type: 'select',
+  },
+  {
+    defaultValue: '',
+    label: 'Contract end',
+    name: 'contractEnd',
+    type: 'date',
+    visible: false,
   },
   { defaultValue: 'distribution-example', name: 'source', type: 'hidden' },
 ];
@@ -112,19 +179,21 @@ const hoverFieldConfigurations = fieldConfigurations.map((field) =>
   field.type === 'search-select'
     ? {
         ...field,
-        debounceMs: 250,
-        loadOptions: async (query, { signal }) => {
-          await waitForLatency(signal);
-          const normalizedQuery = query.trim().toLocaleLowerCase();
-          return offices.filter(({ label }) =>
-            label.toLocaleLowerCase().includes(normalizedQuery),
-          );
+        remote: {
+          loadOptions: async (query, { signal }) => {
+            await waitForLatency(signal);
+            const normalizedQuery = query.trim().toLocaleLowerCase();
+            return offices.filter(({ label }) =>
+              label.toLocaleLowerCase().includes(normalizedQuery),
+            );
+          },
+          resolveOption: async (value, { signal }) => {
+            await waitForLatency(signal);
+            return offices.find((option) => option.value === value);
+          },
         },
         options: offices.slice(0, 2),
-        resolveOption: async (value, { signal }) => {
-          await waitForLatency(signal);
-          return offices.find((option) => option.value === value);
-        },
+        search: { debounceMs: 250 },
       }
     : field,
 );
@@ -202,7 +271,7 @@ const editorState = document.querySelector('#editor-state');
 const failNextButton = document.querySelector('#fail-next');
 const localeSelect = document.querySelector('#locale-select');
 const localeStatus = document.querySelector('#locale-status');
-const dialogEmployeeTableElement = document.querySelector('#employees');
+const hybridEmployeeTableElement = document.querySelector('#employees');
 const inlineEmployeeTableElement = document.querySelector('#employees-inline');
 const hoverEmployeeTableElement = document.querySelector('#employees-hover');
 const workflowTableElement = document.querySelector('#workflows');
@@ -214,7 +283,7 @@ const toggleWorkflowModeButton = document.querySelector('#toggle-workflow-mode')
 
 let currentLanguage;
 let currentLocaleName = 'en';
-let dialogEmployeeEditor;
+let hybridEmployeeEditor;
 let inlineEmployeeEditor;
 let hoverEmployeeEditor;
 let workflowEditor;
@@ -264,6 +333,24 @@ function createEmployeeTable(selector, additionalOptions = {}) {
       { data: 'name', name: 'name' },
       { data: 'email', name: 'email' },
       { data: 'age', name: 'age' },
+      {
+        data: 'salary',
+        name: 'salary',
+        render(salary, type) {
+          return type === 'display'
+            ? Number(salary).toLocaleString(document.documentElement.lang)
+            : salary;
+        },
+      },
+      {
+        data: 'status',
+        name: 'status',
+        render(status) {
+          return (
+            employeeStatuses.find(({ value }) => value === status)?.label ?? 'Unknown'
+          );
+        },
+      },
       { data: 'role', name: 'role' },
       {
         data: 'officeId',
@@ -297,7 +384,7 @@ function createEmployeeTable(selector, additionalOptions = {}) {
   });
 }
 
-const dialogEmployeeTable = createEmployeeTable('#employees');
+const hybridEmployeeTable = createEmployeeTable('#employees');
 const inlineEmployeeTable = createEmployeeTable('#employees-inline');
 const hoverEmployeeTable = createEmployeeTable('#employees-hover', {
   colReorder: true,
@@ -405,10 +492,40 @@ function assertUniqueEmail(table, email, excludedId) {
   }
 }
 
-function createEmployeeEditor(table, inlineActivation, language) {
+function createEmployeeEditor(table, inlineActivation, language, dialogEnabled = false) {
   return new AltEditorLite(table, {
+    dependencies: {
+      country: (country, { values }) => {
+        const usesPrefecture = country === 'JP';
+        const currentPrefecture = values.prefecture;
+        const hasCurrentPrefecture = japanesePrefectures.some(
+          ({ value }) => value === currentPrefecture,
+        );
+        return {
+          prefecture: {
+            options: usesPrefecture ? japanesePrefectures : [],
+            required: usesPrefecture,
+            value: usesPrefecture
+              ? hasCurrentPrefecture
+                ? currentPrefecture
+                : 'tokyo'
+              : undefined,
+            visible: usesPrefecture,
+          },
+        };
+      },
+      employmentType: (employmentType) => ({
+        contractEnd: {
+          required: employmentType === 'contractor',
+          visible: employmentType === 'contractor',
+        },
+      }),
+    },
     editing: {
-      dialog: { enabled: inlineActivation === undefined },
+      dialog: {
+        enabled: dialogEnabled,
+        template: '#employee-editor-template',
+      },
       inline: {
         activation: inlineActivation ?? 'doubleClick',
         enabled: inlineActivation !== undefined,
@@ -424,13 +541,19 @@ function createEmployeeEditor(table, inlineActivation, language) {
         return {
           active: values.active ?? false,
           age: values.age ?? 18,
+          contractEnd: values.contractEnd ?? '',
+          country: values.country ?? 'JP',
           email: values.email ?? '',
+          employmentType: values.employmentType ?? 'employee',
           id: nextRowId++,
           name: values.name ?? '',
           notes: values.notes ?? '',
           officeId: values.officeId ?? 10,
+          prefecture: values.prefecture ?? '',
           role: values.role ?? 'developer',
+          salary: values.salary ?? 60000,
           startDate: values.startDate ?? '',
+          status: values.status ?? 'active',
         };
       },
       async remove(_rows, context) {
@@ -445,15 +568,34 @@ function createEmployeeEditor(table, inlineActivation, language) {
           ...original,
           active: values.active ?? original.active,
           age: values.age ?? original.age,
+          contractEnd: values.contractEnd ?? original.contractEnd,
+          country: values.country ?? original.country,
           email: values.email ?? original.email,
+          employmentType: values.employmentType ?? original.employmentType,
           name: values.name ?? original.name,
           notes: values.notes ?? original.notes,
           officeId: values.officeId ?? original.officeId,
+          prefecture: values.prefecture ?? original.prefecture,
           role: values.role ?? original.role,
+          salary: values.salary ?? original.salary,
           startDate: values.startDate ?? original.startDate,
+          status: values.status ?? original.status,
         };
       },
     },
+    validateForm: (values) =>
+      values.employmentType === 'contractor' &&
+      values.contractEnd !== undefined &&
+      values.startDate !== undefined &&
+      values.contractEnd < values.startDate
+        ? {
+            fieldErrors: {
+              contractEnd: 'Contract end must not precede the start date.',
+            },
+            message: 'Review the employment dates.',
+            valid: false,
+          }
+        : { valid: true },
   });
 }
 
@@ -530,12 +672,12 @@ function describeEditorState(editor, inlineEnabled) {
 }
 
 function updateState() {
-  const dialogState = describeEditorState(dialogEmployeeEditor, false);
+  const hybridState = describeEditorState(hybridEmployeeEditor, true);
   const inlineState = describeEditorState(inlineEmployeeEditor, true);
   const hoverState = describeEditorState(hoverEmployeeEditor, true);
-  editorState.textContent = `dialog:${dialogState} · inline:${inlineState} · hover:${hoverState}`;
+  editorState.textContent = `hybrid:${hybridState} · inline:${inlineState} · hover:${hoverState}`;
   editorState.dataset.state =
-    dialogState === 'error' || inlineState === 'error' || hoverState === 'error'
+    hybridState === 'error' || inlineState === 'error' || hoverState === 'error'
       ? 'error'
       : 'ready';
 }
@@ -592,11 +734,16 @@ function updateWorkflowModeUi() {
 }
 
 function recreateEditors(language) {
-  dialogEmployeeEditor?.destroy();
+  hybridEmployeeEditor?.destroy();
   inlineEmployeeEditor?.destroy();
   hoverEmployeeEditor?.destroy();
   workflowEditor?.destroy();
-  dialogEmployeeEditor = createEmployeeEditor(dialogEmployeeTable, undefined, language);
+  hybridEmployeeEditor = createEmployeeEditor(
+    hybridEmployeeTable,
+    'doubleClick',
+    language,
+    true,
+  );
   inlineEmployeeEditor = createEmployeeEditor(
     inlineEmployeeTable,
     'doubleClick',
@@ -709,7 +856,7 @@ async function applyRenderedWorkflowValue(renderedControl, fieldName, fieldLabel
   }
 }
 
-registerEventSource(dialogEmployeeTableElement, 'dialog table');
+registerEventSource(hybridEmployeeTableElement, 'hybrid table');
 registerEventSource(inlineEmployeeTableElement, 'inline table');
 registerEventSource(hoverEmployeeTableElement, 'hover table');
 registerEventSource(workflowTableElement, 'workflow table');

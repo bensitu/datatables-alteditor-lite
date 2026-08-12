@@ -15,7 +15,19 @@ const editor = new AltEditorLite(table, {
   clientSide: {
     createRow: (values) => ({ id: crypto.randomUUID(), name: values.name ?? '' }),
   },
-  fields: [{ label: 'Name', name: 'name', required: true, type: 'text' }],
+  editing: {
+    dialog: { enabled: true },
+    inline: { activation: 'doubleClick', enabled: true },
+  },
+  fields: [
+    {
+      inlineEdit: true,
+      label: 'Name',
+      name: 'name',
+      required: true,
+      type: 'text',
+    },
+  ],
 });
 
 await editor.openCreateDialog();

@@ -25,8 +25,10 @@ Import DataTables, the auto-registering ESM entry, and the stylesheet:
 
 ```ts
 import DataTable from 'datatables.net';
-import { AltEditorLite } from 'datatables-alteditor-lite';
+import { AltEditorLite, registerAltEditorLite } from 'datatables-alteditor-lite';
 import 'datatables-alteditor-lite/style.css';
+
+registerAltEditorLite(DataTable);
 
 interface UserRow {
   readonly id: string;
@@ -69,6 +71,11 @@ document.querySelector('#create')?.addEventListener('click', () => {
 });
 ```
 
+The root ESM entry already registers against its imported DataTables runtime;
+the explicit idempotent `registerAltEditorLite(DataTable)` call is useful when an
+application makes runtime ownership visible or supplies another compatible
+DataTables constructor.
+
 `TRow` is the complete DataTables row shape. `TFormValues` is the independent
 shape collected from configured fields. Persistence callbacks convert form values
 to complete rows; the library never assumes that the two shapes are identical.
@@ -110,20 +117,24 @@ Persistence contexts identify the initiating `mode` as `dialog`, `inline`, or
 same mode and target information. Policies that must decline opening or submission
 belong in `beforeOpen` and `beforeSubmit`; DOM events remain observation-only.
 
-Inline editing requires `editMode: 'inlineDoubleClick'` or `inlineHover` and
-`inlineEdit: true` on at least one eligible field. The optional `inline` object adjusts interaction, shortcut,
-column mapping, commit, and styling behavior; it does not enable the mode. Inline
-editing does not introduce a separate field list, cell-specific persistence
-callback, optimistic row mutation, jQuery API, or private DataTables setting.
+Inline editing requires `editing.inline.enabled: true` and `inlineEdit: true` on
+at least one eligible field. The same `editing` object independently configures
+Dialog Edit, so an editor can provide either presentation or both:
 
-An editor uses either Dialog Edit or Inline Edit. The default `dialog` mode makes
-`openEditDialog()` available and rejects Inline methods. The
-`inlineDoubleClick` mode provides fast mouse double-click and touch double-tap
-behavior. `inlineHover` provides a pencil for hover/touch discovery, explicit
-Submit/Cancel actions, and focused-cell keyboard activation when KeyTable is
-present. Both hide Dialog Edit and reject `openEditDialog()`. Create, Remove, and
-Refresh cancel a double-click session, but require a hover session to be
-explicitly resolved first.
+```ts
+editing: {
+  dialog: { enabled: true },
+  inline: { activation: 'doubleClick', enabled: true },
+},
+```
+
+Double-click activation provides fast mouse and touch behavior. Hover activation
+provides a pencil, explicit Submit/Cancel actions, and focused-cell keyboard
+activation when KeyTable is present. Create, Remove, Refresh, and Dialog Edit
+cancel a double-click session, but require a hover session to be explicitly
+resolved first. Inline editing does not introduce a separate field list,
+cell-specific persistence callback, optimistic row mutation, jQuery API, or
+private DataTables setting.
 
 ## Rendered DataTables columns
 
@@ -140,8 +151,8 @@ complete rendered-control contract and safe renderer guidance.
 An application may also treat a rendered control as an editing shortcut. Handle
 its change event, resolve the owning cell through the public DataTables API, and
 route the requested value through the editor presentation selected for that table.
-The live demo includes `inlineDoubleClick`, `inlineHover`, and `dialog`; the
-renderer itself never becomes the canonical data source.
+The live demo includes Hybrid Dialog and Inline editing, hover activation, and
+rendered controls; the renderer itself never becomes the canonical data source.
 
 Inline validation, change-callback, persistence, commit, and target errors use a
 plain-text modal alert. The current candidate remains in the cell. Closing the
@@ -174,8 +185,9 @@ The package metadata defines the supported DataTables, Buttons, and Select peer
 ranges. Development uses compatible releases resolved by the lockfile without
 requiring one exact patch version at runtime.
 
-See [Editing](editing.md), [API reference](api-reference.md), [Fields](fields.md),
-[Operations](operations.md), and [Localization](localization.md). The [Browser
+See [Editing](editing.md), [Dynamic forms](forms.md), [API
+reference](api-reference.md), [Fields](fields.md), [Operations](operations.md),
+and [Localization](localization.md). The [Browser
 Global guide](browser-global.md) includes a complete jsDelivr quick start, while
 the [live demo](https://bensitu.github.io/datatables-alteditor-lite/examples/demo/)
 shows both editing presentations and rendered-control integration.

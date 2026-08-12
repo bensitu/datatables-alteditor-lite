@@ -34,11 +34,10 @@ Methods that cannot run in the current state reject or throw a typed
 `AltEditorLiteError`. `destroy()` is idempotent; other instance methods are not
 available after destruction.
 
-`openEditDialog()` rejects with `EditorConfigurationError` in
-`inlineDoubleClick` or `inlineHover` mode. Inline methods reject in `dialog` mode, while the
-synchronous Inline state getters throw the same error immediately. Create,
-Remove, and Refresh safely cancel an active double-click session. An active hover
-session rejects those operations until Submit or Cancel resolves it.
+`openEditDialog()` requires `editing.dialog.enabled`; Inline methods require
+`editing.inline.enabled`. Both can be available on one instance. Create, Remove,
+Refresh, and Dialog Edit safely cancel an active double-click Inline session. An
+active hover session rejects those operations until Submit or Cancel resolves it.
 Operations already owned by a dialog or refresh remain mutually exclusive.
 
 The registered DataTables method retrieves an existing editor and never creates
@@ -53,23 +52,27 @@ const editor = table.altEditorLite<TFormValues>();
 
 `AltEditorLiteOptions<TRow, TFormValues>` contains:
 
-| Property         | Type                                      | Description                                                |
-| ---------------- | ----------------------------------------- | ---------------------------------------------------------- |
-| `fields`         | `readonly FieldConfig<TFormValues>[]`     | Ordered Create and Edit field definitions.                 |
-| `editMode`       | `EditMode`                                | `dialog` (default), `inlineDoubleClick`, or `inlineHover`. |
-| `operations`     | `EditorOperations<TRow, TFormValues>`     | Optional synchronous or asynchronous editor operations.    |
-| `clientSide`     | `ClientSideOperations<TRow, TFormValues>` | Optional synchronous row mappings.                         |
-| `closeOnSuccess` | `boolean`                                 | Whether successful dialog Create and Edit close.           |
-| `language`       | `PartialEditorLanguage`                   | Complete language data or overrides merged with English.   |
-| `inline`         | `InlineEditorOptions<TRow, TFormValues>`  | Mapping, shortcut, and mode-specific inline behavior.      |
-| `hooks`          | `EditorHooks<TRow, TFormValues>`          | Optional lifecycle observation and veto callbacks.         |
+| Property       | Type                                      | Description                                             |
+| -------------- | ----------------------------------------- | ------------------------------------------------------- |
+| `fields`       | `readonly FieldConfig<TFormValues>[]`     | Ordered Create and Edit field definitions.              |
+| `editing`      | `EditingOptions<TRow, TFormValues>`       | Composable Dialog and Inline behavior.                  |
+| `operations`   | `EditorOperations<TRow, TFormValues>`     | Optional synchronous or asynchronous editor operations. |
+| `clientSide`   | `ClientSideOperations<TRow, TFormValues>` | Optional synchronous row mappings.                      |
+| `dependencies` | `FormDependencies<TFormValues>`           | Declarative Dialog field-state resolvers.               |
+| `validateForm` | `FormValidator<TRow, TFormValues>`        | Shared cross-field validator.                           |
+| `language`     | `PartialEditorLanguage`                   | Language data or overrides merged with English.         |
+| `hooks`        | `EditorHooks<TRow, TFormValues>`          | Lifecycle observation and veto callbacks.               |
 
-Inline options include `blurAction`, `enterAction`, `tabAction`,
-`keyboardActivation`, exact named-column `columns` mappings, `updateMode`, and a scoped `className`. The
-object is optional in Inline mode and invalid in Dialog mode. See
-[Editing](editing.md) for supported field types,
-selector requirements, and extension boundaries. Lifecycle hooks are described
-in [Lifecycle hooks](hooks.md).
+`EditingOptions` contains independent `dialog` and `inline` objects.
+`DialogEditingOptions` provides `enabled`, `template`, and `closeOnSuccess`.
+`InlineEditingOptions` provides `enabled`, `activation`, `blurAction`,
+`enterAction`, `tabAction`, `keyboardActivation`, exact named-column `columns`,
+`updateMode`, and `className`. `DialogTemplateSource` is a selector or
+consumer-owned `HTMLElement`, including `HTMLTemplateElement`.
+
+See [Configuration](configuration.md) for defaults and the capability matrix,
+[Editing](editing.md) for interaction behavior, and [Lifecycle hooks](hooks.md)
+for hook contracts.
 
 `EditorOperations` supports:
 
@@ -105,25 +108,55 @@ resolution and mutation timing.
 Shared properties include `name`, `defaultValue`, `editable`, `visible`,
 `disabled`, `inlineEdit`, `className`, `attributes`, `onChange`, `validate`, and
 `unique`.
-Visible controls also support `label`, `description`, `required`, and `readonly`.
+Visible controls also support `label`, `description`, `required`, and `readOnly`.
 
 The package exports every concrete configuration type, `SelectOption`, remote
-SearchSelect loader/resolver/context types, `InlineKeyboardShortcut`,
-`FieldPath`, `FieldValue`, `FieldChangeCallback`, `FieldValidator`, and their
-callback context types. See [Fields](fields.md) for value types and field-specific
-properties.
+SearchSelect source/loader/resolver/context types, `SearchSelectSearchOptions`,
+`InlineKeyboardShortcut`, `FieldPath`, `FieldPathValue`, `FieldValue`,
+`FieldChangeCallback`, `FieldValidator`, and their callback context types. See
+[Fields](fields.md) for value types and field-specific properties.
 
-`FieldController<TValue>` provides `element`, `getValue`, `setValue`,
-`setDisabled`, `focus`, `validate`, `clearError`, `showError`, and `destroy`.
-SearchSelect controllers additionally provide `setOptions`. `FormController` and
-`FormValidationResult` are exported for typed integrations. Call `validate()`
-before treating an imperative `getValue()` result as valid. In particular, a
-transiently invalid number control normalizes to its configured empty value; the
-validation result distinguishes that state from a valid cleared value. Calling
-a field controller's `destroy()` cancels that field's pending change and
-validation work, removes it from the current form, and makes subsequent
-`getField()` calls for the same path return `null`. Use it only when the field
-should be removed for the remainder of that dialog lifecycle.
+`FieldController<TValue>` provides `element`, `getValue(): Promise<TValue>`,
+`setValue`, `isVisible` / `setVisible`, `isDisabled` / `setDisabled`, `isReadOnly`
+/ `setReadOnly`, `isRequired` / `setRequired`, `focus`, `validate`, `clearError`,
+`showError`, and `destroy`.
+
+`ChoiceFieldController<TValue>` adds `getOptions()` and `setOptions()`. Use the
+exported `isChoiceFieldController()` type guard before calling those methods on a
+general field controller. Calling `setValue()` with a value that its field cannot
+represent throws `EditorConfigurationError`. Calling `destroy()` cancels that
+field's work, removes it from the current form, and makes later `getField()` calls
+for the same path return `null`.
+
+`FormController` remains available for typed integrations. Its `validate()`
+method covers rendered field validation; operation submissions additionally run
+the configured form-level validator.
+
+## Dependencies and form validation
+
+The dependency API exports:
+
+- `FormDependencyContext<TFormValues>`;
+- `FieldStatePatchFor<TFormValues, TPath>` and `ChoicePatchOptions<TValue>`;
+- `FormDependencyResolver<TFormValues, TSourcePath>`;
+- `FormDependencyResult<TFormValues>` and `FormDependencies<TFormValues>`;
+- `defineFormDependencies<TFormValues>()` for source-path callback inference.
+
+Resolvers receive the typed source value, immutable complete values, and an
+`AbortSignal`. Results can change target `options`, `value`, `visible`,
+`readOnly`, `required`, and `disabled` state.
+
+The validation API exports:
+
+- `FormFieldErrors<TFormValues>`;
+- `FormValidationContext<TRow>`;
+- `FormValidationResult<TFormValues>`;
+- `FormValidator<TRow, TFormValues>`.
+
+`FormValidationContext` contains `table`, `signal`, `operation: 'create' |
+'edit'`, and `mode: 'dialog' | 'inline'`. An invalid result can contain typed
+`fieldErrors` and a submission-level `message`. See [Dynamic forms](forms.md) for
+runtime behavior and validation ordering.
 
 ## Localization
 
