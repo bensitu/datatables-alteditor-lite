@@ -375,9 +375,22 @@ export class InlineEditSessionController<
       throw new EditorOperationBusyError();
     }
 
-    const candidate = await Promise.resolve(
-      session.controller.getValue(session.lifecycleAbortController.signal),
-    );
+    const navigationIntent = session.navigationIntent;
+    const presentation = this.createPresentation(session, navigationIntent);
+    presentation.startValidation();
+
+    let candidate: unknown;
+    try {
+      candidate = await Promise.resolve(
+        session.controller.getValue(session.lifecycleAbortController.signal),
+      );
+    } catch (error: unknown) {
+      if (session.lifecycleAbortController.signal.aborted || this.session !== session) {
+        return;
+      }
+      presentation.restoreAfterValidationFailure();
+      throw error;
+    }
     if (session.lifecycleAbortController.signal.aborted || this.session !== session) {
       return;
     }
@@ -387,7 +400,6 @@ export class InlineEditSessionController<
     }
     session.candidate = candidate;
     const target = asOperationTarget(session.capture.summary);
-    const navigationIntent = session.navigationIntent;
     const result = await this.arguments_.editOperationRunner.run({
       ...(this.arguments_.editorOptions.hooks?.afterSuccess === undefined
         ? {}
@@ -476,7 +488,7 @@ export class InlineEditSessionController<
       },
       mode: 'inline',
       original: session.capture.rowCapture.snapshot.original,
-      presentation: this.createPresentation(session, navigationIntent),
+      presentation,
       reportError: this.arguments_.reportError,
       revalidateTarget: () =>
         resolveInlineTarget(
@@ -591,6 +603,9 @@ export class InlineEditSessionController<
         await this.showAlert(session, error, 'operation');
       },
       startValidation: () => {
+        if (this.state.status === 'validating') {
+          return;
+        }
         session.host.setActionBusy?.(true);
         session.controller.clearError();
         session.host.setInvalid(false);

@@ -4,6 +4,7 @@ import {
   AltEditorLite,
   AltEditorLiteError,
   EditorConfigurationError,
+  EditorOperationBusyError,
   type FieldConfig,
   type AltEditorLiteOptions,
   type BeforeOpenContext,
@@ -216,6 +217,20 @@ describe('AltEditorLite programmatic inline editing', () => {
       'alteditor-lite:success',
       'alteditor-lite:close',
     ]);
+  });
+
+  it('rejects an overlapping submission without replacing the active save', async () => {
+    const { api, editor } = createInlineEditor();
+    await editor.openInlineEdit('#row-a', 0);
+    replaceInlineValue('Saved once');
+
+    const activeSave = editor.submitInlineEdit();
+    const overlappingSave = editor.submitInlineEdit();
+
+    await expect(overlappingSave).rejects.toBeInstanceOf(EditorOperationBusyError);
+    await activeSave;
+    expect(api.row('#row-a').data().name).toBe('Saved once');
+    expect(editor.getInlineState()).toEqual({ status: 'idle' });
   });
 
   it('restores the committed cell when the row id contains selector characters', async () => {

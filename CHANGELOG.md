@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Prevented overlapping programmatic Inline submissions from replacing an active
+  save before value collection completed.
 - Enabled touch double-tap activation for `inlineDoubleClick` on phone and tablet
   layouts while preserving normal single-tap table interaction.
 - Refined `inlineHover` controls for narrow columns, wrapped action layouts,
