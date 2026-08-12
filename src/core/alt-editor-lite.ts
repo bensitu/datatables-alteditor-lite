@@ -6,6 +6,7 @@ import {
 import { SelectIntegration } from '../datatables/select-integration.js';
 import { DialogEditingController } from '../dialog/dialog-editing-controller.js';
 import { validateFieldConfigurations } from '../fields/validate-field-configurations.js';
+import { validateFormDependencies } from '../form/validate-form-dependencies.js';
 import { InlineColumnMappingRegistry } from '../inline/inline-column-mapping-registry.js';
 import { InlineEditController } from '../inline/inline-edit-controller.js';
 import { createInlineEditPresentation } from '../inline/inline-edit-presentation.js';
@@ -98,6 +99,7 @@ export class AltEditorLite<
   ) {
     const editing = resolveEditingOptions(options.editing);
     validateFieldConfigurations(options.fields);
+    validateFormDependencies(options.fields, options.dependencies);
     validateOperationConfiguration(options);
     validateHooksConfiguration(options);
     validateInlineConfiguration(table, options, editing);

@@ -160,6 +160,26 @@ function confirmRemove(): void {
 }
 
 describe('AltEditorLite form opening', () => {
+  it('resolves Edit dependencies from populated row values before opening', async () => {
+    const { editor } = createCrudEditor('edit-dependencies', {
+      dependencies: {
+        name: (name, context) => {
+          expect(context.values).toMatchObject({ name: 'Alpha', rank: 1 });
+          return {
+            rank: {
+              readOnly: name === 'Alpha',
+              required: false,
+            },
+          };
+        },
+      },
+    });
+
+    await editor.openEditDialog('#row-a');
+    expect(editor.getField('rank')?.isReadOnly()).toBe(true);
+    expect(editor.getField('rank')?.isRequired()).toBe(false);
+  });
+
   it('uses a custom Edit layout with populated editor-owned fields', async () => {
     const template = document.createElement('template');
     template.innerHTML = `

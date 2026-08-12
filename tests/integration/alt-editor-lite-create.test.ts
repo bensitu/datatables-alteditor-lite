@@ -21,6 +21,17 @@ interface CreateValues {
   readonly rank: number;
 }
 
+interface LocationValues {
+  readonly country: string;
+  readonly name: string;
+  readonly rank: number;
+  readonly region: string | undefined;
+}
+
+interface DestroyableEditor {
+  destroy(): void;
+}
+
 const fields = [
   {
     label: 'Name',
@@ -36,7 +47,7 @@ const fields = [
   },
 ] satisfies readonly FieldConfig<CreateValues>[];
 
-const activeEditors = new Set<AltEditorLite<TestRow, CreateValues>>();
+const activeEditors = new Set<DestroyableEditor>();
 let originalShowModalDescriptor: PropertyDescriptor | undefined;
 let originalCloseDescriptor: PropertyDescriptor | undefined;
 
@@ -248,6 +259,217 @@ describe('AltEditorLite synchronous Create', () => {
     expect(createRow).not.toHaveBeenCalled();
     expect(api.rows().count()).toBe(5);
     expect(document.querySelector('[aria-invalid="true"]')).not.toBeNull();
+  });
+
+  it('applies initial dependencies and waits for the latest update before submit', async () => {
+    let resolveUpdate:
+      | ((result: {
+          readonly region: {
+            readonly options: readonly [
+              { readonly label: string; readonly value: string },
+            ];
+            readonly required: boolean;
+            readonly value: string;
+            readonly visible: boolean;
+          };
+        }) => void)
+      | undefined;
+    const pendingUpdate = new Promise<{
+      readonly region: {
+        readonly options: readonly [{ readonly label: string; readonly value: string }];
+        readonly required: boolean;
+        readonly value: string;
+        readonly visible: boolean;
+      };
+    }>((resolve) => {
+      resolveUpdate = resolve;
+    });
+    const createRow = vi.fn((values: Readonly<Partial<LocationValues>>) => ({
+      id: 'dependent-row',
+      name: values.name ?? '',
+      rank: values.rank ?? 0,
+    }));
+    const { api } = createTestTable('dependent-create');
+    const editor = new AltEditorLite<TestRow, LocationValues>(api, {
+      clientSide: { createRow },
+      dependencies: {
+        country: (country) =>
+          country === 'JP'
+            ? {
+                region: {
+                  options: [{ label: 'Tokyo', value: 'tokyo' }],
+                  required: true,
+                  value: 'tokyo',
+                  visible: true,
+                },
+              }
+            : pendingUpdate,
+      },
+      fields: [
+        {
+          defaultValue: 'JP',
+          label: 'Country',
+          name: 'country',
+          type: 'text',
+        },
+        {
+          defaultValue: 'Dependent row',
+          label: 'Name',
+          name: 'name',
+          type: 'text',
+        },
+        {
+          defaultValue: 6,
+          label: 'Rank',
+          name: 'rank',
+          type: 'number',
+        },
+        {
+          label: 'Region',
+          name: 'region',
+          options: [{ label: 'Unassigned', value: 'none' }],
+          type: 'select',
+          visible: false,
+        },
+      ],
+    });
+    activeEditors.add(editor);
+
+    await editor.openCreateDialog();
+    expect(editor.getField('region')?.isVisible()).toBe(true);
+    await expect(editor.getField('region')?.getValue()).resolves.toBe('tokyo');
+
+    editor.getField('country')?.setValue('CA');
+    editor
+      .getField('country')
+      ?.element.querySelector('input')
+      ?.dispatchEvent(new Event('input', { bubbles: true }));
+    submitOpenDialog();
+    await Promise.resolve();
+    expect(createRow).not.toHaveBeenCalled();
+
+    if (resolveUpdate === undefined) {
+      throw new Error('Expected a pending dependency update.');
+    }
+    resolveUpdate({
+      region: {
+        options: [{ label: 'Ontario', value: 'ontario' }],
+        required: true,
+        value: 'ontario',
+        visible: true,
+      },
+    });
+    await vi.waitFor(() => {
+      expect(editor.getState().status).toBe('ready');
+    });
+    expect(createRow).toHaveBeenCalledWith(
+      expect.objectContaining({ country: 'CA', region: 'ontario' }),
+    );
+  });
+
+  it('keeps persistence unavailable until a dependency failure is resolved', async () => {
+    const createRow = vi.fn((values: Readonly<Partial<CreateValues>>) => ({
+      id: 'dependency-recovery-row',
+      name: values.name ?? '',
+      rank: values.rank ?? 0,
+    }));
+    const { api, tableElement } = createTestTable('dependency-recovery');
+    const errorListener = vi.fn();
+    tableElement.addEventListener('alteditor-lite:error', errorListener);
+    const editor = new AltEditorLite<TestRow, CreateValues>(api, {
+      clientSide: { createRow },
+      dependencies: {
+        name: (name) =>
+          name === 'Unavailable'
+            ? Promise.reject(
+                new AltEditorLiteError({
+                  code: 'LOOKUP_UNAVAILABLE',
+                  message: 'Dependent data is unavailable.',
+                  retryable: true,
+                }),
+              )
+            : {},
+      },
+      fields,
+    });
+    activeEditors.add(editor);
+
+    await editor.openCreateDialog();
+    editor.getField('name')?.setValue('Unavailable');
+    editor
+      .getField('name')
+      ?.element.querySelector('input')
+      ?.dispatchEvent(new Event('input', { bubbles: true }));
+    editor.getField('rank')?.setValue(7);
+    await vi.waitFor(() => {
+      expect(errorListener).toHaveBeenCalledOnce();
+    });
+    submitOpenDialog();
+    await vi.waitFor(() => {
+      expect(editor.getState().status).toBe('open');
+    });
+    expect(createRow).not.toHaveBeenCalled();
+
+    editor.getField('name')?.setValue('Recovered');
+    editor
+      .getField('name')
+      ?.element.querySelector('input')
+      ?.dispatchEvent(new Event('input', { bubbles: true }));
+    await vi.waitFor(() => {
+      expect(
+        document.querySelector<HTMLElement>('.dt-alteditor-lite-form__submission-error')
+          ?.hidden,
+      ).toBe(true);
+    });
+    submitOpenDialog();
+    await vi.waitFor(() => {
+      expect(editor.getState().status).toBe('ready');
+    });
+    expect(createRow).toHaveBeenCalledOnce();
+  });
+
+  it('aborts initial dependency work when the editor is destroyed', async () => {
+    let dependencySignal: AbortSignal | undefined;
+    let resolveDependency:
+      ((result: { readonly rank: { readonly value: number } }) => void) | undefined;
+    const pendingDependency = new Promise<{
+      readonly rank: { readonly value: number };
+    }>((resolve) => {
+      resolveDependency = resolve;
+    });
+    const { api, tableElement } = createTestTable('destroy-dependency-open');
+    const errorListener = vi.fn();
+    tableElement.addEventListener('alteditor-lite:error', errorListener);
+    const editor = new AltEditorLite<TestRow, CreateValues>(api, {
+      clientSide: {
+        createRow: (values) => ({
+          id: 'unused-row',
+          name: values.name ?? '',
+          rank: values.rank ?? 0,
+        }),
+      },
+      dependencies: {
+        name: (_name, { signal }) => {
+          dependencySignal = signal;
+          return pendingDependency;
+        },
+      },
+      fields,
+    });
+    activeEditors.add(editor);
+
+    const opening = editor.openCreateDialog();
+    await vi.waitFor(() => {
+      expect(dependencySignal).toBeDefined();
+    });
+    editor.destroy();
+
+    await expect(opening).rejects.toThrow(EditorDestroyedError);
+    expect(dependencySignal?.aborted).toBe(true);
+    expect(errorListener).not.toHaveBeenCalled();
+    resolveDependency?.({ rank: { value: 99 } });
+    await Promise.resolve();
+    expect(document.querySelector('.dt-alteditor-lite-dialog')).toBeNull();
   });
 
   it('uses a custom Create layout while preserving validation focus and errors', async () => {

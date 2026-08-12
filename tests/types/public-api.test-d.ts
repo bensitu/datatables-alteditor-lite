@@ -2,6 +2,7 @@ import { expectAssignable, expectNotAssignable, expectType } from 'tsd';
 
 import {
   AltEditorLite,
+  defineFormDependencies,
   EditorLanguageLoadError,
   isChoiceFieldController,
   loadEditorLanguage,
@@ -23,10 +24,12 @@ import {
   type FieldController,
   type FieldPath,
   type FieldPathValue,
+  type FieldStatePatchFor,
   type FieldValue,
   type InlineEditingOptions,
   type InlineEditState,
   type OperationContext,
+  type FormDependencies,
   type RemoteSearchSelectFieldConfig,
   type LocalSearchSelectFieldConfig,
   type SearchSelectFieldConfig,
@@ -282,6 +285,32 @@ expectNotAssignable<FieldPath<FormValues>>('contact.missing');
 expectNotAssignable<FieldPath<FormValues>>('contact.email.value');
 expectNotAssignable<FieldPath<FormValues>>('__proto__.polluted');
 expectType<string>({} as FieldPathValue<FormValues, 'contact.email'>);
+expectAssignable<FieldStatePatchFor<FormValues, 'role'>>({
+  options: [{ label: 'Administrator', value: 7 }],
+  required: true,
+  value: 7,
+  visible: true,
+});
+expectNotAssignable<FieldStatePatchFor<FormValues, 'role'>>({ value: '7' });
+
+const dependencies = defineFormDependencies<FormValues>()({
+  ['contact.email']: (value, context) => {
+    expectType<string>(value);
+    expectType<Readonly<EditorValues<FormValues>>>(context.values);
+    expectType<AbortSignal>(context.signal);
+    return {
+      role: {
+        options: [{ label: 'Administrator', value: 7 }],
+        value: 7,
+      },
+    };
+  },
+});
+expectAssignable<FormDependencies<FormValues>>(dependencies);
+expectAssignable<AltEditorLiteOptions<Row, FormValues>>({
+  dependencies,
+  fields: [],
+});
 
 expectNotAssignable<FieldConfig<FormValues>>({
   name: 'contact.email',

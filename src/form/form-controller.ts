@@ -2,6 +2,7 @@ import {
   AltEditorLiteError,
   EditorDestroyedError,
 } from '../core/alt-editor-lite-error.js';
+import { freezeEditorValues } from '../core/freeze-editor-values.js';
 import { RequestSequence } from '../core/request-sequence.js';
 import { createFieldController } from '../fields/create-field-controller.js';
 
@@ -11,6 +12,10 @@ import {
   type CollectedFormState,
 } from './collect-form-values.js';
 import { FieldRuntimeController } from './field-runtime-controller.js';
+import {
+  FormDependencyController,
+  type DependencyFieldBinding,
+} from './form-dependency-controller.js';
 import { DefaultFormLayout } from './layout/default-form-layout.js';
 import { TemplateFormLayout } from './layout/template-form-layout.js';
 import { populateFormValues } from './populate-form-values.js';
@@ -20,6 +25,7 @@ import {
   validateEditorForm,
 } from './validate-editor-form.js';
 
+import type { FormDependencies } from './form-dependency.js';
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type { DialogTemplateSource } from '../core/editing-options.js';
 import type { DeepPartial, EditorValues } from '../core/editor-values.js';
@@ -75,6 +81,11 @@ export class EditorFormController<
 
   private readonly runtimeByName = new Map<string, FieldRuntimeController<TFormValues>>();
 
+  private readonly dependencyFieldByName = new Map<
+    string,
+    DependencyFieldBinding<TFormValues>
+  >();
+
   private readonly lifecycleAbortController = new AbortController();
 
   private readonly submissionErrorElement: HTMLDivElement;
@@ -82,6 +93,8 @@ export class EditorFormController<
   private readonly validationSequence = new RequestSequence();
 
   private readonly activeChangeAbortControllers = new Map<string, AbortController>();
+
+  private readonly activeChangeTasks = new Map<string, Promise<void>>();
 
   private readonly activeFieldValidationAbortControllers = new Map<
     string,
@@ -91,6 +104,10 @@ export class EditorFormController<
   private readonly invalidMessage: string;
 
   private readonly layout: FormLayout;
+
+  private dependencyController: FormDependencyController<TFormValues> | undefined;
+
+  private operationErrorMessage: string | undefined;
 
   private activeValidationAbortController: AbortController | undefined;
 
@@ -111,6 +128,8 @@ export class EditorFormController<
     language: Readonly<AltEditorLiteLanguage>,
     private readonly validateUnique?: LocalUniqueValidator<TFormValues>,
     template?: DialogTemplateSource,
+    dependencies?: Readonly<FormDependencies<TFormValues>>,
+    onDependencyError?: (sourcePath: string, error: AltEditorLiteError) => void,
   ) {
     this.element = document.createElement('form');
     this.element.className = 'dt-alteditor-lite-form';
@@ -155,6 +174,11 @@ export class EditorFormController<
           visible: config.type !== 'hidden' && config.visible !== false,
         });
         this.runtimeByName.set(config.name, runtime);
+        this.dependencyFieldByName.set(config.name, {
+          config,
+          controller,
+          runtime,
+        });
         runtime.setVisible(runtime.isVisible());
         runtime.setDisabled(runtime.isDisabled());
         runtime.setReadOnly(runtime.isReadOnly());
@@ -163,6 +187,32 @@ export class EditorFormController<
         if (Object.hasOwn(config, 'defaultValue')) {
           controller.setValue(config.defaultValue);
         }
+      }
+      if (dependencies !== undefined && Object.keys(dependencies).length > 0) {
+        this.dependencyController = new FormDependencyController({
+          dependencies,
+          fields: this.dependencyFieldByName,
+          lifecycleSignal: this.lifecycleAbortController.signal,
+          normalizeError: (error) =>
+            error instanceof AltEditorLiteError
+              ? error
+              : new AltEditorLiteError({
+                  cause: error,
+                  code: 'FIELD_DEPENDENCY',
+                  message: language.errors.generic,
+                  retryable: true,
+                }),
+          onErrorChange: (sourcePath, error) => {
+            const controller = this.controllerByName.get(sourcePath);
+            if (error === undefined) {
+              controller?.clearError();
+            } else {
+              controller?.showError(error.message);
+              onDependencyError?.(sourcePath, error);
+            }
+            this.renderSubmissionError();
+          },
+        });
       }
     } catch (error: unknown) {
       this.destroy();
@@ -187,6 +237,18 @@ export class EditorFormController<
   public populateFromSource(sourceValues: Readonly<object>): void {
     this.assertActive();
     populateFormValues(this.controllers, sourceValues);
+  }
+
+  /** Resolves dependencies after defaults or source values are populated. */
+  public async initializeDependencies(): Promise<void> {
+    this.assertActive();
+    if (this.dependencyController === undefined) {
+      return;
+    }
+    const values = freezeEditorValues<TFormValues>(
+      await collectFormValues(this.controllers, this.lifecycleAbortController.signal),
+    );
+    await this.dependencyController.initialize(values);
   }
 
   /** Collects enabled normalized values. */
@@ -215,7 +277,23 @@ export class EditorFormController<
       this.lifecycleAbortController.signal,
     ]);
     const requestSequence = this.validationSequence.next();
+    await this.waitForCurrentFieldWork();
+    if (!this.validationSequence.isCurrent(requestSequence) || signal.aborted) {
+      return { fieldErrors: {}, valid: false };
+    }
     this.clearErrors();
+
+    const dependencyErrors =
+      this.dependencyController?.errors() ?? new Map<string, AltEditorLiteError>();
+    if (dependencyErrors.size > 0) {
+      const fieldErrors: Record<string, string> = {};
+      for (const [sourcePath, error] of dependencyErrors) {
+        fieldErrors[sourcePath] = error.message;
+        this.controllerByName.get(sourcePath)?.showError(error.message);
+      }
+      this.renderSubmissionError();
+      return { fieldErrors, valid: false };
+    }
 
     const validationResult = await validateEditorForm(
       this.controllers,
@@ -225,7 +303,7 @@ export class EditorFormController<
       this.invalidMessage,
     );
 
-    if (!this.validationSequence.isCurrent(requestSequence) || signal.aborted) {
+    if (!this.validationSequence.isCurrent(requestSequence)) {
       return { fieldErrors: {}, valid: false };
     }
 
@@ -311,6 +389,8 @@ export class EditorFormController<
         this.controllerByName.delete(name);
         this.fieldControllerByName.delete(name);
         this.runtimeByName.delete(name);
+        this.dependencyFieldByName.delete(name);
+        this.dependencyController?.abortSource(name);
         this.controllers = this.controllers.filter(
           (controller) => controller !== managedController,
         );
@@ -330,8 +410,6 @@ export class EditorFormController<
   /** Maps and displays an operation error. */
   public showSubmissionError(error: AltEditorLiteError): void {
     this.assertActive();
-    this.submissionErrorElement.textContent = '';
-    this.submissionErrorElement.hidden = true;
     const submissionMessages: string[] = [];
     let hasKnownFieldError = false;
 
@@ -349,10 +427,9 @@ export class EditorFormController<
       submissionMessages.unshift(error.message);
     }
 
-    if (submissionMessages.length > 0) {
-      this.submissionErrorElement.textContent = submissionMessages.join(' ');
-      this.submissionErrorElement.hidden = false;
-    }
+    this.operationErrorMessage =
+      submissionMessages.length === 0 ? undefined : submissionMessages.join(' ');
+    this.renderSubmissionError();
   }
 
   /** Clears all displayed errors. */
@@ -361,8 +438,12 @@ export class EditorFormController<
     for (const controller of this.controllers) {
       controller.clearError();
     }
-    this.submissionErrorElement.textContent = '';
-    this.submissionErrorElement.hidden = true;
+    this.operationErrorMessage = undefined;
+    for (const [sourcePath, dependencyError] of this.dependencyController?.errors() ??
+      []) {
+      this.controllerByName.get(sourcePath)?.showError(dependencyError.message);
+    }
+    this.renderSubmissionError();
   }
 
   /** Removes owned form resources. */
@@ -377,12 +458,15 @@ export class EditorFormController<
       abortController.abort();
     }
     this.activeChangeAbortControllers.clear();
+    this.activeChangeTasks.clear();
     for (const abortController of this.activeFieldValidationAbortControllers.values()) {
       abortController.abort();
     }
     this.activeFieldValidationAbortControllers.clear();
     this.activeValidationAbortController?.abort();
     this.validationSequence.invalidate();
+    this.dependencyController?.destroy();
+    this.dependencyController = undefined;
 
     for (const controller of this.controllers) {
       controller.destroy();
@@ -392,6 +476,7 @@ export class EditorFormController<
     this.controllerByName.clear();
     this.fieldControllerByName.clear();
     this.runtimeByName.clear();
+    this.dependencyFieldByName.clear();
     this.layout.destroy();
     this.element.remove();
   }
@@ -403,7 +488,13 @@ export class EditorFormController<
   }
 
   private notifyFieldChange(fieldName: string): void {
-    void this.runFieldChange(fieldName);
+    const task = this.runFieldChange(fieldName);
+    this.activeChangeTasks.set(fieldName, task);
+    void task.finally(() => {
+      if (this.activeChangeTasks.get(fieldName) === task) {
+        this.activeChangeTasks.delete(fieldName);
+      }
+    });
   }
 
   private async runFieldChange(fieldName: string): Promise<void> {
@@ -424,8 +515,17 @@ export class EditorFormController<
       this.lifecycleAbortController.signal,
     ]);
     try {
-      const values = await collectFormValues(this.controllers, signal);
-      await controller.runOnChange(values, signal);
+      const dependencyValues = freezeEditorValues<TFormValues>(
+        await collectFormValues(this.controllers, signal),
+      );
+      await this.dependencyController?.handleUserChange(
+        fieldName,
+        dependencyValues,
+        signal,
+      );
+      signal.throwIfAborted();
+      const callbackValues = await collectFormValues(this.controllers, signal);
+      await controller.runOnChange(callbackValues, signal);
     } catch (error: unknown) {
       if (!signal.aborted) {
         const operationError =
@@ -446,6 +546,25 @@ export class EditorFormController<
         this.activeChangeAbortControllers.delete(fieldName);
       }
     }
+  }
+
+  private async waitForCurrentFieldWork(): Promise<void> {
+    while (this.activeChangeTasks.size > 0) {
+      await Promise.allSettled([...this.activeChangeTasks.values()]);
+    }
+    await this.dependencyController?.waitForCurrent();
+  }
+
+  private renderSubmissionError(): void {
+    const messages = new Set<string>();
+    if (this.operationErrorMessage !== undefined) {
+      messages.add(this.operationErrorMessage);
+    }
+    for (const error of this.dependencyController?.errors().values() ?? []) {
+      messages.add(error.message);
+    }
+    this.submissionErrorElement.textContent = [...messages].join(' ');
+    this.submissionErrorElement.hidden = messages.size === 0;
   }
 
   private async validateManagedController(

@@ -165,7 +165,7 @@ export class DialogEditingController<TRow extends object, TFormValues extends ob
         this.releaseInteraction();
         return;
       }
-      this.openForm('create');
+      await this.openForm('create');
     } catch (error: unknown) {
       if (didAcquireInteraction) {
         this.releaseInteraction();
@@ -222,7 +222,7 @@ export class DialogEditingController<TRow extends object, TFormValues extends ob
         this.arguments_.language.errors.targetUnavailable,
       );
       try {
-        this.openForm('edit', this.editTargetCapture.snapshot.original);
+        await this.openForm('edit', this.editTargetCapture.snapshot.original);
       } catch (error: unknown) {
         this.editTargetCapture = undefined;
         throw error;
@@ -427,7 +427,10 @@ export class DialogEditingController<TRow extends object, TFormValues extends ob
     return this.arguments_.table.rows(rowSelector).indexes().toArray();
   }
 
-  private openForm(action: 'create' | 'edit', sourceValues?: Readonly<object>): void {
+  private async openForm(
+    action: 'create' | 'edit',
+    sourceValues?: Readonly<object>,
+  ): Promise<void> {
     this.arguments_.stateCoordinator.transitionTo({ action, status: 'opening' });
     let form: EditorFormController<TFormValues> | undefined;
     try {
@@ -441,11 +444,32 @@ export class DialogEditingController<TRow extends object, TFormValues extends ob
             action === 'edit' ? this.editTargetCapture?.sourceRow : undefined,
           ),
         this.arguments_.editing.template,
+        this.arguments_.options.dependencies,
+        (_sourcePath, error) => {
+          this.arguments_.errorReporter.report(
+            error,
+            {
+              committed: false,
+              mode: 'dialog',
+              operation: action,
+              phase:
+                this.arguments_.stateCoordinator.getState().status === 'opening'
+                  ? 'open'
+                  : 'validation',
+              ...(action === 'edit' && this.editTargetCapture !== undefined
+                ? { target: this.createEditTarget(this.editTargetCapture) }
+                : {}),
+            },
+            true,
+          );
+        },
       );
       this.activeForm = form;
       if (sourceValues !== undefined) {
         form.populateFromSource(sourceValues);
       }
+      await form.initializeDependencies();
+      this.arguments_.stateCoordinator.assertActive();
       this.dialog.openForm(
         form.element,
         action === 'create'
@@ -465,6 +489,9 @@ export class DialogEditingController<TRow extends object, TFormValues extends ob
       this.dialog.close();
       form?.destroy();
       this.activeForm = undefined;
+      if (this.arguments_.stateCoordinator.getState().status === 'destroyed') {
+        throw rawError;
+      }
       this.arguments_.stateCoordinator.transitionTo({ status: 'ready' });
       const normalizedError = normalizeOperationError(
         rawError,

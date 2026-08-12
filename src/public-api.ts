@@ -118,6 +118,15 @@ export type {
 export { isChoiceFieldController } from './fields/field-controller.js';
 export type { FieldValue, MaybePromise } from './fields/field-value.js';
 export type { FormController } from './form/form-controller.js';
+export {
+  defineFormDependencies,
+  type ChoicePatchOptions,
+  type FieldStatePatchFor,
+  type FormDependencies,
+  type FormDependencyContext,
+  type FormDependencyResolver,
+  type FormDependencyResult,
+} from './form/form-dependency.js';
 export type { FormValidationResult } from './form/validate-editor-form.js';
 export type { FieldPath, FieldPathValue } from './object-path/field-path.js';
 export type { InlineKeyboardShortcut } from './inline/inline-keyboard-shortcut.js';
