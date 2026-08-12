@@ -260,4 +260,25 @@ describe('editor button enablement', () => {
       removeDialog: true,
     });
   });
+
+  it('keeps the Dialog Edit button available with inline editing enabled', () => {
+    const capabilities = resolveEditorCapabilities(
+      resolveEditingOptions({
+        dialog: { enabled: true },
+        inline: { enabled: true },
+      }),
+      { create: true },
+    );
+    const state = createEditorButtonState({
+      capabilities,
+      hasCreate: true,
+      hasSelect: true,
+      isReady: true,
+      language: ENGLISH_LANGUAGE,
+      selectedRowCount: 1,
+    });
+
+    expect(capabilities.inlineEdit).toBe(true);
+    expect(state.edit).toMatchObject({ enabled: true, visible: true });
+  });
 });

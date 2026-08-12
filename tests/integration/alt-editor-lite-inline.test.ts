@@ -302,6 +302,67 @@ describe('AltEditorLite programmatic inline editing', () => {
     await editor.closeDialog();
   });
 
+  it('supports dialog and inline editing on the same instance', async () => {
+    const { api, editor } = createInlineEditor({
+      editing: {
+        dialog: { enabled: true },
+        inline: { enabled: true },
+      },
+      fields,
+    });
+
+    await editor.openInlineEdit('#row-a', 0);
+    replaceInlineValue('Discarded Alpha');
+    await editor.openEditDialog('#row-a');
+
+    expect(editor.getInlineState()).toEqual({ status: 'idle' });
+    expect(editor.getState()).toMatchObject({ action: 'edit', status: 'open' });
+    expect(api.row('#row-a').data().name).toBe('Alpha');
+    await editor.closeDialog();
+
+    await editor.openInlineEdit('#row-a', 0);
+    replaceInlineValue('Hybrid Alpha');
+    await editor.submitInlineEdit();
+    expect(api.row('#row-a').data().name).toBe('Hybrid Alpha');
+  });
+
+  it('requires explicit resolution before a hover session yields to dialog editing', async () => {
+    const { editor } = createInlineEditor({
+      editing: {
+        dialog: { enabled: true },
+        inline: { activation: 'hover', enabled: true },
+      },
+      fields,
+    });
+
+    await editor.openInlineEdit('#row-a', 0);
+    await expect(editor.openEditDialog('#row-a')).rejects.toBeInstanceOf(
+      EditorOperationBusyError,
+    );
+    expect(editor.getInlineState().status).toBe('editing');
+    await editor.cancelInlineEdit();
+  });
+
+  it('keeps dialog interaction ownership while inline editing is requested', async () => {
+    const { editor } = createInlineEditor({
+      editing: {
+        dialog: { enabled: true },
+        inline: { enabled: true },
+      },
+      fields,
+    });
+
+    await editor.openEditDialog('#row-a');
+    await expect(editor.openEditDialog('#row-b')).rejects.toBeInstanceOf(
+      EditorOperationBusyError,
+    );
+    await expect(editor.openInlineEdit('#row-a', 0)).rejects.toBeInstanceOf(
+      EditorOperationBusyError,
+    );
+    expect(editor.getState()).toMatchObject({ action: 'edit', status: 'open' });
+    await editor.closeDialog();
+  });
+
   it('defers the latest change callback failure until submission', async () => {
     const onError = vi.fn();
     const { api, editor } = createInlineEditor({
