@@ -8,7 +8,6 @@ import {
   InternalOperationAbort,
   normalizeOperationError,
 } from '../core/error-normalization.js';
-import { freezeEditorValues } from '../core/freeze-editor-values.js';
 import { synchronizeExtensionStateAfterCommit } from '../datatables/synchronize-extension-state.js';
 
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
@@ -66,7 +65,15 @@ export class DialogCreateOperation<TRow extends object, TFormValues extends obje
     let phase: EditorErrorHookContext['phase'] = 'validation';
 
     try {
-      const validationResult = await form.validate();
+      const validationResult = await form.validateForSubmission(
+        request.abortController.signal,
+        this.arguments_.options.validateForm,
+        {
+          mode: 'dialog',
+          operation: 'create',
+          table: this.arguments_.table,
+        },
+      );
       if (!this.owns(request)) {
         return;
       }
@@ -76,10 +83,7 @@ export class DialogCreateOperation<TRow extends object, TFormValues extends obje
         return;
       }
 
-      const values = freezeEditorValues<TFormValues>(await form.collect());
-      if (!this.owns(request)) {
-        return;
-      }
+      const values = validationResult.values;
 
       phase = 'submit';
       const beforeSubmit = this.arguments_.options.hooks?.beforeSubmit;

@@ -16,16 +16,21 @@ import {
   FormDependencyController,
   type DependencyFieldBinding,
 } from './form-dependency-controller.js';
+import {
+  FormValidationRunner,
+  type ValidationExecutionResult,
+} from './form-validation-runner.js';
 import { DefaultFormLayout } from './layout/default-form-layout.js';
 import { TemplateFormLayout } from './layout/template-form-layout.js';
 import { populateFormValues } from './populate-form-values.js';
 import {
-  type FormValidationResult,
+  type EditorFormValidationResult,
   type LocalUniqueValidator,
   validateEditorForm,
 } from './validate-editor-form.js';
 
 import type { FormDependencies } from './form-dependency.js';
+import type { FormValidationContext, FormValidator } from './form-validation.js';
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type { DialogTemplateSource } from '../core/editing-options.js';
 import type { DeepPartial, EditorValues } from '../core/editor-values.js';
@@ -49,7 +54,7 @@ export interface FormController<TFormValues extends object> {
   /** Collects enabled, normalized field values. */
   collect(): Promise<EditorValues<TFormValues>>;
   /** Runs native constraints followed by custom field validators. */
-  validate(): Promise<FormValidationResult>;
+  validate(): Promise<EditorFormValidationResult>;
   /** Retrieves one configured controller by safe field path. */
   getField<TPath extends FieldPath<TFormValues>>(
     name: TPath,
@@ -64,6 +69,18 @@ export interface FormController<TFormValues extends object> {
   destroy(): void;
 }
 
+/** Stable values and field metadata returned for one dialog submission. */
+export type FormSubmissionValidationResult<TFormValues extends object> =
+  | {
+      readonly valid: false;
+      readonly error: AltEditorLiteError;
+    }
+  | {
+      readonly valid: true;
+      readonly values: Readonly<EditorValues<TFormValues>>;
+      readonly fieldValues: ReadonlyMap<string, unknown>;
+    };
+
 /**
  * Default DOM-backed FormController implementation.
  */
@@ -76,6 +93,8 @@ export class EditorFormController<
     string,
     ManagedFieldController<TFormValues>
   >();
+
+  private readonly configuredFieldNames: ReadonlySet<string>;
 
   private readonly fieldControllerByName = new Map<string, FieldController<unknown>>();
 
@@ -109,6 +128,8 @@ export class EditorFormController<
 
   private operationErrorMessage: string | undefined;
 
+  private validationErrorMessage: string | undefined;
+
   private activeValidationAbortController: AbortController | undefined;
 
   private controllers: ManagedFieldController<TFormValues>[] = [];
@@ -131,6 +152,7 @@ export class EditorFormController<
     dependencies?: Readonly<FormDependencies<TFormValues>>,
     onDependencyError?: (sourcePath: string, error: AltEditorLiteError) => void,
   ) {
+    this.configuredFieldNames = new Set(fields.map(({ name }) => name));
     this.element = document.createElement('form');
     this.element.className = 'dt-alteditor-lite-form';
     this.element.id = `${instanceId}-form`;
@@ -260,14 +282,8 @@ export class EditorFormController<
     );
   }
 
-  /** Collects values with internal metadata for the built-in Update path. */
-  public async collectWithMetadata(): Promise<CollectedFormState<TFormValues>> {
-    this.assertActive();
-    return await collectFormState(this.controllers, this.lifecycleAbortController.signal);
-  }
-
   /** Runs native and custom validation. */
-  public async validate(): Promise<FormValidationResult> {
+  public async validate(): Promise<EditorFormValidationResult> {
     this.assertActive();
     this.activeValidationAbortController?.abort();
     const validationAbortController = new AbortController();
@@ -295,13 +311,21 @@ export class EditorFormController<
       return { fieldErrors, valid: false };
     }
 
-    const validationResult = await validateEditorForm(
-      this.controllers,
-      async () => await collectFormValues(this.controllers, signal),
-      signal,
-      this.validateUnique,
-      this.invalidMessage,
-    );
+    let validationResult: EditorFormValidationResult;
+    try {
+      validationResult = await validateEditorForm(
+        this.controllers,
+        async () => await collectFormValues(this.controllers, signal),
+        signal,
+        this.validateUnique,
+        this.invalidMessage,
+      );
+    } catch (error: unknown) {
+      if (!this.validationSequence.isCurrent(requestSequence)) {
+        return { fieldErrors: {}, valid: false };
+      }
+      throw error;
+    }
 
     if (!this.validationSequence.isCurrent(requestSequence)) {
       return { fieldErrors: {}, valid: false };
@@ -312,6 +336,94 @@ export class EditorFormController<
     }
 
     return validationResult;
+  }
+
+  /** Runs one operation-owned validation and returns its exact collected values. */
+  public async validateForSubmission<TRow extends object>(
+    operationSignal: AbortSignal,
+    validateForm: FormValidator<TRow, TFormValues> | undefined,
+    context: Omit<FormValidationContext<TRow>, 'signal'>,
+  ): Promise<FormSubmissionValidationResult<TFormValues>> {
+    this.assertActive();
+    this.activeValidationAbortController?.abort();
+    const validationAbortController = new AbortController();
+    this.activeValidationAbortController = validationAbortController;
+    const signal = AbortSignal.any([
+      validationAbortController.signal,
+      this.lifecycleAbortController.signal,
+      operationSignal,
+    ]);
+    const requestSequence = this.validationSequence.next();
+
+    await this.waitForCurrentFieldWork();
+    signal.throwIfAborted();
+    if (!this.validationSequence.isCurrent(requestSequence)) {
+      throw new DOMException('The validation request was replaced.', 'AbortError');
+    }
+    this.clearErrors();
+
+    const dependencyErrors =
+      this.dependencyController?.errors() ?? new Map<string, AltEditorLiteError>();
+    if (dependencyErrors.size > 0) {
+      const fieldErrors: Record<string, string> = {};
+      for (const [sourcePath, error] of dependencyErrors) {
+        fieldErrors[sourcePath] = error.message;
+        this.controllerByName.get(sourcePath)?.showError(error.message);
+      }
+      this.renderSubmissionError();
+      return {
+        error: new AltEditorLiteError({
+          code: 'VALIDATION',
+          fieldErrors,
+          message: this.invalidMessage,
+          retryable: true,
+        }),
+        valid: false,
+      };
+    }
+
+    let collectedForm: CollectedFormState<TFormValues> | undefined;
+    const result: ValidationExecutionResult<TFormValues> =
+      await new FormValidationRunner<TFormValues>({
+        allowedFieldNames: this.configuredFieldNames,
+        collectValues: async (currentSignal) => {
+          collectedForm = await collectFormState(this.controllers, currentSignal);
+          return collectedForm.values;
+        },
+        controllers: this.controllers,
+        invalidMessage: this.invalidMessage,
+        ...(this.validateUnique === undefined
+          ? {}
+          : { validateUnique: this.validateUnique }),
+        ...(validateForm === undefined
+          ? {}
+          : {
+              validateForm: async (values, currentSignal) =>
+                await Promise.resolve(
+                  validateForm(
+                    values,
+                    Object.freeze({ ...context, signal: currentSignal }),
+                  ),
+                ),
+            }),
+      }).run(signal);
+
+    signal.throwIfAborted();
+    if (!this.validationSequence.isCurrent(requestSequence)) {
+      throw new DOMException('The validation request was replaced.', 'AbortError');
+    }
+    if (!result.valid) {
+      this.showValidationError(result.error, result.message);
+      return { error: result.error, valid: false };
+    }
+    if (collectedForm === undefined) {
+      throw new Error('Validation completed without collecting form values.');
+    }
+    return {
+      fieldValues: collectedForm.fieldValues,
+      valid: true,
+      values: result.values,
+    };
   }
 
   /** Retrieves one public field facade. */
@@ -439,6 +551,7 @@ export class EditorFormController<
       controller.clearError();
     }
     this.operationErrorMessage = undefined;
+    this.validationErrorMessage = undefined;
     for (const [sourcePath, dependencyError] of this.dependencyController?.errors() ??
       []) {
       this.controllerByName.get(sourcePath)?.showError(dependencyError.message);
@@ -560,11 +673,35 @@ export class EditorFormController<
     if (this.operationErrorMessage !== undefined) {
       messages.add(this.operationErrorMessage);
     }
+    if (this.validationErrorMessage !== undefined) {
+      messages.add(this.validationErrorMessage);
+    }
     for (const error of this.dependencyController?.errors().values() ?? []) {
       messages.add(error.message);
     }
     this.submissionErrorElement.textContent = [...messages].join(' ');
     this.submissionErrorElement.hidden = messages.size === 0;
+  }
+
+  private showValidationError(
+    error: AltEditorLiteError,
+    message: string | undefined,
+  ): void {
+    const submissionMessages = new Set<string>();
+    if (message !== undefined) {
+      submissionMessages.add(message);
+    }
+    for (const [fieldName, fieldMessage] of Object.entries(error.fieldErrors ?? {})) {
+      const controller = this.controllerByName.get(fieldName);
+      if (controller === undefined) {
+        submissionMessages.add(fieldMessage);
+      } else {
+        controller.showError(fieldMessage);
+      }
+    }
+    this.validationErrorMessage =
+      submissionMessages.size === 0 ? undefined : [...submissionMessages].join(' ');
+    this.renderSubmissionError();
   }
 
   private async validateManagedController(

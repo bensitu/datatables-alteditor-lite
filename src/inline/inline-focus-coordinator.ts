@@ -112,10 +112,10 @@ export class InlineFocusCoordinator<TRow extends object, TFormValues extends obj
     const unrelatedMessages = Object.entries(error.fieldErrors ?? {})
       .filter(([fieldName]) => fieldName !== session.capture.field.name)
       .map(([, message]) => message);
-    const message =
-      unrelatedMessages.length > 0
-        ? [error.message, ...unrelatedMessages].join(' ')
-        : (fieldMessage ?? error.message);
+    const message = [error.message, fieldMessage, ...unrelatedMessages]
+      .filter((entry): entry is string => entry !== undefined)
+      .filter((entry, index, entries) => entries.indexOf(entry) === index)
+      .join(' ');
     let alertPromise: Promise<void>;
     try {
       alertPromise = alertDialog.open({

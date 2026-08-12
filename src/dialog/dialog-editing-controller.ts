@@ -138,7 +138,6 @@ export class DialogEditingController<TRow extends object, TFormValues extends ob
       editor: arguments_.editor,
       editOperationRunner: arguments_.editOperationRunner,
       errorReporter: arguments_.errorReporter,
-      invalidMessage: arguments_.language.validation.invalid,
       options: arguments_.options,
       table: arguments_.table,
       tableElement: arguments_.tableElement,

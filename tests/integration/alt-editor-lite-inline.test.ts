@@ -497,6 +497,72 @@ describe('AltEditorLite programmatic inline editing', () => {
     expect(api.row('#row-a').data().name).toBe('Retried Alpha');
   });
 
+  it('summarizes unrelated Inline field errors without submitting', async () => {
+    const update = vi.fn(
+      (
+        values: Readonly<Partial<InlineValues>>,
+        original: Readonly<TestRow>,
+      ): TestRow => ({
+        ...original,
+        name: values.name ?? original.name,
+      }),
+    );
+    const beforeSubmit = vi.fn(() => true);
+    const { api, editor } = createInlineEditor({
+      editing: inlineEditing(),
+      fields,
+      hooks: { beforeSubmit },
+      operations: { update },
+      validateForm: (values, context) => {
+        expect(context.operation).toBe('edit');
+        expect(context.mode).toBe('inline');
+        return (values.name?.length ?? 0) > (values.rank ?? 0)
+          ? {
+              fieldErrors: {
+                rank: 'Rank must be at least the length of the name.',
+              },
+              message: 'Review the related values.',
+              valid: false,
+            }
+          : { valid: true };
+      },
+    });
+    const original = { ...api.row('#row-a').data() };
+    await editor.openInlineEdit('#row-a', 0);
+    replaceInlineValue('Extended Alpha');
+
+    const submission = editor.submitInlineEdit();
+    const rejection = expect(submission).rejects.toMatchObject({
+      code: 'VALIDATION',
+    });
+    await vi.waitFor(() => {
+      expect(document.querySelector('.dt-alteditor-lite-dialog--alert')).toHaveProperty(
+        'open',
+        true,
+      );
+    });
+
+    const alertMessage = document.querySelector(
+      '.dt-alteditor-lite-dialog--alert .dt-alteditor-lite-dialog__message',
+    )?.textContent;
+    expect(alertMessage).toContain('Review the related values.');
+    expect(alertMessage).toContain('Rank must be at least the length of the name.');
+    expect(
+      document.querySelector('.alteditor-lite-inline .dt-alteditor-lite-field__error'),
+    ).toBeNull();
+    document
+      .querySelector<HTMLButtonElement>(
+        '.dt-alteditor-lite-dialog--alert .dt-alteditor-lite-dialog__button',
+      )
+      ?.click();
+    await rejection;
+
+    expect(editor.getInlineState().status).toBe('error');
+    expect(beforeSubmit).not.toHaveBeenCalled();
+    expect(update).not.toHaveBeenCalled();
+    expect(api.row('#row-a').data()).toEqual(original);
+  });
+
   it('supports veto-only hooks and isolates post-commit hook failures', async () => {
     let shouldSubmit = false;
     const onError = vi.fn();

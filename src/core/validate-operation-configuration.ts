@@ -3,15 +3,19 @@ import { EditorConfigurationError } from './alt-editor-lite-error.js';
 import type { AltEditorLiteOptions } from './alt-editor-lite-options.js';
 
 /**
- * Rejects ambiguous persistence and client-side capability ownership.
+ * Rejects invalid operation ownership and form callback configuration.
  *
  * @param options - Editor options to validate before the table is claimed.
- * @throws EditorConfigurationError when Create or Update has two owners.
+ * @throws EditorConfigurationError when a callback is invalid or ownership is ambiguous.
  */
 export function validateOperationConfiguration<
   TRow extends object,
   TFormValues extends object,
 >(options: Readonly<AltEditorLiteOptions<TRow, TFormValues>>): void {
+  if (options.validateForm !== undefined && typeof options.validateForm !== 'function') {
+    throw new EditorConfigurationError('validateForm must be a function.');
+  }
+
   if (
     options.operations?.create !== undefined &&
     options.clientSide?.createRow !== undefined

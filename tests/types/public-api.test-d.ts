@@ -30,6 +30,10 @@ import {
   type InlineEditState,
   type OperationContext,
   type FormDependencies,
+  type FormFieldErrors,
+  type FormValidationContext,
+  type FormValidationResult,
+  type FormValidator,
   type RemoteSearchSelectFieldConfig,
   type LocalSearchSelectFieldConfig,
   type SearchSelectFieldConfig,
@@ -310,6 +314,33 @@ expectAssignable<FormDependencies<FormValues>>(dependencies);
 expectAssignable<AltEditorLiteOptions<Row, FormValues>>({
   dependencies,
   fields: [],
+});
+
+const formValidator: FormValidator<Row, FormValues> = (values, context) => {
+  expectType<Readonly<EditorValues<FormValues>>>(values);
+  expectType<FormValidationContext<Row>>(context);
+  expectType<Api<Row>>(context.table);
+  expectType<AbortSignal>(context.signal);
+  expectType<'create' | 'edit'>(context.operation);
+  expectType<'dialog' | 'inline'>(context.mode);
+  return {
+    fieldErrors: { rank: 'Rank must match the selected role.' },
+    message: 'Review the related fields.',
+    valid: false,
+  };
+};
+expectAssignable<AltEditorLiteOptions<Row, FormValues>>({
+  fields: [],
+  validateForm: formValidator,
+});
+expectAssignable<FormFieldErrors<FormValues>>({
+  'contact.email': 'Enter an email address.',
+  rank: 'Enter a rank.',
+});
+expectAssignable<FormValidationResult<FormValues>>({ valid: true });
+expectNotAssignable<FormValidationResult<FormValues>>({
+  fieldErrors: { missing: 'Unknown field.' },
+  valid: false,
 });
 
 expectNotAssignable<FieldConfig<FormValues>>({

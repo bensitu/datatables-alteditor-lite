@@ -456,6 +456,50 @@ describe('AltEditorLite Edit snapshots', () => {
     expect(api.row('#row-b').data().name).toBe('Beta');
   });
 
+  it('keeps Dialog Edit non-mutating when cross-field validation fails', async () => {
+    const update = vi.fn(
+      (values: Readonly<Partial<CrudValues>>, original: Readonly<TestRow>): TestRow => ({
+        ...original,
+        name: values.name ?? original.name,
+        rank: values.rank ?? original.rank,
+      }),
+    );
+    const beforeSubmit = vi.fn(() => true);
+    const { api, editor } = createCrudEditor('edit-cross-field-validation', {
+      hooks: { beforeSubmit },
+      operations: { update },
+      validateForm: (values, context) => {
+        expect(context.operation).toBe('edit');
+        expect(context.mode).toBe('dialog');
+        return (values.rank ?? 0) < (values.name?.length ?? 0)
+          ? {
+              fieldErrors: {
+                rank: 'Rank must be at least the length of the name.',
+              },
+              valid: false,
+            }
+          : { valid: true };
+      },
+    });
+    const original = { ...api.row('#row-a').data() };
+    await editor.openEditDialog('#row-a');
+    editor.getField('name')?.setValue('Extended Alpha');
+    editor.getField('rank')?.setValue(2);
+
+    submitForm();
+    await vi.waitFor(() => {
+      expect(editor.getState().status).toBe('open');
+    });
+
+    expect(update).not.toHaveBeenCalled();
+    expect(beforeSubmit).not.toHaveBeenCalled();
+    expect(api.row('#row-a').data()).toEqual(original);
+    expect(
+      editor.getField('rank')?.element.querySelector('.dt-alteditor-lite-field__error')
+        ?.textContent,
+    ).toContain('Rank must be at least the length of the name.');
+  });
+
   it('updates the explicit snapshot after sort, search, paging, and redraw', async () => {
     const eventOrder: string[] = [];
     let callbackOriginal: Readonly<TestRow> | undefined;

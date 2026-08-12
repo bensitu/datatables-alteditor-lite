@@ -1,23 +1,24 @@
+import { FormValidationRunner } from './form-validation-runner.js';
+
+import type {
+  LocalUniqueValidator,
+  ValidationExecutionResult,
+} from './form-validation-runner.js';
 import type { EditorValues } from '../core/editor-values.js';
 import type { ManagedFieldController } from '../fields/managed-field-controller.js';
 
-/**
- * Result of complete native and custom form validation.
- */
-export interface FormValidationResult {
+export type { LocalUniqueValidator } from './form-validation-runner.js';
+
+/** Result of complete native and custom form validation. */
+export interface EditorFormValidationResult {
   /** Whether every enabled field is valid. */
   readonly valid: boolean;
   /** Messages keyed only by configured field paths. */
   readonly fieldErrors: Readonly<Record<string, string>>;
 }
 
-/** Internal callback for table-scoped local uniqueness checks. */
-export type LocalUniqueValidator<TFormValues extends object> = (
-  values: Readonly<EditorValues<TFormValues>>,
-) => Readonly<Record<string, string>>;
-
 /**
- * Runs native validation first, then custom validators concurrently.
+ * Runs native, custom, and uniqueness validation for a rendered form.
  *
  * @param controllers - Ordered form controllers.
  * @param collectValues - Lazy collection performed only after native validity.
@@ -32,60 +33,20 @@ export async function validateEditorForm<TFormValues extends object>(
   signal: AbortSignal,
   validateUnique?: LocalUniqueValidator<TFormValues>,
   invalidMessage = 'Enter a valid value.',
-): Promise<FormValidationResult> {
-  const fieldErrors: Record<string, string> = {};
+): Promise<EditorFormValidationResult> {
+  const result: ValidationExecutionResult<TFormValues> = await new FormValidationRunner({
+    allowedFieldNames: new Set(controllers.map(({ name }) => name)),
+    collectValues,
+    controllers,
+    invalidMessage,
+    ...(validateUnique === undefined ? {} : { validateUnique }),
+  }).run(signal);
 
-  for (const controller of controllers) {
-    if (controller.isDisabled()) {
-      continue;
-    }
-
-    const validationResult = controller.validateNative();
-    if (!validationResult.valid) {
-      fieldErrors[controller.name] = validationResult.message ?? invalidMessage;
-    }
+  if (result.valid) {
+    return { fieldErrors: {}, valid: true };
   }
-
-  if (Object.keys(fieldErrors).length > 0) {
-    return { fieldErrors, valid: false };
-  }
-
-  const values = await collectValues();
-  const customResults = await Promise.all(
-    controllers
-      .filter((controller) => !controller.isDisabled())
-      .map(async (controller) => {
-        try {
-          return {
-            name: controller.name,
-            result: await controller.validateCustom(values, signal),
-          };
-        } catch {
-          signal.throwIfAborted();
-          return {
-            name: controller.name,
-            result: { message: invalidMessage, valid: false } as const,
-          };
-        }
-      }),
-  );
-
-  for (const customResult of customResults) {
-    if (!customResult.result.valid) {
-      fieldErrors[customResult.name] = customResult.result.message ?? invalidMessage;
-    }
-  }
-
-  if (validateUnique !== undefined) {
-    for (const [fieldName, message] of Object.entries(validateUnique(values))) {
-      if (!Object.hasOwn(fieldErrors, fieldName)) {
-        fieldErrors[fieldName] = message;
-      }
-    }
-  }
-
   return {
-    fieldErrors,
-    valid: Object.keys(fieldErrors).length === 0,
+    fieldErrors: result.error.fieldErrors ?? {},
+    valid: false,
   };
 }

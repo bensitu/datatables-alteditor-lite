@@ -158,7 +158,9 @@ export class InlineEditSessionController<
       isCurrentSession: (session) => this.session === session,
       language: arguments_.language,
       presentFailure: async (session, error, message) => {
-        session.controller.showError(message);
+        if (message !== undefined) {
+          session.controller.showError(message);
+        }
         session.host.setInvalid(true);
         this.transitionTo({
           error,
@@ -174,6 +176,10 @@ export class InlineEditSessionController<
         );
       },
       reportError: arguments_.reportError,
+      table: arguments_.table,
+      ...(arguments_.editorOptions.validateForm === undefined
+        ? {}
+        : { validateForm: arguments_.editorOptions.validateForm }),
       validateUnique: arguments_.validateUnique,
     });
     this.commitCoordinator = new InlineCommitCoordinator({

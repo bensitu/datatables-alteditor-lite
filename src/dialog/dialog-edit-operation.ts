@@ -1,4 +1,3 @@
-import { AltEditorLiteError } from '../core/alt-editor-lite-error.js';
 import { commitRowUpdate } from '../core/editing/commit-row-update.js';
 import { dispatchEditorEvent } from '../core/editor-event.js';
 import {
@@ -7,6 +6,7 @@ import {
 } from '../datatables/row-target-resolution.js';
 import { synchronizeExtensionStateAfterCommit } from '../datatables/synchronize-extension-state.js';
 
+import type { AltEditorLiteError } from '../core/alt-editor-lite-error.js';
 import type { AltEditorLiteOptions } from '../core/alt-editor-lite-options.js';
 import type { AltEditorLite } from '../core/alt-editor-lite.js';
 import type { DrawOwnership } from '../core/editing/draw-ownership.js';
@@ -41,7 +41,6 @@ export interface DialogEditOperationArguments<
   readonly drawOwnership: DrawOwnership<TRow>;
   readonly editOperationRunner: EditOperationRunner<TRow, TFormValues>;
   readonly errorReporter: EditorErrorReporter<TRow, TFormValues>;
-  readonly invalidMessage: string;
   readonly targetUnavailableMessage: string;
 }
 
@@ -159,28 +158,29 @@ export class DialogEditOperation<TRow extends object, TFormValues extends object
           presentation.startValidation();
         },
         validate: async (signal) => {
-          const validationResult = await form.validate();
+          const validationResult = await form.validateForSubmission(
+            signal,
+            options.validateForm,
+            {
+              mode: 'dialog',
+              operation: 'edit',
+              table,
+            },
+          );
           signal.throwIfAborted();
           if (!validationResult.valid) {
             return {
-              error: new AltEditorLiteError({
-                code: 'VALIDATION',
-                fieldErrors: validationResult.fieldErrors,
-                message: this.arguments_.invalidMessage,
-                retryable: true,
-              }),
+              error: validationResult.error,
               valid: false,
             };
           }
-          const collectedForm = await form.collectWithMetadata();
-          signal.throwIfAborted();
           return {
             changedFields: [
-              ...collectedForm.fieldValues.keys(),
+              ...validationResult.fieldValues.keys(),
             ] as FieldPath<TFormValues>[],
-            collectedFieldValues: collectedForm.fieldValues,
+            collectedFieldValues: validationResult.fieldValues,
             valid: true,
-            values: collectedForm.values,
+            values: validationResult.values,
           };
         },
       },

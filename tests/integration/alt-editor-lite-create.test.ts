@@ -261,6 +261,53 @@ describe('AltEditorLite synchronous Create', () => {
     expect(document.querySelector('[aria-invalid="true"]')).not.toBeNull();
   });
 
+  it('keeps Create open when cross-field validation fails', async () => {
+    const createRow = vi.fn((values: Readonly<Partial<CreateValues>>) => ({
+      id: 'cross-field-row',
+      name: values.name ?? '',
+      rank: values.rank ?? 0,
+    }));
+    const beforeSubmit = vi.fn(() => true);
+    const { api } = createTestTable('create-cross-field-validation');
+    const editor = new AltEditorLite<TestRow, CreateValues>(api, {
+      clientSide: { createRow },
+      fields,
+      hooks: { beforeSubmit },
+      validateForm: (values, context) => {
+        expect(Object.isFrozen(values)).toBe(true);
+        expect(context.operation).toBe('create');
+        expect(context.mode).toBe('dialog');
+        return {
+          fieldErrors: {
+            rank: 'Rank must be at least the length of the name.',
+          },
+          message: 'Review the related values.',
+          valid: false,
+        };
+      },
+    });
+    activeEditors.add(editor);
+    await editor.openCreateDialog();
+    editor.getField('name')?.setValue('Long name');
+    editor.getField('rank')?.setValue(2);
+
+    submitOpenDialog();
+    await vi.waitFor(() => {
+      expect(editor.getState().status).toBe('open');
+    });
+
+    expect(createRow).not.toHaveBeenCalled();
+    expect(beforeSubmit).not.toHaveBeenCalled();
+    expect(api.rows().count()).toBe(5);
+    expect(
+      editor.getField('rank')?.element.querySelector('.dt-alteditor-lite-field__error')
+        ?.textContent,
+    ).toContain('Rank must be at least the length of the name.');
+    expect(
+      document.querySelector('.dt-alteditor-lite-form__submission-error')?.textContent,
+    ).toContain('Review the related values.');
+  });
+
   it('applies initial dependencies and waits for the latest update before submit', async () => {
     let resolveUpdate:
       | ((result: {

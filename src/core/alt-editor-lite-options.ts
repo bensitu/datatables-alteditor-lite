@@ -9,6 +9,7 @@ import type { DeepPartial, EditorValues } from './editor-values.js';
 import type { FieldConfig } from '../fields/field-config.js';
 import type { MaybePromise } from '../fields/field-value.js';
 import type { FormDependencies } from '../form/form-dependency.js';
+import type { FormValidator } from '../form/form-validation.js';
 import type { Api } from 'datatables.net';
 
 /**
@@ -155,6 +156,8 @@ export interface AltEditorLiteOptions<
   readonly fields: readonly FieldConfig<TFormValues>[];
   /** Declarative field state derived from dialog form values. */
   readonly dependencies?: FormDependencies<TFormValues>;
+  /** Optional cross-field validator shared by dialog and inline editing. */
+  readonly validateForm?: FormValidator<TRow, TFormValues>;
   /** Composable Dialog Edit and Inline Edit behavior. */
   readonly editing?: EditingOptions<TRow, TFormValues>;
   /**

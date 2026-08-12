@@ -127,7 +127,12 @@ export {
   type FormDependencyResolver,
   type FormDependencyResult,
 } from './form/form-dependency.js';
-export type { FormValidationResult } from './form/validate-editor-form.js';
+export type {
+  FormFieldErrors,
+  FormValidationContext,
+  FormValidationResult,
+  FormValidator,
+} from './form/form-validation.js';
 export type { FieldPath, FieldPathValue } from './object-path/field-path.js';
 export type { InlineKeyboardShortcut } from './inline/inline-keyboard-shortcut.js';
 export type { InlineEditState, InlineTargetSummary } from './inline/inline-edit-state.js';
