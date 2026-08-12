@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-08-13
+
+### Added
+
+- Composable Dialog and Inline Edit capabilities that can be enabled together on
+  one editor instance.
+- Consumer-owned dialog form templates with validated field slots and cloned DOM
+  content.
+- Runtime field visibility, disabled, read-only, required, value, and choice-option
+  updates through public field controllers.
+- Dynamic options for Select, Radio, and SearchSelect fields with typed value
+  preservation.
+- Declarative field dependencies with immutable value snapshots, cancellation,
+  stale-result protection, and atomic state updates.
+- Typed form-level validation for Create, Dialog Edit, and Inline Edit.
+
+### Changed
+
+- Replaced the single editing mode with nested `editing.dialog` and
+  `editing.inline` configuration.
+- Grouped SearchSelect query behavior under `search` and asynchronous option
+  providers under `remote`.
+- Made public `FieldController.getValue()` consistently return a `Promise` and
+  added a dedicated choice-field controller contract.
+- Standardized field configuration and runtime naming on `readOnly`.
+- Separated dialog operations, inline sessions, form layout, dependencies, and
+  validation into focused components while retaining shared lifecycle ownership.
+
+### Breaking
+
+- Removed `editMode`; configure Dialog and Inline Edit through `editing`.
+- Removed the top-level `inline` object; move its properties to `editing.inline`.
+- Removed top-level `closeOnSuccess`; use `editing.dialog.closeOnSuccess`.
+- Renamed the field property `readonly` to `readOnly`.
+- Removed flattened SearchSelect `searchThreshold`, `debounceMs`, `loadOptions`,
+  and `resolveOption`; use the nested `search` and `remote` objects.
+
 ## [0.3.1] - 2026-08-13
 
 ### Changed

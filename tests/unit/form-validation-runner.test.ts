@@ -109,6 +109,25 @@ describe('FormValidationRunner', () => {
     expect(result.valid && Object.isFrozen(result.values)).toBe(true);
   });
 
+  it('uses the standard validation message when a form validator only rejects', async () => {
+    const runner = new FormValidationRunner<ValidationValues>({
+      allowedFieldNames: new Set(['end', 'start', 'summary']),
+      collectValues: () => values,
+      controllers: [],
+      invalidMessage: 'Enter a valid value.',
+      validateForm: () => ({ valid: false }),
+    });
+
+    await expect(runner.run(new AbortController().signal)).resolves.toMatchObject({
+      error: {
+        code: 'VALIDATION',
+        message: 'Enter a valid value.',
+      },
+      message: 'Enter a valid value.',
+      valid: false,
+    });
+  });
+
   it('stops waiting when the current validation is aborted', async () => {
     let validationSignal: AbortSignal | undefined;
     let resolveValidation:
