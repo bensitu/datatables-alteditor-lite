@@ -1,56 +1,42 @@
 import {
-  AltEditorLiteError,
+  type AltEditorLiteError,
   EditorConfigurationError,
   EditorDestroyedError,
   EditorOperationBusyError,
-  EditorTargetUnavailableError,
 } from '../core/alt-editor-lite-error.js';
-import {
-  commitRowUpdateWithFocus,
-  resolveLogicalCellTarget,
-  type LogicalCellTarget,
-} from '../core/editing/commit-row-update.js';
-import {
-  dispatchEditorEvent,
-  type EditorCloseReason,
-  type InlineEventTarget,
-} from '../core/editor-event.js';
+import { dispatchEditorEvent, type EditorCloseReason } from '../core/editor-event.js';
 import {
   InternalOperationAbort,
   normalizeOperationError,
 } from '../core/error-normalization.js';
-import { isColumnVisiblyAvailable } from '../datatables/column-visibility.js';
-import { resolveUniqueRowIndexById } from '../datatables/row-id-resolution.js';
 import { synchronizeExtensionStateAfterCommit } from '../datatables/synchronize-extension-state.js';
-import { EditorAlertDialog } from '../dialog/editor-alert-dialog.js';
-import { createFieldController } from '../fields/create-field-controller.js';
-import { INLINE_FIELD_PRESENTATION } from '../fields/field-controller-presentation.js';
 
+import { InlineCommitCoordinator } from './inline-commit-coordinator.js';
 import { InlineEditPresentationAdapter } from './inline-edit-presentation-adapter.js';
 import { assertInlineEditStateTransition } from './inline-edit-state-transition.js';
-import {
-  focusInlineCellOrTable,
-  ownsInlineFocus,
-  restoreInlineOriginFocus,
-} from './inline-focus-owner.js';
-import { InlineFocusStateMachine } from './inline-focus-state-machine.js';
+import { InlineFocusCoordinator } from './inline-focus-coordinator.js';
+import { ownsInlineFocus } from './inline-focus-owner.js';
 import { resolveInlineKeyboardIntent } from './inline-keyboard.js';
 import {
   createInlineNavigationIntent,
   type InlineNavigationIntent,
 } from './inline-navigation.js';
 import {
+  createInlineEventTarget,
+  createInlineOperationTarget,
+} from './inline-operation-target.js';
+import { InlineSessionFactory } from './inline-session-factory.js';
+import {
   captureInlineTarget,
   type InlineTargetCapture,
 } from './inline-target-capture.js';
 import { resolveInlineTarget } from './inline-target-resolution.js';
-import { buildInlineValues } from './inline-values.js';
+import { InlineValidationController } from './inline-validation-controller.js';
 
 import type { InlineColumnMapping } from './inline-column-mapping.js';
 import type { InlineEditSession } from './inline-edit-session.js';
-import type { InlineEditState, InlineTargetSummary } from './inline-edit-state.js';
+import type { InlineEditState } from './inline-edit-state.js';
 import type { InlineEditViewFactory } from './inline-edit-view-factory.js';
-import type { InlineFocusRestoreToken } from './inline-focus-state.js';
 import type { ResolvedInlineInteractionBehavior } from './inline-interaction-behavior.js';
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type {
@@ -59,6 +45,7 @@ import type {
   EditorErrorHookContext,
 } from '../core/alt-editor-lite-options.js';
 import type { AltEditorLite } from '../core/alt-editor-lite.js';
+import type { LogicalCellTarget } from '../core/editing/commit-row-update.js';
 import type { DrawOwnership } from '../core/editing/draw-ownership.js';
 import type {
   EditOperationResult,
@@ -69,12 +56,9 @@ import type {
   InteractionToken,
 } from '../core/editing/interaction-coordinator.js';
 import type { OperationOwner } from '../core/editing/operation-owner.js';
-import type { EditorOperationTarget } from '../core/editor-operation.js';
 import type { EditorValues } from '../core/editor-values.js';
 import type { ResolvedInlineEditingOptions } from '../core/resolve-editing-options.js';
 import type { FieldConfig } from '../fields/field-config.js';
-import type { ManagedFieldController } from '../fields/managed-field-controller.js';
-import type { FieldPath } from '../object-path/field-path.js';
 import type { Api, ColumnSelector, RowSelector } from 'datatables.net';
 
 export interface InlineEditSessionControllerArguments<
@@ -111,24 +95,6 @@ export interface InlineEditSessionControllerArguments<
   readonly onSessionEnd?: () => void;
 }
 
-function asInlineEventTarget(
-  summary: Readonly<InlineTargetSummary>,
-): Readonly<InlineEventTarget> {
-  return Object.freeze({ ...summary });
-}
-
-function asOperationTarget(
-  summary: Readonly<InlineTargetSummary>,
-): Readonly<EditorOperationTarget> {
-  return Object.freeze({
-    columnIndex: summary.columnIndex,
-    fieldNames: Object.freeze([summary.fieldName]),
-    rowIndex: summary.rowIndex,
-    ...(summary.rowId === undefined ? {} : { rowId: summary.rowId }),
-    ...(summary.columnName === undefined ? {} : { columnName: summary.columnName }),
-  });
-}
-
 /** Owns one inline editing session at a time. */
 export class InlineEditSessionController<
   TRow extends object,
@@ -136,11 +102,13 @@ export class InlineEditSessionController<
 > {
   private readonly fieldsByName: ReadonlyMap<string, Readonly<FieldConfig<TFormValues>>>;
 
-  private readonly viewFactory: InlineEditViewFactory<TFormValues>;
+  private readonly sessionFactory: InlineSessionFactory<TFormValues>;
 
-  private readonly alertDialog: EditorAlertDialog | undefined;
+  private readonly validationController: InlineValidationController<TRow, TFormValues>;
 
-  private readonly focusStateMachine = new InlineFocusStateMachine();
+  private readonly commitCoordinator: InlineCommitCoordinator<TRow, TFormValues>;
+
+  private readonly focusCoordinator: InlineFocusCoordinator<TRow, TFormValues>;
 
   private state: InlineEditState;
 
@@ -152,13 +120,7 @@ export class InlineEditSessionController<
 
   private changeAbortController: AbortController | undefined;
 
-  private postCommitFocusTarget: Readonly<LogicalCellTarget<TRow>> | undefined;
-
   private nextSessionId = 0;
-
-  private nextAlertId = 0;
-
-  private activeAlertToken: InlineFocusRestoreToken | undefined;
 
   private isDestroyed = false;
 
@@ -168,14 +130,65 @@ export class InlineEditSessionController<
     this.fieldsByName = new Map<string, Readonly<FieldConfig<TFormValues>>>(
       arguments_.fields.map((field) => [field.name, field]),
     );
-    this.viewFactory = arguments_.viewFactory;
-    this.alertDialog = arguments_.enabled
-      ? new EditorAlertDialog(
-          arguments_.tableElement,
-          `${arguments_.instanceId}-inline`,
-          arguments_.language,
-        )
-      : undefined;
+    this.focusCoordinator = new InlineFocusCoordinator({
+      enabled: arguments_.enabled,
+      instanceId: arguments_.instanceId,
+      language: arguments_.language,
+      mappings: arguments_.mappings,
+      options: arguments_.options,
+      table: arguments_.table,
+      tableElement: arguments_.tableElement,
+    });
+    this.sessionFactory = new InlineSessionFactory({
+      instanceId: arguments_.instanceId,
+      language: arguments_.language,
+      onCancel: (reason) => {
+        void this.cancel(reason);
+      },
+      onSubmit: () => {
+        void this.submit().catch(() => undefined);
+      },
+      onUserChange: this.handleUserChange,
+      options: arguments_.options,
+      tableElement: arguments_.tableElement,
+      viewFactory: arguments_.viewFactory,
+    });
+    this.validationController = new InlineValidationController({
+      fields: arguments_.fields,
+      isCurrentSession: (session) => this.session === session,
+      language: arguments_.language,
+      presentFailure: async (session, error, message) => {
+        session.controller.showError(message);
+        session.host.setInvalid(true);
+        this.transitionTo({
+          error,
+          status: 'error',
+          target: session.capture.summary,
+        });
+        await this.focusCoordinator.showAlert(
+          session,
+          error,
+          'validation',
+          () => this.session === session,
+          () => this.isDestroyed,
+        );
+      },
+      reportError: arguments_.reportError,
+      validateUnique: arguments_.validateUnique,
+    });
+    this.commitCoordinator = new InlineCommitCoordinator({
+      drawOwnership: arguments_.drawOwnership,
+      editOperationRunner: arguments_.editOperationRunner,
+      editor: arguments_.editor,
+      editorOptions: arguments_.editorOptions,
+      mappings: arguments_.mappings,
+      operationOwner: arguments_.operationOwner,
+      options: arguments_.options,
+      reportError: arguments_.reportError,
+      table: arguments_.table,
+      tableElement: arguments_.tableElement,
+      targetUnavailableMessage: arguments_.language.inline.targetUnavailable,
+    });
     this.state = arguments_.enabled
       ? Object.freeze({ status: 'idle' })
       : Object.freeze({ status: 'disabled' });
@@ -217,7 +230,7 @@ export class InlineEditSessionController<
     const activationAbortController = new AbortController();
     this.activationAbortController = activationAbortController;
     this.transitionTo({ status: 'activating', target: capture.summary });
-    let activationController: ManagedFieldController<TFormValues> | undefined;
+    let createdSession: InlineEditSession<TRow, TFormValues> | undefined;
 
     try {
       const shouldOpen = await this.runBeforeOpen(capture, activationAbortController);
@@ -242,22 +255,18 @@ export class InlineEditSessionController<
         this.arguments_.language.inline.targetUnavailable,
       );
 
-      const controller = createFieldController(
-        capture.field,
-        `${this.arguments_.instanceId}-inline-${String(capture.summary.rowIndex)}-${String(capture.summary.columnIndex)}`,
-        this.arguments_.language,
-        this.handleUserChange,
-        INLINE_FIELD_PRESENTATION,
-      );
-      activationController = controller;
-      controller.setValue(capture.originalValue);
-      const normalizedOriginalValue = await Promise.resolve(
-        controller.getValue(activationAbortController.signal),
-      );
+      createdSession = await this.sessionFactory.create({
+        capture,
+        interactionToken,
+        originalActiveElement,
+        sessionId: (this.nextSessionId += 1),
+        signal: activationAbortController.signal,
+      });
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Cancellation can occur while an asynchronous controller resolves.
       if (activationAbortController.signal.aborted || this.isDestroyed) {
-        controller.destroy();
-        activationController = undefined;
+        createdSession.host.destroy();
+        createdSession.controller.destroy();
+        createdSession = undefined;
         this.releaseActivationInteraction();
         if ((this.state as InlineEditState).status === 'activating') {
           this.transitionTo({ status: 'idle' });
@@ -272,47 +281,20 @@ export class InlineEditSessionController<
         this.arguments_.language.inline.targetUnavailable,
       );
 
-      const host = this.viewFactory.create(
-        {
-          ...(this.arguments_.options.className === undefined
-            ? {}
-            : { className: this.arguments_.options.className }),
-          controller,
-          field: capture.field,
-          tableElement: this.arguments_.tableElement,
-        },
-        {
-          onCancel: (reason) => {
-            void this.cancel(reason);
-          },
-          onSubmit: () => {
-            void this.submit().catch(() => undefined);
-          },
-        },
-      );
-      this.session = {
-        capture,
-        changeRevision: 0,
-        controller,
-        host,
-        interactionToken,
-        lifecycleAbortController: new AbortController(),
-        normalizedOriginalValue,
-        originalActiveElement,
-        sessionId: (this.nextSessionId += 1),
-      };
-      activationController = undefined;
+      const session = createdSession;
+      this.session = session;
+      createdSession = undefined;
       this.activationInteractionToken = undefined;
-      host.mount(capture.cellNode);
+      session.host.mount(capture.cellNode);
       this.arguments_.onSessionStart?.();
-      host.element.addEventListener('keydown', this.handleKeyDown);
-      host.element.addEventListener('focusout', this.handleFocusOut);
-      host.element.addEventListener('click', this.stopOwnedPointerEvent);
-      host.element.addEventListener('dblclick', this.stopOwnedPointerEvent);
-      host.element.addEventListener('pointerdown', this.stopOwnedPointerEvent);
+      session.host.element.addEventListener('keydown', this.handleKeyDown);
+      session.host.element.addEventListener('focusout', this.handleFocusOut);
+      session.host.element.addEventListener('click', this.stopOwnedPointerEvent);
+      session.host.element.addEventListener('dblclick', this.stopOwnedPointerEvent);
+      session.host.element.addEventListener('pointerdown', this.stopOwnedPointerEvent);
       this.transitionTo({ dirty: false, status: 'editing', target: capture.summary });
-      this.focusStateMachine.transition({ type: 'session-mounted' });
-      host.focus();
+      this.focusCoordinator.sessionMounted();
+      session.host.focus();
       dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:open'>(
         this.arguments_.tableElement,
         'alteditor-lite:open',
@@ -320,7 +302,7 @@ export class InlineEditSessionController<
           editor: this.arguments_.editor,
           mode: 'inline',
           operation: 'edit',
-          target: asInlineEventTarget(capture.summary),
+          target: createInlineEventTarget(capture.summary),
           type: 'open',
         },
       );
@@ -329,11 +311,9 @@ export class InlineEditSessionController<
       if (this.session?.capture === capture) {
         this.cleanupSession('api', true, false, false);
       } else {
-        activationController?.destroy();
-        this.arguments_.interactionCoordinator.release(interactionToken);
-      }
-      if (this.activationInteractionToken === interactionToken) {
-        this.activationInteractionToken = undefined;
+        createdSession?.host.destroy();
+        createdSession?.controller.destroy();
+        this.releaseActivationInteraction();
       }
       if ((this.state as InlineEditState).status === 'activating') {
         this.transitionTo({ status: 'idle' });
@@ -351,7 +331,7 @@ export class InlineEditSessionController<
             mode: 'inline',
             operation: 'edit',
             phase: 'open',
-            target: asOperationTarget(capture.summary),
+            target: createInlineOperationTarget(capture.summary),
           },
           true,
         );
@@ -376,7 +356,12 @@ export class InlineEditSessionController<
     }
 
     const navigationIntent = session.navigationIntent;
-    const presentation = this.createPresentation(session, navigationIntent);
+    let focusTarget: Readonly<LogicalCellTarget<TRow>> | undefined;
+    const presentation = this.createPresentation(
+      session,
+      navigationIntent,
+      () => focusTarget,
+    );
     presentation.startValidation();
 
     let candidate: unknown;
@@ -399,106 +384,8 @@ export class InlineEditSessionController<
       return;
     }
     session.candidate = candidate;
-    const target = asOperationTarget(session.capture.summary);
-    const result = await this.arguments_.editOperationRunner.run({
-      ...(this.arguments_.editorOptions.hooks?.afterSuccess === undefined
-        ? {}
-        : {
-            afterSuccess: async (context) => {
-              await Promise.resolve(
-                this.arguments_.editorOptions.hooks?.afterSuccess?.(context),
-              );
-            },
-          }),
-      ...(this.arguments_.editorOptions.hooks?.beforeSubmit === undefined
-        ? {}
-        : {
-            beforeSubmit: async (transaction, context) => {
-              const shouldContinue = await Promise.resolve(
-                this.arguments_.editorOptions.hooks?.beforeSubmit?.(transaction.values, {
-                  ...context,
-                  original: transaction.original,
-                }),
-              );
-              return shouldContinue !== false;
-            },
-          }),
-      commit: async (row, rowIndex, request) => {
-        if (this.arguments_.options.updateMode === 'refresh') {
-          await this.arguments_.drawOwnership.runWhile(
-            'refresh',
-            request.abortController.signal,
-            async () => {
-              await Promise.resolve(
-                this.arguments_.editorOptions.operations?.refresh?.(
-                  this.arguments_.operationOwner.context(
-                    this.arguments_.table,
-                    request,
-                    'refresh',
-                  ),
-                ),
-              );
-            },
-          );
-          return Object.freeze({ row });
-        }
-
-        const commitResult = await commitRowUpdateWithFocus(
-          this.arguments_.table,
-          rowIndex,
-          row,
-          session.capture.column.columnIndex,
-          session.capture.column.columnName,
-          this.arguments_.drawOwnership,
-          request.abortController.signal,
-        );
-        this.postCommitFocusTarget = commitResult.focusTarget;
-        return commitResult;
-      },
-      dispatchSubmit: (transaction) => {
-        dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:submit'>(
-          this.arguments_.tableElement,
-          'alteditor-lite:submit',
-          {
-            editor: this.arguments_.editor,
-            mode: 'inline',
-            operation: 'edit',
-            original: transaction.original,
-            target: asInlineEventTarget(session.capture.summary),
-            type: 'submit',
-            values: transaction.values,
-          },
-        );
-      },
-      dispatchSuccess: (transaction, commitResult) => {
-        dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:success'>(
-          this.arguments_.tableElement,
-          'alteditor-lite:success',
-          {
-            editor: this.arguments_.editor,
-            mode: 'inline',
-            operation: 'edit',
-            original: transaction.original,
-            row: commitResult.row,
-            target: asInlineEventTarget(session.capture.summary),
-            type: 'success',
-            values: transaction.values,
-          },
-        );
-      },
-      mode: 'inline',
-      original: session.capture.rowCapture.snapshot.original,
-      presentation,
-      reportError: this.arguments_.reportError,
-      revalidateTarget: () =>
-        resolveInlineTarget(
-          this.arguments_.table,
-          this.arguments_.tableElement,
-          session.capture,
-          this.arguments_.mappings,
-          this.arguments_.language.inline.targetUnavailable,
-        ),
-      target,
+    const result = await this.commitCoordinator.run(session, presentation, (target) => {
+      focusTarget = target;
     });
     this.throwRejectedResult(result);
   }
@@ -540,26 +427,35 @@ export class InlineEditSessionController<
     this.releaseActivationInteraction();
     this.changeAbortController?.abort();
     this.arguments_.operationOwner.abort('inline');
-    this.alertDialog?.destroy();
     this.arguments_.table.off('.altEditorLiteInline');
     if (this.session !== undefined) {
       this.cleanupSession('api', true, ownsInlineFocus(this.session.host.element));
     }
     this.transitionTo({ status: 'destroyed' });
-    this.focusStateMachine.transition({ type: 'destroyed' });
+    this.focusCoordinator.destroy();
   }
 
   private createPresentation(
     session: InlineEditSession<TRow, TFormValues>,
     navigationIntent: InlineNavigationIntent | undefined,
+    getFocusTarget: () => Readonly<LogicalCellTarget<TRow>> | undefined,
   ) {
     return new InlineEditPresentationAdapter<TRow, TFormValues>({
       completeSuccess: async () => {
         this.cleanupSession('success', false, false);
         synchronizeExtensionStateAfterCommit(this.arguments_.table);
-        await this.restorePostCommitFocus(session, navigationIntent);
+        await this.focusCoordinator.restoreAfterCommit(
+          session,
+          navigationIntent,
+          getFocusTarget(),
+          async (rowIndex, columnIndex) => {
+            await this.open(rowIndex, columnIndex);
+          },
+        );
       },
-      restoreAfterOperationFailure: () => undefined,
+      restoreAfterOperationFailure: () => {
+        this.focusCoordinator.operationReturnedToEditing();
+      },
       restoreAfterValidationFailure: () => {
         session.host.setBusy(false);
         if (this.state.status === 'validating') {
@@ -569,14 +465,7 @@ export class InlineEditSessionController<
             target: session.capture.summary,
           });
         }
-        if (
-          this.focusStateMachine.current() === 'validating' ||
-          this.focusStateMachine.current() === 'submitting'
-        ) {
-          this.focusStateMachine.transition({
-            type: 'operation-returned-to-editing',
-          });
-        }
+        this.focusCoordinator.operationReturnedToEditing();
         session.host.focus();
       },
       setBusy: (isBusy: boolean) => {
@@ -586,7 +475,7 @@ export class InlineEditSessionController<
             status: 'submitting',
             target: session.capture.summary,
           });
-          this.focusStateMachine.transition({ type: 'submission-started' });
+          this.focusCoordinator.submissionStarted();
         }
       },
       showOperationError: async (error: AltEditorLiteError) => {
@@ -600,7 +489,13 @@ export class InlineEditSessionController<
           status: 'error',
           target: session.capture.summary,
         });
-        await this.showAlert(session, error, 'operation');
+        await this.focusCoordinator.showAlert(
+          session,
+          error,
+          'operation',
+          () => this.session === session,
+          () => this.isDestroyed,
+        );
       },
       startValidation: () => {
         if (this.state.status === 'validating') {
@@ -613,93 +508,11 @@ export class InlineEditSessionController<
           status: 'validating',
           target: session.capture.summary,
         });
-        this.focusStateMachine.transition({ type: 'validation-started' });
+        this.focusCoordinator.validationStarted();
       },
       validate: async (signal: AbortSignal) =>
-        await this.validateSession(session, signal),
+        await this.validationController.validate(session, signal),
     });
-  }
-
-  private async validateSession(
-    session: InlineEditSession<TRow, TFormValues>,
-    signal: AbortSignal,
-  ) {
-    const candidate = session.candidate;
-    const values = buildInlineValues(
-      this.arguments_.fields,
-      session.capture.rowCapture.sourceRow,
-      session.capture.field.name,
-      candidate,
-    );
-    const nativeResult = session.controller.validateNative();
-    if (!nativeResult.valid) {
-      const message = nativeResult.message ?? this.arguments_.language.validation.invalid;
-      return await this.validationFailure(session, message);
-    }
-
-    const customResult = await session.controller.validateCustom(values, signal);
-    signal.throwIfAborted();
-    if (!customResult.valid) {
-      const message = customResult.message ?? this.arguments_.language.validation.invalid;
-      return await this.validationFailure(session, message);
-    }
-
-    const uniqueErrors = this.arguments_.validateUnique(
-      values,
-      session.capture.rowCapture.sourceRow,
-    );
-    const currentError = uniqueErrors[session.capture.field.name];
-    if (currentError !== undefined) {
-      return await this.validationFailure(session, currentError);
-    }
-
-    await session.pendingChange;
-    signal.throwIfAborted();
-    if (
-      session.pendingChangeError?.revision === session.changeRevision &&
-      this.session === session
-    ) {
-      const changeError = session.pendingChangeError.error;
-      return await this.validationFailure(
-        session,
-        changeError.fieldErrors?.[session.capture.field.name] ?? changeError.message,
-        changeError,
-      );
-    }
-
-    return {
-      changedFields: [session.capture.field.name] as FieldPath<TFormValues>[],
-      collectedFieldValues: new Map([[session.capture.field.name, candidate]]),
-      valid: true as const,
-      values,
-    };
-  }
-
-  private async validationFailure(
-    session: InlineEditSession<TRow, TFormValues>,
-    message: string,
-    existingError?: AltEditorLiteError,
-  ) {
-    const error =
-      existingError ??
-      new AltEditorLiteError({
-        code: 'VALIDATION',
-        fieldErrors: { [session.capture.field.name]: message },
-        message,
-        retryable: true,
-      });
-    session.controller.showError(message);
-    session.host.setInvalid(true);
-    this.transitionTo({
-      error,
-      status: 'error',
-      target: session.capture.summary,
-    });
-    await this.showAlert(session, error, 'validation');
-    return {
-      error,
-      valid: false as const,
-    };
   }
 
   private async runBeforeOpen(
@@ -716,7 +529,7 @@ export class InlineEditSessionController<
       row: capture.rowCapture.snapshot.original,
       signal: abortController.signal,
       table: this.arguments_.table,
-      target: asOperationTarget(capture.summary),
+      target: createInlineOperationTarget(capture.summary),
     });
     return (await Promise.resolve(hook(context))) !== false;
   }
@@ -741,7 +554,7 @@ export class InlineEditSessionController<
       const session = this.session;
       if (
         session === undefined ||
-        !this.focusStateMachine.shouldApplyBlurAction() ||
+        !this.focusCoordinator.shouldApplyBlurAction() ||
         ownsInlineFocus(session.host.element) ||
         this.state.status !== 'editing'
       ) {
@@ -813,11 +626,7 @@ export class InlineEditSessionController<
     }
     if (this.state.status === 'validating') {
       this.arguments_.operationOwner.abort('inline');
-      if (this.focusStateMachine.current() === 'validating') {
-        this.focusStateMachine.transition({
-          type: 'operation-returned-to-editing',
-        });
-      }
+      this.focusCoordinator.operationReturnedToEditing();
       this.transitionTo({
         dirty: true,
         status: 'editing',
@@ -845,224 +654,15 @@ export class InlineEditSessionController<
     this.changeAbortController?.abort();
     const abortController = new AbortController();
     this.changeAbortController = abortController;
-    const pendingChange = this.runOnChange(
-      session,
-      abortController.signal,
-      revision,
-    ).finally(() => {
-      if (session.pendingChange === pendingChange) {
-        delete session.pendingChange;
-      }
-    });
+    const pendingChange = this.validationController
+      .runOnChange(session, abortController.signal, revision)
+      .finally(() => {
+        if (session.pendingChange === pendingChange) {
+          delete session.pendingChange;
+        }
+      });
     session.pendingChange = pendingChange;
   };
-
-  private async runOnChange(
-    session: InlineEditSession<TRow, TFormValues>,
-    signal: AbortSignal,
-    revision: number,
-  ): Promise<void> {
-    try {
-      const candidate = await Promise.resolve(session.controller.getValue(signal));
-      const values = buildInlineValues(
-        this.arguments_.fields,
-        session.capture.rowCapture.sourceRow,
-        session.capture.field.name,
-        candidate,
-      );
-      await session.controller.runOnChange(values, signal);
-      if (
-        !signal.aborted &&
-        this.session === session &&
-        revision === session.changeRevision
-      ) {
-        delete session.pendingChangeError;
-      }
-    } catch (rawError: unknown) {
-      if (
-        !signal.aborted &&
-        this.session === session &&
-        revision === session.changeRevision
-      ) {
-        const error = normalizeOperationError(rawError, signal, this.arguments_.language);
-        if (!(error instanceof InternalOperationAbort)) {
-          session.pendingChangeError = { error, revision };
-          this.arguments_.reportError(
-            error,
-            {
-              committed: false,
-              mode: 'inline',
-              operation: 'edit',
-              phase: 'validation',
-              target: asOperationTarget(session.capture.summary),
-            },
-            true,
-          );
-        }
-      }
-    }
-  }
-
-  private async showAlert(
-    session: InlineEditSession<TRow, TFormValues>,
-    error: AltEditorLiteError,
-    kind: 'validation' | 'operation',
-  ): Promise<void> {
-    if (this.isDestroyed || this.session !== session) {
-      return;
-    }
-    const alertDialog = this.alertDialog;
-    if (alertDialog === undefined) {
-      return;
-    }
-    const focusState = this.focusStateMachine.current();
-    if (!['editing', 'validating', 'submitting'].includes(focusState)) {
-      return;
-    }
-
-    this.focusStateMachine.transition({ type: 'alert-requested' });
-    const token = Object.freeze({
-      alertId: (this.nextAlertId += 1),
-      sessionId: session.sessionId,
-    });
-    this.activeAlertToken = token;
-    const fieldMessage = error.fieldErrors?.[session.capture.field.name];
-    const unrelatedMessages = Object.entries(error.fieldErrors ?? {})
-      .filter(([fieldName]) => fieldName !== session.capture.field.name)
-      .map(([, message]) => message);
-    const message =
-      unrelatedMessages.length > 0
-        ? [error.message, ...unrelatedMessages].join(' ')
-        : (fieldMessage ?? error.message);
-    let alertPromise: Promise<void>;
-    try {
-      alertPromise = alertDialog.open({
-        message,
-        title:
-          kind === 'validation'
-            ? this.arguments_.language.alert.validationTitle
-            : this.arguments_.language.alert.operationTitle,
-      });
-    } catch (error: unknown) {
-      this.activeAlertToken = undefined;
-      if (
-        this.session === session &&
-        this.focusStateMachine.current() === 'alert-opening'
-      ) {
-        this.focusStateMachine.transition({ type: 'alert-open-failed' });
-        session.host.focus();
-      }
-      throw error;
-    }
-    this.focusStateMachine.transition({ type: 'alert-opened' });
-    await alertPromise;
-
-    if (
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Destruction can occur while the modal promise is pending.
-      this.isDestroyed ||
-      this.session !== session ||
-      this.activeAlertToken !== token ||
-      this.focusStateMachine.current() !== 'alert-open'
-    ) {
-      return;
-    }
-    this.focusStateMachine.transition({ type: 'alert-close-requested' });
-    this.focusStateMachine.transition({ type: 'focus-restore-started' });
-    const canRestore =
-      session.host.element.isConnected &&
-      session.host.element.closest('table') === this.arguments_.tableElement;
-    if (canRestore) {
-      session.host.focus();
-    } else {
-      focusInlineCellOrTable(
-        this.arguments_.table,
-        this.arguments_.tableElement,
-        undefined,
-      );
-    }
-    this.focusStateMachine.transition({
-      type: canRestore ? 'focus-restored' : 'focus-restore-failed',
-    });
-    this.activeAlertToken = undefined;
-  }
-
-  private async restorePostCommitFocus(
-    session: InlineEditSession<TRow, TFormValues>,
-    navigationIntent: InlineNavigationIntent | undefined,
-  ): Promise<void> {
-    if (navigationIntent !== undefined) {
-      try {
-        const navigationRowIndex =
-          navigationIntent.rowId === undefined
-            ? navigationIntent.rowIndex
-            : resolveUniqueRowIndexById(this.arguments_.table, navigationIntent.rowId);
-        if (navigationRowIndex === undefined) {
-          throw new EditorTargetUnavailableError(
-            this.arguments_.language.inline.targetUnavailable,
-          );
-        }
-        await this.open(navigationRowIndex, navigationIntent.columnIndex);
-        return;
-      } catch {
-        // The committed cell or table receives focus below.
-      }
-    }
-
-    let cellNode: HTMLTableCellElement | undefined;
-    try {
-      if (this.arguments_.options.updateMode === 'refresh') {
-        cellNode = this.resolveRefreshCell(session.capture.summary);
-      } else if (this.postCommitFocusTarget !== undefined) {
-        cellNode = resolveLogicalCellTarget(
-          this.arguments_.table,
-          this.postCommitFocusTarget,
-          this.arguments_.language.inline.targetUnavailable,
-        );
-      }
-    } catch {
-      cellNode = undefined;
-    } finally {
-      this.postCommitFocusTarget = undefined;
-    }
-    focusInlineCellOrTable(this.arguments_.table, this.arguments_.tableElement, cellNode);
-  }
-
-  private resolveRefreshCell(
-    summary: Readonly<InlineTargetSummary>,
-  ): HTMLTableCellElement {
-    if (summary.rowId === undefined) {
-      throw new EditorTargetUnavailableError(
-        this.arguments_.language.inline.targetUnavailable,
-      );
-    }
-    const rowIndexById = resolveUniqueRowIndexById(this.arguments_.table, summary.rowId);
-    if (rowIndexById === undefined) {
-      throw new EditorTargetUnavailableError(
-        this.arguments_.language.inline.targetUnavailable,
-      );
-    }
-    const row = this.arguments_.table.row(rowIndexById);
-    const rowIndex = row.index();
-    const column = this.arguments_.table.column(summary.columnIndex);
-    if (
-      !row.any() ||
-      typeof rowIndex !== 'number' ||
-      (summary.columnName !== undefined && column.name() !== summary.columnName) ||
-      !isColumnVisiblyAvailable(column) ||
-      this.arguments_.mappings.get(summary.columnIndex)?.fieldName !== summary.fieldName
-    ) {
-      throw new EditorTargetUnavailableError(
-        this.arguments_.language.inline.targetUnavailable,
-      );
-    }
-    const cellNode = this.arguments_.table.cell(rowIndex, summary.columnIndex).node();
-    if (!(cellNode instanceof HTMLTableCellElement) || !cellNode.isConnected) {
-      throw new EditorTargetUnavailableError(
-        this.arguments_.language.inline.targetUnavailable,
-      );
-    }
-    return cellNode;
-  }
 
   private cleanupSession(
     reason: EditorCloseReason,
@@ -1074,14 +674,7 @@ export class InlineEditSessionController<
     if (session === undefined) {
       return;
     }
-    if (
-      this.focusStateMachine.current() !== 'cleanup' &&
-      this.focusStateMachine.current() !== 'destroyed'
-    ) {
-      this.focusStateMachine.transition({ type: 'cleanup-started' });
-    }
-    this.activeAlertToken = undefined;
-    this.alertDialog?.close();
+    this.focusCoordinator.beginCleanup();
     this.session = undefined;
     session.lifecycleAbortController.abort();
     this.changeAbortController?.abort();
@@ -1114,9 +707,7 @@ export class InlineEditSessionController<
     if (this.state.status !== 'destroyed') {
       this.transitionTo({ status: 'idle' });
     }
-    if (this.focusStateMachine.current() === 'cleanup') {
-      this.focusStateMachine.transition({ type: 'cleanup-complete' });
-    }
+    this.focusCoordinator.completeCleanup();
     if (publishClose) {
       dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:close'>(
         this.arguments_.tableElement,
@@ -1126,7 +717,7 @@ export class InlineEditSessionController<
           mode: 'inline',
           operation: 'edit',
           reason,
-          target: asInlineEventTarget(session.capture.summary),
+          target: createInlineEventTarget(session.capture.summary),
           type: 'close',
         },
       );
@@ -1134,7 +725,7 @@ export class InlineEditSessionController<
     this.arguments_.notifyIntegration();
 
     if (restoreFocus) {
-      restoreInlineOriginFocus(session.host.element, session.originalActiveElement);
+      this.focusCoordinator.restoreOrigin(session);
     }
   }
 
