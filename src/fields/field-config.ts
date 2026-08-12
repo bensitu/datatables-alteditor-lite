@@ -85,7 +85,7 @@ export interface VisibleFieldConfig<
   /** Whether the control must contain a value. */
   readonly required?: boolean;
   /** Whether the value is collected but cannot be changed. */
-  readonly readonly?: boolean;
+  readonly readOnly?: boolean;
 }
 
 /**

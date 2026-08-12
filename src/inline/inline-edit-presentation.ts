@@ -10,10 +10,10 @@ import {
 } from './inline-interaction-behavior.js';
 
 import type { InlineActivationStrategy } from './inline-activation-strategy.js';
-import type { ResolvedInlineEditorOptions } from './inline-edit-options.js';
 import type { InlineEditViewFactory } from './inline-edit-view-factory.js';
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
-import type { EditMode } from '../core/edit-mode.js';
+import type { InlineActivation } from '../core/editing-options.js';
+import type { ResolvedInlineEditingOptions } from '../core/resolve-editing-options.js';
 
 /** How an active inline session interacts with another editor operation. */
 export type InlineConflictPolicy =
@@ -32,11 +32,11 @@ export function createInlineEditPresentation<
   TRow extends object,
   TFormValues extends object,
 >(
-  editMode: EditMode,
-  options: Readonly<ResolvedInlineEditorOptions<TFormValues>>,
+  activation: InlineActivation,
+  options: Readonly<ResolvedInlineEditingOptions<TFormValues>>,
   language: Readonly<AltEditorLiteLanguage>,
 ): Readonly<InlineEditPresentation<TRow, TFormValues>> {
-  if (editMode === 'inlineHover') {
+  if (activation === 'hover') {
     const trigger = new InlineHoverTrigger(language.inline.editCell);
     return Object.freeze({
       activationStrategy: new InlineHoverActivation<TRow, TFormValues>(trigger),

@@ -236,7 +236,7 @@ describe('file field controller', () => {
     const controller = createController({
       label: 'Attachment',
       name: 'attachment',
-      readonly: true,
+      readOnly: true,
       type: 'file',
     });
     const inputElement = getInput(controller);

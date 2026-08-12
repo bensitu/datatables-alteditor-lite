@@ -7,6 +7,7 @@ import {
 } from '../../src/core/alt-editor-lite-error.js';
 import { ENGLISH_LANGUAGE } from '../../src/core/alt-editor-lite-language.js';
 import { resolveEditorCapabilities } from '../../src/core/editor-capabilities.js';
+import { resolveEditingOptions } from '../../src/core/resolve-editing-options.js';
 import { validateOperationConfiguration } from '../../src/core/validate-operation-configuration.js';
 import { createEditorButtonState } from '../../src/datatables/register-editor-buttons.js';
 
@@ -94,12 +95,64 @@ describe('operation configuration', () => {
   });
 });
 
-describe('editor button enablement', () => {
-  const dialogCapabilities = resolveEditorCapabilities('dialog');
+describe('editing configuration', () => {
+  it('resolves stable dialog and inline defaults', () => {
+    const editing = resolveEditingOptions(undefined);
 
-  it('disables unavailable Create and selection actions', () => {
+    expect(editing).toEqual({
+      dialog: { closeOnSuccess: true, enabled: true },
+      inline: {
+        activation: 'doubleClick',
+        blurAction: 'submit',
+        columns: {},
+        enabled: false,
+        enterAction: 'submit',
+        keyboardActivation: { key: 'F2' },
+        tabAction: 'submit-and-move',
+        updateMode: 'replace-row',
+      },
+    });
+    expect(editing.inline).not.toHaveProperty('className');
+  });
+
+  it('resolves independent dialog and inline choices', () => {
+    const inlineOnly = resolveEditingOptions({
+      dialog: { closeOnSuccess: false, enabled: false },
+      inline: {
+        activation: 'hover',
+        enabled: true,
+        keyboardActivation: false,
+      },
+    });
+    const hybrid = resolveEditingOptions({
+      dialog: { enabled: true },
+      inline: { enabled: true },
+    });
+
+    expect(inlineOnly.dialog).toMatchObject({
+      closeOnSuccess: false,
+      enabled: false,
+    });
+    expect(inlineOnly.inline).toMatchObject({
+      activation: 'hover',
+      enabled: true,
+      keyboardActivation: false,
+    });
+    expect(hybrid.dialog.enabled).toBe(true);
+    expect(hybrid.inline.enabled).toBe(true);
+  });
+});
+
+describe('editor button enablement', () => {
+  const dialogCapabilities = resolveEditorCapabilities(resolveEditingOptions(undefined), {
+    create: true,
+  });
+
+  it('disables unavailable selection actions', () => {
     const state = createEditorButtonState({
-      capabilities: dialogCapabilities,
+      capabilities: resolveEditorCapabilities(resolveEditingOptions(undefined), {
+        create: false,
+      }),
       hasCreate: false,
       hasSelect: false,
       isReady: true,
@@ -107,8 +160,7 @@ describe('editor button enablement', () => {
       selectedRowCount: 0,
     });
 
-    expect(state.create.enabled).toBe(false);
-    expect(state.create.title).toContain('Configure');
+    expect(state.create).toMatchObject({ enabled: false, visible: false });
     expect(state.edit.enabled).toBe(false);
     expect(state.edit.title).toContain('Select is required');
     expect(state.remove.enabled).toBe(false);
@@ -174,7 +226,13 @@ describe('editor button enablement', () => {
 
   it('hides Dialog Edit without removing the global button capability', () => {
     const state = createEditorButtonState({
-      capabilities: resolveEditorCapabilities('inlineDoubleClick'),
+      capabilities: resolveEditorCapabilities(
+        resolveEditingOptions({
+          dialog: { enabled: false },
+          inline: { enabled: true },
+        }),
+        { create: true },
+      ),
       hasCreate: true,
       hasSelect: true,
       isReady: true,
@@ -186,5 +244,20 @@ describe('editor button enablement', () => {
     expect(state.create).toMatchObject({ enabled: true, visible: true });
     expect(state.remove.visible).toBe(true);
     expect(state.refresh.visible).toBe(true);
+  });
+
+  it('keeps Create and Remove independent from Dialog Edit', () => {
+    const capabilities = resolveEditorCapabilities(
+      resolveEditingOptions({ dialog: { enabled: false } }),
+      { create: true },
+    );
+
+    expect(capabilities).toEqual({
+      createDialog: true,
+      editDialog: false,
+      inlineEdit: false,
+      refresh: true,
+      removeDialog: true,
+    });
   });
 });

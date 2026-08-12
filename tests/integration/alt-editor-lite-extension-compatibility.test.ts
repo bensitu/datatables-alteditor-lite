@@ -248,7 +248,10 @@ describe('DataTables 3 extension compatibility', () => {
       responsive: true,
     });
     const editor = new AltEditorLite<TestRow, ExtensionValues>(api, {
-      editMode: 'inlineDoubleClick',
+      editing: {
+        dialog: { enabled: false },
+        inline: { enabled: true },
+      },
       fields: inlineFields,
     });
     activeEditors.add(editor);

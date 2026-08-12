@@ -60,7 +60,7 @@ const fields = [
     defaultValue: false,
     label: 'Active',
     name: 'active',
-    readonly: true,
+    readOnly: true,
     type: 'checkbox',
   },
   {

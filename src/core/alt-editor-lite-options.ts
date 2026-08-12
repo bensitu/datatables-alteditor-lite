@@ -1,5 +1,5 @@
 import type { PartialEditorLanguage } from './alt-editor-lite-language.js';
-import type { EditMode } from './edit-mode.js';
+import type { EditingOptions } from './editing-options.js';
 import type {
   EditorOperation,
   EditorOperationMode,
@@ -8,7 +8,6 @@ import type {
 import type { DeepPartial, EditorValues } from './editor-values.js';
 import type { FieldConfig } from '../fields/field-config.js';
 import type { MaybePromise } from '../fields/field-value.js';
-import type { InlineEditorOptions } from '../inline/inline-edit-options.js';
 import type { Api } from 'datatables.net';
 
 /**
@@ -151,10 +150,10 @@ export interface AltEditorLiteOptions<
   TRow extends object,
   TFormValues extends object = DeepPartial<TRow>,
 > {
-  /** Selects the only Edit presentation enabled by this instance. */
-  readonly editMode?: EditMode;
   /** Ordered field definitions used by Create and Edit forms. */
   readonly fields: readonly FieldConfig<TFormValues>[];
+  /** Composable Dialog Edit and Inline Edit behavior. */
+  readonly editing?: EditingOptions<TRow, TFormValues>;
   /**
    * Asynchronous editor operations.
    *
@@ -168,12 +167,8 @@ export interface AltEditorLiteOptions<
    * declared field paths.
    */
   readonly clientSide?: ClientSideOperations<TRow, TFormValues>;
-  /** Whether successful Create and Edit operations close the dialog. Defaults to true. */
-  readonly closeOnSuccess?: boolean;
   /** Language data or nested overrides merged with the English fallback. */
   readonly language?: PartialEditorLanguage;
-  /** Optional single-cell inline editing behavior. */
-  readonly inline?: InlineEditorOptions<TRow, TFormValues>;
   /** Optional lifecycle callbacks. */
   readonly hooks?: EditorHooks<TRow, TFormValues>;
 }

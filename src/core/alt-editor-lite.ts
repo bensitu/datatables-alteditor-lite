@@ -20,7 +20,6 @@ import { validateFieldConfigurations } from '../fields/validate-field-configurat
 import { buildEditorForm } from '../form/build-editor-form.js';
 import { InlineColumnMappingRegistry } from '../inline/inline-column-mapping-registry.js';
 import { InlineEditController } from '../inline/inline-edit-controller.js';
-import { resolveInlineOptions } from '../inline/inline-edit-options.js';
 import { createInlineEditPresentation } from '../inline/inline-edit-presentation.js';
 import { validateInlineConfiguration } from '../inline/validate-inline-configuration.js';
 import { createInstanceId } from '../instance/create-instance-id.js';
@@ -43,7 +42,6 @@ import {
   type AltEditorLiteLanguage,
 } from './alt-editor-lite-language.js';
 import { assertCompleteRow, isPromiseLike } from './complete-row-result.js';
-import { resolveEditMode } from './edit-mode.js';
 import { commitRowUpdate } from './editing/commit-row-update.js';
 import { DrawOwnership } from './editing/draw-ownership.js';
 import { EditOperationRunner } from './editing/edit-operation-runner.js';
@@ -60,6 +58,7 @@ import {
   normalizeOperationError,
 } from './error-normalization.js';
 import { freezeEditorValues } from './freeze-editor-values.js';
+import { resolveEditingOptions } from './resolve-editing-options.js';
 import { validateHooksConfiguration } from './validate-hooks-configuration.js';
 import { validateOperationConfiguration } from './validate-operation-configuration.js';
 
@@ -70,7 +69,6 @@ import type {
   EditorErrorHookContext,
   OperationContext,
 } from './alt-editor-lite-options.js';
-import type { EditMode } from './edit-mode.js';
 import type { EditorCapabilities } from './editor-capabilities.js';
 import type {
   DialogAction,
@@ -79,6 +77,7 @@ import type {
 } from './editor-operation.js';
 import type { EditorState } from './editor-state.js';
 import type { DeepPartial, EditorValues } from './editor-values.js';
+import type { ResolvedEditingOptions } from './resolve-editing-options.js';
 import type { FieldController } from '../fields/field-controller.js';
 import type { EditorFormController } from '../form/form-controller.js';
 import type { InlineEditState } from '../inline/inline-edit-state.js';
@@ -107,7 +106,7 @@ export class AltEditorLite<
 > {
   private readonly dialog: EditorDialog;
 
-  private readonly editMode: EditMode;
+  private readonly editing: Readonly<ResolvedEditingOptions<TFormValues>>;
 
   private readonly capabilities: Readonly<EditorCapabilities>;
 
@@ -157,13 +156,17 @@ export class AltEditorLite<
     private readonly table: Api<TRow>,
     private readonly options: AltEditorLiteOptions<TRow, TFormValues>,
   ) {
-    const editMode = resolveEditMode(options.editMode);
+    const editing = resolveEditingOptions(options.editing);
     validateFieldConfigurations(options.fields);
     validateOperationConfiguration(options);
     validateHooksConfiguration(options);
-    validateInlineConfiguration(table, options, editMode);
-    this.editMode = editMode;
-    this.capabilities = resolveEditorCapabilities(editMode);
+    validateInlineConfiguration(table, options, editing);
+    this.editing = editing;
+    this.capabilities = resolveEditorCapabilities(editing, {
+      create:
+        options.operations?.create !== undefined ||
+        options.clientSide?.createRow !== undefined,
+    });
     this.uniqueFieldLookups = Object.freeze(
       options.fields
         .filter((field) => field.unique === true)
@@ -189,14 +192,14 @@ export class AltEditorLite<
       this.selectIntegration = new SelectIntegration(this.table, () => {
         dispatchEditorIntegrationUpdate(this.tableElement);
       });
-      const inlineOptions = resolveInlineOptions(options.inline);
+      const inlineOptions = editing.inline;
       const inlineMappingRegistry = new InlineColumnMappingRegistry(
         table,
         options.fields,
         inlineOptions,
       );
       const inlinePresentation = createInlineEditPresentation<TRow, TFormValues>(
-        editMode,
+        editing.inline.activation,
         inlineOptions,
         this.language,
       );
@@ -568,14 +571,16 @@ export class AltEditorLite<
   private assertDialogEditAvailable(): void {
     if (!this.capabilities.editDialog) {
       throw new EditorConfigurationError(
-        'Dialog Edit is unavailable in inlineDoubleClick mode.',
+        'Dialog Edit is disabled by editing.dialog.enabled.',
       );
     }
   }
 
   private assertInlineEditAvailable(): void {
     if (!this.capabilities.inlineEdit) {
-      throw new EditorConfigurationError('Inline Edit is unavailable in dialog mode.');
+      throw new EditorConfigurationError(
+        'Inline Edit is disabled by editing.inline.enabled.',
+      );
     }
   }
 
@@ -991,7 +996,7 @@ export class AltEditorLite<
           request.abortController.signal,
           'dialog-edit-success',
         );
-        if (!(this.options.closeOnSuccess ?? true)) {
+        if (!this.editing.dialog.closeOnSuccess) {
           this.editTargetCapture = captureEditTarget(
             this.table,
             rowIndex,
@@ -1246,7 +1251,7 @@ export class AltEditorLite<
     form: EditorFormController<TFormValues>,
   ): void {
     this.releaseOperation(request);
-    if (this.options.closeOnSuccess ?? true) {
+    if (this.editing.dialog.closeOnSuccess) {
       this.closeAfterSuccess(action);
     } else {
       form.setBusy(false);
@@ -1261,7 +1266,7 @@ export class AltEditorLite<
   private completeSuccessfulEditPresentation(
     form: EditorFormController<TFormValues>,
   ): void {
-    if (this.options.closeOnSuccess ?? true) {
+    if (this.editing.dialog.closeOnSuccess) {
       this.closeAfterSuccess('edit');
     } else {
       form.setBusy(false);

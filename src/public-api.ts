@@ -36,7 +36,13 @@ export type {
   EditorOperations,
   OperationContext,
 } from './core/alt-editor-lite-options.js';
-export type { EditMode } from './core/edit-mode.js';
+export type {
+  DialogEditingOptions,
+  DialogTemplateSource,
+  EditingOptions,
+  InlineActivation,
+  InlineEditingOptions,
+} from './core/editing-options.js';
 export type {
   EditorCreateSubmitEventDetail,
   EditorCreateSuccessEventDetail,
@@ -110,6 +116,5 @@ export type { FieldValue, MaybePromise } from './fields/field-value.js';
 export type { FormController } from './form/form-controller.js';
 export type { FormValidationResult } from './form/validate-editor-form.js';
 export type { FieldPath } from './object-path/field-path.js';
-export type { InlineEditorOptions } from './inline/inline-edit-options.js';
 export type { InlineKeyboardShortcut } from './inline/inline-keyboard-shortcut.js';
 export type { InlineEditState, InlineTargetSummary } from './inline/inline-edit-state.js';

@@ -8,6 +8,8 @@ import {
   type AltEditorLiteOptions,
   type AltEditorLiteLanguage,
   type ClientSideOperations,
+  type DialogTemplateSource,
+  type EditingOptions,
   type EditorErrorEventDetail,
   type EditorHooks,
   type EditorLanguageDefinition,
@@ -18,7 +20,7 @@ import {
   type FieldConfig,
   type FieldPath,
   type FieldValue,
-  type InlineEditorOptions,
+  type InlineEditingOptions,
   type InlineEditState,
   type OperationContext,
   type RemoteSearchSelectFieldConfig,
@@ -107,40 +109,69 @@ expectType<Promise<void>>(editor.cancelInlineEdit());
 expectType<Readonly<InlineEditState>>(editor.getInlineState());
 expectType<boolean>(editor.isInlineEditing());
 
-expectAssignable<InlineEditorOptions<Row, FormValues>>({
-  columns: {
-    contact: 'contact.email',
-    disabled: false,
+expectAssignable<EditingOptions<Row, FormValues>>({
+  dialog: {
+    closeOnSuccess: false,
+    enabled: true,
+  },
+  inline: {
+    columns: {
+      contact: 'contact.email',
+      disabled: false,
+    },
+    enabled: true,
   },
 });
 expectAssignable<AltEditorLiteOptions<Row, FormValues>>({
-  editMode: 'inlineDoubleClick',
+  editing: {
+    dialog: { enabled: true },
+    inline: { activation: 'doubleClick', enabled: true },
+  },
   fields: [],
 });
-expectAssignable<AltEditorLiteOptions<Row, FormValues>>({
-  editMode: 'inlineHover',
-  fields: [],
-});
-expectAssignable<InlineEditorOptions<Row, FormValues>>({
+expectAssignable<InlineEditingOptions<Row, FormValues>>({
+  activation: 'hover',
+  enabled: true,
   keyboardActivation: { key: 'F2' },
 });
-expectAssignable<InlineEditorOptions<Row, FormValues>>({
+expectAssignable<InlineEditingOptions<Row, FormValues>>({
   keyboardActivation: { ctrlKey: true, key: 'e' },
 });
-expectAssignable<InlineEditorOptions<Row, FormValues>>({
+expectAssignable<InlineEditingOptions<Row, FormValues>>({
   keyboardActivation: false,
 });
-expectNotAssignable<InlineEditorOptions<Row, FormValues>>({
+expectNotAssignable<InlineEditingOptions<Row, FormValues>>({
   keyboardActivation: { key: 2 },
 });
-expectNotAssignable<InlineEditorOptions<Row, FormValues>>({ enabled: true });
-expectNotAssignable<InlineEditorOptions<Row, FormValues>>({ activation: 'dblclick' });
-expectNotAssignable<InlineEditorOptions<Row, FormValues>>({
+expectNotAssignable<InlineEditingOptions<Row, FormValues>>({ activation: 'dblclick' });
+expectNotAssignable<InlineEditingOptions<Row, FormValues>>({
   columns: { contact: 'contact.missing' },
+});
+expectNotAssignable<AltEditorLiteOptions<Row, FormValues>>({
+  editMode: 'inlineDoubleClick',
+  fields: [],
 });
 expectNotAssignable<AltEditorLiteOptions<Row, FormValues>>({
   fields: [],
   inline: { fields: ['contact.email'] },
+});
+expectNotAssignable<AltEditorLiteOptions<Row, FormValues>>({
+  closeOnSuccess: false,
+  fields: [],
+});
+expectAssignable<DialogTemplateSource>('#employee-editor');
+expectAssignable<DialogTemplateSource>(document.createElement('template'));
+expectAssignable<FieldConfig<FormValues>>({
+  label: 'Email',
+  name: 'contact.email',
+  readOnly: true,
+  type: 'email',
+});
+expectNotAssignable<FieldConfig<FormValues>>({
+  label: 'Email',
+  name: 'contact.email',
+  readonly: true,
+  type: 'email',
 });
 
 expectAssignable<EditorHooks<Row, FormValues>>({

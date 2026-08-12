@@ -38,7 +38,7 @@ export function createRadioFieldController<
   const inputElements: HTMLInputElement[] = [];
   const descriptionId = `${fieldId}-description`;
   const errorId = `${fieldId}-error`;
-  const isReadOnly = config.readonly ?? false;
+  const isReadOnly = config.readOnly ?? false;
   const requiredOptionIndex = config.options.findIndex(
     (option) => option.disabled !== true,
   );

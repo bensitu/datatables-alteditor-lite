@@ -8,6 +8,9 @@ import {
   type FieldConfig,
   type AltEditorLiteOptions,
   type BeforeOpenContext,
+  type EditingOptions,
+  type InlineActivation,
+  type InlineEditingOptions,
   type OperationContext,
 } from '../../src/index.js';
 
@@ -52,6 +55,29 @@ const namedColumns = [
   { data: 'name', name: 'displayName' },
   { data: 'rank', name: 'rank' },
 ] as const;
+
+function inlineEditing(
+  activation: InlineActivation = 'doubleClick',
+  options: Omit<
+    InlineEditingOptions<TestRow, InlineValues>,
+    'activation' | 'enabled'
+  > = {},
+): EditingOptions<TestRow, InlineValues> {
+  return {
+    dialog: { enabled: false },
+    inline: { ...options, activation, enabled: true },
+  };
+}
+
+function uncheckedInlineEditing(
+  options: Readonly<Record<string, unknown>> = {},
+  activation: unknown = 'doubleClick',
+): object {
+  return {
+    dialog: { enabled: false },
+    inline: { ...options, activation, enabled: true },
+  };
+}
 
 beforeAll(() => {
   originalShowModalDescriptor = Object.getOwnPropertyDescriptor(
@@ -118,8 +144,8 @@ function createDeferred<TValue>(): Deferred<TValue> {
 
 function createInlineEditor(
   options: ConstructorParameters<typeof AltEditorLite<TestRow, InlineValues>>[1] = {
+    editing: inlineEditing(),
     fields,
-    editMode: 'inlineDoubleClick',
   },
 ) {
   const fixture = createTestTable();
@@ -144,10 +170,10 @@ describe('AltEditorLite programmatic inline editing', () => {
     const disabledEditor = new AltEditorLite<TestRow, InlineValues>(api, { fields });
     editors.add(disabledEditor);
     expect(() => disabledEditor.getInlineState()).toThrow(
-      'Inline Edit is unavailable in dialog mode.',
+      'Inline Edit is disabled by editing.inline.enabled.',
     );
     await expect(disabledEditor.openInlineEdit('#row-a', 0)).rejects.toThrow(
-      'Inline Edit is unavailable in dialog mode.',
+      'Inline Edit is disabled by editing.inline.enabled.',
     );
     disabledEditor.destroy();
     editors.delete(disabledEditor);
@@ -155,12 +181,12 @@ describe('AltEditorLite programmatic inline editing', () => {
 
     const inlineFixture = createTestTable('inline-edit-mode');
     const inlineEditor = new AltEditorLite<TestRow, InlineValues>(inlineFixture.api, {
-      editMode: 'inlineDoubleClick',
+      editing: inlineEditing(),
       fields,
     });
     editors.add(inlineEditor);
     await expect(inlineEditor.openEditDialog('#row-a')).rejects.toThrow(
-      'Dialog Edit is unavailable in inlineDoubleClick mode.',
+      'Dialog Edit is disabled by editing.dialog.enabled.',
     );
     inlineEditor.destroy();
     editors.delete(inlineEditor);
@@ -170,9 +196,8 @@ describe('AltEditorLite programmatic inline editing', () => {
     expect(
       () =>
         new AltEditorLite<TestRow, InlineValues>(refreshFixture.api, {
+          editing: inlineEditing('doubleClick', { updateMode: 'refresh' }),
           fields,
-          editMode: 'inlineDoubleClick',
-          inline: { updateMode: 'refresh' },
           operations: {
             update: (_values, original) => original,
           },
@@ -239,7 +264,7 @@ describe('AltEditorLite programmatic inline editing', () => {
       data: [specialRow],
     });
     const editor = new AltEditorLite<TestRow, InlineValues>(api, {
-      editMode: 'inlineDoubleClick',
+      editing: inlineEditing(),
       fields,
     });
     editors.add(editor);
@@ -257,7 +282,7 @@ describe('AltEditorLite programmatic inline editing', () => {
       clientSide: {
         createRow: () => ({ id: 'row-c', name: 'Gamma', rank: 3 }),
       },
-      editMode: 'inlineDoubleClick',
+      editing: inlineEditing(),
       fields,
     });
     await editor.openInlineEdit('#row-a', 0);
@@ -280,7 +305,7 @@ describe('AltEditorLite programmatic inline editing', () => {
   it('defers the latest change callback failure until submission', async () => {
     const onError = vi.fn();
     const { api, editor } = createInlineEditor({
-      editMode: 'inlineDoubleClick',
+      editing: inlineEditing(),
       fields: [
         {
           inlineEdit: true,
@@ -358,8 +383,8 @@ describe('AltEditorLite programmatic inline editing', () => {
       },
     );
     const { api, editor } = createInlineEditor({
+      editing: inlineEditing(),
       fields,
-      editMode: 'inlineDoubleClick',
       operations: { update },
     });
 
@@ -428,7 +453,7 @@ describe('AltEditorLite programmatic inline editing', () => {
         beforeSubmit,
         onError,
       },
-      editMode: 'inlineDoubleClick',
+      editing: inlineEditing(),
     });
     tableElement.addEventListener('alteditor-lite:error', errorEvent);
 
@@ -454,9 +479,9 @@ describe('AltEditorLite programmatic inline editing', () => {
       return false;
     });
     const { editor, tableElement } = createInlineEditor({
+      editing: inlineEditing(),
       fields,
       hooks: { beforeOpen },
-      editMode: 'inlineDoubleClick',
     });
     const openListener = vi.fn();
     const closeListener = vi.fn();
@@ -493,9 +518,9 @@ describe('AltEditorLite programmatic inline editing', () => {
     const pending = createDeferred<undefined>();
     const beforeOpen = vi.fn(() => pending.promise);
     const { editor } = createInlineEditor({
+      editing: inlineEditing(),
       fields,
       hooks: { beforeOpen },
-      editMode: 'inlineDoubleClick',
     });
     const activationTarget = document.createElement('button');
     const laterTarget = document.createElement('button');
@@ -517,9 +542,9 @@ describe('AltEditorLite programmatic inline editing', () => {
   it('cleans up a mounted session when control focus fails during open', async () => {
     const onError = vi.fn();
     const { api, editor, tableElement } = createInlineEditor({
+      editing: inlineEditing(),
       fields,
       hooks: { onError },
-      editMode: 'inlineDoubleClick',
     });
     const cell = api.cell('#row-a', 0).node();
     const originalNode = cell.firstChild;
@@ -578,7 +603,10 @@ describe('AltEditorLite hover inline editing', () => {
   }
 
   it('reveals the pencil after an unclaimed touch compatibility click', async () => {
-    const { api, editor } = createInlineEditor({ editMode: 'inlineHover', fields });
+    const { api, editor } = createInlineEditor({
+      editing: inlineEditing('hover'),
+      fields,
+    });
     const cell = api.cell('#row-a', 0).node();
 
     dispatchPointerEvent(cell, 'pointerup', 'touch');
@@ -606,7 +634,7 @@ describe('AltEditorLite hover inline editing', () => {
 
   it('contains a mismatched compatibility click and clears touch discovery', async () => {
     const { api, tableElement } = createInlineEditor({
-      editMode: 'inlineHover',
+      editing: inlineEditing('hover'),
       fields,
     });
     const cell = api.cell('#row-a', 0).node();
@@ -646,7 +674,7 @@ describe('AltEditorLite hover inline editing', () => {
       }),
     );
     const { api, editor } = createInlineEditor({
-      editMode: 'inlineHover',
+      editing: inlineEditing('hover'),
       fields,
       operations: { update },
     });
@@ -685,7 +713,7 @@ describe('AltEditorLite hover inline editing', () => {
 
   it('suspends hover discovery while editing and resumes after cancel', async () => {
     const { api, editor, tableElement } = createInlineEditor({
-      editMode: 'inlineHover',
+      editing: inlineEditing('hover'),
       fields,
     });
     const activeCell = api.cell('#row-a', 0).node();
@@ -728,7 +756,7 @@ describe('AltEditorLite hover inline editing', () => {
       clientSide: {
         createRow: () => ({ id: 'row-new', name: 'New', rank: 3 }),
       },
-      editMode: 'inlineHover',
+      editing: inlineEditing('hover'),
       fields,
       operations: { update },
     });
@@ -757,7 +785,7 @@ describe('AltEditorLite hover inline editing', () => {
     const pending = createDeferred<TestRow>();
     const { api } = createTestTable('inline-hover-busy');
     const editor = new AltEditorLite<TestRow, InlineValues>(api, {
-      editMode: 'inlineHover',
+      editing: inlineEditing('hover'),
       fields,
       operations: { update: () => pending.promise },
     });
@@ -808,7 +836,7 @@ describe('AltEditorLite hover inline editing', () => {
       },
     ] as const satisfies readonly FieldConfig<InlineValues>[];
     const { api, editor } = createInlineEditor({
-      editMode: 'inlineHover',
+      editing: inlineEditing('hover'),
       fields: remoteFields,
     });
     const cell = api.cell('#row-a', 1).node();
@@ -857,67 +885,62 @@ describe('AltEditorLite hover inline editing', () => {
 
 describe('AltEditorLite inline configuration', () => {
   const invalidConfigurations: readonly [string, object, object?][] = [
-    ['unknown edit mode', { editMode: 'inlineTap', fields }],
-    ['inline options in dialog mode', { fields, inline: {} }],
+    ['unknown activation', { editing: uncheckedInlineEditing({}, 'tap'), fields }],
+    ['array editing options', { editing: [], fields }],
     [
       'unknown blur action',
-      { editMode: 'inlineDoubleClick', fields, inline: { blurAction: 'save' } },
+      { editing: uncheckedInlineEditing({ blurAction: 'save' }), fields },
     ],
     [
       'unknown Enter action',
-      { editMode: 'inlineDoubleClick', fields, inline: { enterAction: 'cancel' } },
+      { editing: uncheckedInlineEditing({ enterAction: 'cancel' }), fields },
     ],
     [
       'unknown Tab action',
-      { editMode: 'inlineDoubleClick', fields, inline: { tabAction: 'move' } },
+      { editing: uncheckedInlineEditing({ tabAction: 'move' }), fields },
     ],
     [
       'unknown update mode',
-      { editMode: 'inlineDoubleClick', fields, inline: { updateMode: 'cell' } },
+      { editing: uncheckedInlineEditing({ updateMode: 'cell' }), fields },
     ],
     [
       'unsafe class name',
       {
-        editMode: 'inlineDoubleClick',
+        editing: uncheckedInlineEditing({ className: 'valid unsafe!' }),
         fields,
-        inline: { className: 'valid unsafe!' },
       },
     ],
-    [
-      'array column map',
-      { editMode: 'inlineDoubleClick', fields, inline: { columns: [] } },
-    ],
+    ['array column map', { editing: uncheckedInlineEditing({ columns: [] }), fields }],
     [
       'unknown column name',
       {
-        editMode: 'inlineDoubleClick',
+        editing: uncheckedInlineEditing({ columns: { missing: 'name' } }),
         fields,
-        inline: { columns: { missing: 'name' } },
       },
       { columns: namedColumns },
     ],
     [
       'unknown mapped field',
       {
-        editMode: 'inlineDoubleClick',
+        editing: uncheckedInlineEditing({
+          columns: { displayName: 'missing' },
+        }),
         fields,
-        inline: { columns: { displayName: 'missing' } },
       },
       { columns: namedColumns },
     ],
     [
       'field without inline eligibility',
       {
-        editMode: 'inlineDoubleClick',
+        editing: uncheckedInlineEditing({ columns: { displayName: 'name' } }),
         fields: [{ label: 'Name', name: 'name', type: 'text' }],
-        inline: { columns: { displayName: 'name' } },
       },
       { columns: namedColumns },
     ],
     [
       'unsupported mapped field',
       {
-        editMode: 'inlineDoubleClick',
+        editing: uncheckedInlineEditing({ columns: { displayName: 'name' } }),
         fields: [
           {
             inlineEdit: true,
@@ -926,21 +949,20 @@ describe('AltEditorLite inline configuration', () => {
             type: 'password',
           },
         ],
-        inline: { columns: { displayName: 'name' } },
       },
       { columns: namedColumns },
     ],
     [
       'inline mode without an inline field',
       {
-        editMode: 'inlineDoubleClick',
+        editing: uncheckedInlineEditing(),
         fields: [{ label: 'Name', name: 'name', type: 'text' }],
       },
     ],
     [
       'inline mode with only disabled inline fields',
       {
-        editMode: 'inlineDoubleClick',
+        editing: uncheckedInlineEditing(),
         fields: [
           {
             disabled: true,
@@ -955,9 +977,8 @@ describe('AltEditorLite inline configuration', () => {
     [
       'duplicate column name',
       {
-        editMode: 'inlineDoubleClick',
+        editing: uncheckedInlineEditing({ columns: { shared: 'name' } }),
         fields,
-        inline: { columns: { shared: 'name' } },
       },
       {
         columns: [
@@ -987,11 +1008,10 @@ describe('AltEditorLite inline configuration', () => {
     expect(
       () =>
         new AltEditorLite<TestRow, InlineValues>(api, {
-          editMode: 'inlineHover',
+          editing: inlineEditing('hover', { blurAction: 'submit' }),
           fields,
-          inline: { blurAction: 'submit' },
         }),
-    ).toThrow('inlineHover requires blurAction to be "none" when configured.');
+    ).toThrow('Hover activation requires blurAction to be "none" when configured.');
   });
 
   it('does not infer a field from a function data source', async () => {
@@ -999,8 +1019,8 @@ describe('AltEditorLite inline configuration', () => {
       columns: [{ data: (row: TestRow) => row.name }, { data: 'rank' }],
     });
     const editor = new AltEditorLite<TestRow, InlineValues>(api, {
+      editing: inlineEditing(),
       fields,
-      editMode: 'inlineDoubleClick',
     });
     editors.add(editor);
 
@@ -1014,11 +1034,10 @@ describe('AltEditorLite inline configuration', () => {
       columns: namedColumns,
     });
     const editor = new AltEditorLite<TestRow, InlineValues>(api, {
-      fields,
-      editMode: 'inlineDoubleClick',
-      inline: {
+      editing: inlineEditing('doubleClick', {
         columns: { displayName: 'name', rank: false },
-      },
+      }),
+      fields,
     });
     editors.add(editor);
 
@@ -1101,6 +1120,7 @@ describe('AltEditorLite inline interaction and redraw behavior', () => {
   it('keeps textarea Enter as input and submits with Ctrl+Enter', async () => {
     const { api } = createTestTable('inline-textarea');
     const editor = new AltEditorLite<TestRow, InlineValues>(api, {
+      editing: inlineEditing(),
       fields: [
         {
           inlineEdit: true,
@@ -1109,7 +1129,6 @@ describe('AltEditorLite inline interaction and redraw behavior', () => {
           type: 'textarea',
         },
       ],
-      editMode: 'inlineDoubleClick',
     });
     editors.add(editor);
     await editor.openInlineEdit('#row-a', 0);
@@ -1136,6 +1155,7 @@ describe('AltEditorLite inline interaction and redraw behavior', () => {
   it('leaves Enter available to a native select control', async () => {
     const { api } = createTestTable('inline-select');
     const editor = new AltEditorLite<TestRow, InlineValues>(api, {
+      editing: inlineEditing(),
       fields: [
         {
           inlineEdit: true,
@@ -1148,7 +1168,6 @@ describe('AltEditorLite inline interaction and redraw behavior', () => {
           type: 'select',
         },
       ],
-      editMode: 'inlineDoubleClick',
     });
     editors.add(editor);
     await editor.openInlineEdit('#row-a', 1);
@@ -1182,6 +1201,7 @@ describe('AltEditorLite inline interaction and redraw behavior', () => {
     let validationSignal: AbortSignal | undefined;
     const { api } = createTestTable('inline-validation-blur');
     const editor = new AltEditorLite<TestRow, InlineValues>(api, {
+      editing: inlineEditing('doubleClick', { blurAction: 'cancel' }),
       fields: [
         {
           inlineEdit: true,
@@ -1194,8 +1214,6 @@ describe('AltEditorLite inline interaction and redraw behavior', () => {
           },
         },
       ],
-      editMode: 'inlineDoubleClick',
-      inline: { blurAction: 'cancel' },
     });
     editors.add(editor);
     await editor.openInlineEdit('#row-a', 0);
@@ -1221,6 +1239,7 @@ describe('AltEditorLite inline interaction and redraw behavior', () => {
   it('keeps SearchSelect popup focus and Escape handling inside the session', async () => {
     const { api } = createTestTable('inline-search-select');
     const editor = new AltEditorLite<TestRow, InlineValues>(api, {
+      editing: inlineEditing(),
       fields: [
         {
           inlineEdit: true,
@@ -1233,7 +1252,6 @@ describe('AltEditorLite inline interaction and redraw behavior', () => {
           type: 'search-select',
         },
       ],
-      editMode: 'inlineDoubleClick',
     });
     editors.add(editor);
     await editor.openInlineEdit('#row-a', 0);
@@ -1275,8 +1293,8 @@ describe('AltEditorLite inline interaction and redraw behavior', () => {
     const deferred = createDeferred<TestRow>();
     let operationSignal: AbortSignal | undefined;
     const { api, editor, tableElement } = createInlineEditor({
+      editing: inlineEditing(),
       fields,
-      editMode: 'inlineDoubleClick',
       operations: {
         update: (_values, _original, context) => {
           operationSignal = context.signal;
@@ -1325,9 +1343,8 @@ describe('AltEditorLite inline interaction and redraw behavior', () => {
     const { api, tableElement } = createTestTable();
     let updatedName = 'Alpha';
     const editor = new AltEditorLite<TestRow, InlineValues>(api, {
+      editing: inlineEditing('doubleClick', { updateMode: 'refresh' }),
       fields,
-      editMode: 'inlineDoubleClick',
-      inline: { updateMode: 'refresh' },
       operations: {
         refresh: () => {
           const rows = api

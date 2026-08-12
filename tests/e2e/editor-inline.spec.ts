@@ -41,7 +41,7 @@ interface RenderedControlsRuntime {
 
 async function createInlineFixture(
   page: Page,
-  editMode: 'inlineDoubleClick' | 'inlineHover' = 'inlineDoubleClick',
+  inlineActivation: 'doubleClick' | 'hover' = 'doubleClick',
 ): Promise<void> {
   await page.setContent(`
     <!doctype html>
@@ -100,7 +100,10 @@ async function createInlineFixture(
               type: 'date'
             }
           ],
-          editMode: '${editMode}',
+          editing: {
+            dialog: { enabled: false },
+            inline: { activation: '${inlineActivation}', enabled: true }
+          },
           operations: {
             async update(values, original) {
               await new Promise(resolve => globalThis.setTimeout(resolve, 20));
@@ -146,7 +149,10 @@ async function createSearchSelectInlineFixture(page: Page): Promise<void> {
       globalThis.editor = new DataTablesAltEditorLite.AltEditorLite(
         globalThis.tableApi,
         {
-          editMode: 'inlineHover',
+          editing: {
+            dialog: { enabled: false },
+            inline: { activation: 'hover', enabled: true }
+          },
           fields: [
             {
               allowClear: true,
@@ -249,13 +255,25 @@ async function createRenderedControlsFixture(page: Page): Promise<void> {
       };
       globalThis.editor = new DataTablesAltEditorLite.AltEditorLite(
         globalThis.tableApi,
-        { ...globalThis.editorOptions, editMode: 'inlineDoubleClick' }
+        {
+          ...globalThis.editorOptions,
+          editing: {
+            dialog: { enabled: false },
+            inline: { enabled: true }
+          }
+        }
       );
       globalThis.useDialogEditor = () => {
         globalThis.editor.destroy();
         globalThis.editor = new DataTablesAltEditorLite.AltEditorLite(
           globalThis.tableApi,
-          { ...globalThis.editorOptions, editMode: 'dialog' }
+          {
+            ...globalThis.editorOptions,
+            editing: {
+              dialog: { enabled: true },
+              inline: { enabled: false }
+            }
+          }
         );
       };
     `,
@@ -295,7 +313,10 @@ async function createExtensionInlineFixture(page: Page): Promise<void> {
       globalThis.editor = new DataTablesAltEditorLite.AltEditorLite(
         globalThis.tableApi,
         {
-          editMode: 'inlineHover',
+          editing: {
+            dialog: { enabled: false },
+            inline: { activation: 'hover', enabled: true }
+          },
           fields: [
             { inlineEdit: true, label: 'Name', name: 'name', type: 'text' },
             { inlineEdit: true, label: 'Rank', name: 'rank', type: 'number' }
@@ -350,7 +371,7 @@ test('opens by double click and has no serious inline accessibility violations',
 test('opens the hover pencil and exposes accessible explicit actions', async ({
   page,
 }) => {
-  await createInlineFixture(page, 'inlineHover');
+  await createInlineFixture(page, 'hover');
   const cell = page.locator('#row-b td').first();
   await cell.hover();
   const trigger = cell.getByRole('button', { name: 'Edit cell' });
@@ -383,7 +404,7 @@ test('opens the hover pencil and exposes accessible explicit actions', async ({
 });
 
 test('keeps the hover input usable in a narrow column', async ({ page }) => {
-  await createInlineFixture(page, 'inlineHover');
+  await createInlineFixture(page, 'hover');
   await page.addStyleTag({
     content: `
       #inline-table_wrapper {
@@ -440,7 +461,7 @@ test('keeps the hover input usable in a narrow column', async ({ page }) => {
 });
 
 test('moves actions clear of a constrained native date control', async ({ page }) => {
-  await createInlineFixture(page, 'inlineHover');
+  await createInlineFixture(page, 'hover');
   await page.addStyleTag({
     content: `
       #inline-table_wrapper,

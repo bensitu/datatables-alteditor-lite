@@ -187,7 +187,7 @@ describe('radio field controller', () => {
       label: 'Choice',
       name: 'choice',
       options: [{ label: 'Allowed', value: 'allowed' }],
-      readonly: true,
+      readOnly: true,
       type: 'radio',
     });
     const inputElement = readonlyController.element.querySelector('input');
@@ -254,7 +254,7 @@ describe('select field controller', () => {
         { label: 'One', value: 1 },
         { label: 'Two', value: 2 },
       ],
-      readonly: true,
+      readOnly: true,
       type: 'select',
     });
     const selectElement = controller.element.querySelector('select');

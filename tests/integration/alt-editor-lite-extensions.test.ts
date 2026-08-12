@@ -348,9 +348,14 @@ describe('optional KeyTable and ColReorder integration', () => {
     const extensionApi = api as unknown as ExtensionTableApi;
     extensionApi.keys.enable('navigation-only');
     const editor = new AltEditorLite<TestRow, ExtensionValues>(api, {
-      editMode: 'inlineDoubleClick',
+      editing: {
+        dialog: { enabled: false },
+        inline: {
+          enabled: true,
+          keyboardActivation: { key: 'Enter' },
+        },
+      },
       fields: inlineFields,
-      inline: { keyboardActivation: { key: 'Enter' } },
     });
     activeEditors.add(editor);
 
@@ -392,7 +397,10 @@ describe('optional KeyTable and ColReorder integration', () => {
     });
     const extensionApi = api as unknown as ExtensionTableApi;
     const editor = new AltEditorLite<TestRow, ExtensionValues>(api, {
-      editMode: 'inlineHover',
+      editing: {
+        dialog: { enabled: false },
+        inline: { activation: 'hover', enabled: true },
+      },
       fields: inlineFields,
     });
     activeEditors.add(editor);

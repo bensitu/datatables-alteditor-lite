@@ -1,4 +1,4 @@
-import type { EditMode } from './edit-mode.js';
+import type { ResolvedEditingOptions } from './resolve-editing-options.js';
 
 /** Features available from one editor instance. */
 export interface EditorCapabilities {
@@ -9,14 +9,20 @@ export interface EditorCapabilities {
   readonly refresh: boolean;
 }
 
-/** Derives instance capabilities from the selected edit presentation. */
-export function resolveEditorCapabilities(
-  editMode: EditMode,
+/** Persistence ownership relevant to editor capabilities. */
+export interface EditorCapabilityOwners {
+  readonly create: boolean;
+}
+
+/** Derives instance capabilities from resolved configuration and ownership. */
+export function resolveEditorCapabilities<TFormValues extends object>(
+  editing: Readonly<ResolvedEditingOptions<TFormValues>>,
+  owners: Readonly<EditorCapabilityOwners>,
 ): Readonly<EditorCapabilities> {
   return Object.freeze({
-    createDialog: true,
-    editDialog: editMode === 'dialog',
-    inlineEdit: editMode === 'inlineDoubleClick' || editMode === 'inlineHover',
+    createDialog: owners.create,
+    editDialog: editing.dialog.enabled,
+    inlineEdit: editing.inline.enabled,
     refresh: true,
     removeDialog: true,
   });

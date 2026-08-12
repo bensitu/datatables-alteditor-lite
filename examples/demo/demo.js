@@ -218,7 +218,7 @@ let dialogEmployeeEditor;
 let inlineEmployeeEditor;
 let hoverEmployeeEditor;
 let workflowEditor;
-let workflowEditMode = 'inlineDoubleClick';
+let workflowPresentation = 'inline';
 let isSwitchingWorkflowMode = false;
 let isApplyingRenderedWorkflowControl = false;
 let nextRowId = 1000;
@@ -405,10 +405,16 @@ function assertUniqueEmail(table, email, excludedId) {
   }
 }
 
-function createEmployeeEditor(table, editMode, language) {
+function createEmployeeEditor(table, inlineActivation, language) {
   return new AltEditorLite(table, {
-    editMode,
-    fields: editMode === 'inlineHover' ? hoverFieldConfigurations : fieldConfigurations,
+    editing: {
+      dialog: { enabled: inlineActivation === undefined },
+      inline: {
+        activation: inlineActivation ?? 'doubleClick',
+        enabled: inlineActivation !== undefined,
+      },
+    },
+    fields: inlineActivation === 'hover' ? hoverFieldConfigurations : fieldConfigurations,
     language,
     operations: {
       async create(values, context) {
@@ -480,13 +486,17 @@ const workflowEditorOptions = {
 };
 
 function createWorkflowEditor(language) {
+  const usesInline = workflowPresentation === 'inline';
   return new AltEditorLite(workflowTable, {
     ...workflowEditorOptions,
-    editMode: workflowEditMode,
+    editing: {
+      dialog: { enabled: !usesInline },
+      inline: {
+        blurAction: 'none',
+        enabled: usesInline,
+      },
+    },
     language,
-    ...(workflowEditMode === 'inlineDoubleClick'
-      ? { inline: { blurAction: 'none' } }
-      : {}),
   });
 }
 
@@ -508,11 +518,11 @@ async function getOrLoadLanguage(localeName) {
   return registerLocale(await loadEditorLanguage(resourceUrl));
 }
 
-function describeEditorState(editor, editMode) {
+function describeEditorState(editor, inlineEnabled) {
   const state = editor.getState();
   const dialogState =
     'action' in state ? `${state.status}:${state.action}` : state.status;
-  if (editMode === 'dialog') {
+  if (!inlineEnabled) {
     return dialogState;
   }
   const inlineState = editor.getInlineState();
@@ -520,9 +530,9 @@ function describeEditorState(editor, editMode) {
 }
 
 function updateState() {
-  const dialogState = describeEditorState(dialogEmployeeEditor, 'dialog');
-  const inlineState = describeEditorState(inlineEmployeeEditor, 'inlineDoubleClick');
-  const hoverState = describeEditorState(hoverEmployeeEditor, 'inlineHover');
+  const dialogState = describeEditorState(dialogEmployeeEditor, false);
+  const inlineState = describeEditorState(inlineEmployeeEditor, true);
+  const hoverState = describeEditorState(hoverEmployeeEditor, true);
   editorState.textContent = `dialog:${dialogState} · inline:${inlineState} · hover:${hoverState}`;
   editorState.dataset.state =
     dialogState === 'error' || inlineState === 'error' || hoverState === 'error'
@@ -563,7 +573,7 @@ function registerEventSource(tableElement, sourceName) {
 }
 
 function updateWorkflowModeUi() {
-  const usesInline = workflowEditMode === 'inlineDoubleClick';
+  const usesInline = workflowPresentation === 'inline';
   workflowPriorityButton.disabled = !usesInline || isSwitchingWorkflowMode;
   workflowSupportButton.disabled = !usesInline || isSwitchingWorkflowMode;
   toggleWorkflowModeButton.disabled = isSwitchingWorkflowMode;
@@ -586,13 +596,13 @@ function recreateEditors(language) {
   inlineEmployeeEditor?.destroy();
   hoverEmployeeEditor?.destroy();
   workflowEditor?.destroy();
-  dialogEmployeeEditor = createEmployeeEditor(dialogEmployeeTable, 'dialog', language);
+  dialogEmployeeEditor = createEmployeeEditor(dialogEmployeeTable, undefined, language);
   inlineEmployeeEditor = createEmployeeEditor(
     inlineEmployeeTable,
-    'inlineDoubleClick',
+    'doubleClick',
     language,
   );
-  hoverEmployeeEditor = createEmployeeEditor(hoverEmployeeTable, 'inlineHover', language);
+  hoverEmployeeEditor = createEmployeeEditor(hoverEmployeeTable, 'hover', language);
   workflowEditor = createWorkflowEditor(language);
   workflowTable.row('#workflow-1').select();
   updateWorkflowModeUi();
@@ -650,7 +660,7 @@ async function applyRenderedWorkflowValue(renderedControl, fieldName, fieldLabel
   row.select();
 
   try {
-    if (workflowEditMode === 'dialog') {
+    if (workflowPresentation === 'dialog') {
       await workflowEditor.openEditDialog(cellIndex.row);
       const field = workflowEditor.getField(fieldName);
       if (field === null) {
@@ -687,7 +697,7 @@ async function applyRenderedWorkflowValue(renderedControl, fieldName, fieldLabel
     workflowInlineStatus.textContent = `The ${fieldLabel} value was committed inline.`;
   } catch {
     isApplyingRenderedWorkflowControl = false;
-    if (workflowEditMode === 'inlineDoubleClick' && workflowEditor.isInlineEditing()) {
+    if (workflowPresentation === 'inline' && workflowEditor.isInlineEditing()) {
       await workflowEditor.cancelInlineEdit().catch(() => undefined);
     }
     row.invalidate().draw(false);
@@ -769,7 +779,7 @@ workflowTableElement.addEventListener('change', (event) => {
   if (
     target instanceof HTMLSelectElement &&
     !isApplyingRenderedWorkflowControl &&
-    workflowEditMode === 'inlineDoubleClick' &&
+    workflowPresentation === 'inline' &&
     target.closest('.alteditor-lite-inline') !== null
   ) {
     void submitWorkflowSelect();
@@ -785,19 +795,18 @@ toggleWorkflowModeButton.addEventListener('click', () => {
   updateWorkflowModeUi();
 
   void (async () => {
-    const previousMode = workflowEditMode;
+    const previousPresentation = workflowPresentation;
     let switchSucceeded = false;
     try {
-      if (workflowEditMode === 'inlineDoubleClick' && workflowEditor.isInlineEditing()) {
+      if (workflowPresentation === 'inline' && workflowEditor.isInlineEditing()) {
         await workflowEditor.cancelInlineEdit();
       }
       workflowEditor.destroy();
-      workflowEditMode =
-        workflowEditMode === 'inlineDoubleClick' ? 'dialog' : 'inlineDoubleClick';
+      workflowPresentation = workflowPresentation === 'inline' ? 'dialog' : 'inline';
       try {
         workflowEditor = createWorkflowEditor(currentLanguage);
       } catch (error) {
-        workflowEditMode = previousMode;
+        workflowPresentation = previousPresentation;
         workflowEditor = createWorkflowEditor(currentLanguage);
         throw error;
       }

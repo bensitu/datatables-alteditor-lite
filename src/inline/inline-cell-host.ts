@@ -91,7 +91,7 @@ export class InlineCellHost<TFormValues extends object> implements InlineEditVie
       this.primaryControl instanceof HTMLTextAreaElement
     ) {
       this.primaryControl.readOnly =
-        isBusy || ('readonly' in this.field && this.field.readonly);
+        isBusy || ('readOnly' in this.field && this.field.readOnly);
     }
   }
 

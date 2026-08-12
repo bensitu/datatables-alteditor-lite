@@ -1,4 +1,4 @@
-import type { ResolvedInlineEditorOptions } from './inline-edit-options.js';
+import type { ResolvedInlineEditingOptions } from '../core/resolve-editing-options.js';
 
 /** Resolved keyboard and focus behavior for one inline presentation. */
 export interface ResolvedInlineInteractionBehavior {
@@ -10,7 +10,7 @@ export interface ResolvedInlineInteractionBehavior {
 
 /** Preserves the compact double-click interaction model. */
 export function createDoubleClickInteractionBehavior<TFormValues extends object>(
-  options: Readonly<ResolvedInlineEditorOptions<TFormValues>>,
+  options: Readonly<ResolvedInlineEditingOptions<TFormValues>>,
 ): Readonly<ResolvedInlineInteractionBehavior> {
   return Object.freeze({
     blurAction: options.blurAction,

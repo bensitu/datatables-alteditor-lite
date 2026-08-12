@@ -47,7 +47,6 @@ import { resolveInlineTarget } from './inline-target-resolution.js';
 import { buildInlineValues } from './inline-values.js';
 
 import type { InlineColumnMapping } from './inline-column-mapping.js';
-import type { ResolvedInlineEditorOptions } from './inline-edit-options.js';
 import type { InlineEditSession } from './inline-edit-session.js';
 import type { InlineEditState, InlineTargetSummary } from './inline-edit-state.js';
 import type { InlineEditViewFactory } from './inline-edit-view-factory.js';
@@ -72,6 +71,7 @@ import type {
 import type { OperationOwner } from '../core/editing/operation-owner.js';
 import type { EditorOperationTarget } from '../core/editor-operation.js';
 import type { EditorValues } from '../core/editor-values.js';
+import type { ResolvedInlineEditingOptions } from '../core/resolve-editing-options.js';
 import type { FieldConfig } from '../fields/field-config.js';
 import type { ManagedFieldController } from '../fields/managed-field-controller.js';
 import type { FieldPath } from '../object-path/field-path.js';
@@ -87,7 +87,7 @@ export interface InlineEditSessionControllerArguments<
   readonly tableElement: HTMLTableElement;
   readonly fields: readonly FieldConfig<TFormValues>[];
   readonly mappings: ReadonlyMap<number, Readonly<InlineColumnMapping<TFormValues>>>;
-  readonly options: Readonly<ResolvedInlineEditorOptions<TFormValues>>;
+  readonly options: Readonly<ResolvedInlineEditingOptions<TFormValues>>;
   readonly editorOptions: Readonly<AltEditorLiteOptions<TRow, TFormValues>>;
   readonly language: Readonly<AltEditorLiteLanguage>;
   readonly instanceId: string;

@@ -1,6 +1,6 @@
 import { isInlineFieldEligible } from './inline-field-capability.js';
 
-import type { ResolvedInlineEditorOptions } from './inline-edit-options.js';
+import type { ResolvedInlineEditingOptions } from '../core/resolve-editing-options.js';
 import type { FieldConfig } from '../fields/field-config.js';
 import type { FieldPath } from '../object-path/field-path.js';
 import type { Api } from 'datatables.net';
@@ -36,7 +36,7 @@ export function createInlineColumnMappings<
 >(
   table: Api<TRow>,
   fields: readonly FieldConfig<TFormValues>[],
-  options: Readonly<ResolvedInlineEditorOptions<TFormValues>>,
+  options: Readonly<ResolvedInlineEditingOptions<TFormValues>>,
 ): ReadonlyMap<number, Readonly<InlineColumnMapping<TFormValues>>> {
   const fieldsByName = new Map<string, Readonly<FieldConfig<TFormValues>>>(
     fields.map((field) => [field.name, field]),

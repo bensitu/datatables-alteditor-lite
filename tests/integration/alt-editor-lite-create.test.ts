@@ -102,7 +102,7 @@ function createEditor(
   const { api, tableElement } = createTestTable(tableId);
   const editor = new AltEditorLite<TestRow, CreateValues>(api, {
     clientSide: { createRow },
-    closeOnSuccess,
+    editing: { dialog: { closeOnSuccess } },
     fields,
   });
   activeEditors.add(editor);
@@ -339,7 +339,7 @@ describe('AltEditorLite synchronous Create', () => {
     ).toContain('must return a complete row object');
   });
 
-  it('honors closeOnSuccess false', async () => {
+  it('keeps the dialog open when configured', async () => {
     const { api, editor } = createEditor(
       'stay-open',
       (values) => ({

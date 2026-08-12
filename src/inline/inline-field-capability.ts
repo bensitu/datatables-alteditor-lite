@@ -30,6 +30,6 @@ export function isInlineFieldEligible<TFormValues extends object>(
     field.editable !== false &&
     field.disabled !== true &&
     field.visible !== false &&
-    !('readonly' in field && field.readonly)
+    !('readOnly' in field && field.readOnly)
   );
 }

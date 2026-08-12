@@ -4,7 +4,7 @@ import { parseFieldPath } from '../object-path/field-path.js';
 import { isInlineFieldEligible } from './inline-field-capability.js';
 
 import type { AltEditorLiteOptions } from '../core/alt-editor-lite-options.js';
-import type { EditMode } from '../core/edit-mode.js';
+import type { ResolvedEditingOptions } from '../core/resolve-editing-options.js';
 import type { FieldConfig } from '../fields/field-config.js';
 import type { Api } from 'datatables.net';
 
@@ -20,7 +20,7 @@ function assertChoice(
   propertyName: string,
 ): void {
   if (value !== undefined && (typeof value !== 'string' || !allowed.has(value))) {
-    throw new EditorConfigurationError(`inline.${propertyName} is not valid.`);
+    throw new EditorConfigurationError(`editing.inline.${propertyName} is not valid.`);
   }
 }
 
@@ -33,7 +33,7 @@ function assertClassName(className: unknown): void {
     className.trim().length === 0 ||
     className.split(/\s+/u).some((token) => !classTokenPattern.test(token))
   ) {
-    throw new EditorConfigurationError('inline.className is not valid.');
+    throw new EditorConfigurationError('editing.inline.className is not valid.');
   }
 }
 
@@ -56,7 +56,7 @@ function assertExplicitMappings<TRow extends object, TFormValues extends object>
     return;
   }
   if (typeof columns !== 'object' || columns === null || Array.isArray(columns)) {
-    throw new EditorConfigurationError('inline.columns must be an object.');
+    throw new EditorConfigurationError('editing.inline.columns must be an object.');
   }
 
   const fieldByName = new Map<string, Readonly<FieldConfig<TFormValues>>>(
@@ -66,14 +66,14 @@ function assertExplicitMappings<TRow extends object, TFormValues extends object>
   for (const [columnName, fieldName] of Object.entries(columns)) {
     if (columnName.trim().length === 0) {
       throw new EditorConfigurationError(
-        'Each inline.columns key must be a non-empty DataTables column name.',
+        'Each editing.inline.columns key must be a non-empty DataTables column name.',
       );
     }
 
     const matches = columnNames.filter((name) => name === columnName).length;
     if (matches !== 1) {
       throw new EditorConfigurationError(
-        `inline.columns key "${columnName}" must match one unique DataTables column name.`,
+        `editing.inline.columns key "${columnName}" must match one unique DataTables column name.`,
       );
     }
     if (fieldName === false) {
@@ -81,7 +81,7 @@ function assertExplicitMappings<TRow extends object, TFormValues extends object>
     }
     if (typeof fieldName !== 'string') {
       throw new EditorConfigurationError(
-        `inline.columns value for "${columnName}" must be a field path or false.`,
+        `editing.inline.columns value for "${columnName}" must be a field path or false.`,
       );
     }
 
@@ -89,7 +89,7 @@ function assertExplicitMappings<TRow extends object, TFormValues extends object>
     const field = fieldByName.get(fieldName);
     if (field === undefined) {
       throw new EditorConfigurationError(
-        `inline.columns maps "${columnName}" to an unknown field "${fieldName}".`,
+        `editing.inline.columns maps "${columnName}" to an unknown field "${fieldName}".`,
       );
     }
     if (field.inlineEdit !== true) {
@@ -112,16 +112,9 @@ export function validateInlineConfiguration<
 >(
   table: Api<TRow>,
   options: Readonly<AltEditorLiteOptions<TRow, TFormValues>>,
-  editMode: EditMode,
+  editing: Readonly<ResolvedEditingOptions<TFormValues>>,
 ): void {
-  const inline = options.inline;
-
-  if (editMode === 'dialog') {
-    if (inline !== undefined) {
-      throw new EditorConfigurationError('inline options require an inline editMode.');
-    }
-    return;
-  }
+  const inline = options.editing?.inline;
 
   assertChoice(inline?.blurAction, blurActions, 'blurAction');
   assertChoice(inline?.enterAction, enterActions, 'enterAction');
@@ -131,7 +124,7 @@ export function validateInlineConfiguration<
   assertExplicitMappings(table, options.fields, inline?.columns);
 
   const incompatibleHoverActions =
-    editMode === 'inlineHover'
+    editing.inline.activation === 'hover'
       ? [
           inline?.blurAction !== undefined && inline.blurAction !== 'none'
             ? 'blurAction'
@@ -146,11 +139,11 @@ export function validateInlineConfiguration<
       : [];
   if (incompatibleHoverActions.length > 0) {
     throw new EditorConfigurationError(
-      `inlineHover requires ${formatPropertyNames(incompatibleHoverActions)} to be "none" when configured.`,
+      `Hover activation requires ${formatPropertyNames(incompatibleHoverActions)} to be "none" when configured.`,
     );
   }
 
-  if (!options.fields.some(isInlineFieldEligible)) {
+  if (editing.inline.enabled && !options.fields.some(isInlineFieldEligible)) {
     throw new EditorConfigurationError(
       'Inline editing requires at least one supported inlineEdit field.',
     );
@@ -162,7 +155,7 @@ export function validateInlineConfiguration<
       options.operations.refresh === undefined
     ) {
       throw new EditorConfigurationError(
-        'inline.updateMode "refresh" requires operations.update and operations.refresh.',
+        'editing.inline.updateMode "refresh" requires operations.update and operations.refresh.',
       );
     }
   }

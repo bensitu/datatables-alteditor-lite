@@ -30,7 +30,7 @@ export interface NativeControllerArguments<TFormValues extends object, TValue> {
   readonly config: BaseFieldConfig<TFormValues, TValue> & {
     readonly label?: string;
     readonly description?: string;
-    readonly readonly?: boolean;
+    readonly readOnly?: boolean;
     readonly required?: boolean;
   };
   readonly fieldId: string;
@@ -78,7 +78,7 @@ export function createNativeControlController<TFormValues extends object, TValue
   control.setAttribute('aria-describedby', errorId);
   control.required = config.required ?? false;
   control.disabled = config.disabled ?? false;
-  adapter.setReadOnly(config.readonly ?? false);
+  adapter.setReadOnly(config.readOnly ?? false);
   applyAllowedFieldAttributes(control, config.attributes);
 
   const controlContainer = controllerArguments.controlContainer ?? control;

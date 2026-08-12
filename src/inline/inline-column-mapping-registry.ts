@@ -1,7 +1,7 @@
 import { createInlineColumnMappings } from './inline-column-mapping.js';
 
 import type { InlineColumnMapping } from './inline-column-mapping.js';
-import type { ResolvedInlineEditorOptions } from './inline-edit-options.js';
+import type { ResolvedInlineEditingOptions } from '../core/resolve-editing-options.js';
 import type { FieldConfig } from '../fields/field-config.js';
 import type { Api } from 'datatables.net';
 
@@ -23,7 +23,7 @@ export class InlineColumnMappingRegistry<
   public constructor(
     private readonly table: Api<TRow>,
     private readonly fields: readonly FieldConfig<TFormValues>[],
-    private readonly options: Readonly<ResolvedInlineEditorOptions<TFormValues>>,
+    private readonly options: Readonly<ResolvedInlineEditingOptions<TFormValues>>,
   ) {
     this.mappings = this.current;
     this.rebuild();

@@ -21,7 +21,7 @@ const stylesheetPath = resolve(repositoryRoot, 'dist/umd/alt-editor-lite.css');
 
 async function createTouchFixture(
   page: Page,
-  editMode: 'inlineDoubleClick' | 'inlineHover' = 'inlineHover',
+  inlineActivation: 'doubleClick' | 'hover' = 'hover',
 ): Promise<void> {
   await page.setContent(`
     <!doctype html>
@@ -60,7 +60,10 @@ async function createTouchFixture(
       globalThis.editor = new DataTablesAltEditorLite.AltEditorLite(
         globalThis.tableApi,
         {
-          editMode: '${editMode}',
+          editing: {
+            dialog: { enabled: false },
+            inline: { activation: '${inlineActivation}', enabled: true }
+          },
           fields: [
             {
               inlineEdit: true,
@@ -110,8 +113,8 @@ async function createTouchFixture(
   });
 }
 
-test('opens inlineDoubleClick editing from a double tap', async ({ page }) => {
-  await createTouchFixture(page, 'inlineDoubleClick');
+test('opens double-click editing from a double tap', async ({ page }) => {
+  await createTouchFixture(page, 'doubleClick');
   const cell = page.locator('#row-a td').first();
   const otherCell = page.locator('#row-a td').nth(1);
 
