@@ -337,7 +337,7 @@ describe('optional KeyTable and ColReorder integration', () => {
     inlineEdit: true,
   })) satisfies readonly FieldConfig<ExtensionValues>[];
 
-  it('opens the focused cell with F2 and restores the exact KeyTable state', async () => {
+  it('releases the activation shortcut while editing and restores KeyTable', async () => {
     const { api } = createTestTable('keytable-inline', {
       columns: [
         { data: 'name', name: 'name' },
@@ -348,23 +348,36 @@ describe('optional KeyTable and ColReorder integration', () => {
     const extensionApi = api as unknown as ExtensionTableApi;
     extensionApi.keys.enable('navigation-only');
     const editor = new AltEditorLite<TestRow, ExtensionValues>(api, {
-      editMode: 'inlineHover',
+      editMode: 'inlineDoubleClick',
       fields: inlineFields,
+      inline: { keyboardActivation: { key: 'Enter' } },
     });
     activeEditors.add(editor);
 
     (api.cell('#row-a', 0) as unknown as CellFocusApi).focus();
     const cell = api.cell('#row-a', 0).node();
-    expect(cell.querySelector('.alteditor-lite-inline-hover__trigger')).not.toBeNull();
     cell.dispatchEvent(
-      new KeyboardEvent('keydown', { bubbles: true, cancelable: true, key: 'F2' }),
+      new KeyboardEvent('keydown', { bubbles: true, cancelable: true, key: 'Enter' }),
     );
     await vi.waitFor(() => {
       expect(editor.getInlineState().status).toBe('editing');
     });
     expect(extensionApi.keys.enabled()).toBe(false);
 
-    await editor.cancelInlineEdit();
+    const input = cell.querySelector<HTMLInputElement>('input');
+    if (input === null) {
+      throw new Error('Expected an open inline input.');
+    }
+    input.value = 'Keyboard edit';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(
+      new KeyboardEvent('keydown', { bubbles: true, cancelable: true, key: 'Enter' }),
+    );
+    await vi.waitFor(() => {
+      expect(editor.getInlineState().status).toBe('idle');
+    });
+
+    expect(api.row('#row-a').data().name).toBe('Keyboard edit');
     expect(extensionApi.keys.enabled()).toBe('navigation-only');
   });
 

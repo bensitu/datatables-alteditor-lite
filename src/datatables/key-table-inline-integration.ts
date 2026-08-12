@@ -153,6 +153,7 @@ export class KeyTableInlineIntegration<TRow extends object, TFormValues extends 
     if (
       this.shortcut === false ||
       cell === undefined ||
+      cell.classList.contains('alteditor-lite-cell--editing') ||
       !matchesInlineKeyboardShortcut(event, this.shortcut)
     ) {
       return;
