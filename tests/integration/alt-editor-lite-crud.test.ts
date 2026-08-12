@@ -160,6 +160,42 @@ function confirmRemove(): void {
 }
 
 describe('AltEditorLite form opening', () => {
+  it('uses a custom Edit layout with populated editor-owned fields', async () => {
+    const template = document.createElement('template');
+    template.innerHTML = `
+      <section class="custom-edit-layout">
+        <div data-alteditor-lite-field="rank"></div>
+        <div data-alteditor-lite-field="name"></div>
+      </section>
+    `;
+    const { api, editor } = createCrudEditor('custom-edit-layout', {
+      editing: { dialog: { template } },
+    });
+
+    await editor.openEditDialog('#row-a');
+    const customLayout = document.querySelector('.custom-edit-layout');
+    expect(
+      customLayout?.querySelector<HTMLInputElement>(
+        '[data-alteditor-lite-field="name"] input',
+      )?.value,
+    ).toBe('Alpha');
+    expect(
+      customLayout?.querySelector<HTMLInputElement>(
+        '[data-alteditor-lite-field="rank"] input',
+      )?.value,
+    ).toBe('1');
+
+    editor.getField<string>('name')?.setValue('Custom Alpha');
+    submitForm();
+    await vi.waitFor(() => {
+      expect(editor.getState().status).toBe('ready');
+    });
+    expect(api.row('#row-a').data()).toMatchObject({
+      name: 'Custom Alpha',
+      rank: 1,
+    });
+  });
+
   it('treats closing during beforeOpen as a completed cancellation', async () => {
     const beforeOpen = createDeferred<boolean>();
     const onError = vi.fn();

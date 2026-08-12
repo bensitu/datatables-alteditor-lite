@@ -10,6 +10,8 @@ import {
   collectFormValues,
   type CollectedFormState,
 } from './collect-form-values.js';
+import { DefaultFormLayout } from './layout/default-form-layout.js';
+import { TemplateFormLayout } from './layout/template-form-layout.js';
 import { populateFormValues } from './populate-form-values.js';
 import {
   type FormValidationResult,
@@ -18,6 +20,7 @@ import {
 } from './validate-editor-form.js';
 
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
+import type { DialogTemplateSource } from '../core/editing-options.js';
 import type { DeepPartial, EditorValues } from '../core/editor-values.js';
 import type { FieldConfig, SelectOption } from '../fields/field-config.js';
 import type {
@@ -25,6 +28,7 @@ import type {
   FieldValidationResult,
 } from '../fields/field-controller.js';
 import type { ManagedFieldController } from '../fields/managed-field-controller.js';
+import type { FieldMountPoint, FormLayout } from './layout/form-layout.js';
 import type { FieldPath } from '../object-path/field-path.js';
 
 /**
@@ -66,6 +70,8 @@ export class EditorFormController<
 
   private readonly fieldControllerByName = new Map<string, FieldController<unknown>>();
 
+  private readonly mountPointByName = new Map<string, FieldMountPoint>();
+
   private readonly lifecycleAbortController = new AbortController();
 
   private readonly submissionErrorElement: HTMLDivElement;
@@ -80,6 +86,8 @@ export class EditorFormController<
   >();
 
   private readonly invalidMessage: string;
+
+  private readonly layout: FormLayout;
 
   private activeValidationAbortController: AbortController | undefined;
 
@@ -99,18 +107,23 @@ export class EditorFormController<
     instanceId: string,
     language: Readonly<AltEditorLiteLanguage>,
     private readonly validateUnique?: LocalUniqueValidator<TFormValues>,
+    template?: DialogTemplateSource,
   ) {
     this.element = document.createElement('form');
     this.element.className = 'dt-alteditor-lite-form';
     this.element.id = `${instanceId}-form`;
     this.element.noValidate = true;
     this.invalidMessage = language.validation.invalid;
+    this.layout =
+      template === undefined
+        ? new DefaultFormLayout()
+        : new TemplateFormLayout(template, fields, instanceId);
 
     this.submissionErrorElement = document.createElement('div');
     this.submissionErrorElement.className = 'dt-alteditor-lite-form__submission-error';
     this.submissionErrorElement.hidden = true;
     this.submissionErrorElement.setAttribute('role', 'alert');
-    this.element.append(this.submissionErrorElement);
+    this.element.append(this.layout.element, this.submissionErrorElement);
 
     try {
       for (const [fieldIndex, config] of fields.entries()) {
@@ -128,7 +141,9 @@ export class EditorFormController<
         );
         this.controllers.push(controller);
         this.controllerByName.set(config.name, controller);
-        this.element.append(controller.element);
+        const mountPoint = this.layout.mountField(config.name, controller.element);
+        this.mountPointByName.set(config.name, mountPoint);
+        mountPoint.setVisible(config.type !== 'hidden' && config.visible !== false);
 
         if (Object.hasOwn(config, 'defaultValue')) {
           controller.setValue(config.defaultValue);
@@ -259,8 +274,10 @@ export class EditorFormController<
         this.activeFieldValidationAbortControllers.delete(name);
         this.activeValidationAbortController?.abort();
         managedController.destroy();
+        this.mountPointByName.get(name)?.setVisible(false);
         this.controllerByName.delete(name);
         this.fieldControllerByName.delete(name);
+        this.mountPointByName.delete(name);
         this.controllers = this.controllers.filter(
           (controller) => controller !== managedController,
         );
@@ -341,6 +358,8 @@ export class EditorFormController<
     this.controllers = [];
     this.controllerByName.clear();
     this.fieldControllerByName.clear();
+    this.mountPointByName.clear();
+    this.layout.destroy();
     this.element.remove();
   }
 

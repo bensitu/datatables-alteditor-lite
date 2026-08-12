@@ -128,6 +128,15 @@
   gap: var(--dt-alteditor-lite-spacing);
 }
 
+.dt-alteditor-lite-form__layout {
+  display: grid;
+  gap: var(--dt-alteditor-lite-spacing);
+}
+
+.dt-alteditor-lite-form__slot--hidden {
+  display: none;
+}
+
 .dt-alteditor-lite-remove-confirmation {
   display: grid;
   gap: calc(var(--dt-alteditor-lite-spacing) / 2);

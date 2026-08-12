@@ -250,6 +250,64 @@ describe('AltEditorLite synchronous Create', () => {
     expect(document.querySelector('[aria-invalid="true"]')).not.toBeNull();
   });
 
+  it('uses a custom Create layout while preserving validation focus and errors', async () => {
+    const template = document.createElement('template');
+    template.id = 'create-form-layout';
+    template.innerHTML = `
+      <section class="custom-create-layout">
+        <div data-alteditor-lite-field="rank"></div>
+        <div data-alteditor-lite-field="name"></div>
+      </section>
+    `;
+    document.body.append(template);
+    const { api, tableElement } = createTestTable('custom-create-layout');
+    const editor = new AltEditorLite<TestRow, CreateValues>(api, {
+      clientSide: {
+        createRow: (values) => ({
+          id: 'custom-layout-row',
+          name: values.name ?? '',
+          rank: values.rank ?? 0,
+        }),
+      },
+      editing: { dialog: { template: '#create-form-layout' } },
+      fields,
+    });
+    activeEditors.add(editor);
+
+    await editor.openCreateDialog();
+    const nameSlot = tableElement.ownerDocument.querySelector<HTMLElement>(
+      '[data-alteditor-lite-field="name"]',
+    );
+    const rankSlot = tableElement.ownerDocument.querySelector<HTMLElement>(
+      '[data-alteditor-lite-field="rank"]',
+    );
+    expect(
+      [...(rankSlot?.parentElement?.children ?? [])].map((element) =>
+        element.getAttribute('data-alteditor-lite-field'),
+      ),
+    ).toEqual(['rank', 'name']);
+    editor.getField<number>('rank')?.setValue(8);
+    submitOpenDialog();
+
+    await vi.waitFor(() => {
+      expect(editor.getState().status).toBe('open');
+      expect(nameSlot?.querySelector('[aria-invalid="true"]')).not.toBeNull();
+    });
+    expect(document.activeElement).toBe(
+      nameSlot?.querySelector('.dt-alteditor-lite-field__control'),
+    );
+
+    editor.getField<string>('name')?.setValue('Custom layout');
+    submitOpenDialog();
+    await vi.waitFor(() => {
+      expect(editor.getState().status).toBe('ready');
+    });
+    expect(api.row('#custom-layout-row').data()).toMatchObject({
+      name: 'Custom layout',
+      rank: 8,
+    });
+  });
+
   it('keeps the dialog open and retryable when row construction throws', async () => {
     let shouldFail = true;
     const { api, editor, tableElement } = createEditor('callback-failure', (values) => {

@@ -1,6 +1,6 @@
 import { DialogFocusScope } from './dialog-focus-scope.js';
 import { positionDialog } from './dialog-positioning.js';
-import { createDialogTemplate, type DialogTemplate } from './dialog-template.js';
+import { createEditorDialogShell, type EditorDialogShell } from './dialog-shell.js';
 
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type { EditorCloseReason } from '../core/editor-event.js';
@@ -19,7 +19,7 @@ export interface EditorDialogCallbacks {
 export class EditorDialog {
   private readonly focusScope: DialogFocusScope;
 
-  private readonly template: DialogTemplate;
+  private readonly shell: EditorDialogShell;
 
   private callbacks: EditorDialogCallbacks | undefined;
 
@@ -45,11 +45,11 @@ export class EditorDialog {
     instanceId: string,
     language: Readonly<AltEditorLiteLanguage>,
   ) {
-    this.template = createDialogTemplate(instanceId, language);
-    this.focusScope = new DialogFocusScope(this.template.dialogElement, tableElement);
-    this.template.dialogElement.addEventListener('cancel', this.handleNativeCancel);
-    this.template.cancelButton.addEventListener('click', this.handleCancelClick);
-    document.body.append(this.template.dialogElement);
+    this.shell = createEditorDialogShell(instanceId, language);
+    this.focusScope = new DialogFocusScope(this.shell.dialogElement, tableElement);
+    this.shell.dialogElement.addEventListener('cancel', this.handleNativeCancel);
+    this.shell.cancelButton.addEventListener('click', this.handleCancelClick);
+    document.body.append(this.shell.dialogElement);
   }
 
   /**
@@ -69,8 +69,8 @@ export class EditorDialog {
     this.close();
     this.configureOpenContent(formElement, title, submitLabel, false, callbacks);
     this.formElement = formElement;
-    this.template.submitButton.setAttribute('form', formElement.id);
-    this.template.submitButton.type = 'submit';
+    this.shell.submitButton.setAttribute('form', formElement.id);
+    this.shell.submitButton.type = 'submit';
     formElement.addEventListener('submit', this.handleSubmit);
     this.showConfiguredContent(formElement);
   }
@@ -91,9 +91,9 @@ export class EditorDialog {
   ): void {
     this.close();
     this.configureOpenContent(contentElement, title, submitLabel, true, callbacks);
-    this.template.submitButton.removeAttribute('form');
-    this.template.submitButton.type = 'button';
-    this.template.submitButton.addEventListener('click', this.handleConfirmation);
+    this.shell.submitButton.removeAttribute('form');
+    this.shell.submitButton.type = 'button';
+    this.shell.submitButton.addEventListener('click', this.handleConfirmation);
     this.showConfiguredContent(contentElement);
   }
 
@@ -106,21 +106,21 @@ export class EditorDialog {
   ): void {
     this.callbacks = callbacks;
     this.isSubmitAvailable = true;
-    this.template.titleElement.textContent = title;
-    this.template.submitButton.textContent = submitLabel;
-    this.template.submitButton.classList.toggle(
+    this.shell.titleElement.textContent = title;
+    this.shell.submitButton.textContent = submitLabel;
+    this.shell.submitButton.classList.toggle(
       'dt-alteditor-lite-dialog__button--destructive',
       isDestructive,
     );
-    this.template.bodyElement.replaceChildren(contentElement);
+    this.shell.bodyElement.replaceChildren(contentElement);
     this.setBusy(false);
     this.clearError();
   }
 
   private showConfiguredContent(contentElement: HTMLElement): void {
-    positionDialog(this.template.dialogElement);
+    positionDialog(this.shell.dialogElement);
     this.focusScope.captureRestoreTarget();
-    this.template.dialogElement.showModal();
+    this.shell.dialogElement.showModal();
     this.attachViewportListeners();
     this.focusScope.activate(contentElement);
   }
@@ -132,9 +132,9 @@ export class EditorDialog {
    */
   public setBusy(isBusy: boolean): void {
     this.isBusy = isBusy;
-    this.template.submitButton.disabled = isBusy || !this.isSubmitAvailable;
-    this.template.cancelButton.disabled = isBusy;
-    this.template.dialogElement.setAttribute('aria-busy', String(isBusy));
+    this.shell.submitButton.disabled = isBusy || !this.isSubmitAvailable;
+    this.shell.cancelButton.disabled = isBusy;
+    this.shell.dialogElement.setAttribute('aria-busy', String(isBusy));
   }
 
   /**
@@ -144,7 +144,7 @@ export class EditorDialog {
    */
   public setSubmitAvailable(isAvailable: boolean): void {
     this.isSubmitAvailable = isAvailable;
-    this.template.submitButton.disabled = this.isBusy || !isAvailable;
+    this.shell.submitButton.disabled = this.isBusy || !isAvailable;
   }
 
   /**
@@ -153,16 +153,16 @@ export class EditorDialog {
    * @param message - Plain-text error message.
    */
   public showError(message: string): void {
-    this.template.errorElement.textContent = message;
-    this.template.errorElement.hidden = false;
+    this.shell.errorElement.textContent = message;
+    this.shell.errorElement.hidden = false;
   }
 
   /**
    * Clears the operation-level alert region.
    */
   public clearError(): void {
-    this.template.errorElement.textContent = '';
-    this.template.errorElement.hidden = true;
+    this.shell.errorElement.textContent = '';
+    this.shell.errorElement.hidden = true;
   }
 
   /**
@@ -180,17 +180,17 @@ export class EditorDialog {
   public close(): void {
     this.detachViewportListeners();
     this.detachForm();
-    this.template.submitButton.removeEventListener('click', this.handleConfirmation);
+    this.shell.submitButton.removeEventListener('click', this.handleConfirmation);
     this.setBusy(false);
     this.setSubmitAvailable(true);
     this.clearError();
 
-    if (this.template.dialogElement.open) {
-      this.template.dialogElement.close();
+    if (this.shell.dialogElement.open) {
+      this.shell.dialogElement.close();
     }
 
     this.focusScope.deactivate(true);
-    this.template.bodyElement.replaceChildren();
+    this.shell.bodyElement.replaceChildren();
     this.callbacks = undefined;
   }
 
@@ -205,24 +205,24 @@ export class EditorDialog {
     this.isDestroyed = true;
     this.detachViewportListeners();
     this.detachForm();
-    this.template.submitButton.removeEventListener('click', this.handleConfirmation);
+    this.shell.submitButton.removeEventListener('click', this.handleConfirmation);
 
-    if (this.template.dialogElement.open) {
-      this.template.dialogElement.close();
+    if (this.shell.dialogElement.open) {
+      this.shell.dialogElement.close();
     }
 
     this.focusScope.deactivate(true);
     this.focusScope.destroy();
-    this.template.dialogElement.removeEventListener('cancel', this.handleNativeCancel);
-    this.template.cancelButton.removeEventListener('click', this.handleCancelClick);
-    this.template.dialogElement.remove();
+    this.shell.dialogElement.removeEventListener('cancel', this.handleNativeCancel);
+    this.shell.cancelButton.removeEventListener('click', this.handleCancelClick);
+    this.shell.dialogElement.remove();
     this.callbacks = undefined;
   }
 
   private detachForm(): void {
     this.formElement?.removeEventListener('submit', this.handleSubmit);
     this.formElement = undefined;
-    this.template.submitButton.removeAttribute('form');
+    this.shell.submitButton.removeAttribute('form');
   }
 
   private attachViewportListeners(): void {
@@ -238,8 +238,8 @@ export class EditorDialog {
   }
 
   private readonly handleViewportChange = (): void => {
-    if (!this.isDestroyed && this.template.dialogElement.open) {
-      positionDialog(this.template.dialogElement);
+    if (!this.isDestroyed && this.shell.dialogElement.open) {
+      positionDialog(this.shell.dialogElement);
     }
   };
 

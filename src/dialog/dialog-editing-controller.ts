@@ -440,6 +440,7 @@ export class DialogEditingController<TRow extends object, TFormValues extends ob
             values,
             action === 'edit' ? this.editTargetCapture?.sourceRow : undefined,
           ),
+        this.arguments_.editing.template,
       );
       this.activeForm = form;
       if (sourceValues !== undefined) {

@@ -1,30 +1,28 @@
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 
-/**
- * Owned elements that make up the native editor dialog.
- */
-export interface DialogTemplate {
-  readonly dialogElement: HTMLDialogElement;
-  readonly bodyElement: HTMLDivElement;
-  readonly errorElement: HTMLDivElement;
-  readonly titleElement: HTMLHeadingElement;
-  readonly submitButton: HTMLButtonElement;
-  readonly cancelButton: HTMLButtonElement;
-}
-
-/** Shared native dialog structure used by form and alert presentations. */
-export interface DialogShellTemplate {
+/** Shared native dialog elements used by editor and alert presentations. */
+export interface DialogShell {
   readonly dialogElement: HTMLDialogElement;
   readonly bodyElement: HTMLDivElement;
   readonly footerElement: HTMLElement;
   readonly titleElement: HTMLHeadingElement;
 }
 
-/** Creates the common accessible dialog shell. */
-export function createDialogShell(
-  dialogId: string,
-  titleId: string,
-): DialogShellTemplate {
+/** Native dialog elements used by Create, Edit, and Remove operations. */
+export interface EditorDialogShell extends DialogShell {
+  readonly errorElement: HTMLDivElement;
+  readonly submitButton: HTMLButtonElement;
+  readonly cancelButton: HTMLButtonElement;
+}
+
+/** Native dialog elements used by a plain-text alert. */
+export interface AlertDialogShell extends DialogShell {
+  readonly closeButton: HTMLButtonElement;
+  readonly messageElement: HTMLParagraphElement;
+}
+
+/** Creates the common accessible dialog structure. */
+export function createDialogShell(dialogId: string, titleId: string): DialogShell {
   const dialogElement = document.createElement('dialog');
   const surfaceElement = document.createElement('div');
   const headerElement = document.createElement('header');
@@ -50,17 +48,11 @@ export function createDialogShell(
   return { bodyElement, dialogElement, footerElement, titleElement };
 }
 
-/**
- * Creates the fixed native dialog structure without parsing HTML strings.
- *
- * @param instanceId - Instance-scoped DOM prefix.
- * @param language - Complete resolved language.
- * @returns Owned dialog elements.
- */
-export function createDialogTemplate(
+/** Creates the native dialog structure used by editing operations. */
+export function createEditorDialogShell(
   instanceId: string,
   language: Readonly<AltEditorLiteLanguage>,
-): DialogTemplate {
+): EditorDialogShell {
   const shell = createDialogShell(`${instanceId}-dialog`, `${instanceId}-dialog-title`);
   const errorElement = document.createElement('div');
   const cancelButton = document.createElement('button');
@@ -83,26 +75,18 @@ export function createDialogTemplate(
   shell.bodyElement.after(errorElement);
 
   return {
-    bodyElement: shell.bodyElement,
+    ...shell,
     cancelButton,
-    dialogElement: shell.dialogElement,
     errorElement,
     submitButton,
-    titleElement: shell.titleElement,
   };
 }
 
-/** Owned elements used by a plain-text alert dialog. */
-export interface AlertDialogTemplate extends DialogShellTemplate {
-  readonly closeButton: HTMLButtonElement;
-  readonly messageElement: HTMLParagraphElement;
-}
-
-/** Creates the alert presentation on the shared dialog shell. */
-export function createAlertDialogTemplate(
+/** Creates the native dialog structure used by a plain-text alert. */
+export function createAlertDialogShell(
   instanceId: string,
   language: Readonly<AltEditorLiteLanguage>,
-): AlertDialogTemplate {
+): AlertDialogShell {
   const shell = createDialogShell(
     `${instanceId}-alert-dialog`,
     `${instanceId}-alert-dialog-title`,

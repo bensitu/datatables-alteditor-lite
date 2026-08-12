@@ -1,9 +1,6 @@
 import { DialogFocusScope } from './dialog-focus-scope.js';
 import { positionDialog } from './dialog-positioning.js';
-import {
-  createAlertDialogTemplate,
-  type AlertDialogTemplate,
-} from './dialog-template.js';
+import { createAlertDialogShell, type AlertDialogShell } from './dialog-shell.js';
 
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 
@@ -17,7 +14,7 @@ export interface EditorAlertContent {
 export class EditorAlertDialog {
   private readonly focusScope: DialogFocusScope;
 
-  private readonly template: AlertDialogTemplate;
+  private readonly shell: AlertDialogShell;
 
   private resolveOpen: (() => void) | undefined;
 
@@ -30,40 +27,40 @@ export class EditorAlertDialog {
     instanceId: string,
     language: Readonly<AltEditorLiteLanguage>,
   ) {
-    this.template = createAlertDialogTemplate(instanceId, language);
-    this.focusScope = new DialogFocusScope(this.template.dialogElement, tableElement);
-    this.template.dialogElement.addEventListener('cancel', this.handleCancel);
-    this.template.closeButton.addEventListener('click', this.handleClose);
-    document.body.append(this.template.dialogElement);
+    this.shell = createAlertDialogShell(instanceId, language);
+    this.focusScope = new DialogFocusScope(this.shell.dialogElement, tableElement);
+    this.shell.dialogElement.addEventListener('cancel', this.handleCancel);
+    this.shell.closeButton.addEventListener('click', this.handleClose);
+    document.body.append(this.shell.dialogElement);
   }
 
   public open(content: Readonly<EditorAlertContent>): Promise<void> {
     if (this.isDestroyed) {
       return Promise.resolve();
     }
-    if (this.template.dialogElement.open) {
+    if (this.shell.dialogElement.open) {
       this.close();
     }
 
-    this.template.titleElement.textContent = content.title;
-    this.template.messageElement.textContent = content.message;
-    positionDialog(this.template.dialogElement);
+    this.shell.titleElement.textContent = content.title;
+    this.shell.messageElement.textContent = content.message;
+    positionDialog(this.shell.dialogElement);
     this.focusScope.captureRestoreTarget();
-    this.template.dialogElement.showModal();
+    this.shell.dialogElement.showModal();
     this.attachViewportListeners();
-    this.focusScope.activate(this.template.bodyElement);
+    this.focusScope.activate(this.shell.bodyElement);
     return new Promise<void>((resolve) => {
       this.resolveOpen = resolve;
     });
   }
 
   public close(): void {
-    if (!this.template.dialogElement.open && this.resolveOpen === undefined) {
+    if (!this.shell.dialogElement.open && this.resolveOpen === undefined) {
       return;
     }
     this.detachViewportListeners();
-    if (this.template.dialogElement.open) {
-      this.template.dialogElement.close();
+    if (this.shell.dialogElement.open) {
+      this.shell.dialogElement.close();
     }
     this.focusScope.deactivate(true);
     const resolve = this.resolveOpen;
@@ -77,16 +74,16 @@ export class EditorAlertDialog {
     }
     this.isDestroyed = true;
     this.detachViewportListeners();
-    if (this.template.dialogElement.open) {
-      this.template.dialogElement.close();
+    if (this.shell.dialogElement.open) {
+      this.shell.dialogElement.close();
     }
     this.resolveOpen?.();
     this.resolveOpen = undefined;
     this.focusScope.deactivate(true);
     this.focusScope.destroy();
-    this.template.dialogElement.removeEventListener('cancel', this.handleCancel);
-    this.template.closeButton.removeEventListener('click', this.handleClose);
-    this.template.dialogElement.remove();
+    this.shell.dialogElement.removeEventListener('cancel', this.handleCancel);
+    this.shell.closeButton.removeEventListener('click', this.handleClose);
+    this.shell.dialogElement.remove();
   }
 
   private attachViewportListeners(): void {
@@ -111,8 +108,8 @@ export class EditorAlertDialog {
   };
 
   private readonly handleViewportChange = (): void => {
-    if (this.template.dialogElement.open) {
-      positionDialog(this.template.dialogElement);
+    if (this.shell.dialogElement.open) {
+      positionDialog(this.shell.dialogElement);
     }
   };
 }
