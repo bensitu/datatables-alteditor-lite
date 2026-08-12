@@ -64,7 +64,7 @@ function createTemplate(markup: string): HTMLTemplateElement {
 function buildWithTemplate(
   template: HTMLTemplateElement | HTMLElement | string,
 ): FormController<LayoutValues> {
-  const form = buildEditorForm(
+  const form = buildEditorForm<LayoutValues>(
     fields,
     'layout-test',
     ENGLISH_LANGUAGE,
@@ -167,7 +167,11 @@ describe('dialog form layouts', () => {
   });
 
   it('keeps the configured field order in the built-in layout', () => {
-    const form = buildEditorForm(fields, 'default-layout', ENGLISH_LANGUAGE);
+    const form = buildEditorForm<LayoutValues>(
+      fields,
+      'default-layout',
+      ENGLISH_LANGUAGE,
+    );
     activeForms.push(form);
     document.body.append(form.element);
 

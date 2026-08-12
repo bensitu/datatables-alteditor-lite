@@ -158,7 +158,12 @@ afterEach(() => {
 function createForm(
   validateUnique?: LocalUniqueValidator<FormValues>,
 ): FormController<FormValues> {
-  activeForm = buildEditorForm(fields, 'form-test', ENGLISH_LANGUAGE, validateUnique);
+  activeForm = buildEditorForm<FormValues>(
+    fields,
+    'form-test',
+    ENGLISH_LANGUAGE,
+    validateUnique,
+  );
   document.body.append(activeForm.element);
   return activeForm;
 }
@@ -369,6 +374,50 @@ describe('FormController', () => {
     await expect(nameField?.validate()).resolves.toEqual({ valid: true });
   });
 
+  it('applies public field state through collection, layout, and native controls', async () => {
+    const form = createForm();
+    const nameField = form.getField('profile.name');
+    const input = nameField?.element.querySelector<HTMLInputElement>('input');
+    const slot = nameField?.element.parentElement;
+    if (
+      nameField === null ||
+      input === null ||
+      input === undefined ||
+      slot === null ||
+      slot === undefined
+    ) {
+      throw new Error('Expected a mounted text field.');
+    }
+
+    expect(nameField.getValue()).toBeInstanceOf(Promise);
+    expect(nameField.isVisible()).toBe(true);
+    nameField.setVisible(false);
+    expect(slot.hidden).toBe(true);
+    nameField.setValue('Collected while hidden');
+    await expect(form.collect()).resolves.toMatchObject({
+      profile: { name: 'Collected while hidden' },
+    });
+    nameField.setVisible(true);
+
+    nameField.setDisabled(true);
+    expect(nameField.isDisabled()).toBe(true);
+    await expect(form.collect()).resolves.not.toHaveProperty('profile');
+    nameField.setDisabled(false);
+
+    nameField.setReadOnly(true);
+    expect(nameField.isReadOnly()).toBe(true);
+    expect(input.readOnly).toBe(true);
+    nameField.setReadOnly(false);
+
+    nameField.setRequired(false);
+    expect(nameField.isRequired()).toBe(false);
+    expect(input.required).toBe(false);
+    nameField.setValue('');
+    await expect(nameField.validate()).resolves.toEqual({ valid: true });
+    nameField.setRequired(true);
+    await expect(nameField.validate()).resolves.toMatchObject({ valid: false });
+  });
+
   it('caches field facades and removes explicitly destroyed fields', async () => {
     const form = createForm();
     const nameField = form.getField('profile.name');
@@ -435,7 +484,7 @@ describe('FormController', () => {
       releaseFirstValidation = resolve;
     });
     let validationCount = 0;
-    activeForm = buildEditorForm(
+    const form = buildEditorForm<FormValues>(
       [
         {
           defaultValue: 'Ready',
@@ -451,8 +500,9 @@ describe('FormController', () => {
       'field-validation',
       ENGLISH_LANGUAGE,
     );
-    document.body.append(activeForm.element);
-    const field = activeForm.getField('profile.name');
+    activeForm = form;
+    document.body.append(form.element);
+    const field = form.getField('profile.name');
 
     const supersededValidation = field?.validate();
     await vi.waitFor(() => {
@@ -483,18 +533,19 @@ describe('FormController', () => {
         },
       },
     ] satisfies readonly FieldConfig<FormValues>[];
-    activeForm = buildEditorForm(
+    const form = buildEditorForm<FormValues>(
       concurrentFields,
       'concurrent-validation',
       ENGLISH_LANGUAGE,
     );
-    document.body.append(activeForm.element);
+    activeForm = form;
+    document.body.append(form.element);
 
-    const supersededValidation = activeForm.validate();
+    const supersededValidation = form.validate();
     await vi.waitFor(() => {
       expect(validationCount).toBe(1);
     });
-    await expect(activeForm.validate()).resolves.toEqual({
+    await expect(form.validate()).resolves.toEqual({
       fieldErrors: {},
       valid: true,
     });

@@ -1,12 +1,12 @@
 import { EditorConfigurationError } from '../core/alt-editor-lite-error.js';
 
+import { ChoiceOptionStore } from './choice-option-store.js';
 import {
   createNativeControlController,
   type NativeControlAdapter,
 } from './field-controller-foundation.js';
-import { OptionTokenMap } from './option-token-map.js';
 
-import type { SelectFieldConfig } from './field-config.js';
+import type { SelectFieldConfig, SelectOption } from './field-config.js';
 import type { ManagedFieldController } from './managed-field-controller.js';
 
 /**
@@ -29,7 +29,7 @@ export function createSelectFieldController<
   onUserChange: () => void,
 ): ManagedFieldController<TFormValues> {
   const selectElement = document.createElement('select');
-  const tokenMap = new OptionTokenMap(config.options);
+  const optionStore = new ChoiceOptionStore(config.options);
   const clearOption = document.createElement('option');
   let committedToken = '';
   let isReadOnly = false;
@@ -40,13 +40,20 @@ export function createSelectFieldController<
     selectElement.append(clearOption);
   }
 
-  for (const [token, option] of tokenMap.entries()) {
-    const optionElement = document.createElement('option');
-    optionElement.value = token;
-    optionElement.textContent = option.label;
-    optionElement.disabled = option.disabled ?? false;
-    selectElement.append(optionElement);
-  }
+  const renderOptions = (): void => {
+    selectElement.replaceChildren();
+    if (config.allowClear === true) {
+      selectElement.append(clearOption);
+    }
+    for (const [token, option] of optionStore.entries()) {
+      const optionElement = document.createElement('option');
+      optionElement.value = token;
+      optionElement.textContent = option.label;
+      optionElement.disabled = option.disabled ?? false;
+      selectElement.append(optionElement);
+    }
+  };
+  renderOptions();
 
   const preventReadOnlyInteraction = (event: Event): void => {
     if (isReadOnly) {
@@ -67,7 +74,7 @@ export function createSelectFieldController<
 
   const adapter: NativeControlAdapter<TValue | undefined> = {
     control: selectElement,
-    readValue: () => tokenMap.valueForToken(selectElement.value),
+    readValue: () => optionStore.valueForToken(selectElement.value),
     writeValue: (value: unknown) => {
       if (value === undefined) {
         selectElement.value = '';
@@ -81,7 +88,7 @@ export function createSelectFieldController<
         );
       }
 
-      const token = tokenMap.tokenForValue(value as TValue);
+      const token = optionStore.tokenForValue(value as TValue);
       if (token === undefined) {
         throw new EditorConfigurationError(
           `Field "${config.name}" received an unknown option value.`,
@@ -105,7 +112,7 @@ export function createSelectFieldController<
     },
   };
 
-  return createNativeControlController({
+  const controller = createNativeControlController({
     adapter,
     config,
     fieldId,
@@ -113,4 +120,28 @@ export function createSelectFieldController<
     onUserChange,
     requiredMessage,
   });
+
+  return {
+    ...controller,
+    getOptions: () => optionStore.options(),
+    setOptions: (options) => {
+      const selectedValue = optionStore.valueForToken(selectElement.value);
+      optionStore.replace(options as readonly SelectOption<TValue>[]);
+      renderOptions();
+      const retainedToken =
+        selectedValue === undefined
+          ? undefined
+          : optionStore.tokenForValue(selectedValue);
+      if (retainedToken === undefined) {
+        if (config.allowClear === true) {
+          selectElement.value = '';
+        } else {
+          selectElement.selectedIndex = -1;
+        }
+      } else {
+        selectElement.value = retainedToken;
+      }
+      committedToken = selectElement.value;
+    },
+  };
 }

@@ -3,11 +3,13 @@ import { expectAssignable, expectNotAssignable, expectType } from 'tsd';
 import {
   AltEditorLite,
   EditorLanguageLoadError,
+  isChoiceFieldController,
   loadEditorLanguage,
   registerLocale,
   type AltEditorLiteOptions,
   type AltEditorLiteLanguage,
   type ClientSideOperations,
+  type ChoiceFieldController,
   type DialogTemplateSource,
   type EditingOptions,
   type EditorErrorEventDetail,
@@ -18,7 +20,9 @@ import {
   type EditorSuccessEventDetail,
   type EditorValues,
   type FieldConfig,
+  type FieldController,
   type FieldPath,
+  type FieldPathValue,
   type FieldValue,
   type InlineEditingOptions,
   type InlineEditState,
@@ -277,6 +281,7 @@ expectAssignable<FieldPath<FormValues>>('attachment');
 expectNotAssignable<FieldPath<FormValues>>('contact.missing');
 expectNotAssignable<FieldPath<FormValues>>('contact.email.value');
 expectNotAssignable<FieldPath<FormValues>>('__proto__.polluted');
+expectType<string>({} as FieldPathValue<FormValues, 'contact.email'>);
 
 expectNotAssignable<FieldConfig<FormValues>>({
   name: 'contact.email',
@@ -361,16 +366,19 @@ expectAssignable<FieldConfig<FormValues>>(mixedSearchSelect);
 
 const remoteSearchSelect = {
   label: 'Remote role',
-  loadOptions: (_query, context) => {
-    expectType<AbortSignal>(context.signal);
-    return Promise.resolve([{ label: 'Administrator', value: 7 }]);
+  remote: {
+    loadOptions: (_query, context) => {
+      expectType<AbortSignal>(context.signal);
+      return Promise.resolve([{ label: 'Administrator', value: 7 }]);
+    },
+    resolveOption: (value, context) => {
+      expectType<number>(value);
+      expectType<AbortSignal>(context.signal);
+      return Promise.resolve({ label: 'Administrator', value });
+    },
   },
   name: 'role',
-  resolveOption: (value, context) => {
-    expectType<number>(value);
-    expectType<AbortSignal>(context.signal);
-    return Promise.resolve({ label: 'Administrator', value });
-  },
+  search: { debounceMs: 100, threshold: 1 },
   type: 'search-select',
 } as const satisfies RemoteSearchSelectFieldConfig<FormValues, number>;
 expectAssignable<SearchSelectFieldConfig<FormValues, number>>(remoteSearchSelect);
@@ -378,24 +386,40 @@ expectAssignable<FieldConfig<FormValues>>(remoteSearchSelect);
 
 expectNotAssignable<RemoteSearchSelectFieldConfig<FormValues, number>>({
   label: 'Remote role',
-  loadOptions: () => [],
   name: 'role',
+  remote: { loadOptions: () => [] },
   type: 'search-select',
 });
 expectNotAssignable<LocalSearchSelectFieldConfig<FormValues, number>>({
   label: 'Local role',
-  loadOptions: () => [],
   name: 'role',
   options: [{ label: 'Administrator', value: 7 }],
+  remote: {
+    loadOptions: () => [],
+    resolveOption: () => ({ label: 'Administrator', value: 7 }),
+  },
+  type: 'search-select',
+});
+expectNotAssignable<SearchSelectFieldConfig<FormValues, number>>({
+  debounceMs: 100,
+  label: 'Old configuration',
+  loadOptions: () => [],
+  name: 'role',
   resolveOption: () => ({ label: 'Administrator', value: 7 }),
+  searchThreshold: 1,
   type: 'search-select',
 });
 
-const roleController = editor.getField<number | undefined>('role');
-roleController?.setOptions?.([{ label: 'Administrator', value: 7 }]);
-expectNotAssignable<
-  Parameters<NonNullable<NonNullable<typeof roleController>['setOptions']>>[0]
->([{ label: 'Invalid', value: '7' }]);
+const roleController = editor.getField('role');
+expectType<FieldController<number> | null>(roleController);
+expectType<Promise<number>>(roleController?.getValue() ?? Promise.resolve(0));
+if (roleController !== null && isChoiceFieldController(roleController)) {
+  expectAssignable<ChoiceFieldController<number>>(roleController);
+  roleController.setOptions([{ label: 'Administrator', value: 7 }]);
+  expectNotAssignable<Parameters<typeof roleController.setOptions>[0]>([
+    { label: 'Invalid', value: '7' },
+  ]);
+}
 
 expectAssignable<Readonly<AltEditorLiteLanguage>>(en);
 expectAssignable<Readonly<AltEditorLiteLanguage>>(ja);

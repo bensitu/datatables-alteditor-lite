@@ -208,10 +208,24 @@ export interface BaseSearchSelectFieldConfig<
   readonly allowClear?: boolean;
   /** Whether matching options are sorted with the active locale. */
   readonly sortOptions?: boolean;
+  /** Search interaction and timing behavior. */
+  readonly search?: SearchSelectSearchOptions;
+}
+
+/** Search interaction settings for a SearchSelect field. */
+export interface SearchSelectSearchOptions {
+  /** Whether the combobox accepts filter text. Defaults to true. */
+  readonly enabled?: boolean;
   /** Minimum query length before filtering or remote loading starts. */
-  readonly searchThreshold?: number;
+  readonly threshold?: number;
   /** Delay applied after text input. Remote fields default to 250ms. */
   readonly debounceMs?: number;
+}
+
+/** Cancellable remote option loading and selected-value resolution. */
+export interface RemoteSearchSelectSource<TValue extends string | number> {
+  readonly loadOptions: SearchSelectOptionLoader<TValue>;
+  readonly resolveOption: SearchSelectOptionResolver<TValue>;
 }
 
 type SearchSelectManualValueConstraint<TValue extends string | number> = [
@@ -227,8 +241,7 @@ export type LocalSearchSelectFieldConfig<
 > = BaseSearchSelectFieldConfig<TFormValues, TValue> &
   SearchSelectManualValueConstraint<TValue> & {
     readonly options: readonly SelectOption<TValue>[];
-    readonly loadOptions?: never;
-    readonly resolveOption?: never;
+    readonly remote?: never;
   };
 
 /** SearchSelect backed by cancellable remote loading and value resolution. */
@@ -238,8 +251,7 @@ export type RemoteSearchSelectFieldConfig<
 > = BaseSearchSelectFieldConfig<TFormValues, TValue> &
   SearchSelectManualValueConstraint<TValue> & {
     readonly options?: readonly SelectOption<TValue>[];
-    readonly loadOptions: SearchSelectOptionLoader<TValue>;
-    readonly resolveOption: SearchSelectOptionResolver<TValue>;
+    readonly remote: RemoteSearchSelectSource<TValue>;
   };
 
 /**

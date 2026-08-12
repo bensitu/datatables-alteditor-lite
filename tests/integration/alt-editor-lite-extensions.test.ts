@@ -284,7 +284,7 @@ describe('optional Buttons and Select integration', () => {
       });
     });
 
-    editor.getField<string>('name')?.setValue('Opening selection');
+    editor.getField('name')?.setValue('Opening selection');
     extensionApi.row(0).deselect();
     extensionApi.row(1).select();
     api.search('Gamma').draw();

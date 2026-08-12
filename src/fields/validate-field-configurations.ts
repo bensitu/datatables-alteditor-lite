@@ -2,8 +2,8 @@ import { EditorConfigurationError } from '../core/alt-editor-lite-error.js';
 import { parseFieldPath } from '../object-path/field-path.js';
 import { SEARCH_SELECT_MAX_OPTION_COUNT } from '../search-select/search-select.js';
 
+import { ChoiceOptionStore } from './choice-option-store.js';
 import { assertAllowedFieldAttributes } from './field-attributes.js';
-import { assertUniqueOptionValues } from './option-token-map.js';
 import { throwUnsupportedFieldType } from './unsupported-field-type.js';
 
 import type { FieldConfig } from './field-config.js';
@@ -69,7 +69,7 @@ function assertValidDefaultValue<TFormValues extends object>(
     case 'search-select': {
       isValid =
         defaultValue === undefined ||
-        (typeof config.loadOptions === 'function' &&
+        (config.remote !== undefined &&
           (typeof defaultValue === 'string' || typeof defaultValue === 'number')) ||
         hasConfiguredOption(config.options ?? [], defaultValue) ||
         (config.allowManualValue === true && typeof defaultValue === 'string');
@@ -181,21 +181,63 @@ export function validateFieldConfigurations<TFormValues extends object>(
     }
 
     if (config.type === 'select' || config.type === 'radio') {
-      assertUniqueOptionValues<string | number>(config.options);
+      new ChoiceOptionStore<string | number>(config.options);
     }
 
     if (config.type === 'search-select') {
+      const rawConfig = config as unknown as Readonly<Record<string, unknown>>;
+      if (
+        ['searchThreshold', 'debounceMs', 'loadOptions', 'resolveOption'].some(
+          (propertyName) => Object.hasOwn(rawConfig, propertyName),
+        )
+      ) {
+        throw new EditorConfigurationError(
+          `SearchSelect field "${config.name}" must configure search and remote options through their nested objects.`,
+        );
+      }
       const options = config.options ?? [];
-      const loadOptions: unknown = config.loadOptions;
-      const resolveOption: unknown = config.resolveOption;
-      const hasLoader = typeof loadOptions === 'function';
-      const hasResolver = typeof resolveOption === 'function';
-      const hasRemoteConfiguration =
-        loadOptions !== undefined || resolveOption !== undefined;
-      const isRemote = hasRemoteConfiguration && hasLoader && hasResolver;
-      if (hasRemoteConfiguration && !isRemote) {
+      const remote: unknown = config.remote;
+      const isRemote = remote !== undefined;
+      if (
+        isRemote &&
+        (typeof remote !== 'object' ||
+          remote === null ||
+          typeof (remote as { readonly loadOptions?: unknown }).loadOptions !==
+            'function' ||
+          typeof (remote as { readonly resolveOption?: unknown }).resolveOption !==
+            'function')
+      ) {
         throw new EditorConfigurationError(
           `Remote SearchSelect field "${config.name}" requires loadOptions and resolveOption.`,
+        );
+      }
+      const search: unknown = config.search;
+      if (
+        search !== undefined &&
+        (typeof search !== 'object' || search === null || Array.isArray(search))
+      ) {
+        throw new EditorConfigurationError(
+          `search for field "${config.name}" must be an object.`,
+        );
+      }
+      const searchOptions = search as
+        | {
+            readonly debounceMs?: unknown;
+            readonly enabled?: unknown;
+            readonly threshold?: unknown;
+          }
+        | undefined;
+      if (
+        searchOptions?.enabled !== undefined &&
+        typeof searchOptions.enabled !== 'boolean'
+      ) {
+        throw new EditorConfigurationError(
+          `search.enabled for field "${config.name}" must be a boolean.`,
+        );
+      }
+      if (isRemote && searchOptions?.enabled === false) {
+        throw new EditorConfigurationError(
+          `Remote SearchSelect field "${config.name}" requires search to be enabled.`,
         );
       }
       if (!isRemote && options.length === 0) {
@@ -208,9 +250,17 @@ export function validateFieldConfigurations<TFormValues extends object>(
           `Field "${config.name}" exceeds the ${String(SEARCH_SELECT_MAX_OPTION_COUNT)}-option SearchSelect limit.`,
         );
       }
-      assertUniqueOptionValues<string | number>(options);
-      assertNonNegativeInteger(config.searchThreshold, 'searchThreshold', config.name);
-      assertNonNegativeInteger(config.debounceMs, 'debounceMs', config.name);
+      new ChoiceOptionStore<string | number>(options);
+      assertNonNegativeInteger(
+        searchOptions?.threshold as number | undefined,
+        'search.threshold',
+        config.name,
+      );
+      assertNonNegativeInteger(
+        searchOptions?.debounceMs as number | undefined,
+        'search.debounceMs',
+        config.name,
+      );
       if (
         config.allowManualValue === true &&
         options.some(({ value }) => typeof value !== 'string')

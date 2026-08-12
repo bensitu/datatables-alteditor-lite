@@ -77,8 +77,10 @@ export function createNativeControlController<TFormValues extends object, TValue
   control.classList.add('dt-alteditor-lite-field__control');
   control.setAttribute('aria-describedby', errorId);
   control.required = config.required ?? false;
+  control.setAttribute('aria-required', String(control.required));
   control.disabled = config.disabled ?? false;
-  adapter.setReadOnly(config.readOnly ?? false);
+  let isReadOnly = config.readOnly ?? false;
+  adapter.setReadOnly(isReadOnly);
   applyAllowedFieldAttributes(control, config.attributes);
 
   const controlContainer = controllerArguments.controlContainer ?? control;
@@ -117,10 +119,6 @@ export function createNativeControlController<TFormValues extends object, TValue
 
   fieldElement.append(errorElement);
 
-  if (config.visible === false) {
-    fieldElement.hidden = true;
-  }
-
   if (config.className !== undefined) {
     addConsumerClasses(fieldElement, config.className);
   }
@@ -140,6 +138,16 @@ export function createNativeControlController<TFormValues extends object, TValue
       control.disabled = isDisabled;
     },
     isDisabled: () => control.disabled,
+    setReadOnly: (nextReadOnly: boolean) => {
+      isReadOnly = nextReadOnly;
+      adapter.setReadOnly(nextReadOnly);
+    },
+    isReadOnly: () => isReadOnly,
+    setRequired: (isRequired: boolean) => {
+      control.required = isRequired;
+      control.setAttribute('aria-required', String(isRequired));
+    },
+    isRequired: () => control.required,
     focus: () => {
       control.focus();
     },

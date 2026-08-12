@@ -202,7 +202,7 @@ async function editFirstRow(
   nextName: string,
 ): Promise<void> {
   await editor.openEditDialog('#row-a');
-  editor.getField<string>('name')?.setValue(nextName);
+  editor.getField('name')?.setValue(nextName);
   submitForm();
 
   await vi.waitFor(() => {

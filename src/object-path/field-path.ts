@@ -41,6 +41,23 @@ export type FieldPath<TFormValues extends object> = FieldPathAtDepth<
   readonly []
 >;
 
+type FieldPathValueAtPath<
+  TValue,
+  TPath extends string,
+> = TPath extends `${infer THead}.${infer TTail}`
+  ? THead extends keyof NonNullable<TValue>
+    ? FieldPathValueAtPath<NonNullable<TValue>[THead], TTail>
+    : never
+  : TPath extends keyof NonNullable<TValue>
+    ? NonNullable<TValue>[TPath]
+    : never;
+
+/** Value represented by a safe form field path. */
+export type FieldPathValue<
+  TFormValues extends object,
+  TPath extends FieldPath<TFormValues>,
+> = FieldPathValueAtPath<TFormValues, TPath>;
+
 const FORBIDDEN_FIELD_PATH_SEGMENTS = new Set<string>([
   '__proto__',
   'constructor',

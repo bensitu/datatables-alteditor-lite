@@ -1,32 +1,25 @@
 import { EditorConfigurationError } from '../core/alt-editor-lite-error.js';
 
+import { ChoiceOptionStore } from './choice-option-store.js';
 import { applyAllowedFieldAttributes } from './field-attributes.js';
-import { OptionTokenMap } from './option-token-map.js';
 
 import type {
   FieldChangeContext,
   FieldValidationContext,
   RadioFieldConfig,
+  SelectOption,
 } from './field-config.js';
 import type { ManagedFieldController } from './managed-field-controller.js';
 import type { EditorValues } from '../core/editor-values.js';
 
-/**
- * Creates an accessible radio group with typed option values.
- *
- * @param config - Typed radio configuration.
- * @param fieldId - Instance-scoped control identifier.
- * @param invalidMessage - Validation fallback.
- * @param onUserChange - Form-owned change notification.
- * @returns Managed field controller.
- */
+/** Creates an accessible radio group with replaceable typed options. */
 export function createRadioFieldController<
   TFormValues extends object,
   TValue extends string | number,
 >(
   config: RadioFieldConfig<TFormValues, TValue>,
   fieldId: string,
-  invalidMessage: string,
+  _invalidMessage: string,
   requiredMessage: string,
   onUserChange: () => void,
 ): ManagedFieldController<TFormValues> {
@@ -34,19 +27,17 @@ export function createRadioFieldController<
   const labelElement = document.createElement('div');
   const groupElement = document.createElement('div');
   const errorElement = document.createElement('div');
-  const tokenMap = new OptionTokenMap(config.options);
-  const inputElements: HTMLInputElement[] = [];
+  const optionStore = new ChoiceOptionStore(config.options);
   const descriptionId = `${fieldId}-description`;
   const errorId = `${fieldId}-error`;
-  const isReadOnly = config.readOnly ?? false;
-  const requiredOptionIndex = config.options.findIndex(
-    (option) => option.disabled !== true,
-  );
+  let inputElements: HTMLInputElement[] = [];
+  let isDisabled = config.disabled ?? false;
+  let isReadOnly = config.readOnly ?? false;
+  let isRequired = config.required ?? false;
   let isDestroyed = false;
 
   fieldElement.className = 'dt-alteditor-lite-field';
   fieldElement.dataset['fieldName'] = config.name;
-  fieldElement.hidden = config.visible === false;
   labelElement.className = 'dt-alteditor-lite-field__label';
   labelElement.id = `${fieldId}-label`;
   labelElement.textContent = config.label;
@@ -76,34 +67,59 @@ export function createRadioFieldController<
     }
   };
 
-  for (const [optionIndex, [token, option]] of tokenMap.entries().entries()) {
-    const optionLabel = document.createElement('label');
-    const inputElement = document.createElement('input');
-    const optionText = document.createElement('span');
+  const removeOptionListeners = (): void => {
+    for (const inputElement of inputElements) {
+      inputElement.removeEventListener('click', preventReadOnlyMutation);
+      inputElement.removeEventListener('keydown', preventReadOnlyMutation);
+      inputElement.removeEventListener('change', onUserChange);
+    }
+  };
 
-    inputElement.id = `${fieldId}-option-${String(optionIndex)}`;
-    inputElement.name = `${fieldId}-group`;
-    inputElement.type = 'radio';
-    inputElement.value = token;
-    inputElement.disabled = (config.disabled ?? false) || (option.disabled ?? false);
-    inputElement.required =
-      config.required === true && optionIndex === requiredOptionIndex;
-    inputElement.setAttribute('aria-readonly', String(isReadOnly));
-    applyAllowedFieldAttributes(inputElement, config.attributes);
-    inputElement.addEventListener('click', preventReadOnlyMutation);
-    inputElement.addEventListener('keydown', preventReadOnlyMutation);
-    inputElement.addEventListener('change', onUserChange);
+  const applyRuntimeState = (): void => {
+    const requiredOptionIndex = optionStore
+      .options()
+      .findIndex((option) => option.disabled !== true);
+    groupElement.setAttribute('aria-readonly', String(isReadOnly));
+    groupElement.setAttribute('aria-required', String(isRequired));
+    for (const [optionIndex, inputElement] of inputElements.entries()) {
+      const option = optionStore.options()[optionIndex];
+      inputElement.disabled = isDisabled || option?.disabled === true;
+      inputElement.required = isRequired && optionIndex === requiredOptionIndex;
+      inputElement.setAttribute('aria-readonly', String(isReadOnly));
+      inputElement.setAttribute('aria-required', String(inputElement.required));
+    }
+  };
 
-    optionLabel.className = 'dt-alteditor-lite-radio__option';
-    optionLabel.htmlFor = inputElement.id;
-    optionText.textContent = option.label;
-    optionLabel.append(inputElement, optionText);
-    groupElement.append(optionLabel);
-    inputElements.push(inputElement);
-  }
+  const renderOptions = (): void => {
+    removeOptionListeners();
+    inputElements = [];
+    const fragment = document.createDocumentFragment();
+    for (const [optionIndex, [token, option]] of optionStore.entries().entries()) {
+      const optionLabel = document.createElement('label');
+      const inputElement = document.createElement('input');
+      const optionText = document.createElement('span');
+
+      inputElement.id = `${fieldId}-option-${String(optionIndex)}`;
+      inputElement.name = `${fieldId}-group`;
+      inputElement.type = 'radio';
+      inputElement.value = token;
+      applyAllowedFieldAttributes(inputElement, config.attributes);
+      inputElement.addEventListener('click', preventReadOnlyMutation);
+      inputElement.addEventListener('keydown', preventReadOnlyMutation);
+      inputElement.addEventListener('change', onUserChange);
+
+      optionLabel.className = 'dt-alteditor-lite-radio__option';
+      optionLabel.htmlFor = inputElement.id;
+      optionText.textContent = option.label;
+      optionLabel.append(inputElement, optionText);
+      fragment.append(optionLabel);
+      inputElements.push(inputElement);
+    }
+    groupElement.replaceChildren(fragment);
+    applyRuntimeState();
+  };
 
   fieldElement.append(labelElement, groupElement);
-
   if (config.description !== undefined) {
     const descriptionElement = document.createElement('div');
     descriptionElement.className = 'dt-alteditor-lite-field__description';
@@ -111,66 +127,81 @@ export function createRadioFieldController<
     descriptionElement.textContent = config.description;
     fieldElement.append(descriptionElement);
   }
-
   fieldElement.append(errorElement);
+  renderOptions();
 
   const readValue = (): TValue | undefined => {
     const checkedInput = inputElements.find((inputElement) => inputElement.checked);
     return checkedInput === undefined
       ? undefined
-      : tokenMap.valueForToken(checkedInput.value);
+      : optionStore.valueForToken(checkedInput.value);
+  };
+
+  const setValue = (value: unknown): void => {
+    if (value === undefined) {
+      for (const inputElement of inputElements) {
+        inputElement.checked = false;
+      }
+      return;
+    }
+    if (typeof value !== 'string' && typeof value !== 'number') {
+      throw new EditorConfigurationError(
+        `Field "${config.name}" requires a configured option value.`,
+      );
+    }
+    const token = optionStore.tokenForValue(value as TValue);
+    if (token === undefined) {
+      throw new EditorConfigurationError(
+        `Field "${config.name}" received an unknown option value.`,
+      );
+    }
+    for (const inputElement of inputElements) {
+      inputElement.checked = inputElement.value === token;
+    }
   };
 
   return {
     name: config.name,
     element: fieldElement,
+    getOptions: () => optionStore.options(),
     getValue: readValue,
-    setValue: (value: unknown) => {
-      if (value === undefined) {
-        for (const inputElement of inputElements) {
-          inputElement.checked = false;
-        }
-        return;
-      }
-
-      if (typeof value !== 'string' && typeof value !== 'number') {
-        throw new EditorConfigurationError(
-          `Field "${config.name}" requires a configured option value.`,
-        );
-      }
-
-      const token = tokenMap.tokenForValue(value as TValue);
-      if (token === undefined) {
-        throw new EditorConfigurationError(
-          `Field "${config.name}" received an unknown option value.`,
-        );
-      }
-
-      for (const inputElement of inputElements) {
-        inputElement.checked = inputElement.value === token;
+    setValue,
+    setOptions: (options: readonly SelectOption[]) => {
+      const selectedValue = readValue();
+      optionStore.replace(options as readonly SelectOption<TValue>[]);
+      renderOptions();
+      if (
+        selectedValue !== undefined &&
+        optionStore.tokenForValue(selectedValue) !== undefined
+      ) {
+        setValue(selectedValue);
       }
     },
-    setDisabled: (isDisabled: boolean) => {
-      for (const [optionIndex, inputElement] of inputElements.entries()) {
-        inputElement.disabled =
-          isDisabled || (config.options[optionIndex]?.disabled ?? false);
-      }
+    setDisabled: (nextDisabled: boolean) => {
+      isDisabled = nextDisabled;
+      applyRuntimeState();
     },
-    isDisabled: () =>
-      inputElements.length === 0 ||
-      inputElements.every((inputElement) => inputElement.disabled),
+    isDisabled: () => isDisabled,
+    setReadOnly: (nextReadOnly: boolean) => {
+      isReadOnly = nextReadOnly;
+      applyRuntimeState();
+    },
+    isReadOnly: () => isReadOnly,
+    setRequired: (nextRequired: boolean) => {
+      isRequired = nextRequired;
+      applyRuntimeState();
+    },
+    isRequired: () => isRequired,
     focus: () => {
       const focusTarget =
         inputElements.find((inputElement) => inputElement.checked) ??
         inputElements.find((inputElement) => !inputElement.disabled);
       focusTarget?.focus();
     },
-    validateNative: () => {
-      const isValid =
-        config.required !== true ||
-        inputElements.some((inputElement) => inputElement.checked);
-      return isValid ? { valid: true } : { valid: false, message: requiredMessage };
-    },
+    validateNative: () =>
+      isRequired && !inputElements.some((inputElement) => inputElement.checked)
+        ? { valid: false, message: requiredMessage }
+        : { valid: true },
     validateCustom: async (
       values: Readonly<EditorValues<TFormValues>>,
       signal: AbortSignal,
@@ -178,7 +209,6 @@ export function createRadioFieldController<
       if (config.validate === undefined) {
         return { valid: true };
       }
-
       const validationContext: FieldValidationContext<TFormValues> = {
         signal,
         values,
@@ -192,11 +222,7 @@ export function createRadioFieldController<
       if (config.onChange === undefined) {
         return;
       }
-
-      const changeContext: FieldChangeContext<TFormValues> = {
-        signal,
-        values,
-      };
+      const changeContext: FieldChangeContext<TFormValues> = { signal, values };
       await Promise.resolve(config.onChange(readValue(), changeContext));
     },
     clearError: () => {
@@ -213,13 +239,9 @@ export function createRadioFieldController<
       if (isDestroyed) {
         return;
       }
-
       isDestroyed = true;
-      for (const inputElement of inputElements) {
-        inputElement.removeEventListener('click', preventReadOnlyMutation);
-        inputElement.removeEventListener('keydown', preventReadOnlyMutation);
-        inputElement.removeEventListener('change', onUserChange);
-      }
+      removeOptionListeners();
+      inputElements = [];
       fieldElement.remove();
     },
   };

@@ -3,13 +3,15 @@
  *
  * @param inputElement - Search input.
  * @param listboxElement - Owned local listbox.
+ * @param isSearchEnabled - Whether text filtering is available.
  */
 export function initializeSearchSelectAria(
   inputElement: HTMLInputElement,
   listboxElement: HTMLElement,
+  isSearchEnabled = true,
 ): void {
   inputElement.setAttribute('role', 'combobox');
-  inputElement.setAttribute('aria-autocomplete', 'list');
+  inputElement.setAttribute('aria-autocomplete', isSearchEnabled ? 'list' : 'none');
   inputElement.setAttribute('aria-expanded', 'false');
   inputElement.setAttribute('aria-controls', listboxElement.id);
   inputElement.setAttribute('autocomplete', 'off');

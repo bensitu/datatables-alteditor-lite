@@ -11,9 +11,14 @@ export interface ManagedFieldController<TFormValues extends object> {
   readonly element: HTMLElement;
   getValue(signal?: AbortSignal): MaybePromise<unknown>;
   setValue(value: unknown): void;
+  readonly getOptions?: () => readonly SelectOption[];
   readonly setOptions?: (options: readonly SelectOption[]) => void;
   setDisabled(isDisabled: boolean): void;
   isDisabled(): boolean;
+  setReadOnly(isReadOnly: boolean): void;
+  isReadOnly(): boolean;
+  setRequired(isRequired: boolean): void;
+  isRequired(): boolean;
   focus(): void;
   validateNative(): FieldValidationResult;
   validateCustom(

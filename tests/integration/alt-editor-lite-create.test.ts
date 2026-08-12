@@ -189,8 +189,8 @@ describe('AltEditorLite synchronous Create', () => {
     }
 
     await editor.openCreateDialog();
-    editor.getField<string>('name')?.setValue('Created');
-    editor.getField<number>('rank')?.setValue(9);
+    editor.getField('name')?.setValue('Created');
+    editor.getField('rank')?.setValue(9);
     submitOpenDialog();
 
     await vi.waitFor(() => {
@@ -286,7 +286,7 @@ describe('AltEditorLite synchronous Create', () => {
         element.getAttribute('data-alteditor-lite-field'),
       ),
     ).toEqual(['rank', 'name']);
-    editor.getField<number>('rank')?.setValue(8);
+    editor.getField('rank')?.setValue(8);
     submitOpenDialog();
 
     await vi.waitFor(() => {
@@ -297,7 +297,7 @@ describe('AltEditorLite synchronous Create', () => {
       nameSlot?.querySelector('.dt-alteditor-lite-field__control'),
     );
 
-    editor.getField<string>('name')?.setValue('Custom layout');
+    editor.getField('name')?.setValue('Custom layout');
     submitOpenDialog();
     await vi.waitFor(() => {
       expect(editor.getState().status).toBe('ready');
@@ -328,8 +328,8 @@ describe('AltEditorLite synchronous Create', () => {
     tableElement.addEventListener('alteditor-lite:error', errorListener);
 
     await editor.openCreateDialog();
-    editor.getField<string>('name')?.setValue('Retry');
-    editor.getField<number>('rank')?.setValue(4);
+    editor.getField('name')?.setValue('Retry');
+    editor.getField('rank')?.setValue(4);
     submitOpenDialog();
 
     await vi.waitFor(() => {
@@ -358,8 +358,8 @@ describe('AltEditorLite synchronous Create', () => {
       })) as unknown as (values: Readonly<Partial<CreateValues>>) => TestRow;
     const { api, editor } = createEditor('async-callback', asynchronousCreateRow);
     await editor.openCreateDialog();
-    editor.getField<string>('name')?.setValue('Async');
-    editor.getField<number>('rank')?.setValue(5);
+    editor.getField('name')?.setValue('Async');
+    editor.getField('rank')?.setValue(5);
     submitOpenDialog();
 
     await vi.waitFor(() => {
@@ -383,8 +383,8 @@ describe('AltEditorLite synchronous Create', () => {
     tableElement.addEventListener('alteditor-lite:error', errorListener);
 
     await editor.openCreateDialog();
-    editor.getField<string>('name')?.setValue('Invalid');
-    editor.getField<number>('rank')?.setValue(6);
+    editor.getField('name')?.setValue('Invalid');
+    editor.getField('rank')?.setValue(6);
     submitOpenDialog();
 
     await vi.waitFor(() => {
@@ -408,8 +408,8 @@ describe('AltEditorLite synchronous Create', () => {
       false,
     );
     await editor.openCreateDialog();
-    editor.getField<string>('name')?.setValue('Stay');
-    editor.getField<number>('rank')?.setValue(2);
+    editor.getField('name')?.setValue('Stay');
+    editor.getField('rank')?.setValue(2);
     submitOpenDialog();
 
     await vi.waitFor(() => {
@@ -482,8 +482,8 @@ describe('AltEditorLite synchronous Create', () => {
     }));
     const { api, editor, tableElement } = createEditor('destroy-on-submit', createRow);
     await editor.openCreateDialog();
-    editor.getField<string>('name')?.setValue('Observer');
-    editor.getField<number>('rank')?.setValue(7);
+    editor.getField('name')?.setValue('Observer');
+    editor.getField('rank')?.setValue(7);
     tableElement.addEventListener(
       'alteditor-lite:submit',
       () => {

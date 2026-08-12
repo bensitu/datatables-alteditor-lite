@@ -185,7 +185,7 @@ describe('AltEditorLite form opening', () => {
       )?.value,
     ).toBe('1');
 
-    editor.getField<string>('name')?.setValue('Custom Alpha');
+    editor.getField('name')?.setValue('Custom Alpha');
     submitForm();
     await vi.waitFor(() => {
       expect(editor.getState().status).toBe('ready');
@@ -293,8 +293,8 @@ describe('AltEditorLite asynchronous Create', () => {
     tableElement.addEventListener('alteditor-lite:success', successListener);
 
     await editor.openCreateDialog();
-    editor.getField<string>('name')?.setValue('Async');
-    editor.getField<number>('rank')?.setValue(7);
+    editor.getField('name')?.setValue('Async');
+    editor.getField('rank')?.setValue(7);
     submitForm();
 
     await vi.waitFor(() => {
@@ -334,8 +334,8 @@ describe('AltEditorLite asynchronous Create', () => {
     });
 
     await editor.openCreateDialog();
-    editor.getField<string>('name')?.setValue('Retry');
-    editor.getField<number>('rank')?.setValue(8);
+    editor.getField('name')?.setValue('Retry');
+    editor.getField('rank')?.setValue(8);
     submitForm();
     await vi.waitFor(() => {
       expect(editor.getState().status).toBe('open');
@@ -369,8 +369,8 @@ describe('AltEditorLite asynchronous Create', () => {
     tableElement.addEventListener('alteditor-lite:error', errorListener);
 
     await editor.openCreateDialog();
-    editor.getField<string>('name')?.setValue('Destroyed');
-    editor.getField<number>('rank')?.setValue(10);
+    editor.getField('name')?.setValue('Destroyed');
+    editor.getField('rank')?.setValue(10);
     submitForm();
     await vi.waitFor(() => {
       expect(operationSignal).toBeDefined();
@@ -407,8 +407,8 @@ describe('AltEditorLite Edit snapshots', () => {
     activeEditors.add(editor);
 
     await editor.openCreateDialog();
-    editor.getField<string>('name')?.setValue('Alpha');
-    editor.getField<number>('rank')?.setValue(10);
+    editor.getField('name')?.setValue('Alpha');
+    editor.getField('rank')?.setValue(10);
     submitForm();
     await vi.waitFor(() => {
       expect(editor.getState().status).toBe('open');
@@ -428,7 +428,7 @@ describe('AltEditorLite Edit snapshots', () => {
     expect(api.row('#row-a').data().name).toBe('Alpha');
 
     await editor.openEditDialog('#row-b');
-    editor.getField<string>('name')?.setValue('Alpha');
+    editor.getField('name')?.setValue('Alpha');
     submitForm();
     await vi.waitFor(() => {
       expect(editor.getState().status).toBe('open');
@@ -465,8 +465,8 @@ describe('AltEditorLite Edit snapshots', () => {
     const liveOriginal = api.row('#row-a').data();
 
     await editor.openEditDialog('#row-a');
-    expect(editor.getField<string>('name')?.getValue()).toBe('Alpha');
-    editor.getField<string>('name')?.setValue('Edited Alpha');
+    await expect(editor.getField('name')?.getValue()).resolves.toBe('Alpha');
+    editor.getField('name')?.setValue('Edited Alpha');
     api.order([[1, 'desc']]).draw();
     api.search('Alpha').draw();
     api.search('').draw();
@@ -498,7 +498,7 @@ describe('AltEditorLite Edit snapshots', () => {
       },
     });
     await clientEditor.editor.openEditDialog('#row-b');
-    clientEditor.editor.getField<string>('name')?.setValue('Beta');
+    clientEditor.editor.getField('name')?.setValue('Beta');
     submitForm();
     await vi.waitFor(() => {
       expect(clientEditor.editor.getState().status).toBe('ready');
@@ -512,7 +512,7 @@ describe('AltEditorLite Edit snapshots', () => {
     const defaultEditor = createCrudEditor('default-update');
     const liveOriginal = defaultEditor.api.row('#row-c').data();
     await defaultEditor.editor.openEditDialog('#row-c');
-    defaultEditor.editor.getField<string>('name')?.setValue('Merged Gamma');
+    defaultEditor.editor.getField('name')?.setValue('Merged Gamma');
     submitForm();
     await vi.waitFor(() => {
       expect(defaultEditor.editor.getState().status).toBe('ready');
@@ -539,7 +539,7 @@ describe('AltEditorLite Edit snapshots', () => {
     activeEditors.add(editor);
 
     await editor.openEditDialog('#row-a');
-    editor.getField<number | undefined>('rank')?.setValue(undefined);
+    editor.getField('rank')?.setValue(undefined);
     submitForm();
     await vi.waitFor(() => {
       expect(editor.getState().status).toBe('ready');
@@ -559,7 +559,7 @@ describe('AltEditorLite Edit snapshots', () => {
     tableElement.addEventListener('alteditor-lite:error', errorListener);
 
     await editor.openEditDialog('#row-a');
-    editor.getField<string>('name')?.setValue('Must not apply');
+    editor.getField('name')?.setValue('Must not apply');
     api.row('#row-a').remove();
     api.rows.add([{ id: 'row-a', name: 'Replacement', rank: 99 }]).draw(false);
     submitForm();
@@ -585,7 +585,7 @@ describe('AltEditorLite Edit snapshots', () => {
     expect(api.row(0).id()).toBe('undefined');
 
     await editor.openEditDialog(0);
-    editor.getField<string>('name')?.setValue('Index target');
+    editor.getField('name')?.setValue('Index target');
     api.order([[1, 'desc']]).draw();
     expect(api.row(0).index()).toBe(0);
     expect(api.row(0).data()).toBe(sourceRow);
@@ -614,7 +614,7 @@ describe('AltEditorLite Edit snapshots', () => {
     tableElement.addEventListener('alteditor-lite:error', errorListener);
 
     await editor.openEditDialog('#row-b');
-    editor.getField<string>('name')?.setValue('Late result');
+    editor.getField('name')?.setValue('Late result');
     submitForm();
     await vi.waitFor(() => {
       expect(operationSignal).toBeDefined();

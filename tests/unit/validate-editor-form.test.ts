@@ -25,9 +25,13 @@ function createValidationController(input: {
     focus: vi.fn(),
     getValue: vi.fn(() => ''),
     isDisabled: vi.fn(() => input.isDisabled ?? false),
+    isReadOnly: vi.fn(() => false),
+    isRequired: vi.fn(() => false),
     name: input.name,
     runOnChange: vi.fn(() => Promise.resolve()),
     setDisabled: vi.fn(),
+    setReadOnly: vi.fn(),
+    setRequired: vi.fn(),
     setValue: vi.fn(),
     showError: vi.fn(),
     validateCustom:

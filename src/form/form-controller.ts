@@ -10,6 +10,7 @@ import {
   collectFormValues,
   type CollectedFormState,
 } from './collect-form-values.js';
+import { FieldRuntimeController } from './field-runtime-controller.js';
 import { DefaultFormLayout } from './layout/default-form-layout.js';
 import { TemplateFormLayout } from './layout/template-form-layout.js';
 import { populateFormValues } from './populate-form-values.js';
@@ -28,8 +29,8 @@ import type {
   FieldValidationResult,
 } from '../fields/field-controller.js';
 import type { ManagedFieldController } from '../fields/managed-field-controller.js';
-import type { FieldMountPoint, FormLayout } from './layout/form-layout.js';
-import type { FieldPath } from '../object-path/field-path.js';
+import type { FormLayout } from './layout/form-layout.js';
+import type { FieldPath, FieldPathValue } from '../object-path/field-path.js';
 
 /**
  * Public controller for one rendered editor form.
@@ -44,7 +45,9 @@ export interface FormController<TFormValues extends object> {
   /** Runs native constraints followed by custom field validators. */
   validate(): Promise<FormValidationResult>;
   /** Retrieves one configured controller by safe field path. */
-  getField(name: FieldPath<TFormValues>): FieldController<unknown> | null;
+  getField<TPath extends FieldPath<TFormValues>>(
+    name: TPath,
+  ): FieldController<FieldPathValue<TFormValues, TPath>> | null;
   /** Updates interaction state while an operation owns the dialog. */
   setBusy(isBusy: boolean): void;
   /** Maps known field errors and displays remaining submission text. */
@@ -70,7 +73,7 @@ export class EditorFormController<
 
   private readonly fieldControllerByName = new Map<string, FieldController<unknown>>();
 
-  private readonly mountPointByName = new Map<string, FieldMountPoint>();
+  private readonly runtimeByName = new Map<string, FieldRuntimeController<TFormValues>>();
 
   private readonly lifecycleAbortController = new AbortController();
 
@@ -142,8 +145,20 @@ export class EditorFormController<
         this.controllers.push(controller);
         this.controllerByName.set(config.name, controller);
         const mountPoint = this.layout.mountField(config.name, controller.element);
-        this.mountPointByName.set(config.name, mountPoint);
-        mountPoint.setVisible(config.type !== 'hidden' && config.visible !== false);
+        const runtime = new FieldRuntimeController({
+          config,
+          controller,
+          disabled: config.disabled ?? false,
+          mountPoint,
+          readOnly: 'readOnly' in config && config.readOnly,
+          required: 'required' in config && config.required,
+          visible: config.type !== 'hidden' && config.visible !== false,
+        });
+        this.runtimeByName.set(config.name, runtime);
+        runtime.setVisible(runtime.isVisible());
+        runtime.setDisabled(runtime.isDisabled());
+        runtime.setReadOnly(runtime.isReadOnly());
+        runtime.setRequired(runtime.isRequired());
 
         if (Object.hasOwn(config, 'defaultValue')) {
           controller.setValue(config.defaultValue);
@@ -222,35 +237,53 @@ export class EditorFormController<
   }
 
   /** Retrieves one public field facade. */
-  public getField(name: FieldPath<TFormValues>): FieldController<unknown> | null {
+  public getField<TPath extends FieldPath<TFormValues>>(
+    name: TPath,
+  ): FieldController<FieldPathValue<TFormValues, TPath>> | null {
     this.assertActive();
     const existingController = this.fieldControllerByName.get(name);
     if (existingController !== undefined) {
-      return existingController;
+      return existingController as FieldController<FieldPathValue<TFormValues, TPath>>;
     }
 
     const managedController = this.controllerByName.get(name);
-    if (managedController === undefined) {
+    const runtime = this.runtimeByName.get(name);
+    if (managedController === undefined || runtime === undefined) {
       return null;
     }
 
+    const getOptions = managedController.getOptions;
     const setOptions = managedController.setOptions;
     let isFieldDestroyed = false;
     const fieldController: FieldController<unknown> = {
       element: managedController.element,
-      getValue: () => managedController.getValue(),
+      getValue: async () => await Promise.resolve(managedController.getValue()),
       setValue: (value: unknown) => {
         managedController.setValue(value);
       },
-      ...(setOptions === undefined
+      ...(getOptions === undefined || setOptions === undefined
         ? {}
         : {
+            getOptions: () => getOptions(),
             setOptions: (options: readonly SelectOption[]) => {
               setOptions(options);
             },
           }),
+      isVisible: () => runtime.isVisible(),
+      setVisible: (isVisible: boolean) => {
+        runtime.setVisible(isVisible);
+      },
+      isDisabled: () => runtime.isDisabled(),
       setDisabled: (isDisabled: boolean) => {
-        managedController.setDisabled(isDisabled);
+        runtime.setDisabled(isDisabled);
+      },
+      isReadOnly: () => runtime.isReadOnly(),
+      setReadOnly: (isReadOnly: boolean) => {
+        runtime.setReadOnly(isReadOnly);
+      },
+      isRequired: () => runtime.isRequired(),
+      setRequired: (isRequired: boolean) => {
+        runtime.setRequired(isRequired);
       },
       focus: () => {
         managedController.focus();
@@ -273,18 +306,18 @@ export class EditorFormController<
         this.activeFieldValidationAbortControllers.get(name)?.abort();
         this.activeFieldValidationAbortControllers.delete(name);
         this.activeValidationAbortController?.abort();
+        runtime.setVisible(false);
         managedController.destroy();
-        this.mountPointByName.get(name)?.setVisible(false);
         this.controllerByName.delete(name);
         this.fieldControllerByName.delete(name);
-        this.mountPointByName.delete(name);
+        this.runtimeByName.delete(name);
         this.controllers = this.controllers.filter(
           (controller) => controller !== managedController,
         );
       },
     };
     this.fieldControllerByName.set(name, fieldController);
-    return fieldController;
+    return fieldController as FieldController<FieldPathValue<TFormValues, TPath>>;
   }
 
   /** Updates the form busy state. */
@@ -358,7 +391,7 @@ export class EditorFormController<
     this.controllers = [];
     this.controllerByName.clear();
     this.fieldControllerByName.clear();
-    this.mountPointByName.clear();
+    this.runtimeByName.clear();
     this.layout.destroy();
     this.element.remove();
   }

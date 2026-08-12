@@ -60,7 +60,7 @@ import type { SelectIntegration } from '../datatables/select-integration.js';
 import type { FieldController } from '../fields/field-controller.js';
 import type { EditorFormController } from '../form/form-controller.js';
 import type { InlineEditController } from '../inline/inline-edit-controller.js';
-import type { FieldPath } from '../object-path/field-path.js';
+import type { FieldPath, FieldPathValue } from '../object-path/field-path.js';
 import type { Api, RowSelector } from 'datatables.net';
 
 export interface DialogEditingControllerArguments<
@@ -323,11 +323,11 @@ export class DialogEditingController<TRow extends object, TFormValues extends ob
   }
 
   /** Returns a field facade while a Create or Edit form is active. */
-  public getField<TValue = unknown>(
-    name: FieldPath<TFormValues>,
-  ): FieldController<TValue> | null {
+  public getField<TPath extends FieldPath<TFormValues>>(
+    name: TPath,
+  ): FieldController<FieldPathValue<TFormValues, TPath>> | null {
     this.arguments_.stateCoordinator.assertActive();
-    return (this.activeForm?.getField(name) ?? null) as FieldController<TValue> | null;
+    return this.activeForm?.getField(name) ?? null;
   }
 
   /** Aborts opening and submission work and removes all dialog-owned DOM. */

@@ -100,10 +100,15 @@ describe('native field presentation', () => {
   });
 
   it('uses the configured required message for every required field type', async () => {
-    activeForm = buildEditorForm(requiredFields, 'required-fields', language);
-    document.body.append(activeForm.element);
+    const form = buildEditorForm<RequiredFieldValues>(
+      requiredFields,
+      'required-fields',
+      language,
+    );
+    activeForm = form;
+    document.body.append(form.element);
 
-    const result = await activeForm.validate();
+    const result = await form.validate();
 
     expect(result.valid).toBe(false);
     expect(Object.keys(result.fieldErrors)).toHaveLength(requiredFields.length);
@@ -141,14 +146,15 @@ describe('native field presentation', () => {
   });
 
   it('groups a checkbox before its visible label on one semantic row', () => {
-    activeForm = buildEditorForm(
+    const form = buildEditorForm<RequiredFieldValues>(
       [{ label: 'Active', name: 'active', type: 'checkbox' }],
       'checkbox-field',
       language,
     );
-    document.body.append(activeForm.element);
+    activeForm = form;
+    document.body.append(form.element);
 
-    const checkboxRow = activeForm
+    const checkboxRow = form
       .getField('active')
       ?.element.querySelector<HTMLLabelElement>('.dt-alteditor-lite-checkbox');
 

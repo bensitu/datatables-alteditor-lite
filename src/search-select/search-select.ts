@@ -1,5 +1,5 @@
 import { EditorConfigurationError } from '../core/alt-editor-lite-error.js';
-import { OptionTokenMap } from '../fields/option-token-map.js';
+import { ChoiceOptionStore } from '../fields/choice-option-store.js';
 
 import { filterSearchOptions } from './filter-search-options.js';
 import {
@@ -50,6 +50,7 @@ export interface SearchSelectArguments<TValue extends string | number> {
   readonly options?: readonly SelectOption<TValue>[];
   readonly loadOptions?: SearchSelectOptionLoader<TValue>;
   readonly resolveOption?: SearchSelectOptionResolver<TValue>;
+  readonly searchEnabled?: boolean;
   readonly searchThreshold: number;
   readonly sortOptions: boolean;
 }
@@ -127,7 +128,7 @@ export class SearchSelect<TValue extends string | number> {
 
   private isOpen = false;
 
-  private isReadOnly = false;
+  private readOnlyState = false;
 
   private isLoading = false;
 
@@ -159,6 +160,8 @@ export class SearchSelect<TValue extends string | number> {
 
   private readonly shouldSortOptions: boolean;
 
+  private readonly isSearchEnabled: boolean;
+
   private readonly locale: string;
 
   private readonly searchThreshold: number;
@@ -185,7 +188,9 @@ export class SearchSelect<TValue extends string | number> {
 
   private resolveRevision = 0;
 
-  private tokenMap: OptionTokenMap<TValue>;
+  private tokenMap: ChoiceOptionStore<TValue>;
+
+  private isRequiredState = false;
 
   /** Creates an unmounted SearchSelect subtree. */
   public constructor(configuration: SearchSelectArguments<TValue>) {
@@ -199,8 +204,14 @@ export class SearchSelect<TValue extends string | number> {
         'Remote SearchSelect requires loadOptions and resolveOption.',
       );
     }
-    this.seedOptions = options;
-    this.tokenMap = new OptionTokenMap(options);
+    this.isSearchEnabled = configuration.searchEnabled ?? true;
+    if (!this.isSearchEnabled && configuration.loadOptions !== undefined) {
+      throw new EditorConfigurationError(
+        'Remote SearchSelect requires search to be enabled.',
+      );
+    }
+    this.tokenMap = new ChoiceOptionStore(options);
+    this.seedOptions = this.tokenMap.options();
     this.shouldAllowClear = configuration.allowClear;
     this.shouldAllowManualValue = configuration.allowManualValue;
     this.shouldSortOptions = configuration.sortOptions;
@@ -220,6 +231,7 @@ export class SearchSelect<TValue extends string | number> {
 
     this.inputElement = document.createElement('input');
     this.inputElement.type = 'text';
+    this.inputElement.readOnly = !this.isSearchEnabled;
     this.inputElement.placeholder = this.messages.placeholder;
 
     this.clearButtonElement = document.createElement('button');
@@ -244,7 +256,11 @@ export class SearchSelect<TValue extends string | number> {
     this.resultStatusElement.setAttribute('role', 'status');
     this.resultStatusElement.setAttribute('aria-live', 'polite');
 
-    initializeSearchSelectAria(this.inputElement, this.listboxElement);
+    initializeSearchSelectAria(
+      this.inputElement,
+      this.listboxElement,
+      this.isSearchEnabled,
+    );
     this.element.append(
       this.inputElement,
       this.clearButtonElement,
@@ -270,6 +286,11 @@ export class SearchSelect<TValue extends string | number> {
   /** Reads the exact selected option value or committed manual string. */
   public getValue(): TValue | undefined {
     return this.selectedValue ?? (this.manualValue as TValue | undefined);
+  }
+
+  /** Returns the current immutable local or seed option snapshot. */
+  public getOptions(): readonly SelectOption<TValue>[] {
+    return this.seedOptions;
   }
 
   /** Writes an exact option value, manual string, or clear state. */
@@ -344,7 +365,7 @@ export class SearchSelect<TValue extends string | number> {
     }
     if (this.isRemote()) {
       this.assertRemoteOptions(options);
-      this.seedOptions = [...options];
+      this.seedOptions = new ChoiceOptionStore(options).options();
       const selectedValue = this.selectedValue;
       if (selectedValue !== undefined) {
         const selectedOption = this.findOption(options, selectedValue);
@@ -371,8 +392,8 @@ export class SearchSelect<TValue extends string | number> {
     }
 
     const previousSelectedValue = this.selectedValue;
-    const nextTokenMap = new OptionTokenMap(options);
-    this.seedOptions = [...options];
+    const nextTokenMap = new ChoiceOptionStore(options);
+    this.seedOptions = nextTokenMap.options();
     this.tokenMap = nextTokenMap;
     this.optionElementByToken.clear();
     this.optionElementCacheByToken.clear();
@@ -382,7 +403,6 @@ export class SearchSelect<TValue extends string | number> {
       const nextToken = nextTokenMap.tokenForValue(previousSelectedValue);
       if (nextToken === undefined) {
         this.clear(false);
-        this.onCommit();
       } else {
         this.selectedToken = nextToken;
         this.selectedValue = previousSelectedValue;
@@ -399,21 +419,40 @@ export class SearchSelect<TValue extends string | number> {
   /** Updates the disabled state and closes an unavailable listbox. */
   public setDisabled(isDisabled: boolean): void {
     this.inputElement.disabled = isDisabled;
-    this.clearButtonElement.disabled = isDisabled || this.isReadOnly;
+    this.clearButtonElement.disabled = isDisabled || this.readOnlyState;
     if (isDisabled) {
       this.close();
     }
   }
 
+  public isDisabled(): boolean {
+    return this.inputElement.disabled;
+  }
+
   /** Updates readonly semantics without omitting the current value. */
   public setReadOnly(isReadOnly: boolean): void {
-    this.isReadOnly = isReadOnly;
-    this.inputElement.readOnly = isReadOnly;
+    this.readOnlyState = isReadOnly;
+    this.inputElement.readOnly = isReadOnly || !this.isSearchEnabled;
     this.inputElement.setAttribute('aria-readonly', String(isReadOnly));
     this.clearButtonElement.disabled = isReadOnly || this.inputElement.disabled;
     if (isReadOnly) {
       this.close();
     }
+  }
+
+  public isReadOnly(): boolean {
+    return this.readOnlyState;
+  }
+
+  /** Updates required-value validation without rebuilding the component. */
+  public setRequired(isRequired: boolean): void {
+    this.isRequiredState = isRequired;
+    this.inputElement.required = isRequired;
+    this.inputElement.setAttribute('aria-required', String(isRequired));
+  }
+
+  public isRequired(): boolean {
+    return this.isRequiredState;
   }
 
   /** Removes all owned listeners and pending local filtering work. */
@@ -473,11 +512,17 @@ export class SearchSelect<TValue extends string | number> {
   };
 
   private readonly handleCompositionEnd = (): void => {
+    if (!this.isSearchEnabled) {
+      return;
+    }
     this.isComposing = false;
     this.scheduleRender();
   };
 
   private readonly handleCompositionStart = (): void => {
+    if (!this.isSearchEnabled) {
+      return;
+    }
     this.isComposing = true;
     this.cancelScheduledRender();
   };
@@ -502,6 +547,9 @@ export class SearchSelect<TValue extends string | number> {
   };
 
   private readonly handleInput = (): void => {
+    if (!this.isSearchEnabled) {
+      return;
+    }
     const hasCommittedValue = this.getValue() !== undefined;
     this.cancelResolveRequest();
     this.selectedToken = undefined;
@@ -520,7 +568,7 @@ export class SearchSelect<TValue extends string | number> {
   };
 
   private readonly handleKeyDown = (event: KeyboardEvent): void => {
-    if (this.inputElement.disabled || this.isReadOnly) {
+    if (this.inputElement.disabled || this.readOnlyState) {
       return;
     }
 
@@ -565,6 +613,7 @@ export class SearchSelect<TValue extends string | number> {
 
     if (
       event.key === 'Backspace' &&
+      this.isSearchEnabled &&
       this.inputElement.value.length === 0 &&
       this.shouldAllowClear
     ) {
@@ -672,14 +721,18 @@ export class SearchSelect<TValue extends string | number> {
   }
 
   private open(): void {
-    if (this.inputElement.disabled || this.isReadOnly) {
+    if (this.inputElement.disabled || this.readOnlyState) {
       return;
     }
 
     this.isOpen = true;
     this.listboxElement.hidden = false;
     this.inputElement.placeholder = this.messages.searchPlaceholder;
-    this.renderOptions(this.getValue() === undefined ? this.inputElement.value : '');
+    this.renderOptions(
+      this.isSearchEnabled && this.getValue() === undefined
+        ? this.inputElement.value
+        : '',
+    );
   }
 
   private renderOptions(query: string): void {
@@ -764,14 +817,14 @@ export class SearchSelect<TValue extends string | number> {
     this.inputElement.placeholder = this.messages.searchPlaceholder;
 
     if (this.debounceMs === 0) {
-      this.renderOptions(this.inputElement.value);
+      this.renderOptions(this.isSearchEnabled ? this.inputElement.value : '');
       return;
     }
 
     this.debounceTimerId = window.setTimeout(() => {
       this.debounceTimerId = undefined;
       if (!this.isDestroyed && !this.isComposing) {
-        this.renderOptions(this.inputElement.value);
+        this.renderOptions(this.isSearchEnabled ? this.inputElement.value : '');
       }
     }, this.debounceMs);
   }
@@ -855,13 +908,13 @@ export class SearchSelect<TValue extends string | number> {
       }
     }
     // Construction also rejects duplicate typed values.
-    new OptionTokenMap(options);
+    new ChoiceOptionStore(options);
     return options;
   }
 
   private setCurrentOptions(options: readonly SelectOption<TValue>[]): void {
     this.currentRemoteOptions = [...options];
-    this.tokenMap = new OptionTokenMap(options);
+    this.tokenMap = new ChoiceOptionStore(options);
     this.selectedToken =
       this.selectedValue === undefined
         ? undefined

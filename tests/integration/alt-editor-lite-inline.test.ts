@@ -883,16 +883,18 @@ describe('AltEditorLite hover inline editing', () => {
       fields[0],
       {
         allowClear: true,
-        debounceMs: 0,
         inlineEdit: true,
         label: 'Rank',
-        loadOptions: (_query: string, { signal }: { signal: AbortSignal }) => {
-          searchSignal = signal;
-          return pendingSearch.promise;
+        remote: {
+          loadOptions: (_query: string, { signal }: { signal: AbortSignal }) => {
+            searchSignal = signal;
+            return pendingSearch.promise;
+          },
+          resolveOption: (value: number) =>
+            Promise.resolve({ label: `Rank ${String(value)}`, value }),
         },
         name: 'rank',
-        resolveOption: (value: number) =>
-          Promise.resolve({ label: `Rank ${String(value)}`, value }),
+        search: { debounceMs: 0 },
         type: 'search-select',
       },
     ] as const satisfies readonly FieldConfig<InlineValues>[];

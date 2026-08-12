@@ -7,7 +7,7 @@ import {
 
 import type {
   SearchSelectFieldConfig,
-  RemoteSearchSelectFieldConfig,
+  RemoteSearchSelectSource,
   SelectOption,
   VisibleFieldConfig,
 } from './field-config.js';
@@ -34,17 +34,13 @@ export function createSearchSelectFieldController<TFormValues extends object>(
   language: Readonly<AltEditorLiteLanguage>,
   onUserChange: () => void,
 ): ManagedFieldController<TFormValues> {
-  const remoteConfig =
-    config.loadOptions === undefined
-      ? undefined
-      : (config as unknown as RemoteSearchSelectFieldConfig<
-          TFormValues,
-          string | number
-        >);
+  const remoteConfig = config.remote as
+    Readonly<RemoteSearchSelectSource<string | number>> | undefined;
+  const isSearchEnabled = config.search?.enabled ?? true;
   const searchSelect = new SearchSelect<string | number>({
     allowClear: config.allowClear ?? false,
     allowManualValue: config.allowManualValue ?? false,
-    debounceMs: config.debounceMs ?? (config.loadOptions === undefined ? 0 : 250),
+    debounceMs: config.search?.debounceMs ?? (remoteConfig === undefined ? 0 : 250),
     fieldId,
     locale: language.locale,
     messages: {
@@ -67,7 +63,8 @@ export function createSearchSelectFieldController<TFormValues extends object>(
           loadOptions: remoteConfig.loadOptions,
           resolveOption: remoteConfig.resolveOption,
         }),
-    searchThreshold: config.searchThreshold ?? 0,
+    searchEnabled: isSearchEnabled,
+    searchThreshold: config.search?.threshold ?? 0,
     sortOptions: config.sortOptions ?? false,
   });
 
@@ -81,7 +78,7 @@ export function createSearchSelectFieldController<TFormValues extends object>(
       searchSelect.setReadOnly(isReadOnly);
     },
     validateNative: () =>
-      config.required === true && searchSelect.getValue() === undefined
+      searchSelect.isRequired() && searchSelect.getValue() === undefined
         ? { valid: false, message: language.validation.required }
         : { valid: true },
     destroy: () => {
@@ -114,9 +111,12 @@ export function createSearchSelectFieldController<TFormValues extends object>(
   );
 
   searchSelect.setDisabled(config.disabled ?? false);
+  searchSelect.setReadOnly(config.readOnly ?? false);
+  searchSelect.setRequired(config.required ?? false);
 
   return {
     ...nativeController,
+    getOptions: () => searchSelect.getOptions(),
     setDisabled: (isDisabled: boolean) => {
       nativeController.setDisabled(isDisabled);
       searchSelect.setDisabled(isDisabled);
@@ -124,5 +124,15 @@ export function createSearchSelectFieldController<TFormValues extends object>(
     setOptions: (options: readonly SelectOption[]) => {
       searchSelect.setOptions(options);
     },
+    setReadOnly: (isReadOnly: boolean) => {
+      nativeController.setReadOnly(isReadOnly);
+      searchSelect.setReadOnly(isReadOnly);
+    },
+    isReadOnly: () => searchSelect.isReadOnly(),
+    setRequired: (isRequired: boolean) => {
+      nativeController.setRequired(isRequired);
+      searchSelect.setRequired(isRequired);
+    },
+    isRequired: () => searchSelect.isRequired(),
   };
 }

@@ -93,8 +93,10 @@ export type {
   NumberFieldConfig,
   PasswordFieldConfig,
   RadioFieldConfig,
+  RemoteSearchSelectSource,
   RemoteSearchSelectFieldConfig,
   SearchSelectFieldConfig,
+  SearchSelectSearchOptions,
   SelectFieldConfig,
   SelectOption,
   SingleFileFieldConfig,
@@ -109,12 +111,14 @@ export type {
   SearchSelectOptionResolver,
 } from './fields/search-select-data-source.js';
 export type {
+  ChoiceFieldController,
   FieldController,
   FieldValidationResult,
 } from './fields/field-controller.js';
+export { isChoiceFieldController } from './fields/field-controller.js';
 export type { FieldValue, MaybePromise } from './fields/field-value.js';
 export type { FormController } from './form/form-controller.js';
 export type { FormValidationResult } from './form/validate-editor-form.js';
-export type { FieldPath } from './object-path/field-path.js';
+export type { FieldPath, FieldPathValue } from './object-path/field-path.js';
 export type { InlineKeyboardShortcut } from './inline/inline-keyboard-shortcut.js';
 export type { InlineEditState, InlineTargetSummary } from './inline/inline-edit-state.js';

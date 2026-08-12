@@ -2,17 +2,22 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { EditorConfigurationError } from '../../src/core/alt-editor-lite-error.js';
 import { ENGLISH_LANGUAGE } from '../../src/core/alt-editor-lite-language.js';
+import { isChoiceFieldController } from '../../src/fields/field-controller.js';
 import { validateFieldConfigurations } from '../../src/fields/validate-field-configurations.js';
 import { buildEditorForm } from '../../src/form/build-editor-form.js';
 
-import type { FieldChangeContext, FieldConfig } from '../../src/fields/field-config.js';
+import type {
+  FieldChangeContext,
+  FieldConfig,
+  SelectOption,
+} from '../../src/fields/field-config.js';
 import type { SearchSelectLoadContext } from '../../src/fields/search-select-data-source.js';
 import type { FormController } from '../../src/form/form-controller.js';
 
 interface SearchFormValues {
   readonly mixed: string | number;
-  readonly officeId: number;
-  readonly tag: string;
+  readonly officeId: number | undefined;
+  readonly tag: string | undefined;
 }
 
 const officeChange =
@@ -111,10 +116,10 @@ describe('SearchSelect field integration', () => {
       mixed: '1',
       officeId: 2,
     });
-    expect(await Promise.resolve(form.getField('mixed')?.getValue())).toBe('1');
+    await expect(form.getField('mixed')?.getValue()).resolves.toBe('1');
 
     form.getField('mixed')?.setValue(1);
-    expect(await Promise.resolve(form.getField('mixed')?.getValue())).toBe(1);
+    await expect(form.getField('mixed')?.getValue()).resolves.toBe(1);
   });
 
   it('filters locally and supports every committed keyboard path', async () => {
@@ -136,7 +141,7 @@ describe('SearchSelect field integration', () => {
     officeInput.dispatchEvent(endEvent);
     expect(endEvent.defaultPrevented).toBe(true);
     officeInput.dispatchEvent(keyboardEvent('Enter'));
-    expect(await Promise.resolve(officeField.getValue())).toBe(3);
+    await expect(officeField.getValue()).resolves.toBe(3);
     expect(officeInput.getAttribute('aria-expanded')).toBe('false');
 
     officeInput.focus();
@@ -155,11 +160,11 @@ describe('SearchSelect field integration', () => {
     expect(officeInput.getAttribute('aria-invalid')).toBe('true');
   });
 
-  it('pauses filtering and Enter selection during IME composition', () => {
+  it('pauses filtering and Enter selection during IME composition', async () => {
     const form = createSearchForm();
     const tagField = form.getField('tag');
     const tagInput = tagField?.element.querySelector<HTMLInputElement>('input');
-    if (tagInput === null || tagInput === undefined) {
+    if (tagField === null || tagInput === null || tagInput === undefined) {
       throw new Error('Expected a SearchSelect input.');
     }
 
@@ -170,10 +175,10 @@ describe('SearchSelect field integration', () => {
     const compositionEnter = keyboardEvent('Enter');
     tagInput.dispatchEvent(compositionEnter);
     expect(compositionEnter.defaultPrevented).toBe(true);
-    expect(tagField?.getValue()).toBeUndefined();
+    await expect(tagField.getValue()).resolves.toBeUndefined();
 
     tagInput.dispatchEvent(new CompositionEvent('compositionend'));
-    expect(tagField?.element.querySelector('[role="listbox"]')?.textContent).toContain(
+    expect(tagField.element.querySelector('[role="listbox"]')?.textContent).toContain(
       '東京',
     );
   });
@@ -199,18 +204,18 @@ describe('SearchSelect field integration', () => {
     tagInput.value = 'custom-tag';
     tagInput.dispatchEvent(new Event('input', { bubbles: true }));
     tagInput.dispatchEvent(keyboardEvent('Tab'));
-    expect(await Promise.resolve(tagField.getValue())).toBe('custom-tag');
+    await expect(tagField.getValue()).resolves.toBe('custom-tag');
     expect(clearButton.hidden).toBe(false);
 
     clearButton.click();
-    expect(await Promise.resolve(tagField.getValue())).toBeUndefined();
+    await expect(tagField.getValue()).resolves.toBeUndefined();
     expect(clearButton.hidden).toBe(true);
   });
 
-  it('rebuilds dynamic tokens, retains exact values, and observably clears stale values', async () => {
+  it('rebuilds dynamic tokens and retains only exact current values', async () => {
     const form = createSearchForm();
     const officeField = form.getField('officeId');
-    if (officeField?.setOptions === undefined) {
+    if (officeField === null || !isChoiceFieldController(officeField)) {
       throw new Error('Expected dynamic SearchSelect options.');
     }
 
@@ -218,15 +223,12 @@ describe('SearchSelect field integration', () => {
       { label: 'Tokyo renamed', value: 2 },
       { label: 'Osaka', value: 4 },
     ]);
-    expect(await Promise.resolve(officeField.getValue())).toBe(2);
+    await expect(officeField.getValue()).resolves.toBe(2);
     expect(officeField.element.querySelector('input')?.value).toBe('Tokyo renamed');
 
     officeField.setOptions([{ label: 'Osaka', value: 4 }]);
-    expect(await Promise.resolve(officeField.getValue())).toBeUndefined();
-    await vi.waitFor(() => {
-      expect(officeChange).toHaveBeenCalled();
-    });
-    expect(officeChange.mock.calls.at(-1)?.[0]).toBeUndefined();
+    await expect(officeField.getValue()).resolves.toBeUndefined();
+    expect(officeChange).not.toHaveBeenCalled();
   });
 
   it('rejects unknown values and releases its DOM on destroy', () => {
@@ -238,7 +240,11 @@ describe('SearchSelect field integration', () => {
       officeField?.setValue(99);
     }).toThrow(EditorConfigurationError);
     expect(() => {
-      tagField?.setOptions?.([{ label: 'Numeric', value: 1 }]);
+      if (tagField !== null && isChoiceFieldController(tagField)) {
+        tagField.setOptions([
+          { label: 'Numeric', value: 1 },
+        ] as unknown as readonly SelectOption<string>[]);
+      }
     }).toThrow(EditorConfigurationError);
 
     officeField?.destroy();
@@ -263,11 +269,13 @@ describe('SearchSelect field integration', () => {
           allowClear: true,
           defaultValue: 2,
           label: 'Remote office',
-          loadOptions,
           name: 'officeId',
           onChange: remoteChange,
-          resolveOption: (value: number) =>
-            Promise.resolve(value === 2 ? { label: 'Tokyo', value: 2 } : undefined),
+          remote: {
+            loadOptions,
+            resolveOption: (value: number) =>
+              Promise.resolve(value === 2 ? { label: 'Tokyo', value: 2 } : undefined),
+          },
           type: 'search-select',
         },
       ],
@@ -281,7 +289,7 @@ describe('SearchSelect field integration', () => {
       throw new Error('Expected a remote SearchSelect field.');
     }
 
-    expect(field.getValue()).toBe(2);
+    await expect(field.getValue()).resolves.toBe(2);
     await vi.waitFor(() => {
       expect(input.value).toBe('Tokyo');
     });
@@ -298,8 +306,48 @@ describe('SearchSelect field integration', () => {
       );
     });
     input.dispatchEvent(keyboardEvent('Enter'));
-    expect(field.getValue()).toBe(3);
+    await expect(field.getValue()).resolves.toBe(3);
     expect((await activeForm.collect()).officeId).toBe(3);
+  });
+
+  it('keeps local selection keyboard behavior when text search is disabled', async () => {
+    activeForm = buildEditorForm<SearchFormValues>(
+      [
+        {
+          label: 'Tag',
+          name: 'tag',
+          options: [
+            { label: 'First', value: 'first' },
+            { label: 'Second', value: 'second' },
+          ],
+          search: { enabled: false },
+          type: 'search-select',
+        },
+      ],
+      'non-searchable-select-test',
+      ENGLISH_LANGUAGE,
+    );
+    document.body.append(activeForm.element);
+    const field = activeForm.getField('tag');
+    const input = field?.element.querySelector<HTMLInputElement>('input');
+    if (field === null || input === null || input === undefined) {
+      throw new Error('Expected a non-searchable SearchSelect field.');
+    }
+
+    expect(input.readOnly).toBe(true);
+    expect(input.getAttribute('aria-autocomplete')).toBe('none');
+    input.focus();
+    expect(input.getAttribute('aria-expanded')).toBe('true');
+    input.dispatchEvent(keyboardEvent('ArrowDown'));
+    input.dispatchEvent(keyboardEvent('Enter'));
+    await expect(field.getValue()).resolves.toBe('second');
+
+    input.dispatchEvent(new FocusEvent('focus'));
+    input.dispatchEvent(keyboardEvent('Escape'));
+    expect(input.getAttribute('aria-expanded')).toBe('false');
+    const tabEvent = keyboardEvent('Tab');
+    input.dispatchEvent(tabEvent);
+    expect(tabEvent.defaultPrevented).toBe(false);
   });
 });
 
@@ -338,12 +386,20 @@ describe('SearchSelect runtime configuration', () => {
     }).toThrow(EditorConfigurationError);
     expect(() => {
       validateFieldConfigurations<SearchFormValues>([
-        { ...baseField, options: [{ label: 'One', value: 1 }], searchThreshold: -1 },
+        {
+          ...baseField,
+          options: [{ label: 'One', value: 1 }],
+          search: { threshold: -1 },
+        },
       ]);
     }).toThrow(EditorConfigurationError);
     expect(() => {
       validateFieldConfigurations<SearchFormValues>([
-        { ...baseField, debounceMs: 1.5, options: [{ label: 'One', value: 1 }] },
+        {
+          ...baseField,
+          options: [{ label: 'One', value: 1 }],
+          search: { debounceMs: 1.5 },
+        },
       ]);
     }).toThrow(EditorConfigurationError);
   });
@@ -365,9 +421,11 @@ describe('SearchSelect runtime configuration', () => {
   it('requires both remote callbacks while allowing an optional empty seed', () => {
     const remoteField = {
       label: 'Office',
-      loadOptions: () => [],
       name: 'officeId',
-      resolveOption: () => undefined,
+      remote: {
+        loadOptions: () => [],
+        resolveOption: () => undefined,
+      },
       type: 'search-select',
     } as const satisfies FieldConfig<SearchFormValues>;
     expect(() => {
@@ -378,9 +436,13 @@ describe('SearchSelect runtime configuration', () => {
       validateFieldConfigurations([
         {
           ...remoteField,
-          resolveOption: undefined,
+          remote: { ...remoteField.remote, resolveOption: undefined },
         } as unknown as FieldConfig<SearchFormValues>,
       ]);
+    }).toThrow(EditorConfigurationError);
+
+    expect(() => {
+      validateFieldConfigurations([{ ...remoteField, search: { enabled: false } }]);
     }).toThrow(EditorConfigurationError);
   });
 });

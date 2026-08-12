@@ -42,7 +42,7 @@ import type { DeepPartial } from './editor-values.js';
 import type { ResolvedEditingOptions } from './resolve-editing-options.js';
 import type { FieldController } from '../fields/field-controller.js';
 import type { InlineEditState } from '../inline/inline-edit-state.js';
-import type { FieldPath } from '../object-path/field-path.js';
+import type { FieldPath, FieldPathValue } from '../object-path/field-path.js';
 import type { Api, ColumnSelector, RowSelector } from 'datatables.net';
 
 function normalizeRejectedReason(error: unknown): Error {
@@ -256,10 +256,10 @@ export class AltEditorLite<
   }
 
   /** Retrieves a rendered dialog field controller by safe path. */
-  public getField<TValue = unknown>(
-    name: FieldPath<TFormValues>,
-  ): FieldController<TValue> | null {
-    return this.dialogController.getField<TValue>(name);
+  public getField<TPath extends FieldPath<TFormValues>>(
+    name: TPath,
+  ): FieldController<FieldPathValue<TFormValues, TPath>> | null {
+    return this.dialogController.getField(name);
   }
 
   /** Returns the current readonly lifecycle state. */

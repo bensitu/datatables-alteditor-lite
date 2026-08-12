@@ -182,7 +182,41 @@ describe('radio field controller', () => {
     expect(inputElements[1]?.required).toBe(true);
   });
 
-  it('prevents readonly clicks and handles an empty defensive option list', () => {
+  it('rebuilds radio options while preserving only an exact selection', () => {
+    const userChange = vi.fn();
+    const controller = createRadio(
+      {
+        label: 'Choice',
+        name: 'choice',
+        options: [
+          { label: 'Allowed', value: 'allowed' },
+          { label: 'Blocked', value: 'blocked' },
+        ],
+        type: 'radio',
+      },
+      userChange,
+    );
+    if (controller.setOptions === undefined || controller.getOptions === undefined) {
+      throw new Error('Expected replaceable radio options.');
+    }
+
+    controller.setValue('blocked');
+    controller.setOptions([
+      { label: 'Blocked renamed', value: 'blocked' },
+      { label: 'New choice', value: 'new' },
+    ]);
+    expect(controller.getValue()).toBe('blocked');
+    expect(controller.getOptions()[0]?.label).toBe('Blocked renamed');
+    expect(controller.element.querySelector('label')?.htmlFor).toBe(
+      controller.element.querySelector('input')?.id,
+    );
+
+    controller.setOptions([{ label: 'New choice', value: 'new' }]);
+    expect(controller.getValue()).toBeUndefined();
+    expect(userChange).not.toHaveBeenCalled();
+  });
+
+  it('prevents readonly clicks and validates an empty defensive option list', () => {
     const readonlyController = createRadio({
       label: 'Choice',
       name: 'choice',
@@ -208,10 +242,9 @@ describe('radio field controller', () => {
       options: [],
       required: true,
       type: 'radio',
-      visible: false,
     });
-    expect(emptyController.element.hidden).toBe(true);
-    expect(emptyController.isDisabled()).toBe(true);
+    expect(emptyController.element.hidden).toBe(false);
+    expect(emptyController.isDisabled()).toBe(false);
     expect(emptyController.validateNative().valid).toBe(false);
     expect(() => {
       emptyController.focus();
@@ -276,6 +309,38 @@ describe('select field controller', () => {
     expect(pointerEvent.defaultPrevented).toBe(true);
     expect(keyEvent.defaultPrevented).toBe(true);
     expect(controller.getValue()).toBe(1);
+  });
+
+  it('rebuilds select options without dispatching a user change', () => {
+    const userChange = vi.fn();
+    const controller = createSelect(
+      {
+        label: 'Role',
+        name: 'role',
+        options: [
+          { label: 'One', value: 1 },
+          { label: 'Two', value: 2 },
+        ],
+        type: 'select',
+      },
+      userChange,
+    );
+    if (controller.setOptions === undefined || controller.getOptions === undefined) {
+      throw new Error('Expected replaceable select options.');
+    }
+
+    controller.setValue(2);
+    controller.setOptions([
+      { label: 'Two renamed', value: 2 },
+      { label: 'Three', value: 3 },
+    ]);
+    expect(controller.getValue()).toBe(2);
+    expect(controller.getOptions()[0]?.label).toBe('Two renamed');
+
+    controller.setOptions([{ label: 'Three', value: 3 }]);
+    expect(controller.getValue()).toBeUndefined();
+    expect(controller.element.querySelector('select')?.selectedIndex).toBe(-1);
+    expect(userChange).not.toHaveBeenCalled();
   });
 
   it('commits writable changes and runs optional callbacks', async () => {

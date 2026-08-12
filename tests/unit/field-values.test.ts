@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import { EditorFileLimitError } from '../../src/core/alt-editor-lite-error.js';
+import { ChoiceOptionStore } from '../../src/fields/choice-option-store.js';
 import { validateFileBudget } from '../../src/fields/file-budget.js';
 import { normalizeNumberValue } from '../../src/fields/number-value.js';
-import { OptionTokenMap } from '../../src/fields/option-token-map.js';
 import { readFileAsDataUrl } from '../../src/fields/read-file-data-url.js';
 
 const fileMessages = {
@@ -43,7 +43,7 @@ describe('field value normalization', () => {
   });
 
   it('round-trips typed select tokens without string coercion', () => {
-    const tokenMap = new OptionTokenMap<string | number>([
+    const tokenMap = new ChoiceOptionStore<string | number>([
       { label: 'Numeric', value: 1 },
       { label: 'String', value: '1' },
       { label: 'Negative zero', value: -0 },
