@@ -20,10 +20,10 @@ export function createDoubleClickInteractionBehavior<TFormValues extends object>
   });
 }
 
-/** Requires the dedicated action buttons to resolve a hover session. */
+/** Keeps explicit hover submission while allowing keyboard cancellation. */
 export const INLINE_HOVER_INTERACTION_BEHAVIOR = Object.freeze({
   blurAction: 'none',
   enterAction: 'none',
-  escapeAction: 'none',
+  escapeAction: 'cancel',
   tabAction: 'none',
 } as const satisfies ResolvedInlineInteractionBehavior);

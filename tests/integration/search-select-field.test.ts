@@ -296,15 +296,14 @@ describe('SearchSelect field integration', () => {
     expect(remoteChange).not.toHaveBeenCalled();
 
     input.focus();
-    input.value = 'z';
-    input.dispatchEvent(new Event('input', { bubbles: true }));
     await vi.waitFor(() => {
-      expect(loadOptions.mock.calls.at(-1)?.[0]).toBe('z');
+      expect(loadOptions.mock.calls.at(-1)?.[0]).toBe('');
       expect(loadOptions.mock.calls.at(-1)?.[1].signal).toBeInstanceOf(AbortSignal);
       expect(field.element.querySelector('[role="listbox"]')?.textContent).toContain(
         'Zürich',
       );
     });
+    input.dispatchEvent(keyboardEvent('ArrowDown'));
     input.dispatchEvent(keyboardEvent('Enter'));
     await expect(field.getValue()).resolves.toBe(3);
     expect((await activeForm.collect()).officeId).toBe(3);

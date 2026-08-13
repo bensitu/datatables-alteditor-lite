@@ -820,7 +820,6 @@ describe('AltEditorLite hover inline editing', () => {
 
     replaceInlineValue('Hover Alpha');
     const input = cell.querySelector<HTMLInputElement>('input');
-    input?.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Escape' }));
     input?.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Enter' }));
     input?.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Tab' }));
     input?.dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
@@ -898,9 +897,13 @@ describe('AltEditorLite hover inline editing', () => {
       code: 'OPERATION_BUSY',
     });
     expect(editor.getInlineState().status).toBe('editing');
-    cell
-      .querySelector<HTMLButtonElement>('[data-alteditor-lite-inline-action="cancel"]')
-      ?.click();
+    cell.querySelector<HTMLInputElement>('input')?.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        bubbles: true,
+        cancelable: true,
+        key: 'Escape',
+      }),
+    );
     await vi.waitFor(() => {
       expect(editor.getInlineState().status).toBe('idle');
     });
@@ -1365,7 +1368,7 @@ describe('AltEditorLite inline interaction and redraw behavior', () => {
     expect(api.row('#row-a').data().name).toBe('Validated Alpha');
   });
 
-  it('keeps SearchSelect popup focus and Escape handling inside the session', async () => {
+  it('cancels a SearchSelect cell with one Escape press', async () => {
     const { api } = createTestTable('inline-search-select');
     const editor = new AltEditorLite<TestRow, InlineValues>(api, {
       editing: inlineEditing(),
@@ -1391,14 +1394,17 @@ describe('AltEditorLite inline interaction and redraw behavior', () => {
       throw new Error('Expected an inline SearchSelect input.');
     }
     expect(input.getAttribute('aria-expanded')).toBe('true');
-    input.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Escape' }));
-    expect(input.getAttribute('aria-expanded')).toBe('false');
-    expect(editor.getInlineState().status).toBe('editing');
-
-    input.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Escape' }));
+    input.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        bubbles: true,
+        cancelable: true,
+        key: 'Escape',
+      }),
+    );
     await vi.waitFor(() => {
       expect(editor.getInlineState().status).toBe('idle');
     });
+    expect(input.isConnected).toBe(false);
     expect(api.row('#row-a').data().name).toBe('Alpha');
   });
 

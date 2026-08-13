@@ -583,7 +583,9 @@ export class SearchSelect<TValue extends string | number> {
       event.preventDefault();
       event.stopPropagation();
       const isListboxOpen = this.isOpen;
-      this.open();
+      if (!isListboxOpen) {
+        this.open();
+      }
       if (isListboxOpen || event.key !== 'ArrowDown') {
         this.moveActiveOption(event.key);
       }

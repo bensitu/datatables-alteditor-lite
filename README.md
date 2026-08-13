@@ -199,10 +199,9 @@ await editor.openEditDialog('#user-42');
 ```
 
 Double-click activation uses compact Enter, Escape, Tab, and blur behavior.
-Hover activation provides a discoverable pencil and explicit Submit / Cancel
-actions; the default F2 shortcut can edit a KeyTable-focused cell. Setting
-`keyboardActivation: false` disables only focused-cell activation, not keyboard
-behavior inside an open session.
+Hover activation provides a discoverable pencil, explicit Submit / Cancel
+actions, and Escape cancellation; the default F2 shortcut can edit a
+KeyTable-focused cell. Setting `keyboardActivation: false` disables only focused-cell activation, not keyboard behavior inside an open session.
 
 An active dialog prevents Inline activation. Create, Remove, Refresh, or Dialog
 Edit safely cancel an active double-click session; an active hover session must

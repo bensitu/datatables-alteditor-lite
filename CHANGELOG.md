@@ -42,6 +42,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Released validation cancellation references after settlement, pruned detached
   remote SearchSelect option elements, and standardized timer access across
   reusable components.
+- Preserved loaded SearchSelect results during keyboard navigation and made
+  Escape cancel every active Inline cell edit without saving.
 
 ### Breaking
 

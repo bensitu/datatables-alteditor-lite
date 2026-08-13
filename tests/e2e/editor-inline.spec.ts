@@ -520,7 +520,9 @@ test('keeps a keyboard-only choice popup above the editing cell border', async (
   await page.keyboard.press('ArrowDown');
   await page.keyboard.press('Enter');
   await expect(combobox).toHaveAttribute('aria-expanded', 'false');
-  await page.getByRole('button', { name: 'Cancel' }).click();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.alteditor-lite-inline')).toHaveCount(0);
+  await expect(cell).toContainText('beijing');
 });
 
 test('activates a KeyTable-focused cell and remaps after ColReorder', async ({
@@ -532,8 +534,12 @@ test('activates a KeyTable-focused cell and remaps after ColReorder', async ({
   const nameCell = page.locator('#row-a td').first();
   await nameCell.click();
   await page.keyboard.press('F2');
-  await expect(page.getByRole('textbox', { name: 'Name' })).toHaveValue('Alpha');
-  await page.getByRole('button', { name: 'Cancel' }).click();
+  const nameInput = page.getByRole('textbox', { name: 'Name' });
+  await expect(nameInput).toHaveValue('Alpha');
+  await nameInput.fill('Discarded');
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.alteditor-lite-inline')).toHaveCount(0);
+  await expect(nameCell).toContainText('Alpha');
 
   await page.evaluate(() => {
     const runtimeScope = globalThis as typeof globalThis & {

@@ -293,6 +293,7 @@ export class InlineEditSessionController<
       this.activationInteractionToken = undefined;
       session.host.mount(capture.cellNode);
       this.arguments_.onSessionStart?.();
+      session.host.element.addEventListener('keydown', this.handleEscapeKeyDown, true);
       session.host.element.addEventListener('keydown', this.handleKeyDown);
       session.host.element.addEventListener('focusout', this.handleFocusOut);
       session.host.element.addEventListener('click', this.stopOwnedPointerEvent);
@@ -622,6 +623,25 @@ export class InlineEditSessionController<
     void this.submit().catch(() => undefined);
   };
 
+  private readonly handleEscapeKeyDown = (event: KeyboardEvent): void => {
+    const session = this.session;
+    if (session === undefined || event.key !== 'Escape') {
+      return;
+    }
+    const intent = resolveInlineKeyboardIntent(
+      event,
+      session.capture.field,
+      this.arguments_.interactionBehavior,
+    );
+    if (intent?.type !== 'cancel') {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    void this.cancel('escape');
+  };
+
   private readonly handleUserChange = (): void => {
     const session = this.session;
     if (session === undefined) {
@@ -685,6 +705,7 @@ export class InlineEditSessionController<
     session.lifecycleAbortController.abort();
     this.changeAbortController?.abort();
     this.changeAbortController = undefined;
+    session.host.element.removeEventListener('keydown', this.handleEscapeKeyDown, true);
     session.host.element.removeEventListener('keydown', this.handleKeyDown);
     session.host.element.removeEventListener('focusout', this.handleFocusOut);
     session.host.element.removeEventListener('click', this.stopOwnedPointerEvent);

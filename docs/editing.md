@@ -184,8 +184,8 @@ The following compact behavior applies to double-click activation:
 - Enter submits single-line text-like controls when `enterAction` is `submit`.
 - Native Select and SearchSelect keep Enter for choosing the current option. Use
   Tab, blur submission, or `submitInlineEdit()` to commit a native Select value.
-- Escape cancels. SearchSelect consumes the first Escape when its popup is open;
-  a later Escape cancels the cell session.
+- Escape cancels the cell session without saving, including while a SearchSelect
+  popup is open.
 - Tab submits and opens the next eligible visible cell on the current page by
   default.
 - Shift+Tab submits and moves backward.
@@ -193,10 +193,10 @@ The following compact behavior applies to double-click activation:
 - Arrow keys and option selection remain owned by Select and SearchSelect
   controls.
 
-For hover activation, native Submit and Cancel buttons own resolution. Blur, Tab,
-Enter, and Escape do not submit or cancel the session. Field-owned behavior still
-applies, such as Escape closing a SearchSelect popup. Validation or persistence
-disables both actions; a failure re-enables them and retains the candidate.
+For hover activation, native Submit and Cancel buttons provide explicit actions.
+Escape also cancels the cell session without saving. Blur, Tab, and Enter do not
+submit or cancel the session. Validation or persistence disables both actions; a
+failure re-enables them and retains the candidate.
 
 Tab navigation never wraps, changes page, creates a row, or guesses a stale
 destination. It waits for the preceding commit draw to complete before opening

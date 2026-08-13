@@ -74,9 +74,9 @@ exist.
 | `className`          | none                | Safe additional class tokens applied to the Inline host.                    |
 | `keyboardActivation` | `{ key: 'F2' }`     | KeyTable-focused-cell shortcut, a custom shortcut, or `false`.              |
 
-Hover sessions use their native Submit and Cancel buttons. If `blurAction`,
-`enterAction`, or `tabAction` is explicitly configured for hover activation, its
-value must be `'none'`.
+Hover sessions use their native Submit and Cancel buttons, and Escape cancels
+without saving. If `blurAction`, `enterAction`, or `tabAction` is explicitly
+configured for hover activation, its value must be `'none'`.
 
 `keyboardActivation: false` disables only focused-cell activation. It does not
 disable keyboard behavior inside an open session: native controls keep their
