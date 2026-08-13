@@ -116,6 +116,9 @@ describe('dialog form layouts', () => {
   });
 
   it.each([
+    ['<div id="duplicate"></div><div id="duplicate"></div>', 'duplicate id'],
+    ['<div id="layout-invalid-form"></div>', 'already in use or reserved'],
+    ['<div id="layout-invalid-field-0"></div>', 'already in use or reserved'],
     [
       '<div data-alteditor-lite-field="unknown"></div>',
       'does not match an editable field',

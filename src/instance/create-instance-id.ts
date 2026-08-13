@@ -28,5 +28,5 @@ export function createInstanceId(): string {
     value: nextSequence,
     writable: true,
   });
-  return `dt-alteditor-lite-${String(nextSequence)}`;
+  return `alteditor-lite-${String(nextSequence)}`;
 }

@@ -25,8 +25,8 @@ describe('editor instance identifiers', () => {
       writable: true,
     });
 
-    expect(createInstanceId()).toBe('dt-alteditor-lite-42');
-    expect(createInstanceId()).toBe('dt-alteditor-lite-43');
+    expect(createInstanceId()).toBe('alteditor-lite-42');
+    expect(createInstanceId()).toBe('alteditor-lite-43');
     expect(Reflect.get(globalThis, instanceSequenceKey)).toBe(43);
   });
 });

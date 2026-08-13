@@ -53,7 +53,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Renamed the field property `readonly` to `readOnly`.
 - Renamed library-owned CSS selectors from `.dt-alteditor-lite-*` to
   `.alteditor-lite-*` and custom properties from `--dt-alteditor-lite-*` to
-  `--alteditor-lite-*`.
+  `--alteditor-lite-*`; generated editor-owned DOM identifiers now use the
+  `alteditor-lite-*` prefix as well.
 - Removed flattened SearchSelect `searchThreshold`, `debounceMs`, `loadOptions`,
   and `resolveOption`; use the nested `search` and `remote` objects.
 
