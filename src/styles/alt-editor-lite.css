@@ -186,21 +186,51 @@
 }
 
 .dt-alteditor-lite-checkbox {
-  display: inline-flex;
-  gap: 0.5rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(2.5rem, auto);
+  gap: calc(var(--dt-alteditor-lite-spacing) / 2);
   align-items: center;
-  width: fit-content;
-  padding-block: calc(var(--dt-alteditor-lite-spacing) / 4);
+  width: 100%;
+  padding: 0;
   cursor: pointer;
 }
 
 .dt-alteditor-lite-checkbox > .dt-alteditor-lite-field__control {
+  grid-column: 1;
+  grid-row: 2;
+  flex: 0 0 auto;
   width: 1.125rem;
   height: 1.125rem;
   min-height: 0;
   padding: 0;
   margin: 0;
   accent-color: var(--dt-alteditor-lite-primary-color);
+}
+
+.dt-alteditor-lite-checkbox > .dt-alteditor-lite-field__label {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+input[type='file'].dt-alteditor-lite-field__control {
+  padding: 0;
+}
+
+input[type='file'].dt-alteditor-lite-field__control::file-selector-button {
+  min-height: calc(2.5rem - 2px);
+  padding: 0.5rem;
+  margin-inline-end: 0.5rem;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  background: var(--dt-alteditor-lite-surface-color);
+  border: 0;
+  border-inline-end: 1px solid var(--dt-alteditor-lite-border-color);
+}
+
+input[type='file'].dt-alteditor-lite-field__control:disabled::file-selector-button {
+  cursor: not-allowed;
 }
 
 .dt-alteditor-lite-field__control[aria-invalid='true'] {
@@ -403,6 +433,21 @@ textarea.dt-alteditor-lite-field__control {
   display: flex;
   gap: 0.5rem;
   align-items: center;
+  min-height: 2rem;
+  cursor: pointer;
+}
+
+.dt-alteditor-lite-radio__option > input {
+  flex: 0 0 auto;
+  width: 1.125rem;
+  height: 1.125rem;
+  margin: 0;
+  accent-color: var(--dt-alteditor-lite-primary-color);
+}
+
+.dt-alteditor-lite-radio__option:has(> input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.65;
 }
 
 /* The base SearchSelect layout also applies inside the more specific inline host. */
@@ -544,6 +589,8 @@ textarea.dt-alteditor-lite-field__control {
 }
 
 .alteditor-lite-inline .dt-alteditor-lite-checkbox {
+  display: flex;
+  gap: 0;
   width: 100%;
   min-height: 2rem;
   padding-block: 0;
@@ -553,6 +600,11 @@ textarea.dt-alteditor-lite-field__control {
 .alteditor-lite-inline .dt-alteditor-lite-checkbox > .dt-alteditor-lite-field__control {
   width: 1rem;
   height: 1rem;
+}
+
+.dt-alteditor-lite-checkbox:has(> .dt-alteditor-lite-field__control:disabled) {
+  cursor: not-allowed;
+  opacity: 0.65;
 }
 
 .alteditor-lite-inline .dt-alteditor-lite-search-select__clear {

@@ -670,6 +670,22 @@ test('keeps Hybrid Dialog Edit available while changing employee selection', asy
     'Jane Smith',
   );
   await expect(dialog.getByRole('combobox', { name: 'Prefecture' })).toBeHidden();
+
+  const activeControl = dialog.getByRole('checkbox', { name: 'Active' });
+  const activeRow = activeControl.locator('..');
+  const activeLabel = activeRow.locator('.dt-alteditor-lite-field__label');
+  const [activeBox, activeLabelBox, activeRowBox] = await Promise.all([
+    activeControl.boundingBox(),
+    activeLabel.boundingBox(),
+    activeRow.boundingBox(),
+  ]);
+  expect(activeBox).not.toBeNull();
+  expect(activeLabelBox).not.toBeNull();
+  expect(activeRowBox).not.toBeNull();
+  expect(
+    (activeBox?.y ?? 0) - ((activeLabelBox?.y ?? 0) + (activeLabelBox?.height ?? 0)),
+  ).toBeGreaterThanOrEqual(8);
+  expect(activeRowBox?.height ?? 0).toBeGreaterThanOrEqual(64);
 });
 
 test('has no serious or critical axe violations in dark Edit and Remove dialogs', async ({

@@ -145,7 +145,7 @@ describe('native field presentation', () => {
     controller.destroy();
   });
 
-  it('groups a checkbox before its visible label on one semantic row', () => {
+  it('keeps a checkbox and its visible text in one associated label', () => {
     const form = buildEditorForm<RequiredFieldValues>(
       [{ label: 'Active', name: 'active', type: 'checkbox' }],
       'checkbox-field',
