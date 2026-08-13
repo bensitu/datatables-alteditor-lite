@@ -636,6 +636,42 @@ test('integrates Buttons and Select while preserving the opening target', async 
   await expect(page.evaluate(() => 'jQuery' in globalThis)).resolves.toBe(false);
 });
 
+test('keeps Hybrid Dialog Edit available while changing employee selection', async ({
+  page,
+}) => {
+  await page.goto('http://127.0.0.1:4173/examples/demo/');
+  const employeeDirectory = page.getByRole('region', {
+    exact: true,
+    name: 'Employee directory',
+  });
+  const editButton = employeeDirectory.getByRole('button', {
+    exact: true,
+    name: 'Edit',
+  });
+  const selectionStatus = employeeDirectory.locator('#hybrid-selection-status');
+  const aikoRow = employeeDirectory.getByRole('row', { name: /Aiko Tanaka/ });
+  const janeRow = employeeDirectory.getByRole('row', { name: /Jane Smith/ });
+
+  await expect(janeRow).toBeVisible();
+  await expect(selectionStatus).toContainText('Every row is available');
+  await aikoRow.click();
+  await expect(selectionStatus).toContainText('Dialog Edit is ready for Aiko Tanaka');
+
+  await janeRow.click();
+  await expect(employeeDirectory.locator('tbody tr.selected')).toHaveCount(1);
+  await expect(janeRow).toHaveClass(/selected/);
+  await expect(selectionStatus).toContainText('Dialog Edit is ready for Jane Smith');
+  await expect(editButton).toBeEnabled();
+  await editButton.click();
+
+  const dialog = page.getByRole('dialog', { name: 'Edit row' });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole('textbox', { exact: true, name: 'Name' })).toHaveValue(
+    'Jane Smith',
+  );
+  await expect(dialog.getByRole('combobox', { name: 'Prefecture' })).toBeHidden();
+});
+
 test('has no serious or critical axe violations in dark Edit and Remove dialogs', async ({
   page,
 }) => {

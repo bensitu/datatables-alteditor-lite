@@ -151,7 +151,7 @@ const fieldConfigurations = [
   {
     label: 'Prefecture',
     name: 'prefecture',
-    options: japanesePrefectures,
+    options: [{ label: 'Not applicable', value: '' }, ...japanesePrefectures],
     type: 'select',
     visible: false,
   },
@@ -271,6 +271,7 @@ const editorState = document.querySelector('#editor-state');
 const failNextButton = document.querySelector('#fail-next');
 const localeSelect = document.querySelector('#locale-select');
 const localeStatus = document.querySelector('#locale-status');
+const hybridSelectionStatus = document.querySelector('#hybrid-selection-status');
 const hybridEmployeeTableElement = document.querySelector('#employees');
 const inlineEmployeeTableElement = document.querySelector('#employees-inline');
 const hoverEmployeeTableElement = document.querySelector('#employees-hover');
@@ -384,7 +385,9 @@ function createEmployeeTable(selector, additionalOptions = {}) {
   });
 }
 
-const hybridEmployeeTable = createEmployeeTable('#employees');
+const hybridEmployeeTable = createEmployeeTable('#employees', {
+  select: { style: 'single' },
+});
 const inlineEmployeeTable = createEmployeeTable('#employees-inline');
 const hoverEmployeeTable = createEmployeeTable('#employees-hover', {
   colReorder: true,
@@ -733,6 +736,21 @@ function updateWorkflowModeUi() {
   }
 }
 
+function updateHybridSelectionStatus() {
+  const selectedEmployee = hybridEmployeeTable
+    .rows({ selected: true })
+    .data()
+    .toArray()[0];
+  if (selectedEmployee === undefined) {
+    hybridSelectionStatus.textContent =
+      'Select an employee to enable Dialog Edit. Every row is available, and selecting another row moves the target.';
+    hybridSelectionStatus.dataset.selection = 'empty';
+    return;
+  }
+  hybridSelectionStatus.textContent = `Dialog Edit is ready for ${selectedEmployee.name}. Selecting another employee moves the target.`;
+  hybridSelectionStatus.dataset.selection = 'ready';
+}
+
 function recreateEditors(language) {
   hybridEmployeeEditor?.destroy();
   inlineEmployeeEditor?.destroy();
@@ -752,6 +770,7 @@ function recreateEditors(language) {
   hoverEmployeeEditor = createEmployeeEditor(hoverEmployeeTable, 'hover', language);
   workflowEditor = createWorkflowEditor(language);
   workflowTable.row('#workflow-1').select();
+  updateHybridSelectionStatus();
   updateWorkflowModeUi();
   updateState();
 }
@@ -860,6 +879,7 @@ registerEventSource(hybridEmployeeTableElement, 'hybrid table');
 registerEventSource(inlineEmployeeTableElement, 'inline table');
 registerEventSource(hoverEmployeeTableElement, 'hover table');
 registerEventSource(workflowTableElement, 'workflow table');
+hybridEmployeeTable.on('select deselect', updateHybridSelectionStatus);
 
 const englishLanguage = getLocale('en');
 if (englishLanguage === undefined) {

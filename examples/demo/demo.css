@@ -427,6 +427,46 @@ main > * {
   line-height: 1.55;
 }
 
+.demo-selection-status {
+  display: flex;
+  gap: 0.625rem;
+  align-items: center;
+  min-height: 2.5rem;
+  padding: 0.625rem 0.75rem;
+  margin: 0.75rem 0 0;
+  color: var(--demo-muted);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  background: var(--demo-card-subtle);
+  border: 1px solid var(--demo-border);
+  border-radius: 0.625rem;
+}
+
+.demo-selection-status::before {
+  display: grid;
+  flex: 0 0 1.375rem;
+  width: 1.375rem;
+  aspect-ratio: 1;
+  color: var(--demo-accent-strong);
+  font-size: 0.75rem;
+  font-weight: 850;
+  content: 'i';
+  background: var(--demo-accent-soft);
+  border-radius: 50%;
+  place-items: center;
+}
+
+.demo-selection-status[data-selection='ready'] {
+  color: var(--demo-text);
+  border-color: color-mix(in srgb, var(--demo-success) 35%, var(--demo-border));
+}
+
+.demo-selection-status[data-selection='ready']::before {
+  color: var(--demo-success);
+  content: '\2713';
+  background: color-mix(in srgb, var(--demo-success) 10%, var(--demo-card));
+}
+
 .demo-controls {
   position: sticky;
   inset-block-start: 1rem;
