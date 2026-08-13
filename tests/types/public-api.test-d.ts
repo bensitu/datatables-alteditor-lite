@@ -16,6 +16,7 @@ import {
   type EditorErrorEventDetail,
   type EditorHooks,
   type EditorLanguageDefinition,
+  type EditorLanguageLoadOptions,
   type EditorOperations,
   type EditorSubmitEventDetail,
   type EditorSuccessEventDetail,
@@ -492,6 +493,13 @@ const customLanguage = {
 expectType<Readonly<AltEditorLiteLanguage>>(registerLocale(customLanguage));
 expectType<Promise<Readonly<AltEditorLiteLanguage>>>(
   loadEditorLanguage('/languages/fr-FR.json'),
+);
+const languageLoadOptions = {
+  credentials: 'same-origin',
+  maxResourceBytes: 256 * 1024,
+} as const satisfies EditorLanguageLoadOptions;
+expectType<Promise<Readonly<AltEditorLiteLanguage>>>(
+  loadEditorLanguage('/languages/enterprise.json', languageLoadOptions),
 );
 const languageLoadError = new EditorLanguageLoadError(
   'Locale failed.',

@@ -6,7 +6,10 @@ export {
   type EditorLanguageDefinition,
   type PartialEditorLanguage,
 } from './core/alt-editor-lite-language.js';
-export { loadEditorLanguage } from './localization/editor-language-resource.js';
+export {
+  loadEditorLanguage,
+  type EditorLanguageLoadOptions,
+} from './localization/editor-language-resource.js';
 export {
   getLocale,
   getRegisteredLocaleNames,

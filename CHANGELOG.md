@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.4.0] - 2026-08-13
+## [0.4.0] - 2026-08-15
 
 ### Added
 
@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Declarative field dependencies with immutable value snapshots, cancellation,
   stale-result protection, and atomic state updates.
 - Typed form-level validation for Create, Dialog Edit, and Inline Edit.
+- Configurable response-size limits for externally loaded language resources.
 
 ### Changed
 
@@ -32,6 +33,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Standardized field configuration and runtime naming on `readOnly`.
 - Separated dialog operations, inline sessions, form layout, dependencies, and
   validation into focused components while retaining shared lifecycle ownership.
+
+### Fixed
+
+- Kept field-level validation independent from active Dialog Create and Edit
+  submissions, and reported callback `AbortError` failures unless the owning
+  operation was actually cancelled.
+- Released validation cancellation references after settlement, pruned detached
+  remote SearchSelect option elements, and standardized timer access across
+  reusable components.
 
 ### Breaking
 

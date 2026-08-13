@@ -813,6 +813,37 @@ describe('AltEditorLite Remove snapshots', () => {
     expect(operationSignals[0]).not.toBe(operationSignals[1]);
     expect(api.row('#row-d').any()).toBe(false);
   });
+
+  it('reports an unrelated Remove AbortError without mutating rows', async () => {
+    let operationSignal: AbortSignal | undefined;
+    const { api, editor, tableElement } = createCrudEditor('remove-abort-error', {
+      operations: {
+        remove: (_rows, context) => {
+          operationSignal = context.signal;
+          throw new DOMException('Consumer cancellation.', 'AbortError');
+        },
+      },
+    });
+    let removeError: AltEditorLiteError | undefined;
+    tableElement.addEventListener('alteditor-lite:error', (event) => {
+      removeError = (event as CustomEvent<{ readonly error: AltEditorLiteError }>).detail
+        .error;
+    });
+
+    await editor.openRemoveDialog('#row-d');
+    confirmRemove();
+    await vi.waitFor(() => {
+      expect(editor.getState().status).toBe('open');
+    });
+
+    expect(api.row('#row-d').any()).toBe(true);
+    expect(operationSignal?.aborted).toBe(false);
+    expect(removeError).toMatchObject({
+      code: 'UNKNOWN',
+      message: ENGLISH_LANGUAGE.errors.generic,
+      retryable: false,
+    });
+  });
 });
 
 describe('AltEditorLite Refresh and optional selection boundary', () => {
@@ -940,7 +971,7 @@ describe('AltEditorLite Refresh and optional selection boundary', () => {
     expect(editor.getState().status).toBe('ready');
   });
 
-  it('completes the Refresh event sequence after callback cancellation', async () => {
+  it('reports a Refresh AbortError when the operation signal remains active', async () => {
     const { editor, tableElement } = createCrudEditor('cancelled-refresh', {
       operations: {
         refresh: () => {
@@ -958,7 +989,18 @@ describe('AltEditorLite Refresh and optional selection boundary', () => {
     await editor.refreshTable();
 
     expect(phases).toEqual(['start', 'complete']);
-    expect(errorListener).not.toHaveBeenCalled();
+    expect(errorListener).toHaveBeenCalledOnce();
+    expect(
+      (
+        errorListener.mock.calls[0]?.[0] as CustomEvent<{
+          readonly error: AltEditorLiteError;
+        }>
+      ).detail.error,
+    ).toMatchObject({
+      code: 'UNKNOWN',
+      message: ENGLISH_LANGUAGE.errors.generic,
+      retryable: false,
+    });
     expect(editor.getState()).toEqual({ status: 'ready' });
   });
 

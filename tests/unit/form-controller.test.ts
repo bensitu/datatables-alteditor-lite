@@ -11,6 +11,7 @@ import type { FieldChangeContext, FieldConfig } from '../../src/fields/field-con
 import type { FieldValidationResult } from '../../src/fields/field-controller.js';
 import type { FormController } from '../../src/form/form-controller.js';
 import type { LocalUniqueValidator } from '../../src/form/validate-editor-form.js';
+import type { Api } from 'datatables.net';
 
 interface FormValues {
   readonly profile: {
@@ -372,6 +373,57 @@ describe('FormController', () => {
     });
     nameField?.setValue('available');
     await expect(nameField?.validate()).resolves.toEqual({ valid: true });
+  });
+
+  it('keeps submission validation active when field validation begins', async () => {
+    let releaseSubmissionValidation:
+      ((result: FieldValidationResult) => void) | undefined;
+    const pendingSubmissionValidation = new Promise<FieldValidationResult>((resolve) => {
+      releaseSubmissionValidation = resolve;
+    });
+    let validationCount = 0;
+    const form = buildEditorForm<FormValues>(
+      [
+        {
+          defaultValue: 'Ready',
+          label: 'Name',
+          name: 'profile.name',
+          type: 'text',
+          validate: () => {
+            validationCount += 1;
+            return validationCount === 1 ? pendingSubmissionValidation : { valid: true };
+          },
+        },
+      ],
+      'submission-field-validation',
+      ENGLISH_LANGUAGE,
+    );
+    activeForm = form;
+    document.body.append(form.element);
+    const operationAbortController = new AbortController();
+    const submission = form.validateForSubmission<Record<string, never>>(
+      operationAbortController.signal,
+      undefined,
+      {
+        mode: 'dialog',
+        operation: 'create',
+        table: {} as Api<Record<string, never>>,
+      },
+    );
+
+    await vi.waitFor(() => {
+      expect(validationCount).toBe(1);
+    });
+    await expect(form.getField('profile.name')?.validate()).resolves.toEqual({
+      valid: true,
+    });
+    if (releaseSubmissionValidation === undefined) {
+      throw new Error('Expected a pending submission validation.');
+    }
+    releaseSubmissionValidation({ valid: true });
+
+    await expect(submission).resolves.toMatchObject({ valid: true });
+    expect(operationAbortController.signal.aborted).toBe(false);
   });
 
   it('applies public field state through collection, layout, and native controls', async () => {

@@ -23,11 +23,9 @@ describe('operation error normalization', () => {
     expect(normalizeOperationError(error, activeSignal(), ENGLISH_LANGUAGE)).toBe(error);
   });
 
-  it('normalizes an aborted signal and explicit AbortError internally', () => {
+  it('normalizes only errors from an aborted operation internally', () => {
     const abortController = new AbortController();
     abortController.abort();
-    const namedAbortError = new Error('consumer cancellation');
-    namedAbortError.name = 'AbortError';
 
     expect(
       normalizeOperationError(
@@ -36,17 +34,6 @@ describe('operation error normalization', () => {
         ENGLISH_LANGUAGE,
       ),
     ).toBeInstanceOf(InternalOperationAbort);
-    expect(
-      normalizeOperationError(namedAbortError, activeSignal(), ENGLISH_LANGUAGE),
-    ).toBeInstanceOf(InternalOperationAbort);
-    expect(
-      normalizeOperationError(
-        new DOMException('Cancelled.', 'AbortError'),
-        activeSignal(),
-        ENGLISH_LANGUAGE,
-      ),
-    ).toBeInstanceOf(InternalOperationAbort);
-
     const cancelledPublicError = new AltEditorLiteError({
       code: 'LATE_FAILURE',
       message: 'Late failure.',
@@ -58,6 +45,23 @@ describe('operation error normalization', () => {
         ENGLISH_LANGUAGE,
       ),
     ).toBeInstanceOf(InternalOperationAbort);
+  });
+
+  it('publishes an unrelated AbortError as a safe operation failure', () => {
+    const rawError = new DOMException('Consumer cancellation.', 'AbortError');
+    const normalized = normalizeOperationError(
+      rawError,
+      activeSignal(),
+      ENGLISH_LANGUAGE,
+    );
+
+    expect(normalized).toBeInstanceOf(AltEditorLiteError);
+    expect(normalized).toMatchObject({
+      cause: rawError,
+      code: 'UNKNOWN',
+      message: ENGLISH_LANGUAGE.errors.generic,
+      retryable: false,
+    });
   });
 
   it('does not expose messages from structured objects or Error subclasses', () => {

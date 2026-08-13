@@ -318,6 +318,61 @@ describe('SearchSelect remote request ownership', () => {
     searchSelect.destroy();
   });
 
+  it('drops remote option elements that leave the current result set', async () => {
+    const wideResults = [
+      { label: 'Alpha', value: 'alpha' },
+      { label: 'Bravo', value: 'bravo' },
+      { label: 'Charlie', value: 'charlie' },
+    ] as const;
+    const loadOptions = vi.fn((query: string) =>
+      query === 'narrow' ? [{ label: 'Only result', value: 'only' }] : wideResults,
+    );
+    const searchSelect = new SearchSelect<string>({
+      allowClear: true,
+      allowManualValue: false,
+      debounceMs: 0,
+      fieldId: 'remote-option-lifetime',
+      loadOptions,
+      locale: 'en',
+      messages: searchSelectMessages,
+      onCommit: vi.fn(),
+      resolveOption: () => undefined,
+      searchThreshold: 0,
+      sortOptions: false,
+    });
+    document.body.append(searchSelect.element);
+    searchSelect.inputElement.focus();
+    await vi.waitFor(() => {
+      expect(searchSelect.listboxElement.children).toHaveLength(3);
+    });
+    const retainedOption = searchSelect.listboxElement.querySelector(
+      '[data-option-token="option-0"]',
+    );
+    const removedOption = searchSelect.listboxElement.querySelector(
+      '[data-option-token="option-2"]',
+    );
+
+    searchSelect.inputElement.value = 'narrow';
+    searchSelect.inputElement.dispatchEvent(new Event('input', { bubbles: true }));
+    await vi.waitFor(() => {
+      expect(searchSelect.listboxElement.textContent).toContain('Only result');
+    });
+    expect(removedOption?.isConnected).toBe(false);
+
+    searchSelect.inputElement.value = 'wide';
+    searchSelect.inputElement.dispatchEvent(new Event('input', { bubbles: true }));
+    await vi.waitFor(() => {
+      expect(searchSelect.listboxElement.children).toHaveLength(3);
+    });
+    expect(
+      searchSelect.listboxElement.querySelector('[data-option-token="option-0"]'),
+    ).toBe(retainedOption);
+    expect(
+      searchSelect.listboxElement.querySelector('[data-option-token="option-2"]'),
+    ).not.toBe(removedOption);
+    searchSelect.destroy();
+  });
+
   it('lets seed updates hydrate a pending selection without a value change', async () => {
     const pending = createDeferred<{ readonly label: string; readonly value: number }>();
     const onCommit = vi.fn();

@@ -20,7 +20,7 @@ export class InlineHoverActivation<
 
   private pendingTouchCell: HTMLTableCellElement | undefined;
 
-  private touchFallbackTimer: number | undefined;
+  private touchFallbackTimer: ReturnType<typeof globalThis.setTimeout> | undefined;
 
   public constructor(private readonly trigger: InlineHoverTrigger) {}
 
@@ -96,7 +96,7 @@ export class InlineHoverActivation<
       if (cell instanceof HTMLTableCellElement) {
         this.clearTouchFallback();
         this.pendingTouchCell = cell;
-        this.touchFallbackTimer = window.setTimeout(() => {
+        this.touchFallbackTimer = globalThis.setTimeout(() => {
           this.touchFallbackTimer = undefined;
           if (
             this.pendingTouchCell !== cell ||
@@ -281,7 +281,7 @@ export class InlineHoverActivation<
     if (this.touchFallbackTimer === undefined) {
       return;
     }
-    window.clearTimeout(this.touchFallbackTimer);
+    globalThis.clearTimeout(this.touchFallbackTimer);
     this.touchFallbackTimer = undefined;
   }
 }

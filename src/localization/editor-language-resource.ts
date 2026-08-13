@@ -11,8 +11,13 @@ import {
 
 const placeholderPattern = /\{[^{}]+\}/gu;
 const LANGUAGE_REQUEST_TIMEOUT_MS = 10_000;
-const MAX_LANGUAGE_RESOURCE_BYTES = 64 * 1024;
+const DEFAULT_MAX_LANGUAGE_RESOURCE_BYTES = 64 * 1024;
 const ABSOLUTE_SCHEME_PATTERN = /^[a-z][a-z\d+.-]*:/iu;
+
+/** Fetch settings and resource limits for an external editor language. */
+export interface EditorLanguageLoadOptions extends RequestInit {
+  readonly maxResourceBytes?: number;
+}
 
 interface LanguageRequestLifetime {
   readonly signal: AbortSignal;
@@ -78,12 +83,27 @@ function createLanguageRequestLifetime(
   };
 }
 
-async function readLimitedResponseText(response: Response): Promise<string> {
+function resolveMaxResourceBytes(maxResourceBytes: number | undefined): number {
+  if (maxResourceBytes === undefined) {
+    return DEFAULT_MAX_LANGUAGE_RESOURCE_BYTES;
+  }
+  if (!Number.isSafeInteger(maxResourceBytes) || maxResourceBytes <= 0) {
+    throw new EditorConfigurationError(
+      'Editor language maxResourceBytes must be a positive safe integer.',
+    );
+  }
+  return maxResourceBytes;
+}
+
+async function readLimitedResponseText(
+  response: Response,
+  maxResourceBytes: number,
+): Promise<string> {
   const contentLength = response.headers.get('content-length');
   if (
     contentLength !== null &&
     Number.isFinite(Number(contentLength)) &&
-    Number(contentLength) > MAX_LANGUAGE_RESOURCE_BYTES
+    Number(contentLength) > maxResourceBytes
   ) {
     throw new EditorLanguageLoadError(
       'The editor language response exceeds the supported size.',
@@ -105,7 +125,7 @@ async function readLimitedResponseText(response: Response): Promise<string> {
     let chunk = await reader.read();
     while (!chunk.done) {
       byteCount += chunk.value.byteLength;
-      if (byteCount > MAX_LANGUAGE_RESOURCE_BYTES) {
+      if (byteCount > maxResourceBytes) {
         const resourceSizeError = new EditorLanguageLoadError(
           'The editor language response exceeds the supported size.',
           undefined,
@@ -247,15 +267,18 @@ export function resolveEditorLanguageResource(
  * creating an editor instance.
  *
  * @param resource - URL or request for a JSON language resource.
- * @param requestInit - Optional Fetch API request settings.
+ * @param options - Optional Fetch API settings and response size limit.
  * @returns Complete validated language data.
+ * @throws EditorConfigurationError when maxResourceBytes is invalid.
  * @throws EditorLanguageLoadError when the request or validation fails.
  */
 export async function loadEditorLanguage(
   resource: RequestInfo | URL,
-  requestInit?: RequestInit,
+  options?: EditorLanguageLoadOptions,
 ): Promise<Readonly<AltEditorLiteLanguage>> {
   assertSupportedLanguageResource(resource);
+  const { maxResourceBytes: configuredMaxResourceBytes, ...requestInit } = options ?? {};
+  const maxResourceBytes = resolveMaxResourceBytes(configuredMaxResourceBytes);
   const requestLifetime = createLanguageRequestLifetime(resource, requestInit);
   try {
     let response: Response;
@@ -292,7 +315,9 @@ export async function loadEditorLanguage(
 
     let languageData: unknown;
     try {
-      languageData = JSON.parse(await readLimitedResponseText(response)) as unknown;
+      languageData = JSON.parse(
+        await readLimitedResponseText(response, maxResourceBytes),
+      ) as unknown;
     } catch (cause: unknown) {
       if (cause instanceof EditorLanguageLoadError) {
         throw cause;

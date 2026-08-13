@@ -2,18 +2,6 @@ import { AltEditorLiteError } from './alt-editor-lite-error.js';
 
 import type { AltEditorLiteLanguage } from './alt-editor-lite-language.js';
 
-function isAbortError(error: unknown): boolean {
-  try {
-    return (
-      typeof error === 'object' &&
-      error !== null &&
-      Reflect.get(error, 'name') === 'AbortError'
-    );
-  } catch {
-    return false;
-  }
-}
-
 function isAltEditorLiteError(error: unknown): error is AltEditorLiteError {
   try {
     return error instanceof AltEditorLiteError;
@@ -48,7 +36,7 @@ export function normalizeOperationError(
   signal: AbortSignal,
   language: Readonly<AltEditorLiteLanguage>,
 ): AltEditorLiteError | InternalOperationAbort {
-  if (signal.aborted || isAbortError(rawError)) {
+  if (signal.aborted) {
     return new InternalOperationAbort();
   }
 

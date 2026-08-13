@@ -80,11 +80,22 @@ The loader accepts partial JSON, validates known keys and placeholder tokens,
 canonicalizes the locale identifier, and merges the data with the English
 fallback. Network failures throw `EditorLanguageLoadError`. Invalid JSON or an
 invalid language shape is non-retryable. Requests time out after 10 seconds and
-responses are limited to 64 KiB. A caller-provided `AbortSignal` is forwarded and
-can cancel the request earlier. When a response includes a `Content-Type` header,
-it must identify `application/json` or an `application/*+json` media type.
-Relative URLs and absolute HTTP or HTTPS URLs are supported. Other absolute URL
-schemes are rejected before a request is made.
+responses are limited to 64 KiB by default. A larger validated resource can set a
+positive safe-integer byte limit without changing the library:
+
+```ts
+const language = await loadEditorLanguage('/languages/enterprise.json', {
+  maxResourceBytes: 256 * 1024,
+});
+```
+
+A caller-provided `AbortSignal` is forwarded and can cancel the request earlier.
+Other standard `RequestInit` settings can be provided in the same object;
+`maxResourceBytes` is consumed by the loader and is not forwarded to `fetch`.
+When a response includes a `Content-Type` header, it must identify
+`application/json` or an `application/*+json` media type. Relative URLs and
+absolute HTTP or HTTPS URLs are supported. Other absolute URL schemes are
+rejected before a request is made.
 
 Templates must retain their placeholders. For example, `dialog.removeCount`
 contains `{count}`, `accessibility.searchSelectResults` contains `{count}`, and

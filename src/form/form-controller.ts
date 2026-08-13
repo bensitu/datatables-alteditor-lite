@@ -130,7 +130,7 @@ export class EditorFormController<
 
   private validationErrorMessage: string | undefined;
 
-  private activeValidationAbortController: AbortController | undefined;
+  private activeFormValidationAbortController: AbortController | undefined;
 
   private controllers: ManagedFieldController<TFormValues>[] = [];
 
@@ -285,9 +285,9 @@ export class EditorFormController<
   /** Runs native and custom validation. */
   public async validate(): Promise<EditorFormValidationResult> {
     this.assertActive();
-    this.activeValidationAbortController?.abort();
+    this.activeFormValidationAbortController?.abort();
     const validationAbortController = new AbortController();
-    this.activeValidationAbortController = validationAbortController;
+    this.activeFormValidationAbortController = validationAbortController;
     const signal = AbortSignal.any([
       validationAbortController.signal,
       this.lifecycleAbortController.signal,
@@ -345,9 +345,9 @@ export class EditorFormController<
     context: Omit<FormValidationContext<TRow>, 'signal'>,
   ): Promise<FormSubmissionValidationResult<TFormValues>> {
     this.assertActive();
-    this.activeValidationAbortController?.abort();
+    this.activeFormValidationAbortController?.abort();
     const validationAbortController = new AbortController();
-    this.activeValidationAbortController = validationAbortController;
+    this.activeFormValidationAbortController = validationAbortController;
     const signal = AbortSignal.any([
       validationAbortController.signal,
       this.lifecycleAbortController.signal,
@@ -495,7 +495,7 @@ export class EditorFormController<
         this.activeChangeAbortControllers.delete(name);
         this.activeFieldValidationAbortControllers.get(name)?.abort();
         this.activeFieldValidationAbortControllers.delete(name);
-        this.activeValidationAbortController?.abort();
+        this.activeFormValidationAbortController?.abort();
         runtime.setVisible(false);
         managedController.destroy();
         this.controllerByName.delete(name);
@@ -576,7 +576,7 @@ export class EditorFormController<
       abortController.abort();
     }
     this.activeFieldValidationAbortControllers.clear();
-    this.activeValidationAbortController?.abort();
+    this.activeFormValidationAbortController?.abort();
     this.validationSequence.invalidate();
     this.dependencyController?.destroy();
     this.dependencyController = undefined;
@@ -708,7 +708,6 @@ export class EditorFormController<
     controller: ManagedFieldController<TFormValues>,
   ): Promise<FieldValidationResult> {
     this.assertActive();
-    this.activeValidationAbortController?.abort();
     this.activeFieldValidationAbortControllers.get(controller.name)?.abort();
     const validationAbortController = new AbortController();
     this.activeFieldValidationAbortControllers.set(

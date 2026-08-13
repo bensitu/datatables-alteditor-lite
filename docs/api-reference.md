@@ -160,18 +160,19 @@ runtime behavior and validation ordering.
 
 ## Localization
 
-| Export                                       | Description                                                      |
-| -------------------------------------------- | ---------------------------------------------------------------- |
-| `ENGLISH_LANGUAGE`                           | Complete built-in English language object.                       |
-| `resolveLanguage(language?)`                 | Merges inline language data with the English fallback.           |
-| `loadEditorLanguage(resource, requestInit?)` | Loads, validates, and resolves a partial JSON language resource. |
-| `registerLocale(language)`                   | Validates and stores language data by its locale identifier.     |
-| `registerLocale(locale, language)`           | Registers language data under an explicit locale identifier.     |
-| `getLocale(locale)`                          | Returns registered language data or `undefined`.                 |
-| `getRegisteredLocaleNames()`                 | Returns locale identifiers in registration order.                |
+| Export                                   | Description                                                      |
+| ---------------------------------------- | ---------------------------------------------------------------- |
+| `ENGLISH_LANGUAGE`                       | Complete built-in English language object.                       |
+| `resolveLanguage(language?)`             | Merges inline language data with the English fallback.           |
+| `loadEditorLanguage(resource, options?)` | Loads, validates, and resolves a partial JSON language resource. |
+| `registerLocale(language)`               | Validates and stores language data by its locale identifier.     |
+| `registerLocale(locale, language)`       | Registers language data under an explicit locale identifier.     |
+| `getLocale(locale)`                      | Returns registered language data or `undefined`.                 |
+| `getRegisteredLocaleNames()`             | Returns locale identifiers in registration order.                |
 
 The related public types are `AltEditorLiteLanguage`,
-`EditorLanguageDefinition`, and `PartialEditorLanguage`. See
+`EditorLanguageDefinition`, `EditorLanguageLoadOptions`, and
+`PartialEditorLanguage`. See
 [Localization](localization.md) for resource limits, JSON structure, and CDN use.
 
 ## Errors

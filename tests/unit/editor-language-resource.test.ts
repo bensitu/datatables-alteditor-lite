@@ -150,12 +150,21 @@ describe('external editor language resources', () => {
   });
 
   it('limits response size and aborts requests that exceed the default timeout', async () => {
-    const oversizedFetch = vi.fn<typeof fetch>().mockResolvedValue(
-      new Response('x'.repeat(70 * 1024), {
-        headers: { 'content-type': 'application/json' },
-        status: 200,
-      }),
-    );
+    const largeLanguageResource = `${JSON.stringify({ locale: 'en-US' })}${' '.repeat(70 * 1024)}`;
+    const oversizedFetch = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(
+        new Response(largeLanguageResource, {
+          headers: { 'content-type': 'application/json' },
+          status: 200,
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(largeLanguageResource, {
+          headers: { 'content-type': 'application/json' },
+          status: 200,
+        }),
+      );
     vi.stubGlobal('fetch', oversizedFetch);
 
     await expect(loadEditorLanguage('/oversized')).rejects.toMatchObject({
@@ -163,6 +172,17 @@ describe('external editor language resources', () => {
       message: 'The editor language response exceeds the supported size.',
       retryable: false,
     });
+
+    await expect(
+      loadEditorLanguage('/larger-language', { maxResourceBytes: 80 * 1024 }),
+    ).resolves.toMatchObject({ locale: 'en-US' });
+    expect(oversizedFetch.mock.calls[1]?.[1]).not.toHaveProperty('maxResourceBytes');
+    await expect(
+      loadEditorLanguage('/invalid-limit', { maxResourceBytes: 0 }),
+    ).rejects.toThrow(
+      'Editor language maxResourceBytes must be a positive safe integer.',
+    );
+    expect(oversizedFetch).toHaveBeenCalledTimes(2);
 
     vi.useFakeTimers();
     const pendingFetch = vi.fn<typeof fetch>().mockImplementation(

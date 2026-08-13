@@ -68,24 +68,51 @@ function settleOnAbort<TValue>(
   }
 
   return new Promise<TValue>((resolve, reject) => {
-    const handleAbort = (): void => {
-      reject(new DOMException('The request was aborted.', 'AbortError'));
+    const settlement: {
+      handleAbort: (() => void) | undefined;
+      reject: ((reason?: unknown) => void) | undefined;
+      resolve: ((result: TValue) => void) | undefined;
+      signal: AbortSignal | undefined;
+    } = { handleAbort: undefined, reject, resolve, signal };
+    const release = (): void => {
+      const currentSignal = settlement.signal;
+      const currentHandleAbort = settlement.handleAbort;
+      settlement.handleAbort = undefined;
+      settlement.reject = undefined;
+      settlement.resolve = undefined;
+      settlement.signal = undefined;
+      if (currentHandleAbort !== undefined) {
+        currentSignal?.removeEventListener('abort', currentHandleAbort);
+      }
     };
+    const resolveValue = (result: TValue): void => {
+      const currentResolve = settlement.resolve;
+      if (currentResolve === undefined) {
+        return;
+      }
+      release();
+      currentResolve(result);
+    };
+    const rejectValue = (error: unknown): void => {
+      const currentReject = settlement.reject;
+      if (currentReject === undefined) {
+        return;
+      }
+      release();
+      currentReject(error);
+    };
+    const handleAbort = (): void => {
+      rejectValue(new DOMException('The request was aborted.', 'AbortError'));
+    };
+    settlement.handleAbort = handleAbort;
     signal.addEventListener('abort', handleAbort, { once: true });
-    void Promise.resolve(value).then(
-      (result) => {
-        signal.removeEventListener('abort', handleAbort);
-        resolve(result);
-      },
-      (error: unknown) => {
-        signal.removeEventListener('abort', handleAbort);
-        reject(
-          error instanceof Error
-            ? error
-            : new Error('Validation failed.', { cause: error }),
-        );
-      },
-    );
+    void Promise.resolve(value).then(resolveValue, (error: unknown) => {
+      rejectValue(
+        error instanceof Error
+          ? error
+          : new Error('Validation failed.', { cause: error }),
+      );
+    });
   });
 }
 

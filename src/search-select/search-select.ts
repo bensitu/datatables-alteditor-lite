@@ -118,7 +118,7 @@ export class SearchSelect<TValue extends string | number> {
 
   private activeToken: string | undefined;
 
-  private debounceTimerId: number | undefined;
+  private debounceTimerId: ReturnType<typeof globalThis.setTimeout> | undefined;
 
   private filteredEntries: readonly SearchOptionEntry<TValue>[] = [];
 
@@ -648,7 +648,7 @@ export class SearchSelect<TValue extends string | number> {
 
   private cancelScheduledRender(): void {
     if (this.debounceTimerId !== undefined) {
-      window.clearTimeout(this.debounceTimerId);
+      globalThis.clearTimeout(this.debounceTimerId);
       this.debounceTimerId = undefined;
     }
   }
@@ -821,7 +821,7 @@ export class SearchSelect<TValue extends string | number> {
       return;
     }
 
-    this.debounceTimerId = window.setTimeout(() => {
+    this.debounceTimerId = globalThis.setTimeout(() => {
       this.debounceTimerId = undefined;
       if (!this.isDestroyed && !this.isComposing) {
         this.renderOptions(this.isSearchEnabled ? this.inputElement.value : '');
@@ -915,6 +915,12 @@ export class SearchSelect<TValue extends string | number> {
   private setCurrentOptions(options: readonly SelectOption<TValue>[]): void {
     this.currentRemoteOptions = [...options];
     this.tokenMap = new ChoiceOptionStore(options);
+    const currentTokens = new Set(this.tokenMap.entries().map(([token]) => token));
+    for (const token of this.optionElementCacheByToken.keys()) {
+      if (!currentTokens.has(token)) {
+        this.optionElementCacheByToken.delete(token);
+      }
+    }
     this.selectedToken =
       this.selectedValue === undefined
         ? undefined
