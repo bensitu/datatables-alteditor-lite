@@ -109,7 +109,7 @@ export class EditorDialog {
     this.shell.titleElement.textContent = title;
     this.shell.submitButton.textContent = submitLabel;
     this.shell.submitButton.classList.toggle(
-      'dt-alteditor-lite-dialog__button--destructive',
+      'alteditor-lite-dialog__button--destructive',
       isDestructive,
     );
     this.shell.bodyElement.replaceChildren(contentElement);

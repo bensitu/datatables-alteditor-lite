@@ -161,7 +161,7 @@ function createExtensionEditor(
 }
 
 function submitForm(): void {
-  const formElement = document.querySelector<HTMLFormElement>('.dt-alteditor-lite-form');
+  const formElement = document.querySelector<HTMLFormElement>('.alteditor-lite-form');
   if (formElement === null) {
     throw new Error('Expected an open editor form.');
   }
@@ -175,7 +175,7 @@ function submitForm(): void {
 
 function confirmRemove(): void {
   const confirmButton = document.querySelector<HTMLButtonElement>(
-    '.dt-alteditor-lite-dialog__button--destructive',
+    '.alteditor-lite-dialog__button--destructive',
   );
   if (confirmButton === null) {
     throw new Error('Expected an open Remove confirmation.');
@@ -228,12 +228,10 @@ describe('optional Buttons and Select integration', () => {
     });
 
     expect(
-      document.querySelector('.dt-alteditor-lite-remove-confirmation__count')
-        ?.textContent,
+      document.querySelector('.alteditor-lite-remove-confirmation__count')?.textContent,
     ).toBe('已选行数：2。');
     expect(
-      document.querySelector('.dt-alteditor-lite-remove-confirmation__warning')
-        ?.textContent,
+      document.querySelector('.alteditor-lite-remove-confirmation__warning')?.textContent,
     ).toBe('请确认是否删除所选行。');
     await editor.closeDialog();
   });

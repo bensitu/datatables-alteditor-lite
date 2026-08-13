@@ -86,12 +86,10 @@ describe('native field presentation', () => {
 
     expect(
       controller.element
-        .querySelector('.dt-alteditor-lite-field__label')
-        ?.classList.contains('dt-alteditor-lite-visually-hidden'),
+        .querySelector('.alteditor-lite-field__label')
+        ?.classList.contains('alteditor-lite-visually-hidden'),
     ).toBe(true);
-    expect(
-      controller.element.querySelector('.dt-alteditor-lite-field__error'),
-    ).toBeNull();
+    expect(controller.element.querySelector('.alteditor-lite-field__error')).toBeNull();
     expect(controller.getError?.()).toBe('Name is unavailable.');
     expect(controller.element.querySelector('input')?.getAttribute('aria-invalid')).toBe(
       'true',
@@ -156,7 +154,7 @@ describe('native field presentation', () => {
 
     const checkboxRow = form
       .getField('active')
-      ?.element.querySelector<HTMLLabelElement>('.dt-alteditor-lite-checkbox');
+      ?.element.querySelector<HTMLLabelElement>('.alteditor-lite-checkbox');
 
     expect(checkboxRow).not.toBeNull();
     expect(checkboxRow?.firstElementChild).toBeInstanceOf(HTMLInputElement);

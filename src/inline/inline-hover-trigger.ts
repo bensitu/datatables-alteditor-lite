@@ -43,12 +43,12 @@ export class InlineHoverTrigger {
     }
     this.hide();
     this.currentCell_ = cell;
-    cell.classList.add('dt-alteditor-lite-inline-hover-target');
+    cell.classList.add('alteditor-lite-inline-hover-target');
     cell.append(this.element);
   }
 
   public hide(): void {
-    this.currentCell_?.classList.remove('dt-alteditor-lite-inline-hover-target');
+    this.currentCell_?.classList.remove('alteditor-lite-inline-hover-target');
     this.currentCell_ = undefined;
     this.element.remove();
   }

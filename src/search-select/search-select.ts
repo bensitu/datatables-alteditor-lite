@@ -226,7 +226,7 @@ export class SearchSelect<TValue extends string | number> {
     this.instructionsId = `${configuration.fieldId}-instructions`;
 
     this.element = document.createElement('div');
-    this.element.className = 'dt-alteditor-lite-search-select';
+    this.element.className = 'alteditor-lite-search-select';
     this.element.setAttribute('aria-busy', 'false');
 
     this.inputElement = document.createElement('input');
@@ -235,24 +235,24 @@ export class SearchSelect<TValue extends string | number> {
     this.inputElement.placeholder = this.messages.placeholder;
 
     this.clearButtonElement = document.createElement('button');
-    this.clearButtonElement.className = 'dt-alteditor-lite-search-select__clear';
+    this.clearButtonElement.className = 'alteditor-lite-search-select__clear';
     this.clearButtonElement.type = 'button';
     this.clearButtonElement.textContent = '×';
     this.clearButtonElement.setAttribute('aria-label', this.messages.clear);
     this.clearButtonElement.hidden = true;
 
     this.listboxElement = document.createElement('div');
-    this.listboxElement.className = 'dt-alteditor-lite-search-select__listbox';
+    this.listboxElement.className = 'alteditor-lite-search-select__listbox';
     this.listboxElement.id = this.listboxId;
     this.listboxElement.hidden = true;
 
     const instructionsElement = document.createElement('div');
-    instructionsElement.className = 'dt-alteditor-lite-visually-hidden';
+    instructionsElement.className = 'alteditor-lite-visually-hidden';
     instructionsElement.id = this.instructionsId;
     instructionsElement.textContent = this.messages.instructions;
 
     this.resultStatusElement = document.createElement('div');
-    this.resultStatusElement.className = 'dt-alteditor-lite-visually-hidden';
+    this.resultStatusElement.className = 'alteditor-lite-visually-hidden';
     this.resultStatusElement.setAttribute('role', 'status');
     this.resultStatusElement.setAttribute('aria-live', 'polite');
 
@@ -764,7 +764,7 @@ export class SearchSelect<TValue extends string | number> {
       let optionElement = this.optionElementCacheByToken.get(token);
       if (optionElement === undefined) {
         optionElement = document.createElement('div');
-        optionElement.className = 'dt-alteditor-lite-search-select__option';
+        optionElement.className = 'alteditor-lite-search-select__option';
         optionElement.dataset['optionToken'] = token;
         optionElement.id = `${this.listboxId}-${token}`;
         optionElement.tabIndex = -1;
@@ -772,7 +772,7 @@ export class SearchSelect<TValue extends string | number> {
       }
 
       optionElement.textContent = option.label;
-      optionElement.classList.remove('dt-alteditor-lite-search-select__option--active');
+      optionElement.classList.remove('alteditor-lite-search-select__option--active');
       updateSearchSelectOptionAria(
         optionElement,
         token === this.selectedToken,
@@ -784,7 +784,7 @@ export class SearchSelect<TValue extends string | number> {
 
     if (this.filteredEntries.length === 0) {
       const noResultsElement = document.createElement('div');
-      noResultsElement.className = 'dt-alteditor-lite-search-select__no-results';
+      noResultsElement.className = 'alteditor-lite-search-select__no-results';
       noResultsElement.textContent = this.messages.noResults;
       optionFragment.append(noResultsElement);
       this.listboxElement.replaceChildren(optionFragment);
@@ -855,11 +855,11 @@ export class SearchSelect<TValue extends string | number> {
     if (this.activeToken !== token) {
       this.optionElementByToken
         .get(this.activeToken ?? '')
-        ?.classList.remove('dt-alteditor-lite-search-select__option--active');
+        ?.classList.remove('alteditor-lite-search-select__option--active');
     }
     this.optionElementByToken
       .get(token ?? '')
-      ?.classList.add('dt-alteditor-lite-search-select__option--active');
+      ?.classList.add('alteditor-lite-search-select__option--active');
 
     this.activeToken = token;
     const activeOptionElement =
@@ -975,7 +975,7 @@ export class SearchSelect<TValue extends string | number> {
       this.searchAbortController = undefined;
       this.isLoading = false;
       this.updateBusyState();
-      this.element.classList.add('dt-alteditor-lite-search-select--error');
+      this.element.classList.add('alteditor-lite-search-select--error');
       this.renderRemoteFeedback('error', this.messages.loadError);
       return;
     }
@@ -999,10 +999,10 @@ export class SearchSelect<TValue extends string | number> {
             option,
             token,
           }));
-          this.element.classList.remove('dt-alteditor-lite-search-select--error');
+          this.element.classList.remove('alteditor-lite-search-select--error');
           this.renderOptionElements();
         } catch {
-          this.element.classList.add('dt-alteditor-lite-search-select--error');
+          this.element.classList.add('alteditor-lite-search-select--error');
           this.renderRemoteFeedback('error', this.messages.loadError);
         }
       },
@@ -1018,7 +1018,7 @@ export class SearchSelect<TValue extends string | number> {
         this.searchAbortController = undefined;
         this.isLoading = false;
         this.updateBusyState();
-        this.element.classList.add('dt-alteditor-lite-search-select--error');
+        this.element.classList.add('alteditor-lite-search-select--error');
         this.renderRemoteFeedback('error', this.messages.loadError);
       },
     );
@@ -1031,7 +1031,7 @@ export class SearchSelect<TValue extends string | number> {
     this.filteredEntries = [];
     this.optionElementByToken.clear();
     const feedback = document.createElement('div');
-    feedback.className = `dt-alteditor-lite-search-select__feedback dt-alteditor-lite-search-select__feedback--${state}`;
+    feedback.className = `alteditor-lite-search-select__feedback alteditor-lite-search-select__feedback--${state}`;
     feedback.textContent = message;
     this.listboxElement.replaceChildren(feedback);
     this.resultStatusElement.textContent = message;
@@ -1097,7 +1097,7 @@ export class SearchSelect<TValue extends string | number> {
         this.selectedResolvedOption = option;
         this.selectedToken = this.tokenMap.tokenForValue(value);
         this.inputElement.value = option.label;
-        this.element.classList.remove('dt-alteditor-lite-search-select--error');
+        this.element.classList.remove('alteditor-lite-search-select--error');
         this.resultStatusElement.textContent = formatAnnouncement(
           this.messages.selection,
           { label: option.label },
@@ -1122,7 +1122,7 @@ export class SearchSelect<TValue extends string | number> {
   }
 
   private showResolveError(): void {
-    this.element.classList.add('dt-alteditor-lite-search-select--error');
+    this.element.classList.add('alteditor-lite-search-select--error');
     this.resultStatusElement.textContent = this.messages.loadError;
     if (this.isOpen) {
       this.renderRemoteFeedback('error', this.messages.loadError);

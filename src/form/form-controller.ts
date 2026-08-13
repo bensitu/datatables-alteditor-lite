@@ -154,7 +154,7 @@ export class EditorFormController<
   ) {
     this.configuredFieldNames = new Set(fields.map(({ name }) => name));
     this.element = document.createElement('form');
-    this.element.className = 'dt-alteditor-lite-form';
+    this.element.className = 'alteditor-lite-form';
     this.element.id = `${instanceId}-form`;
     this.element.noValidate = true;
     this.invalidMessage = language.validation.invalid;
@@ -164,7 +164,7 @@ export class EditorFormController<
         : new TemplateFormLayout(template, fields, instanceId);
 
     this.submissionErrorElement = document.createElement('div');
-    this.submissionErrorElement.className = 'dt-alteditor-lite-form__submission-error';
+    this.submissionErrorElement.className = 'alteditor-lite-form__submission-error';
     this.submissionErrorElement.hidden = true;
     this.submissionErrorElement.setAttribute('role', 'alert');
     this.element.append(this.layout.element, this.submissionErrorElement);

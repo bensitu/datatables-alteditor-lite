@@ -51,7 +51,7 @@ export class TemplateFormLayout<TFormValues extends object> implements FormLayou
     fields: readonly FieldConfig<TFormValues>[],
     instanceId: string,
   ) {
-    this.element.className = 'dt-alteditor-lite-form__layout';
+    this.element.className = 'alteditor-lite-form__layout';
     this.element.append(resolveTemplateSource(source));
     if (this.element.querySelector('form') !== null) {
       throw new EditorConfigurationError(
@@ -89,7 +89,7 @@ export class TemplateFormLayout<TFormValues extends object> implements FormLayou
           `Dialog form template contains more than one slot for "${fieldName}".`,
         );
       }
-      slot.classList.add('dt-alteditor-lite-form__slot');
+      slot.classList.add('alteditor-lite-form__slot');
       this.slotsByFieldName.set(fieldName, slot);
     }
 
@@ -111,7 +111,7 @@ export class TemplateFormLayout<TFormValues extends object> implements FormLayou
         );
       }
       slotElement = document.createElement('div');
-      slotElement.className = 'dt-alteditor-lite-form__slot';
+      slotElement.className = 'alteditor-lite-form__slot';
       this.element.append(slotElement);
       this.slotsByFieldName.set(fieldName, slotElement);
     }

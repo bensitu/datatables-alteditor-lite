@@ -121,9 +121,9 @@ export function createFieldController<TFormValues extends object>(
 
   if (presentation.label === 'visually-hidden') {
     for (const label of controller.element.querySelectorAll<HTMLElement>(
-      '.dt-alteditor-lite-field__label, .dt-alteditor-lite-field__description',
+      '.alteditor-lite-field__label, .alteditor-lite-field__description',
     )) {
-      label.classList.add('dt-alteditor-lite-visually-hidden');
+      label.classList.add('alteditor-lite-visually-hidden');
     }
   }
   if (presentation.error === 'field') {
@@ -131,7 +131,7 @@ export function createFieldController<TFormValues extends object>(
   }
 
   const errorElement = controller.element.querySelector<HTMLElement>(
-    '.dt-alteditor-lite-field__error',
+    '.alteditor-lite-field__error',
   );
   const errorId = errorElement?.id;
   errorElement?.remove();

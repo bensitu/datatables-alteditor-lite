@@ -121,7 +121,7 @@ function createEditor(
 }
 
 function submitOpenDialog(): void {
-  const formElement = document.querySelector<HTMLFormElement>('.dt-alteditor-lite-form');
+  const formElement = document.querySelector<HTMLFormElement>('.alteditor-lite-form');
   if (formElement === null) {
     throw new Error('Expected an open editor form.');
   }
@@ -300,11 +300,11 @@ describe('AltEditorLite synchronous Create', () => {
     expect(beforeSubmit).not.toHaveBeenCalled();
     expect(api.rows().count()).toBe(5);
     expect(
-      editor.getField('rank')?.element.querySelector('.dt-alteditor-lite-field__error')
+      editor.getField('rank')?.element.querySelector('.alteditor-lite-field__error')
         ?.textContent,
     ).toContain('Rank must be at least the length of the name.');
     expect(
-      document.querySelector('.dt-alteditor-lite-form__submission-error')?.textContent,
+      document.querySelector('.alteditor-lite-form__submission-error')?.textContent,
     ).toContain('Review the related values.');
   });
 
@@ -464,7 +464,7 @@ describe('AltEditorLite synchronous Create', () => {
       ?.dispatchEvent(new Event('input', { bubbles: true }));
     await vi.waitFor(() => {
       expect(
-        document.querySelector<HTMLElement>('.dt-alteditor-lite-form__submission-error')
+        document.querySelector<HTMLElement>('.alteditor-lite-form__submission-error')
           ?.hidden,
       ).toBe(true);
     });
@@ -516,7 +516,7 @@ describe('AltEditorLite synchronous Create', () => {
     expect(errorListener).not.toHaveBeenCalled();
     resolveDependency?.({ rank: { value: 99 } });
     await Promise.resolve();
-    expect(document.querySelector('.dt-alteditor-lite-dialog')).toBeNull();
+    expect(document.querySelector('.alteditor-lite-dialog')).toBeNull();
   });
 
   it('uses a custom Create layout while preserving validation focus and errors', async () => {
@@ -563,7 +563,7 @@ describe('AltEditorLite synchronous Create', () => {
       expect(nameSlot?.querySelector('[aria-invalid="true"]')).not.toBeNull();
     });
     expect(document.activeElement).toBe(
-      nameSlot?.querySelector('.dt-alteditor-lite-field__control'),
+      nameSlot?.querySelector('.alteditor-lite-field__control'),
     );
 
     editor.getField('name')?.setValue('Custom layout');
@@ -634,7 +634,7 @@ describe('AltEditorLite synchronous Create', () => {
     await vi.waitFor(() => {
       expect(editor.getState().status).toBe('open');
       expect(
-        document.querySelector('.dt-alteditor-lite-dialog__errors')?.textContent,
+        document.querySelector('.alteditor-lite-dialog__errors')?.textContent,
       ).toContain('must return synchronously');
     });
     expect(api.rows().count()).toBe(5);
@@ -662,7 +662,7 @@ describe('AltEditorLite synchronous Create', () => {
     expect(editor.getState()).toMatchObject({ action: 'create', status: 'open' });
     expect(api.rows().count()).toBe(5);
     expect(
-      document.querySelector('.dt-alteditor-lite-dialog__errors')?.textContent,
+      document.querySelector('.alteditor-lite-dialog__errors')?.textContent,
     ).toContain('must return a complete row object');
   });
 
@@ -725,9 +725,7 @@ describe('AltEditorLite synchronous Create', () => {
     const destroyListener = vi.fn();
     tableElement.addEventListener('alteditor-lite:destroy', destroyListener);
     await editor.openCreateDialog();
-    const formElement = document.querySelector<HTMLFormElement>(
-      '.dt-alteditor-lite-form',
-    );
+    const formElement = document.querySelector<HTMLFormElement>('.alteditor-lite-form');
 
     editor.destroy();
     formElement?.dispatchEvent(
@@ -738,7 +736,7 @@ describe('AltEditorLite synchronous Create', () => {
     );
 
     expect(destroyListener).toHaveBeenCalledOnce();
-    expect(document.querySelector('.dt-alteditor-lite-dialog')).toBeNull();
+    expect(document.querySelector('.alteditor-lite-dialog')).toBeNull();
     expect(api.rows().count()).toBe(5);
     expect(api.altEditorLite()).toBeNull();
   });

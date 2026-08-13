@@ -21,7 +21,7 @@ export function createFieldMountPoint(element: HTMLElement): FieldMountPoint {
     },
     setVisible: (visible) => {
       element.hidden = !visible;
-      element.classList.toggle('dt-alteditor-lite-form__slot--hidden', !visible);
+      element.classList.toggle('alteditor-lite-form__slot--hidden', !visible);
     },
   };
 }

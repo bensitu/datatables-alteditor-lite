@@ -66,15 +66,15 @@ export function createNativeControlController<TFormValues extends object, TValue
   const errorElement = document.createElement('div');
   const errorId = `${fieldId}-error`;
 
-  fieldElement.className = 'dt-alteditor-lite-field';
+  fieldElement.className = 'alteditor-lite-field';
   fieldElement.dataset['fieldName'] = config.name;
-  errorElement.className = 'dt-alteditor-lite-field__error';
+  errorElement.className = 'alteditor-lite-field__error';
   errorElement.id = errorId;
   errorElement.hidden = true;
   errorElement.setAttribute('aria-live', 'polite');
 
   control.id = fieldId;
-  control.classList.add('dt-alteditor-lite-field__control');
+  control.classList.add('alteditor-lite-field__control');
   control.setAttribute('aria-describedby', errorId);
   control.required = config.required ?? false;
   control.setAttribute('aria-required', String(control.required));
@@ -90,15 +90,15 @@ export function createNativeControlController<TFormValues extends object, TValue
   ) {
     const labelElement = document.createElement('label');
     const labelTextElement = document.createElement('span');
-    labelElement.className = 'dt-alteditor-lite-checkbox';
+    labelElement.className = 'alteditor-lite-checkbox';
     labelElement.htmlFor = fieldId;
-    labelTextElement.className = 'dt-alteditor-lite-field__label';
+    labelTextElement.className = 'alteditor-lite-field__label';
     labelTextElement.textContent = config.label;
     labelElement.append(control, labelTextElement);
     fieldElement.append(labelElement);
   } else if (config.label !== undefined) {
     const labelElement = document.createElement('label');
-    labelElement.className = 'dt-alteditor-lite-field__label';
+    labelElement.className = 'alteditor-lite-field__label';
     labelElement.htmlFor = fieldId;
     labelElement.textContent = config.label;
     fieldElement.append(labelElement);
@@ -110,7 +110,7 @@ export function createNativeControlController<TFormValues extends object, TValue
   if (config.description !== undefined) {
     const descriptionElement = document.createElement('div');
     const descriptionId = `${fieldId}-description`;
-    descriptionElement.className = 'dt-alteditor-lite-field__description';
+    descriptionElement.className = 'alteditor-lite-field__description';
     descriptionElement.id = descriptionId;
     descriptionElement.textContent = config.description;
     control.setAttribute('aria-describedby', `${descriptionId} ${errorId}`);

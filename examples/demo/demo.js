@@ -840,7 +840,7 @@ async function applyRenderedWorkflowValue(renderedControl, fieldName, fieldLabel
     await workflowEditor.openInlineEdit(cellIndex.row, `${fieldName}:name`);
     const activeCell = workflowTable.cell(cellIndex.row, cellIndex.column).node();
     const inlineControl = activeCell?.querySelector(
-      '.alteditor-lite-inline .dt-alteditor-lite-field__control',
+      '.alteditor-lite-inline .alteditor-lite-field__control',
     );
     isApplyingRenderedWorkflowControl = true;
     if (inlineControl instanceof HTMLSelectElement) {

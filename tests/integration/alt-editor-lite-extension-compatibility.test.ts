@@ -173,7 +173,7 @@ function createEditor(api: Api<TestRow>): AltEditorLite<TestRow, ExtensionValues
 }
 
 function submitForm(): void {
-  const formElement = document.querySelector<HTMLFormElement>('.dt-alteditor-lite-form');
+  const formElement = document.querySelector<HTMLFormElement>('.alteditor-lite-form');
   if (formElement === null) {
     throw new Error('Expected an open editor form.');
   }

@@ -497,7 +497,7 @@ test('always confirms Remove and restores focus after keyboard activation', asyn
 
   const dialog = page.locator('dialog');
   await expect(dialog).toBeVisible();
-  await expect(dialog.locator('.dt-alteditor-lite-form')).toHaveCount(0);
+  await expect(dialog.locator('.alteditor-lite-form')).toHaveCount(0);
   await expect(dialog).toContainText('Selected rows: 1.');
   await expect(page.getByRole('button', { name: 'Cancel' })).toBeFocused();
   await page.keyboard.press('Tab');
@@ -673,7 +673,7 @@ test('keeps Hybrid Dialog Edit available while changing employee selection', asy
 
   const activeControl = dialog.getByRole('checkbox', { name: 'Active' });
   const activeRow = activeControl.locator('..');
-  const activeLabel = activeRow.locator('.dt-alteditor-lite-field__label');
+  const activeLabel = activeRow.locator('.alteditor-lite-field__label');
   const [activeBox, activeLabelBox, activeRowBox] = await Promise.all([
     activeControl.boundingBox(),
     activeLabel.boundingBox(),

@@ -1,202 +1,204 @@
 :root {
-  --dt-alteditor-lite-dialog-width: 42rem;
-  --dt-alteditor-lite-spacing: 1rem;
-  --dt-alteditor-lite-border-radius: 0.5rem;
-  --dt-alteditor-lite-error-color: #b42318;
-  --dt-alteditor-lite-error-text-color: #fff;
-  --dt-alteditor-lite-overlay-color: rgb(0 0 0 / 45%);
-  --dt-alteditor-lite-surface-color: Canvas;
-  --dt-alteditor-lite-text-color: CanvasText;
-  --dt-alteditor-lite-border-color: rgb(127 127 127 / 40%);
-  --dt-alteditor-lite-focus-color: Highlight;
-  --dt-alteditor-lite-primary-color: #005a9e;
-  --dt-alteditor-lite-primary-text-color: #fff;
-  --dt-alteditor-lite-option-active-color: Highlight;
-  --dt-alteditor-lite-option-active-text-color: HighlightText;
-  --dt-alteditor-lite-popup-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 20%);
-  --dt-alteditor-lite-search-select-max-height: 16rem;
+  --alteditor-lite-dialog-width: 42rem;
+  --alteditor-lite-spacing: 1rem;
+  --alteditor-lite-border-radius: 0.5rem;
+  --alteditor-lite-error-color: #b42318;
+  --alteditor-lite-error-text-color: #fff;
+  --alteditor-lite-overlay-color: rgb(0 0 0 / 45%);
+  --alteditor-lite-surface-color: Canvas;
+  --alteditor-lite-text-color: CanvasText;
+  --alteditor-lite-border-color: rgb(127 127 127 / 40%);
+  --alteditor-lite-focus-color: Highlight;
+  --alteditor-lite-primary-color: #005a9e;
+  --alteditor-lite-primary-text-color: #fff;
+  --alteditor-lite-option-active-color: Highlight;
+  --alteditor-lite-option-active-text-color: HighlightText;
+  --alteditor-lite-popup-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 20%);
+  --alteditor-lite-search-select-max-height: 16rem;
 }
 
 @supports (color: color-mix(in srgb, black, white)) {
   :root {
-    --dt-alteditor-lite-border-color: color-mix(in srgb, CanvasText 25%, transparent);
+    --alteditor-lite-border-color: color-mix(in srgb, CanvasText 25%, transparent);
   }
 }
 
-.dt-alteditor-lite-dialog {
+.alteditor-lite-dialog {
+  box-sizing: border-box;
   width: min(
-    calc(100% - (2 * var(--dt-alteditor-lite-spacing))),
-    var(--dt-alteditor-lite-dialog-width)
+    calc(100% - (2 * var(--alteditor-lite-spacing))),
+    var(--alteditor-lite-dialog-width)
   );
   max-width: none;
-  max-height: var(--dt-alteditor-lite-dialog-max-height, calc(100vh - 2rem));
+  max-height: var(--alteditor-lite-dialog-max-height, calc(100vh - 2rem));
   padding: 0;
   overflow: hidden;
-  color: var(--dt-alteditor-lite-text-color);
+  color: var(--alteditor-lite-text-color);
   color-scheme: light dark;
-  background: var(--dt-alteditor-lite-surface-color);
-  border: 1px solid var(--dt-alteditor-lite-border-color);
-  border-radius: var(--dt-alteditor-lite-border-radius);
+  background: var(--alteditor-lite-surface-color);
+  border: 1px solid var(--alteditor-lite-border-color);
+  border-radius: var(--alteditor-lite-border-radius);
 }
 
 @supports (height: 100dvh) {
-  .dt-alteditor-lite-dialog {
-    max-height: var(--dt-alteditor-lite-dialog-max-height, calc(100dvh - 2rem));
+  .alteditor-lite-dialog {
+    max-height: var(--alteditor-lite-dialog-max-height, calc(100dvh - 2rem));
   }
 }
 
-.dt-alteditor-lite-dialog::backdrop {
-  background: var(--dt-alteditor-lite-overlay-color);
+.alteditor-lite-dialog::backdrop {
+  background: var(--alteditor-lite-overlay-color);
 }
 
-.dt-alteditor-lite-dialog__surface {
+.alteditor-lite-dialog__surface {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto auto;
   max-height: inherit;
 }
 
-.dt-alteditor-lite-dialog__header,
-.dt-alteditor-lite-dialog__body,
-.dt-alteditor-lite-dialog__errors,
-.dt-alteditor-lite-dialog__footer {
-  padding: var(--dt-alteditor-lite-spacing);
+.alteditor-lite-dialog__header,
+.alteditor-lite-dialog__body,
+.alteditor-lite-dialog__errors,
+.alteditor-lite-dialog__footer {
+  padding: var(--alteditor-lite-spacing);
 }
 
-.dt-alteditor-lite-dialog__header {
-  border-bottom: 1px solid var(--dt-alteditor-lite-border-color);
+.alteditor-lite-dialog__header {
+  border-bottom: 1px solid var(--alteditor-lite-border-color);
 }
 
-.dt-alteditor-lite-dialog__title {
+.alteditor-lite-dialog__title {
   margin: 0;
   font: inherit;
   font-size: 1.25rem;
   font-weight: 650;
 }
 
-.dt-alteditor-lite-dialog__body {
+.alteditor-lite-dialog__body {
   overflow: auto;
 }
 
-.dt-alteditor-lite-dialog__errors,
-.dt-alteditor-lite-form__submission-error,
-.dt-alteditor-lite-field__error {
-  color: var(--dt-alteditor-lite-error-color);
+.alteditor-lite-dialog__errors,
+.alteditor-lite-form__submission-error,
+.alteditor-lite-field__error {
+  color: var(--alteditor-lite-error-color);
 }
 
-.dt-alteditor-lite-dialog__errors:empty,
-.dt-alteditor-lite-form__submission-error:empty,
-.dt-alteditor-lite-field__error:empty {
+.alteditor-lite-dialog__errors:empty,
+.alteditor-lite-form__submission-error:empty,
+.alteditor-lite-field__error:empty {
   display: none;
 }
 
-.dt-alteditor-lite-dialog__footer {
+.alteditor-lite-dialog__footer {
   display: flex;
-  gap: calc(var(--dt-alteditor-lite-spacing) / 2);
+  gap: calc(var(--alteditor-lite-spacing) / 2);
   justify-content: flex-end;
-  border-top: 1px solid var(--dt-alteditor-lite-border-color);
+  border-top: 1px solid var(--alteditor-lite-border-color);
 }
 
-.dt-alteditor-lite-dialog__button {
+.alteditor-lite-dialog__button {
   min-height: 2.5rem;
   padding: 0.5rem 1rem;
   color: inherit;
   font: inherit;
+  cursor: pointer;
   background: transparent;
-  border: 1px solid var(--dt-alteditor-lite-border-color);
-  border-radius: calc(var(--dt-alteditor-lite-border-radius) / 1.5);
+  border: 1px solid var(--alteditor-lite-border-color);
+  border-radius: calc(var(--alteditor-lite-border-radius) / 1.5);
 }
 
-.dt-alteditor-lite-dialog__button--submit {
-  color: var(--dt-alteditor-lite-primary-text-color);
-  background: var(--dt-alteditor-lite-primary-color);
-  border-color: var(--dt-alteditor-lite-primary-color);
+.alteditor-lite-dialog__button--submit {
+  color: var(--alteditor-lite-primary-text-color);
+  background: var(--alteditor-lite-primary-color);
+  border-color: var(--alteditor-lite-primary-color);
 }
 
-.dt-alteditor-lite-dialog__button--destructive {
-  color: var(--dt-alteditor-lite-error-text-color);
-  background: var(--dt-alteditor-lite-error-color);
-  border-color: var(--dt-alteditor-lite-error-color);
+.alteditor-lite-dialog__button--destructive {
+  color: var(--alteditor-lite-error-text-color);
+  background: var(--alteditor-lite-error-color);
+  border-color: var(--alteditor-lite-error-color);
 }
 
-.dt-alteditor-lite-dialog__button:disabled {
+.alteditor-lite-dialog__button:disabled {
   cursor: not-allowed;
   opacity: 0.6;
 }
 
-.dt-alteditor-lite-form {
+.alteditor-lite-form {
   display: grid;
-  gap: var(--dt-alteditor-lite-spacing);
+  gap: var(--alteditor-lite-spacing);
 }
 
-.dt-alteditor-lite-form__layout {
+.alteditor-lite-form__layout {
   display: grid;
-  gap: var(--dt-alteditor-lite-spacing);
+  gap: var(--alteditor-lite-spacing);
 }
 
-.dt-alteditor-lite-form__slot--hidden {
+.alteditor-lite-form__slot--hidden {
   display: none;
 }
 
-.dt-alteditor-lite-remove-confirmation {
+.alteditor-lite-remove-confirmation {
   display: grid;
-  gap: calc(var(--dt-alteditor-lite-spacing) / 2);
+  gap: calc(var(--alteditor-lite-spacing) / 2);
 }
 
-.dt-alteditor-lite-remove-confirmation > * {
+.alteditor-lite-remove-confirmation > * {
   margin: 0;
 }
 
-.dt-alteditor-lite-remove-confirmation__warning {
+.alteditor-lite-remove-confirmation__warning {
   font-weight: 600;
 }
 
-.dt-alteditor-lite-form[aria-busy='true'] {
+.alteditor-lite-form[aria-busy='true'] {
   opacity: 0.75;
 }
 
-.dt-alteditor-lite-field {
+.alteditor-lite-field {
   display: grid;
-  gap: calc(var(--dt-alteditor-lite-spacing) / 2);
+  gap: calc(var(--alteditor-lite-spacing) / 2);
 }
 
-.dt-alteditor-lite-field__label {
+.alteditor-lite-field__label {
   font-weight: 600;
 }
 
-.dt-alteditor-lite-radio {
+.alteditor-lite-radio {
   box-sizing: border-box;
   display: grid;
   gap: 0.375rem;
   width: 100%;
 }
 
-.dt-alteditor-lite-field__control {
+.alteditor-lite-field__control {
   box-sizing: border-box;
   color: inherit;
   font: inherit;
 }
 
-.dt-alteditor-lite-field__control:not([type='checkbox']) {
+.alteditor-lite-field__control:not([type='checkbox']) {
   width: 100%;
   min-height: 2.5rem;
   padding: 0.5rem;
-  background: var(--dt-alteditor-lite-surface-color);
-  border: 1px solid var(--dt-alteditor-lite-border-color);
-  border-radius: calc(var(--dt-alteditor-lite-border-radius) / 1.5);
+  background: var(--alteditor-lite-surface-color);
+  border: 1px solid var(--alteditor-lite-border-color);
+  border-radius: calc(var(--alteditor-lite-border-radius) / 1.5);
 }
 
-.dt-alteditor-lite-checkbox {
+.alteditor-lite-checkbox {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto minmax(2.5rem, auto);
-  gap: calc(var(--dt-alteditor-lite-spacing) / 2);
+  gap: calc(var(--alteditor-lite-spacing) / 2);
   align-items: center;
   width: 100%;
   padding: 0;
   cursor: pointer;
 }
 
-.dt-alteditor-lite-checkbox > .dt-alteditor-lite-field__control {
+.alteditor-lite-checkbox > .alteditor-lite-field__control {
   grid-column: 1;
   grid-row: 2;
   flex: 0 0 auto;
@@ -205,37 +207,37 @@
   min-height: 0;
   padding: 0;
   margin: 0;
-  accent-color: var(--dt-alteditor-lite-primary-color);
+  accent-color: var(--alteditor-lite-primary-color);
 }
 
-.dt-alteditor-lite-checkbox > .dt-alteditor-lite-field__label {
+.alteditor-lite-checkbox > .alteditor-lite-field__label {
   grid-column: 1;
   grid-row: 1;
 }
 
-input[type='file'].dt-alteditor-lite-field__control {
+input[type='file'].alteditor-lite-field__control {
   padding: 0;
 }
 
-input[type='file'].dt-alteditor-lite-field__control::file-selector-button {
+input[type='file'].alteditor-lite-field__control::file-selector-button {
   min-height: calc(2.5rem - 2px);
   padding: 0.5rem;
   margin-inline-end: 0.5rem;
   color: inherit;
   font: inherit;
   cursor: pointer;
-  background: var(--dt-alteditor-lite-surface-color);
+  background: var(--alteditor-lite-surface-color);
   border: 0;
-  border-inline-end: 1px solid var(--dt-alteditor-lite-border-color);
+  border-inline-end: 1px solid var(--alteditor-lite-border-color);
 }
 
-input[type='file'].dt-alteditor-lite-field__control:disabled::file-selector-button {
+input[type='file'].alteditor-lite-field__control:disabled::file-selector-button {
   cursor: not-allowed;
 }
 
-.dt-alteditor-lite-field__control[aria-invalid='true'] {
-  border-color: var(--dt-alteditor-lite-error-color);
-  box-shadow: 0 0 0 1px var(--dt-alteditor-lite-error-color);
+.alteditor-lite-field__control[aria-invalid='true'] {
+  border-color: var(--alteditor-lite-error-color);
+  box-shadow: 0 0 0 1px var(--alteditor-lite-error-color);
 }
 
 table[class~='dataTable'] tbody td.alteditor-lite-cell--editing {
@@ -252,7 +254,7 @@ table[class~='dataTable'] tbody td.alteditor-lite-cell--editing::after {
   box-sizing: border-box;
   pointer-events: none;
   content: '';
-  border: 2px solid var(--dt-alteditor-lite-focus-color);
+  border: 2px solid var(--alteditor-lite-focus-color);
 }
 
 .alteditor-lite-inline {
@@ -261,19 +263,19 @@ table[class~='dataTable'] tbody td.alteditor-lite-cell--editing::after {
   min-height: 2rem;
   width: 100%;
   min-width: 0;
-  color: var(--dt-alteditor-lite-text-color);
+  color: var(--alteditor-lite-text-color);
   color-scheme: light dark;
   align-items: center;
 }
 
 .alteditor-lite-inline__control,
-.alteditor-lite-inline .dt-alteditor-lite-field,
-.alteditor-lite-inline .dt-alteditor-lite-search-select {
+.alteditor-lite-inline .alteditor-lite-field,
+.alteditor-lite-inline .alteditor-lite-search-select {
   min-width: 0;
   width: 100%;
 }
 
-.dt-alteditor-lite-inline-hover-target {
+.alteditor-lite-inline-hover-target {
   position: relative;
 }
 
@@ -286,7 +288,7 @@ table[class~='dataTable'] tbody td.alteditor-lite-cell--editing::after {
   width: 1.5rem;
   height: 1.5rem;
   padding: 0.2rem;
-  color: var(--dt-alteditor-lite-primary-color);
+  color: var(--alteditor-lite-primary-color);
   cursor: pointer;
   background: transparent;
   border: 0;
@@ -323,7 +325,7 @@ table[class~='dataTable'] tbody td.alteditor-lite-cell--editing::after {
 
 .alteditor-lite-inline--actions
   .alteditor-lite-inline__control:has(
-    .dt-alteditor-lite-field__control:is(
+    .alteditor-lite-field__control:is(
       [type='date'],
       [type='datetime-local'],
       [type='month'],
@@ -347,8 +349,8 @@ table[class~='dataTable'] tbody td.alteditor-lite-cell--editing::after {
   padding-inline-end: 0.25rem;
 }
 
-.alteditor-lite-inline--actions:has(.dt-alteditor-lite-search-select),
-.alteditor-lite-inline--actions:has(.dt-alteditor-lite-search-select)
+.alteditor-lite-inline--actions:has(.alteditor-lite-search-select),
+.alteditor-lite-inline--actions:has(.alteditor-lite-search-select)
   .alteditor-lite-inline__actions {
   flex-wrap: nowrap;
 }
@@ -358,18 +360,18 @@ table[class~='dataTable'] tbody td.alteditor-lite-cell--editing::after {
   width: 1.5rem;
   height: 1.5rem;
   padding: 0.25rem;
-  color: var(--dt-alteditor-lite-text-color);
+  color: var(--alteditor-lite-text-color);
   cursor: pointer;
-  background: var(--dt-alteditor-lite-surface-color);
-  border: 1px solid var(--dt-alteditor-lite-border-color);
-  border-radius: calc(var(--dt-alteditor-lite-border-radius) / 2);
+  background: var(--alteditor-lite-surface-color);
+  border: 1px solid var(--alteditor-lite-border-color);
+  border-radius: calc(var(--alteditor-lite-border-radius) / 2);
   place-items: center;
 }
 
 .alteditor-lite-inline__action--submit {
-  color: var(--dt-alteditor-lite-primary-text-color);
-  background: var(--dt-alteditor-lite-primary-color);
-  border-color: var(--dt-alteditor-lite-primary-color);
+  color: var(--alteditor-lite-primary-text-color);
+  background: var(--alteditor-lite-primary-color);
+  border-color: var(--alteditor-lite-primary-color);
 }
 
 .alteditor-lite-inline__action:disabled {
@@ -389,7 +391,7 @@ table[class~='dataTable'] tbody td.alteditor-lite-cell--editing::after {
 table[class~='dataTable']
   tbody
   td.alteditor-lite-cell--editing:has(.alteditor-lite-inline--invalid)::after {
-  border-color: var(--dt-alteditor-lite-error-color);
+  border-color: var(--alteditor-lite-error-color);
 }
 
 @media (forced-colors: active) {
@@ -417,19 +419,19 @@ table[class~='dataTable']
   }
 }
 
-textarea.dt-alteditor-lite-field__control {
+textarea.alteditor-lite-field__control {
   min-height: 6rem;
   resize: vertical;
 }
 
 /* The base description style also applies inside the more specific inline host. */
 /* stylelint-disable-next-line no-descending-specificity */
-.dt-alteditor-lite-field__description {
+.alteditor-lite-field__description {
   font-size: 0.875rem;
   opacity: 0.75;
 }
 
-.dt-alteditor-lite-radio__option {
+.alteditor-lite-radio__option {
   display: flex;
   gap: 0.5rem;
   align-items: center;
@@ -437,32 +439,32 @@ textarea.dt-alteditor-lite-field__control {
   cursor: pointer;
 }
 
-.dt-alteditor-lite-radio__option > input {
+.alteditor-lite-radio__option > input {
   flex: 0 0 auto;
   width: 1.125rem;
   height: 1.125rem;
   margin: 0;
-  accent-color: var(--dt-alteditor-lite-primary-color);
+  accent-color: var(--alteditor-lite-primary-color);
 }
 
-.dt-alteditor-lite-radio__option:has(> input:disabled) {
+.alteditor-lite-radio__option:has(> input:disabled) {
   cursor: not-allowed;
   opacity: 0.65;
 }
 
 /* The base SearchSelect layout also applies inside the more specific inline host. */
 /* stylelint-disable-next-line no-descending-specificity */
-.dt-alteditor-lite-search-select {
+.alteditor-lite-search-select {
   position: relative;
   display: grid;
   min-width: 0;
 }
 
-.dt-alteditor-lite-search-select > .dt-alteditor-lite-field__control {
+.alteditor-lite-search-select > .alteditor-lite-field__control {
   padding-inline-end: 2.75rem;
 }
 
-.dt-alteditor-lite-search-select__clear {
+.alteditor-lite-search-select__clear {
   position: absolute;
   inset-block-start: 0.375rem;
   inset-inline-end: 0.375rem;
@@ -478,82 +480,82 @@ textarea.dt-alteditor-lite-field__control {
   cursor: pointer;
   background: transparent;
   border: 0;
-  border-radius: calc(var(--dt-alteditor-lite-border-radius) / 2);
+  border-radius: calc(var(--alteditor-lite-border-radius) / 2);
   place-items: center;
 }
 
-.dt-alteditor-lite-search-select__clear[hidden] {
+.alteditor-lite-search-select__clear[hidden] {
   display: none;
 }
 
-.dt-alteditor-lite-search-select__clear:disabled {
+.alteditor-lite-search-select__clear:disabled {
   cursor: not-allowed;
   opacity: 0.5;
 }
 
-.dt-alteditor-lite-search-select__listbox {
+.alteditor-lite-search-select__listbox {
   position: absolute;
   z-index: 1;
   inset-block-start: calc(100% + 0.25rem);
   inset-inline: 0;
   box-sizing: border-box;
-  max-height: var(--dt-alteditor-lite-search-select-max-height);
+  max-height: var(--alteditor-lite-search-select-max-height);
   overflow: auto;
   overscroll-behavior: contain;
-  color: var(--dt-alteditor-lite-text-color);
-  background: var(--dt-alteditor-lite-surface-color);
-  border: 1px solid var(--dt-alteditor-lite-border-color);
-  border-radius: calc(var(--dt-alteditor-lite-border-radius) / 1.5);
-  box-shadow: var(--dt-alteditor-lite-popup-shadow);
+  color: var(--alteditor-lite-text-color);
+  background: var(--alteditor-lite-surface-color);
+  border: 1px solid var(--alteditor-lite-border-color);
+  border-radius: calc(var(--alteditor-lite-border-radius) / 1.5);
+  box-shadow: var(--alteditor-lite-popup-shadow);
 }
 
-.dt-alteditor-lite-search-select__listbox[hidden] {
+.alteditor-lite-search-select__listbox[hidden] {
   display: none;
 }
 
-.dt-alteditor-lite-search-select__option,
-.dt-alteditor-lite-search-select__no-results,
-.dt-alteditor-lite-search-select__feedback {
+.alteditor-lite-search-select__option,
+.alteditor-lite-search-select__no-results,
+.alteditor-lite-search-select__feedback {
   min-height: 2.25rem;
   padding: 0.5rem 0.625rem;
   overflow-wrap: anywhere;
 }
 
-.dt-alteditor-lite-search-select__option {
+.alteditor-lite-search-select__option {
   cursor: pointer;
 }
 
-.dt-alteditor-lite-search-select__option:hover,
-.dt-alteditor-lite-search-select__option--active {
-  color: var(--dt-alteditor-lite-option-active-text-color);
-  background: var(--dt-alteditor-lite-option-active-color);
+.alteditor-lite-search-select__option:hover,
+.alteditor-lite-search-select__option--active {
+  color: var(--alteditor-lite-option-active-text-color);
+  background: var(--alteditor-lite-option-active-color);
 }
 
-.dt-alteditor-lite-search-select__option[aria-disabled='true'] {
+.alteditor-lite-search-select__option[aria-disabled='true'] {
   color: inherit;
   cursor: not-allowed;
   background: transparent;
   opacity: 0.5;
 }
 
-.dt-alteditor-lite-search-select__no-results {
+.alteditor-lite-search-select__no-results {
   opacity: 0.75;
 }
 
-.dt-alteditor-lite-search-select__feedback {
+.alteditor-lite-search-select__feedback {
   opacity: 0.8;
 }
 
-.dt-alteditor-lite-search-select__feedback--error,
-.dt-alteditor-lite-search-select--error > .dt-alteditor-lite-field__control {
-  color: var(--dt-alteditor-lite-error-color);
+.alteditor-lite-search-select__feedback--error,
+.alteditor-lite-search-select--error > .alteditor-lite-field__control {
+  color: var(--alteditor-lite-error-color);
 }
 
-.dt-alteditor-lite-search-select[aria-busy='true'] {
+.alteditor-lite-search-select[aria-busy='true'] {
   cursor: progress;
 }
 
-.dt-alteditor-lite-visually-hidden {
+.alteditor-lite-visually-hidden {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -565,21 +567,21 @@ textarea.dt-alteditor-lite-field__control {
   border: 0;
 }
 
-.dt-alteditor-lite-dialog__button:focus-visible,
-.dt-alteditor-lite-field__control:focus-visible,
-.dt-alteditor-lite-radio input:focus-visible,
-.dt-alteditor-lite-search-select__clear:focus-visible {
-  outline: 3px solid var(--dt-alteditor-lite-focus-color);
+.alteditor-lite-dialog__button:focus-visible,
+.alteditor-lite-field__control:focus-visible,
+.alteditor-lite-radio input:focus-visible,
+.alteditor-lite-search-select__clear:focus-visible {
+  outline: 3px solid var(--alteditor-lite-focus-color);
   outline-offset: 2px;
 }
 
 .alteditor-lite-inline-hover__trigger:focus-visible,
 .alteditor-lite-inline__action:focus-visible {
-  outline: 3px solid var(--dt-alteditor-lite-focus-color);
+  outline: 3px solid var(--alteditor-lite-focus-color);
   outline-offset: 2px;
 }
 
-.alteditor-lite-inline .dt-alteditor-lite-field__control:not([type='checkbox']) {
+.alteditor-lite-inline .alteditor-lite-field__control:not([type='checkbox']) {
   height: 2rem;
   min-height: 2rem;
   padding: 0.05rem 0.15rem;
@@ -588,7 +590,7 @@ textarea.dt-alteditor-lite-field__control {
   box-shadow: none;
 }
 
-.alteditor-lite-inline .dt-alteditor-lite-checkbox {
+.alteditor-lite-inline .alteditor-lite-checkbox {
   display: flex;
   gap: 0;
   width: 100%;
@@ -597,27 +599,27 @@ textarea.dt-alteditor-lite-field__control {
   padding-inline: 0.25rem;
 }
 
-.alteditor-lite-inline .dt-alteditor-lite-checkbox > .dt-alteditor-lite-field__control {
+.alteditor-lite-inline .alteditor-lite-checkbox > .alteditor-lite-field__control {
   width: 1rem;
   height: 1rem;
 }
 
-.dt-alteditor-lite-checkbox:has(> .dt-alteditor-lite-field__control:disabled) {
+.alteditor-lite-checkbox:has(> .alteditor-lite-field__control:disabled) {
   cursor: not-allowed;
   opacity: 0.65;
 }
 
-.alteditor-lite-inline .dt-alteditor-lite-search-select__clear {
+.alteditor-lite-inline .alteditor-lite-search-select__clear {
   inset-block-start: 50%;
   transform: translateY(-50%);
 }
 
-.alteditor-lite-inline .dt-alteditor-lite-search-select__listbox {
+.alteditor-lite-inline .alteditor-lite-search-select__listbox {
   z-index: 4;
 }
 
-.alteditor-lite-inline .dt-alteditor-lite-field__control:focus-visible,
-.alteditor-lite-inline .dt-alteditor-lite-search-select__clear:focus-visible {
+.alteditor-lite-inline .alteditor-lite-field__control:focus-visible,
+.alteditor-lite-inline .alteditor-lite-search-select__clear:focus-visible {
   outline: 0;
   box-shadow: none;
 }
@@ -639,70 +641,70 @@ textarea.dt-alteditor-lite-field__control {
     min-height: 2.5rem;
   }
 
-  .alteditor-lite-inline .dt-alteditor-lite-field__control:not([type='checkbox']) {
+  .alteditor-lite-inline .alteditor-lite-field__control:not([type='checkbox']) {
     height: 2.5rem;
     min-height: 2.5rem;
   }
 
-  .alteditor-lite-inline .dt-alteditor-lite-checkbox {
+  .alteditor-lite-inline .alteditor-lite-checkbox {
     min-height: 2.5rem;
   }
 }
 
-.dt-alteditor-lite-dialog[aria-busy='true'] .dt-alteditor-lite-dialog__button:disabled {
+.alteditor-lite-dialog[aria-busy='true'] .alteditor-lite-dialog__button:disabled {
   cursor: progress;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --dt-alteditor-lite-error-color: #ffb4ab;
-    --dt-alteditor-lite-error-text-color: #410002;
-    --dt-alteditor-lite-primary-color: #8ecaff;
-    --dt-alteditor-lite-primary-text-color: #001d32;
-    --dt-alteditor-lite-popup-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 55%);
+    --alteditor-lite-error-color: #ffb4ab;
+    --alteditor-lite-error-text-color: #410002;
+    --alteditor-lite-primary-color: #8ecaff;
+    --alteditor-lite-primary-text-color: #001d32;
+    --alteditor-lite-popup-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 55%);
   }
 }
 
 @media (width <= 30rem) {
-  .dt-alteditor-lite-dialog {
+  .alteditor-lite-dialog {
     width: calc(100% - 1rem);
-    max-height: calc(100vh - 1rem);
+    max-height: var(--alteditor-lite-dialog-max-height, calc(100vh - 1rem));
   }
 
-  .dt-alteditor-lite-dialog__header,
-  .dt-alteditor-lite-dialog__body,
-  .dt-alteditor-lite-dialog__errors,
-  .dt-alteditor-lite-dialog__footer {
+  .alteditor-lite-dialog__header,
+  .alteditor-lite-dialog__body,
+  .alteditor-lite-dialog__errors,
+  .alteditor-lite-dialog__footer {
     padding: 0.75rem;
   }
 
-  .dt-alteditor-lite-dialog__footer {
+  .alteditor-lite-dialog__footer {
     flex-wrap: wrap;
   }
 
-  .dt-alteditor-lite-dialog__button {
+  .alteditor-lite-dialog__button {
     flex: 1 1 8rem;
   }
 
-  .dt-alteditor-lite-search-select__listbox {
+  .alteditor-lite-search-select__listbox {
     max-height: min(12rem, 40vh);
   }
 
   @supports (height: 100dvh) {
-    .dt-alteditor-lite-dialog {
-      max-height: calc(100dvh - 1rem);
+    .alteditor-lite-dialog {
+      max-height: var(--alteditor-lite-dialog-max-height, calc(100dvh - 1rem));
     }
 
-    .dt-alteditor-lite-search-select__listbox {
+    .alteditor-lite-search-select__listbox {
       max-height: min(12rem, 40dvh);
     }
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .dt-alteditor-lite-dialog,
-  .dt-alteditor-lite-dialog *,
-  .dt-alteditor-lite-search-select__listbox {
+  .alteditor-lite-dialog,
+  .alteditor-lite-dialog *,
+  .alteditor-lite-search-select__listbox {
     scroll-behavior: auto;
     transition-duration: 0.01ms;
     animation-duration: 0.01ms;

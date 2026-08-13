@@ -39,7 +39,7 @@ function getButton(
   modifier: 'cancel' | 'submit',
 ): HTMLButtonElement {
   const buttonElement = dialogElement.querySelector<HTMLButtonElement>(
-    `.dt-alteditor-lite-dialog__button--${modifier}`,
+    `.alteditor-lite-dialog__button--${modifier}`,
   );
   if (buttonElement === null) {
     throw new Error(`Expected the ${modifier} button.`);
@@ -104,7 +104,7 @@ describe('EditorDialog', () => {
     controller.close();
     expect(dialogElement.open).toBe(false);
     expect(
-      dialogElement.querySelector('.dt-alteditor-lite-dialog__body')?.children,
+      dialogElement.querySelector('.alteditor-lite-dialog__body')?.children,
     ).toHaveLength(0);
     controller.focusInvalidField();
     controller.destroy();
@@ -145,20 +145,20 @@ describe('EditorDialog', () => {
       onSubmit: vi.fn(),
     });
     expect(
-      dialogElement.style.getPropertyValue('--dt-alteditor-lite-dialog-max-height'),
+      dialogElement.style.getPropertyValue('--alteditor-lite-dialog-max-height'),
     ).toBe('868px');
 
     viewportHeight = 600;
     window.dispatchEvent(new Event('resize'));
     expect(
-      dialogElement.style.getPropertyValue('--dt-alteditor-lite-dialog-max-height'),
+      dialogElement.style.getPropertyValue('--alteditor-lite-dialog-max-height'),
     ).toBe('568px');
 
     controller.close();
     viewportHeight = 500;
     window.dispatchEvent(new Event('resize'));
     expect(
-      dialogElement.style.getPropertyValue('--dt-alteditor-lite-dialog-max-height'),
+      dialogElement.style.getPropertyValue('--alteditor-lite-dialog-max-height'),
     ).toBe('568px');
     controller.destroy();
     Reflect.deleteProperty(document.documentElement, 'clientHeight');
@@ -175,7 +175,7 @@ describe('EditorDialog', () => {
     const submitButton = getButton(dialogElement, 'submit');
 
     expect(
-      submitButton.classList.contains('dt-alteditor-lite-dialog__button--destructive'),
+      submitButton.classList.contains('alteditor-lite-dialog__button--destructive'),
     ).toBe(true);
     submitButton.click();
     expect(onSubmit).toHaveBeenCalledOnce();

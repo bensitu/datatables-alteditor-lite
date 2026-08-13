@@ -30,7 +30,7 @@ const FOCUS_RELEVANT_ATTRIBUTES = [
   'type',
 ] as const;
 
-const SEARCH_SELECT_LISTBOX_SELECTOR = '.dt-alteditor-lite-search-select__listbox';
+const SEARCH_SELECT_LISTBOX_SELECTOR = '.alteditor-lite-search-select__listbox';
 
 function computedStyleFor(
   element: HTMLElement,
@@ -152,7 +152,7 @@ export class DialogFocusScope {
         (element) => isFocusable(element, computedStyleByElement),
       ) ??
       this.dialogElement.querySelector<HTMLButtonElement>(
-        '.dt-alteditor-lite-dialog__button--cancel:not([disabled])',
+        '.alteditor-lite-dialog__button--cancel:not([disabled])',
       );
 
     if (initialControl === null) {

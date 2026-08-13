@@ -73,7 +73,7 @@ describe('DialogFocusScope', () => {
     ariaHiddenButton.setAttribute('aria-hidden', 'true');
     cssHiddenContainer.style.display = 'none';
     cssHiddenContainer.append(cssHiddenButton);
-    cancelButton.className = 'dt-alteditor-lite-dialog__button--cancel';
+    cancelButton.className = 'alteditor-lite-dialog__button--cancel';
     contentElement.append(hiddenButton, ariaHiddenButton, cssHiddenContainer);
     dialogElement.append(contentElement, cancelButton);
 

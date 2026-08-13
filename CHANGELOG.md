@@ -51,6 +51,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed the top-level `inline` object; move its properties to `editing.inline`.
 - Removed top-level `closeOnSuccess`; use `editing.dialog.closeOnSuccess`.
 - Renamed the field property `readonly` to `readOnly`.
+- Renamed library-owned CSS selectors from `.dt-alteditor-lite-*` to
+  `.alteditor-lite-*` and custom properties from `--dt-alteditor-lite-*` to
+  `--alteditor-lite-*`.
 - Removed flattened SearchSelect `searchThreshold`, `debounceMs`, `loadOptions`,
   and `resolveOption`; use the nested `search` and `remote` objects.
 

@@ -251,13 +251,11 @@ describe('FormController', () => {
     );
 
     expect(
-      form
-        .getField('profile.name')
-        ?.element.querySelector('.dt-alteditor-lite-field__error')?.textContent,
+      form.getField('profile.name')?.element.querySelector('.alteditor-lite-field__error')
+        ?.textContent,
     ).toBe('Known field error.');
     expect(
-      form.element.querySelector('.dt-alteditor-lite-form__submission-error')
-        ?.textContent,
+      form.element.querySelector('.alteditor-lite-form__submission-error')?.textContent,
     ).toBe('Submission failed. Unknown field error.');
 
     form.showSubmissionError(
@@ -267,7 +265,7 @@ describe('FormController', () => {
       }),
     );
     expect(
-      form.element.querySelector<HTMLElement>('.dt-alteditor-lite-form__submission-error')
+      form.element.querySelector<HTMLElement>('.alteditor-lite-form__submission-error')
         ?.hidden,
     ).toBe(true);
   });
@@ -494,7 +492,7 @@ describe('FormController', () => {
     const form = createForm();
     const inputElement = form.getField('profile.name')?.element.querySelector('input');
     const submissionError = form.element.querySelector<HTMLElement>(
-      '.dt-alteditor-lite-form__submission-error',
+      '.alteditor-lite-form__submission-error',
     );
     changeCallback.mockImplementationOnce(() => {
       throw new Error('Consumer failure.');
@@ -505,7 +503,7 @@ describe('FormController', () => {
       expect(
         form
           .getField('profile.name')
-          ?.element.querySelector('.dt-alteditor-lite-field__error')?.textContent,
+          ?.element.querySelector('.alteditor-lite-field__error')?.textContent,
       ).toBe('A field change callback failed.');
     });
     form.clearErrors();
@@ -525,7 +523,7 @@ describe('FormController', () => {
       expect(
         form
           .getField('profile.name')
-          ?.element.querySelector('.dt-alteditor-lite-field__error')?.textContent,
+          ?.element.querySelector('.alteditor-lite-field__error')?.textContent,
       ).toBe('Change failed.');
     });
   });

@@ -13,7 +13,7 @@ describe('EditorAlertDialog', () => {
     document.body.append(table);
     const alert = new EditorAlertDialog(table, 'alert-test', ENGLISH_LANGUAGE);
     const dialog = document.querySelector<HTMLDialogElement>(
-      '.dt-alteditor-lite-dialog--alert',
+      '.alteditor-lite-dialog--alert',
     );
     if (dialog === null) {
       throw new Error('Expected an alert dialog.');
@@ -38,7 +38,7 @@ describe('EditorAlertDialog', () => {
         didSettle = true;
       });
     expect(dialog.open).toBe(true);
-    expect(dialog.querySelector('.dt-alteditor-lite-dialog__message')?.textContent).toBe(
+    expect(dialog.querySelector('.alteditor-lite-dialog__message')?.textContent).toBe(
       '<strong>Plain message</strong>',
     );
     expect(dialog.querySelector('strong')).toBeNull();
@@ -57,7 +57,7 @@ describe('EditorAlertDialog', () => {
     trigger.focus();
     const alert = new EditorAlertDialog(table, 'destroy-alert-test', ENGLISH_LANGUAGE);
     const dialog = document.querySelector<HTMLDialogElement>(
-      '.dt-alteditor-lite-dialog--alert',
+      '.alteditor-lite-dialog--alert',
     );
     if (dialog === null) {
       throw new Error('Expected an alert dialog.');

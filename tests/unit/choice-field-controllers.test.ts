@@ -96,7 +96,7 @@ describe('radio field controller', () => {
     const signal = new AbortController().signal;
     const groupElement = controller.element.querySelector('[role="radiogroup"]');
     const descriptionElement = controller.element.querySelector(
-      '.dt-alteditor-lite-field__description',
+      '.alteditor-lite-field__description',
     );
 
     expect(controller.element.classList.contains('consumer-field')).toBe(true);

@@ -136,7 +136,7 @@ function createCrudEditor(
 }
 
 function submitForm(): void {
-  const formElement = document.querySelector<HTMLFormElement>('.dt-alteditor-lite-form');
+  const formElement = document.querySelector<HTMLFormElement>('.alteditor-lite-form');
   if (formElement === null) {
     throw new Error('Expected an open editor form.');
   }
@@ -151,7 +151,7 @@ function submitForm(): void {
 
 function confirmRemove(): void {
   const confirmButton = document.querySelector<HTMLButtonElement>(
-    '.dt-alteditor-lite-dialog__button--destructive',
+    '.alteditor-lite-dialog__button--destructive',
   );
   if (confirmButton === null) {
     throw new Error('Expected an open Remove confirmation.');
@@ -273,7 +273,7 @@ describe('AltEditorLite form opening', () => {
     );
 
     expect(editor.getState()).toEqual({ status: 'ready' });
-    expect(document.querySelector('.dt-alteditor-lite-form')).toBeNull();
+    expect(document.querySelector('.alteditor-lite-form')).toBeNull();
     expect(errorListener).toHaveBeenCalledOnce();
     const errorEvent = errorListener.mock.calls[0]?.[0] as
       CustomEvent<unknown> | undefined;
@@ -435,7 +435,7 @@ describe('AltEditorLite Edit snapshots', () => {
     });
     expect(createOperation).not.toHaveBeenCalled();
     expect(
-      tableElement.ownerDocument.querySelector('.dt-alteditor-lite-field__error')
+      tableElement.ownerDocument.querySelector('.alteditor-lite-field__error')
         ?.textContent,
     ).toBe(ENGLISH_LANGUAGE.validation.unique);
     await editor.closeDialog();
@@ -495,7 +495,7 @@ describe('AltEditorLite Edit snapshots', () => {
     expect(beforeSubmit).not.toHaveBeenCalled();
     expect(api.row('#row-a').data()).toEqual(original);
     expect(
-      editor.getField('rank')?.element.querySelector('.dt-alteditor-lite-field__error')
+      editor.getField('rank')?.element.querySelector('.alteditor-lite-field__error')
         ?.textContent,
     ).toContain('Rank must be at least the length of the name.');
   });
@@ -725,9 +725,9 @@ describe('AltEditorLite Remove snapshots', () => {
     }
 
     await editor.openRemoveDialog(['#row-a', '#row-b']);
-    expect(document.querySelector('.dt-alteditor-lite-form')).toBeNull();
+    expect(document.querySelector('.alteditor-lite-form')).toBeNull();
     expect(
-      document.querySelector('.dt-alteditor-lite-remove-confirmation')?.textContent,
+      document.querySelector('.alteditor-lite-remove-confirmation')?.textContent,
     ).toContain('Selected rows: 2.');
     confirmRemove();
     await vi.waitFor(() => {

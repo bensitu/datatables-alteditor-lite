@@ -36,19 +36,19 @@ export function createRadioFieldController<
   let isRequired = config.required ?? false;
   let isDestroyed = false;
 
-  fieldElement.className = 'dt-alteditor-lite-field';
+  fieldElement.className = 'alteditor-lite-field';
   fieldElement.dataset['fieldName'] = config.name;
-  labelElement.className = 'dt-alteditor-lite-field__label';
+  labelElement.className = 'alteditor-lite-field__label';
   labelElement.id = `${fieldId}-label`;
   labelElement.textContent = config.label;
-  groupElement.className = 'dt-alteditor-lite-radio';
+  groupElement.className = 'alteditor-lite-radio';
   groupElement.setAttribute('role', 'radiogroup');
   groupElement.setAttribute('aria-labelledby', labelElement.id);
   groupElement.setAttribute(
     'aria-describedby',
     config.description === undefined ? errorId : `${descriptionId} ${errorId}`,
   );
-  errorElement.className = 'dt-alteditor-lite-field__error';
+  errorElement.className = 'alteditor-lite-field__error';
   errorElement.id = errorId;
   errorElement.hidden = true;
   errorElement.setAttribute('aria-live', 'polite');
@@ -108,7 +108,7 @@ export function createRadioFieldController<
       inputElement.addEventListener('keydown', preventReadOnlyMutation);
       inputElement.addEventListener('change', onUserChange);
 
-      optionLabel.className = 'dt-alteditor-lite-radio__option';
+      optionLabel.className = 'alteditor-lite-radio__option';
       optionLabel.htmlFor = inputElement.id;
       optionText.textContent = option.label;
       optionLabel.append(inputElement, optionText);
@@ -122,7 +122,7 @@ export function createRadioFieldController<
   fieldElement.append(labelElement, groupElement);
   if (config.description !== undefined) {
     const descriptionElement = document.createElement('div');
-    descriptionElement.className = 'dt-alteditor-lite-field__description';
+    descriptionElement.className = 'alteditor-lite-field__description';
     descriptionElement.id = descriptionId;
     descriptionElement.textContent = config.description;
     fieldElement.append(descriptionElement);

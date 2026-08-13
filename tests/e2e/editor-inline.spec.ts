@@ -501,7 +501,7 @@ test('keeps a keyboard-only choice popup above the editing cell border', async (
   await expect(page.getByRole('listbox')).toBeVisible();
 
   const layers = await cell.evaluate((element) => {
-    const listbox = element.querySelector('.dt-alteditor-lite-search-select__listbox');
+    const listbox = element.querySelector('.alteditor-lite-search-select__listbox');
     if (listbox === null) {
       throw new Error('Expected an open SearchSelect popup.');
     }

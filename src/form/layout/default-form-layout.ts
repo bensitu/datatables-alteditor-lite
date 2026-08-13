@@ -9,12 +9,12 @@ export class DefaultFormLayout implements FormLayout {
   public readonly element = document.createElement('div');
 
   public constructor() {
-    this.element.className = 'dt-alteditor-lite-form__layout';
+    this.element.className = 'alteditor-lite-form__layout';
   }
 
   public mountField(_fieldName: string, fieldElement: HTMLElement): FieldMountPoint {
     const slotElement = document.createElement('div');
-    slotElement.className = 'dt-alteditor-lite-form__slot';
+    slotElement.className = 'alteditor-lite-form__slot';
     const mountPoint = createFieldMountPoint(slotElement);
     mountPoint.mount(fieldElement);
     this.element.append(slotElement);

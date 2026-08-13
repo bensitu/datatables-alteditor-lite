@@ -15,9 +15,9 @@ export function createRemoveConfirmation(
   const countElement = document.createElement('p');
   const warningElement = document.createElement('p');
 
-  confirmationElement.className = 'dt-alteditor-lite-remove-confirmation';
-  countElement.className = 'dt-alteditor-lite-remove-confirmation__count';
-  warningElement.className = 'dt-alteditor-lite-remove-confirmation__warning';
+  confirmationElement.className = 'alteditor-lite-remove-confirmation';
+  countElement.className = 'alteditor-lite-remove-confirmation__count';
+  warningElement.className = 'alteditor-lite-remove-confirmation__warning';
   countElement.textContent = language.dialog.removeCount.replaceAll(
     '{count}',
     String(targetCount),

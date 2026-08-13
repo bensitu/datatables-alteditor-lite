@@ -393,7 +393,7 @@ describe('AltEditorLite programmatic inline editing', () => {
       expect(onError).toHaveBeenCalledOnce();
     });
     expect(
-      document.querySelector<HTMLDialogElement>('.dt-alteditor-lite-dialog--alert')?.open,
+      document.querySelector<HTMLDialogElement>('.alteditor-lite-dialog--alert')?.open,
     ).toBe(false);
 
     const blockedSubmission = editor.submitInlineEdit();
@@ -402,13 +402,12 @@ describe('AltEditorLite programmatic inline editing', () => {
     });
     await vi.waitFor(() => {
       expect(
-        document.querySelector<HTMLDialogElement>('.dt-alteditor-lite-dialog--alert')
-          ?.open,
+        document.querySelector<HTMLDialogElement>('.alteditor-lite-dialog--alert')?.open,
       ).toBe(true);
     });
     document
       .querySelector<HTMLButtonElement>(
-        '.dt-alteditor-lite-dialog--alert .dt-alteditor-lite-dialog__button',
+        '.alteditor-lite-dialog--alert .alteditor-lite-dialog__button',
       )
       ?.click();
     await blockedExpectation;
@@ -456,14 +455,14 @@ describe('AltEditorLite programmatic inline editing', () => {
       code: 'VALIDATION',
     });
     await vi.waitFor(() => {
-      expect(document.querySelector('.dt-alteditor-lite-dialog--alert')).toHaveProperty(
+      expect(document.querySelector('.alteditor-lite-dialog--alert')).toHaveProperty(
         'open',
         true,
       );
     });
     document
       .querySelector<HTMLButtonElement>(
-        '.dt-alteditor-lite-dialog--alert .dt-alteditor-lite-dialog__button',
+        '.alteditor-lite-dialog--alert .alteditor-lite-dialog__button',
       )
       ?.click();
     await invalidExpectation;
@@ -476,14 +475,14 @@ describe('AltEditorLite programmatic inline editing', () => {
       code: 'TEMPORARY',
     });
     await vi.waitFor(() => {
-      expect(document.querySelector('.dt-alteditor-lite-dialog--alert')).toHaveProperty(
+      expect(document.querySelector('.alteditor-lite-dialog--alert')).toHaveProperty(
         'open',
         true,
       );
     });
     document
       .querySelector<HTMLButtonElement>(
-        '.dt-alteditor-lite-dialog--alert .dt-alteditor-lite-dialog__button',
+        '.alteditor-lite-dialog--alert .alteditor-lite-dialog__button',
       )
       ?.click();
     await failedExpectation;
@@ -536,23 +535,23 @@ describe('AltEditorLite programmatic inline editing', () => {
       code: 'VALIDATION',
     });
     await vi.waitFor(() => {
-      expect(document.querySelector('.dt-alteditor-lite-dialog--alert')).toHaveProperty(
+      expect(document.querySelector('.alteditor-lite-dialog--alert')).toHaveProperty(
         'open',
         true,
       );
     });
 
     const alertMessage = document.querySelector(
-      '.dt-alteditor-lite-dialog--alert .dt-alteditor-lite-dialog__message',
+      '.alteditor-lite-dialog--alert .alteditor-lite-dialog__message',
     )?.textContent;
     expect(alertMessage).toContain('Review the related values.');
     expect(alertMessage).toContain('Rank must be at least the length of the name.');
     expect(
-      document.querySelector('.alteditor-lite-inline .dt-alteditor-lite-field__error'),
+      document.querySelector('.alteditor-lite-inline .alteditor-lite-field__error'),
     ).toBeNull();
     document
       .querySelector<HTMLButtonElement>(
-        '.dt-alteditor-lite-dialog--alert .dt-alteditor-lite-dialog__button',
+        '.alteditor-lite-dialog--alert .alteditor-lite-dialog__button',
       )
       ?.click();
     await rejection;
@@ -991,7 +990,7 @@ describe('AltEditorLite hover inline editing', () => {
     expect(searchSignal?.aborted).toBe(true);
     pendingSearch.resolve([{ label: 'Rank 2', value: 2 }]);
     await Promise.resolve();
-    expect(cell.querySelector('.dt-alteditor-lite-search-select')).toBeNull();
+    expect(cell.querySelector('.alteditor-lite-search-select')).toBeNull();
 
     revealTrigger(cell).click();
     await vi.waitFor(() => {
