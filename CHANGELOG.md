@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1] - 2026-08-15
+
+### Changed
+
+- Reduced repeated row identity, inline navigation, pointer movement, form value
+  collection, and SearchSelect option work for large tables and long-lived editors.
+- Aligned development Node.js types with the minimum supported Node.js major
+  version and stopped publishing declaration maps that referenced source files.
+- Unified package stylesheet metadata on the exported unminified stylesheet.
+- Documented language request defaults, application-owned operation timeouts,
+  remote SearchSelect monitoring, and trusted resource configuration.
+
+### Fixed
+
+- Preserved unexpected field validator failures for operation error reporting
+  instead of treating them as ordinary invalid input.
+- Added runtime checks for the owned table and document body, and made dialog
+  cleanup safe after editor destruction.
+- Replaced dialog inline sizing with viewport-aware stylesheet rules for strict
+  Content Security Policy environments.
+- Defaulted external language requests to omit credentials and revalidate cached
+  responses while retaining explicit Fetch API overrides.
+- Restored the previous DataTables error mode after integration test cleanup.
+
 ## [0.4.0] - 2026-08-15
 
 ### Added
