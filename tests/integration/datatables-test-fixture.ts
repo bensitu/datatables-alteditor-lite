@@ -19,6 +19,8 @@ export interface TestTable {
 
 const activeTestTables = new Set<Api<TestRow>>();
 
+let previousErrorMode: typeof DataTable.ext.errMode | undefined;
+
 /**
  * Creates a real DataTables instance using only public initialization options.
  *
@@ -30,6 +32,7 @@ export function createTestTable(
   tableId = 'test-table',
   additionalOptions: object = {},
 ): TestTable {
+  previousErrorMode ??= DataTable.ext.errMode;
   DataTable.ext.errMode = 'throw';
   const tableElement = document.createElement('table');
   const header = tableElement.createTHead();
@@ -81,5 +84,9 @@ export function destroyTestTables(): void {
   }
 
   activeTestTables.clear();
+  if (previousErrorMode !== undefined) {
+    DataTable.ext.errMode = previousErrorMode;
+    previousErrorMode = undefined;
+  }
   document.body.replaceChildren();
 }

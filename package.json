@@ -32,7 +32,7 @@
   "types": "./dist/esm/index.d.ts",
   "unpkg": "./dist/umd/datatables-alteditor-lite.min.js",
   "jsdelivr": "./dist/umd/datatables-alteditor-lite.min.js",
-  "style": "./dist/umd/alt-editor-lite.min.css",
+  "style": "./dist/umd/alt-editor-lite.css",
   "exports": {
     ".": {
       "types": "./dist/esm/index.d.ts",
@@ -100,7 +100,7 @@
     "@eslint/js": "10.0.1",
     "@playwright/test": "1.62.1",
     "@types/jquery": "4.0.1",
-    "@types/node": "25.4.0",
+    "@types/node": "20.19.43",
     "@vitest/coverage-v8": "4.1.10",
     "datatables.net": "^3.0.0",
     "datatables.net-autofill": "^3.0.0",
