@@ -66,6 +66,10 @@ describe('external editor language resources', () => {
       'message',
       expect.stringContaining('private network detail'),
     );
+    expect(fetchMock.mock.calls[0]?.[1]).toMatchObject({
+      cache: 'no-cache',
+      credentials: 'omit',
+    });
   });
 
   it('rejects non-network language resource schemes before fetching', async () => {

@@ -33,6 +33,11 @@ operation discriminator. The context also identifies the initiating `mode` as
 submitting presentation or destroying the editor aborts the signal. Results from
 an aborted, replaced, or destroyed request are ignored.
 
+Consumer-owned callbacks also own their request deadlines. Apply an
+application-appropriate timeout in the callback and use the supplied signal to
+cancel underlying network work. The editor does not impose a fixed deadline on
+Create, Edit, Remove, or Refresh operations.
+
 ## Create
 
 `openCreateDialog()` validates and collects the form before publishing `submit`.

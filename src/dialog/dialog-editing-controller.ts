@@ -7,6 +7,7 @@ import {
 import { dispatchEditorEvent, type EditorCloseReason } from '../core/editor-event.js';
 import {
   InternalOperationAbort,
+  NEVER_ABORTED_SIGNAL,
   normalizeOperationError,
 } from '../core/error-normalization.js';
 import { dispatchEditorIntegrationUpdate } from '../datatables/editor-integration-event.js';
@@ -494,7 +495,7 @@ export class DialogEditingController<TRow extends object, TFormValues extends ob
       this.arguments_.stateCoordinator.transitionTo({ status: 'ready' });
       const normalizedError = normalizeOperationError(
         rawError,
-        new AbortController().signal,
+        NEVER_ABORTED_SIGNAL,
         this.arguments_.language,
       );
       const openingError =

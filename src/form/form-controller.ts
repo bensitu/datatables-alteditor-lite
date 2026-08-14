@@ -750,12 +750,16 @@ export class EditorFormController<
       }
 
       return customResult;
-    } catch {
+    } catch (error: unknown) {
       if (signal.aborted) {
         return { valid: false };
       }
       controller.showError(this.invalidMessage);
-      return { message: this.invalidMessage, valid: false };
+      throw error instanceof Error
+        ? error
+        : new Error('Field validation failed with a non-Error value.', {
+            cause: error,
+          });
     } finally {
       if (
         this.activeFieldValidationAbortControllers.get(controller.name) ===

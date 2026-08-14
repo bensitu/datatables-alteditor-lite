@@ -15,6 +15,11 @@ requests require a JSON media type when the server supplies `Content-Type`, and
 have timeout and response-size limits. File count and byte budgets are checked
 before data URL conversion.
 
+Language resource URLs and native `pattern` attributes are trusted configuration.
+Applications should restrict language URLs with their own origin policy and CSP,
+and can set `redirect: 'error'` when redirects are not expected. Patterns should
+avoid expressions with excessive backtracking on long input.
+
 These boundaries do not replace server controls. Servers must authenticate and
 authorize every operation, validate all values and files, enforce uniqueness, and
 apply concurrency protection. In particular, a client-side unique check cannot

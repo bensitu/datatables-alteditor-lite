@@ -92,6 +92,9 @@ const language = await loadEditorLanguage('/languages/enterprise.json', {
 A caller-provided `AbortSignal` is forwarded and can cancel the request earlier.
 Other standard `RequestInit` settings can be provided in the same object;
 `maxResourceBytes` is consumed by the loader and is not forwarded to `fetch`.
+Requests omit credentials and revalidate cached responses by default. Applications
+can override either Fetch API setting when a trusted resource requires a different
+policy.
 When a response includes a `Content-Type` header, it must identify
 `application/json` or an `application/*+json` media type. Relative URLs and
 absolute HTTP or HTTPS URLs are supported. Other absolute URL schemes are

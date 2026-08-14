@@ -90,7 +90,7 @@ describe('validateEditorForm', () => {
     });
   });
 
-  it('maps a rejected validator to its field without cancelling peers', async () => {
+  it('rejects a validator failure without cancelling peers', async () => {
     const validatorFailure = new Error('Validator service failed.');
     let peerSignal: AbortSignal | undefined;
     const peerValidator: ManagedFieldController<ValidationValues>['validateCustom'] = (
@@ -115,10 +115,7 @@ describe('validateEditorForm', () => {
         () => Promise.resolve({ first: 'one', second: 'two' }),
         new AbortController().signal,
       ),
-    ).resolves.toEqual({
-      fieldErrors: { first: 'Enter a valid value.' },
-      valid: false,
-    });
+    ).rejects.toBe(validatorFailure);
     expect(peerSignal?.aborted).toBe(false);
   });
 });

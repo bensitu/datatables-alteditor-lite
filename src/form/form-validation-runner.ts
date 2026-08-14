@@ -215,23 +215,10 @@ export class FormValidationRunner<TFormValues extends object> {
       Promise.all(
         this.arguments_.controllers
           .filter((controller) => !controller.isDisabled())
-          .map(async (controller) => {
-            try {
-              return {
-                name: controller.name,
-                result: await controller.validateCustom(values, signal),
-              };
-            } catch {
-              signal.throwIfAborted();
-              return {
-                name: controller.name,
-                result: {
-                  message: this.arguments_.invalidMessage,
-                  valid: false,
-                } as const,
-              };
-            }
-          }),
+          .map(async (controller) => ({
+            name: controller.name,
+            result: await controller.validateCustom(values, signal),
+          })),
       ),
       signal,
     );

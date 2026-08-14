@@ -1,6 +1,7 @@
 import { dispatchEditorEvent } from './editor-event.js';
 import {
   InternalOperationAbort,
+  NEVER_ABORTED_SIGNAL,
   normalizeOperationError,
 } from './error-normalization.js';
 
@@ -69,7 +70,7 @@ export class EditorErrorReporter<TRow extends object, TFormValues extends object
     } catch (rawError: unknown) {
       const error = normalizeOperationError(
         rawError,
-        new AbortController().signal,
+        NEVER_ABORTED_SIGNAL,
         this.language,
       );
       if (!(error instanceof InternalOperationAbort)) {

@@ -421,7 +421,11 @@ export class InlineEditSessionController<
 
   /** Returns whether activation or an open session currently owns inline state. */
   public isEditing(): boolean {
-    return !['disabled', 'idle', 'destroyed'].includes(this.state.status);
+    return (
+      this.state.status !== 'disabled' &&
+      this.state.status !== 'idle' &&
+      this.state.status !== 'destroyed'
+    );
   }
 
   /** Removes all listeners and owned DOM resources. */

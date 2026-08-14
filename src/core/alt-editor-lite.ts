@@ -111,7 +111,13 @@ export class AltEditorLite<
         options.clientSide?.createRow !== undefined,
     });
     this.language = resolveLanguage(options.language);
-    this.tableElement = table.table().node();
+    const tableElement: unknown = table.table().node();
+    if (!(tableElement instanceof HTMLTableElement)) {
+      throw new EditorConfigurationError(
+        'AltEditorLite requires a DataTables API that owns an HTML table element.',
+      );
+    }
+    this.tableElement = tableElement;
     this.stateCoordinator = new EditorStateCoordinator(() => {
       dispatchEditorIntegrationUpdate(this.tableElement);
     });

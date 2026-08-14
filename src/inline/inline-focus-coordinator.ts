@@ -125,13 +125,13 @@ export class InlineFocusCoordinator<TRow extends object, TFormValues extends obj
             ? this.arguments_.language.alert.validationTitle
             : this.arguments_.language.alert.operationTitle,
       });
-    } catch (error: unknown) {
+    } catch (openError: unknown) {
       this.activeAlertToken = undefined;
       if (isCurrentSession() && this.stateMachine.current() === 'alert-opening') {
         this.stateMachine.transition({ type: 'alert-open-failed' });
         session.host.focus();
       }
-      throw error;
+      throw openError;
     }
     this.stateMachine.transition({ type: 'alert-opened' });
     await alertPromise;

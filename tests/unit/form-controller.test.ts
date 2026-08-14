@@ -373,6 +373,32 @@ describe('FormController', () => {
     await expect(nameField?.validate()).resolves.toEqual({ valid: true });
   });
 
+  it('rejects an unexpected field validator failure', async () => {
+    const form = buildEditorForm<FormValues>(
+      [
+        {
+          defaultValue: 'Ready',
+          label: 'Name',
+          name: 'profile.name',
+          type: 'text',
+          validate: () => {
+            throw new Error('Field validator failed.');
+          },
+        },
+      ],
+      'field-validator-failure',
+      ENGLISH_LANGUAGE,
+    );
+    activeForm = form;
+    document.body.append(form.element);
+    const field = form.getField('profile.name');
+
+    await expect(field?.validate()).rejects.toThrow('Field validator failed.');
+    expect(
+      field?.element.querySelector('.alteditor-lite-field__error')?.textContent,
+    ).toBe(ENGLISH_LANGUAGE.validation.invalid);
+  });
+
   it('keeps submission validation active when field validation begins', async () => {
     let releaseSubmissionValidation:
       ((result: FieldValidationResult) => void) | undefined;

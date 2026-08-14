@@ -1,5 +1,5 @@
+import { appendDialogElement } from './append-dialog-element.js';
 import { DialogFocusScope } from './dialog-focus-scope.js';
-import { positionDialog } from './dialog-positioning.js';
 import { createEditorDialogShell, type EditorDialogShell } from './dialog-shell.js';
 
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
@@ -31,8 +31,6 @@ export class EditorDialog {
 
   private isSubmitAvailable = true;
 
-  private attachedVisualViewport: VisualViewport | undefined;
-
   /**
    * Creates and attaches one reusable native dialog element.
    *
@@ -49,7 +47,7 @@ export class EditorDialog {
     this.focusScope = new DialogFocusScope(this.shell.dialogElement, tableElement);
     this.shell.dialogElement.addEventListener('cancel', this.handleNativeCancel);
     this.shell.cancelButton.addEventListener('click', this.handleCancelClick);
-    document.body.append(this.shell.dialogElement);
+    appendDialogElement(this.shell.dialogElement);
   }
 
   /**
@@ -118,10 +116,8 @@ export class EditorDialog {
   }
 
   private showConfiguredContent(contentElement: HTMLElement): void {
-    positionDialog(this.shell.dialogElement);
     this.focusScope.captureRestoreTarget();
     this.shell.dialogElement.showModal();
-    this.attachViewportListeners();
     this.focusScope.activate(contentElement);
   }
 
@@ -178,7 +174,9 @@ export class EditorDialog {
    * Closes the native dialog and restores the opening trigger.
    */
   public close(): void {
-    this.detachViewportListeners();
+    if (this.isDestroyed) {
+      return;
+    }
     this.detachForm();
     this.shell.submitButton.removeEventListener('click', this.handleConfirmation);
     this.setBusy(false);
@@ -203,7 +201,6 @@ export class EditorDialog {
     }
 
     this.isDestroyed = true;
-    this.detachViewportListeners();
     this.detachForm();
     this.shell.submitButton.removeEventListener('click', this.handleConfirmation);
 
@@ -224,24 +221,6 @@ export class EditorDialog {
     this.formElement = undefined;
     this.shell.submitButton.removeAttribute('form');
   }
-
-  private attachViewportListeners(): void {
-    window.addEventListener('resize', this.handleViewportChange);
-    this.attachedVisualViewport = window.visualViewport ?? undefined;
-    this.attachedVisualViewport?.addEventListener('resize', this.handleViewportChange);
-  }
-
-  private detachViewportListeners(): void {
-    window.removeEventListener('resize', this.handleViewportChange);
-    this.attachedVisualViewport?.removeEventListener('resize', this.handleViewportChange);
-    this.attachedVisualViewport = undefined;
-  }
-
-  private readonly handleViewportChange = (): void => {
-    if (!this.isDestroyed && this.shell.dialogElement.open) {
-      positionDialog(this.shell.dialogElement);
-    }
-  };
 
   private readonly handleSubmit = (event: SubmitEvent): void => {
     event.preventDefault();

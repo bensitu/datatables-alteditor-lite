@@ -48,6 +48,22 @@ function getButton(
 }
 
 describe('EditorDialog', () => {
+  it('requires the document body before construction', () => {
+    const documentBody = document.body;
+    const tableElement = document.createElement('table');
+    documentBody.remove();
+
+    try {
+      expect(() => {
+        new EditorDialog(tableElement, 'missing-body', ENGLISH_LANGUAGE);
+      }).toThrow(
+        'AltEditorLite requires a document body before a dialog can be created.',
+      );
+    } finally {
+      document.documentElement.append(documentBody);
+    }
+  });
+
   it('owns form submission, busy state, errors, and cancellation', () => {
     const { controller, dialogElement } = createDialog();
     const formElement = document.createElement('form');
@@ -66,6 +82,7 @@ describe('EditorDialog', () => {
     const submitButton = getButton(dialogElement, 'submit');
     const cancelButton = getButton(dialogElement, 'cancel');
     expect(dialogElement.open).toBe(true);
+    expect(dialogElement.hasAttribute('style')).toBe(false);
     expect(submitButton.getAttribute('form')).toBe('owned-form');
     expect(submitButton.textContent).toBe('Save');
 
@@ -132,38 +149,6 @@ describe('EditorDialog', () => {
     controller.destroy();
   });
 
-  it('updates the dialog height while the viewport changes', () => {
-    const { controller, dialogElement } = createDialog();
-    let viewportHeight = 900;
-    Object.defineProperty(document.documentElement, 'clientHeight', {
-      configurable: true,
-      get: () => viewportHeight,
-    });
-
-    controller.openConfirmation(document.createElement('div'), 'Remove', 'Confirm', {
-      onRequestClose: vi.fn(),
-      onSubmit: vi.fn(),
-    });
-    expect(
-      dialogElement.style.getPropertyValue('--alteditor-lite-dialog-max-height'),
-    ).toBe('868px');
-
-    viewportHeight = 600;
-    window.dispatchEvent(new Event('resize'));
-    expect(
-      dialogElement.style.getPropertyValue('--alteditor-lite-dialog-max-height'),
-    ).toBe('568px');
-
-    controller.close();
-    viewportHeight = 500;
-    window.dispatchEvent(new Event('resize'));
-    expect(
-      dialogElement.style.getPropertyValue('--alteditor-lite-dialog-max-height'),
-    ).toBe('568px');
-    controller.destroy();
-    Reflect.deleteProperty(document.documentElement, 'clientHeight');
-  });
-
   it('submits confirmations and destroys idempotently', () => {
     const { controller, dialogElement } = createDialog();
     const contentElement = document.createElement('div');
@@ -188,6 +173,9 @@ describe('EditorDialog', () => {
     expect(dialogElement.isConnected).toBe(false);
     expect(() => {
       controller.destroy();
+    }).not.toThrow();
+    expect(() => {
+      controller.close();
     }).not.toThrow();
   });
 

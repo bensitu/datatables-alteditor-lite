@@ -2,6 +2,9 @@ import { AltEditorLiteError } from './alt-editor-lite-error.js';
 
 import type { AltEditorLiteLanguage } from './alt-editor-lite-language.js';
 
+/** Signal used when normalization is not associated with cancellable work. */
+export const NEVER_ABORTED_SIGNAL: AbortSignal = new AbortController().signal;
+
 function isAltEditorLiteError(error: unknown): error is AltEditorLiteError {
   try {
     return error instanceof AltEditorLiteError;

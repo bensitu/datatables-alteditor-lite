@@ -1,5 +1,5 @@
+import { appendDialogElement } from './append-dialog-element.js';
 import { DialogFocusScope } from './dialog-focus-scope.js';
-import { positionDialog } from './dialog-positioning.js';
 import { createAlertDialogShell, type AlertDialogShell } from './dialog-shell.js';
 
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
@@ -18,8 +18,6 @@ export class EditorAlertDialog {
 
   private resolveOpen: (() => void) | undefined;
 
-  private attachedVisualViewport: VisualViewport | undefined;
-
   private isDestroyed = false;
 
   public constructor(
@@ -31,7 +29,7 @@ export class EditorAlertDialog {
     this.focusScope = new DialogFocusScope(this.shell.dialogElement, tableElement);
     this.shell.dialogElement.addEventListener('cancel', this.handleCancel);
     this.shell.closeButton.addEventListener('click', this.handleClose);
-    document.body.append(this.shell.dialogElement);
+    appendDialogElement(this.shell.dialogElement);
   }
 
   public open(content: Readonly<EditorAlertContent>): Promise<void> {
@@ -44,10 +42,8 @@ export class EditorAlertDialog {
 
     this.shell.titleElement.textContent = content.title;
     this.shell.messageElement.textContent = content.message;
-    positionDialog(this.shell.dialogElement);
     this.focusScope.captureRestoreTarget();
     this.shell.dialogElement.showModal();
-    this.attachViewportListeners();
     this.focusScope.activate(this.shell.bodyElement);
     return new Promise<void>((resolve) => {
       this.resolveOpen = resolve;
@@ -58,7 +54,6 @@ export class EditorAlertDialog {
     if (!this.shell.dialogElement.open && this.resolveOpen === undefined) {
       return;
     }
-    this.detachViewportListeners();
     if (this.shell.dialogElement.open) {
       this.shell.dialogElement.close();
     }
@@ -73,7 +68,6 @@ export class EditorAlertDialog {
       return;
     }
     this.isDestroyed = true;
-    this.detachViewportListeners();
     if (this.shell.dialogElement.open) {
       this.shell.dialogElement.close();
     }
@@ -86,18 +80,6 @@ export class EditorAlertDialog {
     this.shell.dialogElement.remove();
   }
 
-  private attachViewportListeners(): void {
-    window.addEventListener('resize', this.handleViewportChange);
-    this.attachedVisualViewport = window.visualViewport ?? undefined;
-    this.attachedVisualViewport?.addEventListener('resize', this.handleViewportChange);
-  }
-
-  private detachViewportListeners(): void {
-    window.removeEventListener('resize', this.handleViewportChange);
-    this.attachedVisualViewport?.removeEventListener('resize', this.handleViewportChange);
-    this.attachedVisualViewport = undefined;
-  }
-
   private readonly handleClose = (): void => {
     this.close();
   };
@@ -105,11 +87,5 @@ export class EditorAlertDialog {
   private readonly handleCancel = (event: Event): void => {
     event.preventDefault();
     this.close();
-  };
-
-  private readonly handleViewportChange = (): void => {
-    if (this.shell.dialogElement.open) {
-      positionDialog(this.shell.dialogElement);
-    }
   };
 }

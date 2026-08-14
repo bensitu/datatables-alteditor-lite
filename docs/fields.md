@@ -174,6 +174,9 @@ cannot let an older result overwrite current state. Loading, threshold, and quer
 errors stay inside the combobox through `aria-busy`, its listbox, and a polite live
 status.
 
+Applications that require centralized monitoring should record remote failures
+inside these application-owned callbacks before rethrowing them.
+
 Use at most 1,000 options for the best experience. The enforced and documented
 hard limit is 5,000 options in any configured or returned result. Remote loaders
 must narrow results to that bound.

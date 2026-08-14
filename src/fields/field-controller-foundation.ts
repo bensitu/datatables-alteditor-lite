@@ -165,7 +165,9 @@ export function createNativeControlController<TFormValues extends object, TValue
             ? controllerArguments.invalidMessage
             : control.validity.valueMissing
               ? controllerArguments.requiredMessage
-              : controllerArguments.invalidMessage),
+              : control.validationMessage.length > 0
+                ? control.validationMessage
+                : controllerArguments.invalidMessage),
       };
     },
     validateCustom: async (

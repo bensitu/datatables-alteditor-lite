@@ -284,6 +284,8 @@ export async function loadEditorLanguage(
     let response: Response;
     try {
       response = await fetch(resource, {
+        cache: 'no-cache',
+        credentials: 'omit',
         ...requestInit,
         signal: requestLifetime.signal,
       });
