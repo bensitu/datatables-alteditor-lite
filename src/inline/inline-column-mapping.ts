@@ -13,22 +13,6 @@ export interface InlineColumnMapping<TFormValues extends object> {
   readonly fieldName: FieldPath<TFormValues>;
 }
 
-function getColumnName<TRow extends object>(
-  table: Api<TRow>,
-  columnIndex: number,
-): string | undefined {
-  const name = table.column(columnIndex).name();
-  return typeof name === 'string' && name.length > 0 ? name : undefined;
-}
-
-function getStringDataSource<TRow extends object>(
-  table: Api<TRow>,
-  columnIndex: number,
-): string | undefined {
-  const dataSource = table.column(columnIndex).dataSrc();
-  return typeof dataSource === 'string' ? dataSource : undefined;
-}
-
 /** Builds explicit-name mappings followed by exact string data-source mappings. */
 export function createInlineColumnMappings<
   TRow extends object,
@@ -44,8 +28,15 @@ export function createInlineColumnMappings<
   const mappings = new Map<number, Readonly<InlineColumnMapping<TFormValues>>>();
 
   for (const columnIndex of table.columns().indexes().toArray()) {
-    const columnName = getColumnName(table, columnIndex);
-    const dataSrc = getStringDataSource(table, columnIndex);
+    const column = table.column(columnIndex);
+    const configuredColumnName = column.name();
+    const configuredDataSource = column.dataSrc();
+    const columnName =
+      typeof configuredColumnName === 'string' && configuredColumnName.length > 0
+        ? configuredColumnName
+        : undefined;
+    const dataSrc =
+      typeof configuredDataSource === 'string' ? configuredDataSource : undefined;
     const hasExplicitMapping =
       columnName !== undefined && Object.hasOwn(options.columns, columnName);
     const configuredFieldName = hasExplicitMapping

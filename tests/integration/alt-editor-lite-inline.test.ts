@@ -717,8 +717,13 @@ describe('AltEditorLite hover inline editing', () => {
     return event;
   }
 
-  function revealTrigger(cell: HTMLTableCellElement): HTMLButtonElement {
+  async function revealTrigger(cell: HTMLTableCellElement): Promise<HTMLButtonElement> {
     cell.dispatchEvent(new MouseEvent('pointermove', { bubbles: true }));
+    await vi.waitFor(() => {
+      expect(
+        cell.querySelector<HTMLButtonElement>('.alteditor-lite-inline-hover__trigger'),
+      ).not.toBeNull();
+    });
     const trigger = cell.querySelector<HTMLButtonElement>(
       '.alteditor-lite-inline-hover__trigger',
     );
@@ -808,7 +813,7 @@ describe('AltEditorLite hover inline editing', () => {
 
     cell.click();
     expect(editor.isInlineEditing()).toBe(false);
-    const trigger = revealTrigger(cell);
+    const trigger = await revealTrigger(cell);
     trigger.click();
 
     await vi.waitFor(() => {
@@ -844,7 +849,7 @@ describe('AltEditorLite hover inline editing', () => {
     const activeCell = api.cell('#row-a', 0).node();
     const otherCell = api.cell('#row-b', 0).node();
 
-    revealTrigger(activeCell).click();
+    (await revealTrigger(activeCell)).click();
     await vi.waitFor(() => {
       expect(editor.getInlineState().status).toBe('editing');
     });
@@ -867,7 +872,7 @@ describe('AltEditorLite hover inline editing', () => {
     expect(
       tableElement.querySelector('.alteditor-lite-inline-hover__trigger'),
     ).toBeNull();
-    expect(revealTrigger(otherCell).isConnected).toBe(true);
+    expect((await revealTrigger(otherCell)).isConnected).toBe(true);
   });
 
   it('cancels without persistence and refuses external operations until resolved', async () => {
@@ -886,7 +891,7 @@ describe('AltEditorLite hover inline editing', () => {
       operations: { update },
     });
     const cell = api.cell('#row-a', 0).node();
-    revealTrigger(cell).click();
+    (await revealTrigger(cell)).click();
     await vi.waitFor(() => {
       expect(editor.getInlineState().status).toBe('editing');
     });
@@ -920,7 +925,7 @@ describe('AltEditorLite hover inline editing', () => {
     });
     editors.add(editor);
     const cell = api.cell('#row-a', 0).node();
-    revealTrigger(cell).click();
+    (await revealTrigger(cell)).click();
     await vi.waitFor(() => {
       expect(editor.getInlineState().status).toBe('editing');
     });
@@ -971,7 +976,7 @@ describe('AltEditorLite hover inline editing', () => {
       fields: remoteFields,
     });
     const cell = api.cell('#row-a', 1).node();
-    revealTrigger(cell).click();
+    (await revealTrigger(cell)).click();
     await vi.waitFor(() => {
       expect(editor.getInlineState().status).toBe('editing');
     });
@@ -992,7 +997,7 @@ describe('AltEditorLite hover inline editing', () => {
     await Promise.resolve();
     expect(cell.querySelector('.alteditor-lite-search-select')).toBeNull();
 
-    revealTrigger(cell).click();
+    (await revealTrigger(cell)).click();
     await vi.waitFor(() => {
       expect(editor.getInlineState().status).toBe('editing');
     });

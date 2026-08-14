@@ -122,6 +122,8 @@ export class SearchSelect<TValue extends string | number> {
 
   private filteredEntries: readonly SearchOptionEntry<TValue>[] = [];
 
+  private enabledOptionIndices: readonly number[] = [];
+
   private isComposing = false;
 
   private isDestroyed = false;
@@ -706,14 +708,11 @@ export class SearchSelect<TValue extends string | number> {
   }
 
   private moveActiveOption(key: SearchSelectNavigationKey): void {
-    const enabledOptionIndices = this.filteredEntries.flatMap((entry, optionIndex) =>
-      entry.option.disabled === true ? [] : [optionIndex],
-    );
     const activeOptionIndex = this.filteredEntries.findIndex(
       ({ token }) => token === this.activeToken,
     );
     const nextIndex = resolveSearchSelectActiveIndex(
-      enabledOptionIndices,
+      this.enabledOptionIndices,
       activeOptionIndex < 0 ? undefined : activeOptionIndex,
       key,
     );
@@ -758,6 +757,9 @@ export class SearchSelect<TValue extends string | number> {
 
   private renderOptionElements(): void {
     this.optionElementByToken.clear();
+    this.enabledOptionIndices = this.filteredEntries.flatMap(({ option }, optionIndex) =>
+      option.disabled === true ? [] : [optionIndex],
+    );
     const optionFragment = document.createDocumentFragment();
 
     for (const { option, token } of this.filteredEntries) {
@@ -1029,6 +1031,7 @@ export class SearchSelect<TValue extends string | number> {
     message: string,
   ): void {
     this.filteredEntries = [];
+    this.enabledOptionIndices = [];
     this.optionElementByToken.clear();
     const feedback = document.createElement('div');
     feedback.className = `alteditor-lite-search-select__feedback alteditor-lite-search-select__feedback--${state}`;

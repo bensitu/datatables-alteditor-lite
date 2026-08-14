@@ -406,6 +406,13 @@ describe('optional KeyTable and ColReorder integration', () => {
     extensionApi.colReorder.move(0, 1);
     const nameCell = api.cell('#row-a', 1).node();
     nameCell.dispatchEvent(new MouseEvent('pointermove', { bubbles: true }));
+    await vi.waitFor(() => {
+      expect(
+        nameCell.querySelector<HTMLButtonElement>(
+          '.alteditor-lite-inline-hover__trigger',
+        ),
+      ).not.toBeNull();
+    });
     nameCell
       .querySelector<HTMLButtonElement>('.alteditor-lite-inline-hover__trigger')
       ?.click();

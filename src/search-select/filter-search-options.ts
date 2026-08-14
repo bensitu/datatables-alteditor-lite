@@ -10,6 +10,24 @@ const normalizedLabelByOption = new WeakMap<SelectOption, Map<string, string>>()
 
 const labelCollatorByLocale = new Map<string, Intl.Collator>();
 
+const MAX_CACHED_LOCALES = 16;
+
+function cacheLocaleValue<TValue>(
+  cache: Map<string, TValue>,
+  locale: string,
+  value: TValue,
+): TValue {
+  cache.delete(locale);
+  cache.set(locale, value);
+  if (cache.size > MAX_CACHED_LOCALES) {
+    const oldestLocale = cache.keys().next().value;
+    if (oldestLocale !== undefined) {
+      cache.delete(oldestLocale);
+    }
+  }
+  return value;
+}
+
 function normalizeSearchText(text: string, locale: string): string {
   const compatibilityText = text.normalize('NFKD').replace(/\p{M}+/gu, '');
 
@@ -23,7 +41,7 @@ function normalizeSearchText(text: string, locale: string): string {
 function createLabelCollator(locale: string): Intl.Collator {
   const existingCollator = labelCollatorByLocale.get(locale);
   if (existingCollator !== undefined) {
-    return existingCollator;
+    return cacheLocaleValue(labelCollatorByLocale, locale, existingCollator);
   }
 
   let collator: Intl.Collator;
@@ -40,8 +58,7 @@ function createLabelCollator(locale: string): Intl.Collator {
       usage: 'sort',
     });
   }
-  labelCollatorByLocale.set(locale, collator);
-  return collator;
+  return cacheLocaleValue(labelCollatorByLocale, locale, collator);
 }
 
 function normalizedOptionLabel(option: SelectOption, locale: string): string {
@@ -53,12 +70,11 @@ function normalizedOptionLabel(option: SelectOption, locale: string): string {
 
   const existingLabel = normalizedByLocale.get(locale);
   if (existingLabel !== undefined) {
-    return existingLabel;
+    return cacheLocaleValue(normalizedByLocale, locale, existingLabel);
   }
 
   const normalizedLabel = normalizeSearchText(option.label, locale);
-  normalizedByLocale.set(locale, normalizedLabel);
-  return normalizedLabel;
+  return cacheLocaleValue(normalizedByLocale, locale, normalizedLabel);
 }
 
 /**

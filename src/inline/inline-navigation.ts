@@ -43,30 +43,39 @@ export function createInlineNavigationIntent<
         isColumnVisiblyAvailable(table.column(columnIndex))
       );
     });
-  const cells = rowIndexes.flatMap((rowIndex) =>
-    columnIndexes.map((columnIndex) => ({ columnIndex, rowIndex })),
-  );
-  const currentIndex = cells.findIndex(
-    (cell) =>
-      cell.rowIndex === currentTarget.rowIndex &&
-      cell.columnIndex === currentTarget.columnIndex,
-  );
-  const nextIndex = direction === 'forward' ? currentIndex + 1 : currentIndex - 1;
-  const next = cells[nextIndex];
-  if (currentIndex < 0 || next === undefined) {
+  const currentRowPosition = rowIndexes.indexOf(currentTarget.rowIndex);
+  const currentColumnPosition = columnIndexes.indexOf(currentTarget.columnIndex);
+  if (currentRowPosition < 0 || currentColumnPosition < 0) {
     return undefined;
   }
 
-  const rowApi = table.row(next.rowIndex);
+  let nextRowPosition = currentRowPosition;
+  let nextColumnPosition =
+    direction === 'forward' ? currentColumnPosition + 1 : currentColumnPosition - 1;
+  if (nextColumnPosition >= columnIndexes.length) {
+    nextRowPosition += 1;
+    nextColumnPosition = 0;
+  } else if (nextColumnPosition < 0) {
+    nextRowPosition -= 1;
+    nextColumnPosition = columnIndexes.length - 1;
+  }
+
+  const nextRowIndex = rowIndexes[nextRowPosition];
+  const nextColumnIndex = columnIndexes[nextColumnPosition];
+  if (nextRowIndex === undefined || nextColumnIndex === undefined) {
+    return undefined;
+  }
+
+  const rowApi = table.row(nextRowIndex);
   const rowId = rowApi.id();
   const hasStableRowId =
     typeof rowId === 'string' &&
     rowId.length > 0 &&
-    resolveUniqueRowIndexById(table, rowId) === next.rowIndex;
+    resolveUniqueRowIndexById(table, rowId) === nextRowIndex;
   return Object.freeze({
-    columnIndex: next.columnIndex,
+    columnIndex: nextColumnIndex,
     direction,
     ...(hasStableRowId ? { rowId } : {}),
-    rowIndex: next.rowIndex,
+    rowIndex: nextRowIndex,
   });
 }

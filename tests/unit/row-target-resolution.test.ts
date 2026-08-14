@@ -60,6 +60,9 @@ function createMockTable(rows: readonly MutableMockRow[]): MockTable {
     api: {
       row,
       rows: () => ({
+        ids: () => ({
+          toArray: () => rows.map((candidate) => candidate.rowId),
+        }),
         indexes: () => ({
           toArray: () => rows.map((candidate) => candidate.index),
         }),

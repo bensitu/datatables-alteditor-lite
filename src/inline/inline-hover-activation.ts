@@ -20,6 +20,10 @@ export class InlineHoverActivation<
 
   private pendingTouchCell: HTMLTableCellElement | undefined;
 
+  private pendingPointerTarget: EventTarget | null | undefined;
+
+  private cancelPointerUpdate: (() => void) | undefined;
+
   private touchFallbackTimer: ReturnType<typeof globalThis.setTimeout> | undefined;
 
   public constructor(private readonly trigger: InlineHoverTrigger) {}
@@ -53,26 +57,51 @@ export class InlineHoverActivation<
     };
     const handlePointerMove = (event: PointerEvent): void => {
       if (this.isSuspended || event.pointerType === 'touch' || context.signal.aborted) {
+        this.clearPointerUpdate();
         return;
       }
       if (event.target instanceof Node && this.trigger.element.contains(event.target)) {
+        this.clearPointerUpdate();
         return;
       }
-      const target = resolveInlineActivationTarget(
-        context.table,
-        context.tableElement,
-        event.target,
-        context.mappings,
-      );
-      if (target === undefined) {
-        if (!this.trigger.isFocused()) {
-          this.trigger.hide();
+      this.pendingPointerTarget = event.target;
+      if (this.cancelPointerUpdate !== undefined) {
+        return;
+      }
+      const updatePointerTarget = (): void => {
+        this.cancelPointerUpdate = undefined;
+        const pointerTarget = this.pendingPointerTarget;
+        this.pendingPointerTarget = undefined;
+        if (this.isSuspended || context.signal.aborted) {
+          return;
         }
-        return;
-      }
-      const cell = context.table.cell(target.rowIndex, target.columnIndex).node();
-      if (cell instanceof HTMLTableCellElement) {
-        this.trigger.moveTo(cell);
+        const target = resolveInlineActivationTarget(
+          context.table,
+          context.tableElement,
+          pointerTarget ?? null,
+          context.mappings,
+        );
+        if (target === undefined) {
+          if (!this.trigger.isFocused()) {
+            this.trigger.hide();
+          }
+          return;
+        }
+        const cell = context.table.cell(target.rowIndex, target.columnIndex).node();
+        if (cell instanceof HTMLTableCellElement) {
+          this.trigger.moveTo(cell);
+        }
+      };
+      if (typeof globalThis.requestAnimationFrame === 'function') {
+        const frameId = globalThis.requestAnimationFrame(updatePointerTarget);
+        this.cancelPointerUpdate = () => {
+          globalThis.cancelAnimationFrame(frameId);
+        };
+      } else {
+        const timerId = globalThis.setTimeout(updatePointerTarget, 16);
+        this.cancelPointerUpdate = () => {
+          globalThis.clearTimeout(timerId);
+        };
       }
     };
     const handlePointerUp = (event: PointerEvent): void => {
@@ -175,6 +204,7 @@ export class InlineHoverActivation<
       if (event.pointerType === 'touch') {
         return;
       }
+      this.clearPointerUpdate();
       if (!this.trigger.isFocused()) {
         this.trigger.hide();
       }
@@ -190,6 +220,7 @@ export class InlineHoverActivation<
       }
     };
     const handleStructuralChange = (): void => {
+      this.clearPointerUpdate();
       this.clearTouchFallback();
       this.pendingTouchCell = undefined;
       this.trigger.hide();
@@ -199,6 +230,7 @@ export class InlineHoverActivation<
         return;
       }
       isAttached = false;
+      this.clearPointerUpdate();
       this.clearTouchFallback();
       this.pendingTouchCell = undefined;
       this.context = undefined;
@@ -237,6 +269,7 @@ export class InlineHoverActivation<
   }
 
   public hide(): void {
+    this.clearPointerUpdate();
     this.clearTouchFallback();
     this.pendingTouchCell = undefined;
     this.trigger.hide();
@@ -283,5 +316,11 @@ export class InlineHoverActivation<
     }
     globalThis.clearTimeout(this.touchFallbackTimer);
     this.touchFallbackTimer = undefined;
+  }
+
+  private clearPointerUpdate(): void {
+    this.cancelPointerUpdate?.();
+    this.cancelPointerUpdate = undefined;
+    this.pendingPointerTarget = undefined;
   }
 }

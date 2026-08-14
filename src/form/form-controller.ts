@@ -631,13 +631,16 @@ export class EditorFormController<
       const dependencyValues = freezeEditorValues<TFormValues>(
         await collectFormValues(this.controllers, signal),
       );
-      await this.dependencyController?.handleUserChange(
-        fieldName,
-        dependencyValues,
-        signal,
-      );
-      signal.throwIfAborted();
-      const callbackValues = await collectFormValues(this.controllers, signal);
+      let callbackValues = dependencyValues;
+      if (this.dependencyController !== undefined) {
+        await this.dependencyController.handleUserChange(
+          fieldName,
+          dependencyValues,
+          signal,
+        );
+        signal.throwIfAborted();
+        callbackValues = await collectFormValues(this.controllers, signal);
+      }
       await controller.runOnChange(callbackValues, signal);
     } catch (error: unknown) {
       if (!signal.aborted) {
