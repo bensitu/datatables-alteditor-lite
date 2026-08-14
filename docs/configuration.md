@@ -225,7 +225,7 @@ properties do not have compatibility aliases.
   inline: { columns: { salary: 'salary' } },
 }
 
-// v0.4.0
+// v0.4.0 and later
 {
   editing: {
     dialog: { closeOnSuccess: false, enabled: true },
@@ -240,7 +240,7 @@ properties do not have compatibility aliases.
 
 Field and SearchSelect changes are direct replacements:
 
-| v0.3.1                            | v0.4.0                                          |
+| v0.3.1                            | v0.4.0 and later                                |
 | --------------------------------- | ----------------------------------------------- |
 | `readonly`                        | `readOnly`                                      |
 | `searchThreshold`                 | `search.threshold`                              |

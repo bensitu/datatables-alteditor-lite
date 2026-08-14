@@ -66,10 +66,7 @@ For direct browser use, load DataTables first and include both AltEditorLite
 distribution files:
 
 ```html
-<link
-  rel="stylesheet"
-  href="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/umd/alt-editor-lite.min.css"
-/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/umd/alt-editor-lite.min.css" />
 <script src="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/umd/datatables-alteditor-lite.min.js"></script>
 ```
 
@@ -284,9 +281,9 @@ scripts before the AltEditorLite browser bundle:
   rel="stylesheet"
   href="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/umd/alt-editor-lite.min.css"
 />
-<script src="dataTables.js"></script>
-<script src="dataTables.buttons.js"></script>
-<script src="dataTables.select.js"></script>
+<script src="https://cdn.datatables.net/3.0.1/js/dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/4.0.1/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/select/4.0.0/js/dataTables.select.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/umd/datatables-alteditor-lite.min.js"></script>
 ```
 
@@ -296,18 +293,6 @@ use `DataTablesAltEditorLite.loadEditorLanguage(...)`.
 
 See [Browser Global](docs/browser-global.md) for a complete CDN quick start, load
 order, self-hosted paths, and language resources.
-
-## Migrating from v0.3.1
-
-v0.4.0 replaces mutually exclusive editing properties with composable
-configuration. Move `editMode` and the top-level `inline` object under `editing`,
-move `closeOnSuccess` to `editing.dialog.closeOnSuccess`, and rename field
-`readonly` to `readOnly`. SearchSelect now uses `search.threshold`,
-`search.debounceMs`, and a `remote` object containing `loadOptions` and
-`resolveOption`. Compatibility aliases are not provided.
-
-See the complete before-and-after examples in
-[Configuration](docs/configuration.md#migrating-from-v031).
 
 ## Events
 
