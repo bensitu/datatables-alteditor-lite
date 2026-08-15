@@ -9,6 +9,7 @@ framework.
 This example loads DataTables from its CDN and loads both AltEditorLite assets
 from jsDelivr:
 
+<!-- prettier-ignore -->
 ```html
 <!doctype html>
 <html lang="en">
@@ -112,6 +113,7 @@ ESM entry points, declarations, and JSON language resources are published under
 
 For self-hosting, copy the required `dist/` files and use equivalent local URLs:
 
+<!-- prettier-ignore -->
 ```html
 <link rel="stylesheet" href="/vendor/alt-editor-lite.min.css" />
 <script src="/vendor/datatables-alteditor-lite.min.js"></script>
@@ -124,6 +126,7 @@ The constructor, language loader, and language registry are available through
 
 Included language registration bundles must load after the main browser bundle:
 
+<!-- prettier-ignore -->
 ```html
 <script src="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/umd/locales/datatables-alteditor-lite.ja.min.js"></script>
 ```

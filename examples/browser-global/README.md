@@ -1,5 +1,6 @@
 # Browser Global example
 
+<!-- prettier-ignore -->
 ```html
 <link
   rel="stylesheet"

@@ -65,6 +65,7 @@ releases rather than one fixed patch version.
 For direct browser use, load DataTables first and include both AltEditorLite
 distribution files:
 
+<!-- prettier-ignore -->
 ```html
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/umd/alt-editor-lite.min.css" />
 <script src="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/umd/datatables-alteditor-lite.min.js"></script>
@@ -276,6 +277,7 @@ Browser Global registry.
 Include the AltEditorLite stylesheet, then load DataTables and optional extension
 scripts before the AltEditorLite browser bundle:
 
+<!-- prettier-ignore -->
 ```html
 <link
   rel="stylesheet"
