@@ -8,7 +8,6 @@ import {
   InternalOperationAbort,
   normalizeOperationError,
 } from '../core/error-normalization.js';
-import { synchronizeExtensionStateAfterCommit } from '../datatables/synchronize-extension-state.js';
 
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type {
@@ -154,7 +153,7 @@ export class DialogCreateOperation<TRow extends object, TFormValues extends obje
 
       this.arguments_.operationOwner.complete(request);
       presentation.completeSuccess(form);
-      synchronizeExtensionStateAfterCommit(this.arguments_.table);
+      this.arguments_.host.synchronizeExtensions();
       await this.arguments_.errorReporter.runAfterSuccess({
         mode: 'dialog',
         operation: 'create',

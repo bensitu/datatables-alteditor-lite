@@ -3,7 +3,6 @@ import {
   InternalOperationAbort,
   normalizeOperationError,
 } from '../core/error-normalization.js';
-import { synchronizeExtensionStateAfterCommit } from '../datatables/synchronize-extension-state.js';
 
 import type { AltEditorLiteError } from '../core/alt-editor-lite-error.js';
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
@@ -113,7 +112,7 @@ export class DialogRemoveOperation<TRow extends object, TFormValues extends obje
 
       this.arguments_.operationOwner.complete(request);
       presentation.completeSuccess();
-      synchronizeExtensionStateAfterCommit(this.arguments_.table);
+      this.arguments_.host.synchronizeExtensions();
       await this.arguments_.errorReporter.runAfterSuccess({
         mode: 'dialog',
         operation: 'remove',

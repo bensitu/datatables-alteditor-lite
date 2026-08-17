@@ -10,7 +10,6 @@ import {
   NEVER_ABORTED_SIGNAL,
   normalizeOperationError,
 } from '../core/error-normalization.js';
-import { dispatchEditorIntegrationUpdate } from '../datatables/editor-integration-event.js';
 import { buildEditorForm } from '../form/build-editor-form.js';
 
 import { createRemoveConfirmation } from './create-remove-confirmation.js';
@@ -752,6 +751,6 @@ export class DialogEditingController<TRow extends object, TFormValues extends ob
   }
 
   private notifyIntegration(): void {
-    dispatchEditorIntegrationUpdate(this.arguments_.tableElement);
+    this.arguments_.host.notifyIntegration();
   }
 }

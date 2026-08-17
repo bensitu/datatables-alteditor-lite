@@ -1,9 +1,4 @@
 import { DataTablesHost } from '../datatables/data-tables-host.js';
-import { dispatchEditorIntegrationUpdate } from '../datatables/editor-integration-event.js';
-import {
-  createEditorButtonState,
-  type EditorButtonState,
-} from '../datatables/register-editor-buttons.js';
 import { DialogEditingController } from '../dialog/dialog-editing-controller.js';
 import { validateFieldConfigurations } from '../fields/validate-field-configurations.js';
 import { validateFormDependencies } from '../form/validate-form-dependencies.js';
@@ -108,12 +103,10 @@ export class AltEditorLite<
         options.clientSide?.createRow !== undefined,
     });
     this.language = resolveLanguage(options.language);
-    this.host = new DataTablesHost(table, () => {
-      dispatchEditorIntegrationUpdate(this.tableElement);
-    });
+    this.host = new DataTablesHost(table);
     this.tableElement = this.host.eventTarget;
     this.stateCoordinator = new EditorStateCoordinator(() => {
-      dispatchEditorIntegrationUpdate(this.tableElement);
+      this.host.notifyIntegration();
     });
     const editOperationRunner = new EditOperationRunner(
       table,
@@ -162,7 +155,7 @@ export class AltEditorLite<
         language: this.language,
         mappingRegistry: inlineMappingRegistry,
         notifyIntegration: () => {
-          dispatchEditorIntegrationUpdate(this.tableElement);
+          this.host.notifyIntegration();
         },
         operationOwner: this.operationOwner,
         options: editing.inline,
@@ -201,6 +194,9 @@ export class AltEditorLite<
         language: this.language,
         operationOwner: this.operationOwner,
         options,
+        notifyIntegration: () => {
+          this.host.notifyIntegration();
+        },
         prepareForExternalOperation: async () => {
           await inlineController?.prepareForExternalOperation();
         },
@@ -222,7 +218,7 @@ export class AltEditorLite<
     this.inlineController = inlineController;
     this.dialogController = dialogController;
     this.refreshOperationRunner = refreshOperationRunner;
-    dispatchEditorIntegrationUpdate(this.tableElement);
+    this.host.notifyIntegration();
   }
 
   /** Opens the Create dialog. */
@@ -322,7 +318,7 @@ export class AltEditorLite<
     this.interactionCoordinator.destroy();
     this.stateCoordinator.destroy();
     deleteEditorInstance(this.host.ownershipKey, this);
-    dispatchEditorIntegrationUpdate(this.tableElement);
+    this.host.notifyIntegration();
     dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:destroy'>(
       this.tableElement,
       'alteditor-lite:destroy',
@@ -343,7 +339,9 @@ export class AltEditorLite<
     }
   }
 
-  private getIntegrationButtonState(): EditorButtonState {
+  private getIntegrationButtonState(): ReturnType<
+    DataTablesHost<TRow>['createIntegrationButtonState']
+  > {
     const interactionOwner = this.interactionCoordinator.current();
     const isReady =
       this.stateCoordinator.getState().status === 'ready' &&
@@ -355,7 +353,7 @@ export class AltEditorLite<
       ? this.host.resolveRequestedRowIndexes(undefined, '').length
       : 0;
 
-    return createEditorButtonState({
+    return this.host.createIntegrationButtonState({
       capabilities: this.capabilities,
       hasCreate: this.capabilities.createDialog,
       hasSelect,

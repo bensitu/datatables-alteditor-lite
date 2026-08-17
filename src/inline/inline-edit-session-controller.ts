@@ -9,7 +9,6 @@ import {
   InternalOperationAbort,
   normalizeOperationError,
 } from '../core/error-normalization.js';
-import { synchronizeExtensionStateAfterCommit } from '../datatables/synchronize-extension-state.js';
 
 import { InlineCommitCoordinator } from './inline-commit-coordinator.js';
 import { InlineEditPresentationAdapter } from './inline-edit-presentation-adapter.js';
@@ -440,7 +439,7 @@ export class InlineEditSessionController<
     return new InlineEditPresentationAdapter<TRow, TFormValues>({
       completeSuccess: async () => {
         this.cleanupSession('success', false, false);
-        synchronizeExtensionStateAfterCommit(this.arguments_.table);
+        this.arguments_.host.synchronizeExtensions();
         await this.focusCoordinator.restoreAfterCommit(
           session,
           navigationIntent,

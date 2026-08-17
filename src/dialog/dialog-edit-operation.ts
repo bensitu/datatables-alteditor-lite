@@ -1,6 +1,5 @@
 import { dispatchEditorEvent } from '../core/editor-event.js';
 import { commitRowUpdate } from '../datatables/commit-row-update.js';
-import { synchronizeExtensionStateAfterCommit } from '../datatables/synchronize-extension-state.js';
 
 import type { AltEditorLiteError } from '../core/alt-editor-lite-error.js';
 import type { AltEditorLiteOptions } from '../core/alt-editor-lite-options.js';
@@ -128,7 +127,7 @@ export class DialogEditOperation<TRow extends object, TFormValues extends object
       presentation: {
         completeSuccess: () => {
           presentation.completeSuccess();
-          synchronizeExtensionStateAfterCommit(table);
+          host.synchronizeExtensions();
           return Promise.resolve();
         },
         restoreAfterOperationFailure: () => {

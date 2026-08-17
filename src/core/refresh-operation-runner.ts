@@ -1,5 +1,3 @@
-import { dispatchEditorIntegrationUpdate } from '../datatables/editor-integration-event.js';
-
 import { EditorOperationBusyError } from './alt-editor-lite-error.js';
 import { dispatchEditorEvent } from './editor-event.js';
 import {
@@ -35,6 +33,7 @@ export interface RefreshOperationRunnerArguments<
   readonly operationOwner: OperationOwner;
   readonly errorReporter: EditorErrorReporter<TRow, TFormValues>;
   readonly prepareForExternalOperation: () => Promise<void>;
+  readonly notifyIntegration: () => void;
 }
 
 /** Owns the refresh lifecycle, persistence request, events, and interaction. */
@@ -195,6 +194,6 @@ export class RefreshOperationRunner<TRow extends object, TFormValues extends obj
   }
 
   private notifyIntegration(): void {
-    dispatchEditorIntegrationUpdate(this.arguments_.tableElement);
+    this.arguments_.notifyIntegration();
   }
 }

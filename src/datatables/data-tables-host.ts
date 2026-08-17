@@ -9,7 +9,9 @@ import { resolveInlineTarget } from '../inline/inline-target-resolution.js';
 import { isColumnVisiblyAvailable } from './column-visibility.js';
 import { resolveLogicalCellTarget } from './commit-row-update.js';
 import { DrawOwnership } from './draw-ownership.js';
+import { dispatchEditorIntegrationUpdate } from './editor-integration-event.js';
 import { refreshDataTable } from './refresh-data-table.js';
+import { createEditorButtonState } from './register-editor-buttons.js';
 import { resolveUniqueRowIndexById } from './row-id-resolution.js';
 import {
   captureEditTarget,
@@ -18,8 +20,13 @@ import {
   resolveRemoveTargets,
 } from './row-target-resolution.js';
 import { SelectIntegration } from './select-integration.js';
+import { synchronizeExtensionStateAfterCommit } from './synchronize-extension-state.js';
 
 import type { LogicalCellTarget } from './commit-row-update.js';
+import type {
+  EditorButtonState,
+  EditorButtonStateInput,
+} from './register-editor-buttons.js';
 import type { EditTargetCapture, RemoveTargetCapture } from './row-target-resolution.js';
 import type { FieldConfig } from '../fields/field-config.js';
 import type {
@@ -54,10 +61,7 @@ export class DataTablesHost<TRow extends object>
 
   private isDestroyed = false;
 
-  public constructor(
-    private readonly table: Api<TRow>,
-    onSelectionChange: () => void = () => undefined,
-  ) {
+  public constructor(private readonly table: Api<TRow>) {
     const tableElement: unknown = table.table().node();
     if (!(tableElement instanceof HTMLTableElement)) {
       throw new EditorConfigurationError(
@@ -68,7 +72,9 @@ export class DataTablesHost<TRow extends object>
     this.eventTarget = tableElement;
     this.ownershipKey = tableElement;
     this.drawOwnership = new DrawOwnership(table);
-    this.selectIntegration = new SelectIntegration(table, onSelectionChange);
+    this.selectIntegration = new SelectIntegration(table, () => {
+      this.notifyIntegration();
+    });
   }
 
   /** Returns the DataTables API for explicitly integration-specific work. */
@@ -153,6 +159,23 @@ export class DataTablesHost<TRow extends object>
   /** Returns the current DataTables Select targets. */
   public getSelectedTargets(): readonly number[] {
     return this.selectIntegration.selectedRowIndexes();
+  }
+
+  /** Notifies registered DataTables UI integrations about editor state changes. */
+  public notifyIntegration(): void {
+    dispatchEditorIntegrationUpdate(this.eventTarget);
+  }
+
+  /** Synchronizes optional DataTables extensions after presentation cleanup. */
+  public synchronizeExtensions(): void {
+    synchronizeExtensionStateAfterCommit(this.table);
+  }
+
+  /** Derives the current DataTables Buttons presentation state. */
+  public createIntegrationButtonState(
+    input: Readonly<EditorButtonStateInput>,
+  ): EditorButtonState {
+    return createEditorButtonState(input);
   }
 
   /** Resolves an explicit row selector or the current Select selection. */
