@@ -1,8 +1,8 @@
 import { expectAssignable, expectNotAssignable, expectType } from 'tsd';
 
+import { DataTablesHost, type DataTablesRecordTarget } from '../../src/datatables.js';
 import {
   AltEditorLite,
-  DataTablesHost,
   defineFormDependencies,
   EditorLanguageLoadError,
   isChoiceFieldController,
@@ -13,7 +13,6 @@ import {
   type ClientSideOperations,
   type ChoiceFieldController,
   type DialogTemplateSource,
-  type DataTablesRecordTarget,
   type DeepPartial,
   type EditingOptions,
   type EditorErrorEventDetail,

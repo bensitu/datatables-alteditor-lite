@@ -7,10 +7,34 @@ import type {
 import type { EditOperationRunner } from '../core/editing/edit-operation-runner.js';
 import type { InteractionCoordinator } from '../core/editing/interaction-coordinator.js';
 import type { OperationOwner } from '../core/editing/operation-owner.js';
+import type { EditorOperationTarget } from '../core/editor-operation.js';
 import type { EditorValues } from '../core/editor-values.js';
 import type { ResolvedEditingOptions } from '../core/resolve-editing-options.js';
 import type { FieldConfig } from '../fields/field-config.js';
-import type { InlineEditState } from '../inline/inline-edit-state.js';
+
+/** Host-neutral lifecycle state for optional inline editing. */
+export type HostInlineState =
+  | { readonly status: 'disabled' }
+  | { readonly status: 'idle' }
+  | {
+      readonly status: 'activating';
+      readonly target: Readonly<EditorOperationTarget>;
+    }
+  | {
+      readonly status: 'editing';
+      readonly target: Readonly<EditorOperationTarget>;
+      readonly dirty: boolean;
+    }
+  | {
+      readonly status: 'validating' | 'submitting';
+      readonly target: Readonly<EditorOperationTarget>;
+    }
+  | {
+      readonly status: 'error';
+      readonly target: Readonly<EditorOperationTarget>;
+      readonly error: AltEditorLiteError;
+    }
+  | { readonly status: 'destroyed' };
 
 /** Services supplied to a Host that owns an inline editing presentation. */
 export interface InlineHostRuntimeArguments<
@@ -44,7 +68,7 @@ export interface InlineHostRuntime {
   open(target: unknown): Promise<void>;
   submit(): Promise<void>;
   cancel(): Promise<void>;
-  getState(): Readonly<InlineEditState>;
+  getState(): Readonly<HostInlineState>;
   isEditing(): boolean;
   prepareForExternalOperation(): Promise<void>;
   allowsExternalOperation(): boolean;

@@ -8,7 +8,7 @@ import {
   EditorConfigurationError,
   EditorDestroyedError,
   type FieldConfig,
-} from '../../src/index.js';
+} from '../../src/datatables.js';
 
 import {
   createTestTable,

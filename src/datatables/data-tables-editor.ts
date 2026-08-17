@@ -8,6 +8,7 @@ import type {
 } from './data-tables-host.js';
 import type { AltEditorLiteOptions } from '../core/alt-editor-lite-options.js';
 import type { DeepPartial } from '../core/editor-values.js';
+import type { InlineEditState } from '../inline/inline-edit-state.js';
 import type { Api, ColumnSelector, RowSelector } from 'datatables.net';
 
 /** DataTables-specific convenience facade over the neutral editor runtime. */
@@ -71,5 +72,10 @@ export class DataTablesEditor<
             columnSelector,
           ),
     );
+  }
+
+  /** Returns DataTables-specific inline target details. */
+  public override getInlineState(): Readonly<InlineEditState> {
+    return super.getInlineState() as Readonly<InlineEditState>;
   }
 }

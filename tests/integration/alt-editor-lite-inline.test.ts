@@ -12,7 +12,7 @@ import {
   type InlineActivation,
   type InlineEditingOptions,
   type OperationContext,
-} from '../../src/index.js';
+} from '../../src/datatables.js';
 
 import {
   createTestTable,

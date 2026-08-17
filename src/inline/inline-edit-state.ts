@@ -1,7 +1,8 @@
 import type { AltEditorLiteError } from '../core/alt-editor-lite-error.js';
+import type { EditorOperationTarget } from '../core/editor-operation.js';
 
 /** Stable identity shown by the public inline lifecycle state. */
-export interface InlineTargetSummary {
+export interface InlineTargetSummary extends EditorOperationTarget {
   readonly rowIndex: number;
   readonly rowId?: string;
   readonly columnIndex: number;

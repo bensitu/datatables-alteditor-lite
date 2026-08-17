@@ -13,7 +13,7 @@ export function createInlineOperationTarget(
   summary: Readonly<InlineTargetSummary>,
 ): Readonly<EditorOperationTarget> {
   return Object.freeze({
-    fieldNames: Object.freeze([summary.fieldName]),
-    key: summary.rowId ?? summary.rowIndex,
+    fieldNames: summary.fieldNames,
+    key: summary.key,
   });
 }

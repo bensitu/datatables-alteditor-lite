@@ -87,7 +87,13 @@ describe('inline interaction foundations', () => {
         { status: 'idle' },
         {
           status: 'activating',
-          target: { columnIndex: 0, fieldName: 'name', rowIndex: 1 },
+          target: {
+            columnIndex: 0,
+            fieldName: 'name',
+            fieldNames: ['name'],
+            key: 1,
+            rowIndex: 1,
+          },
         },
       ),
     ).toBe(true);
@@ -96,7 +102,13 @@ describe('inline interaction foundations', () => {
         { status: 'idle' },
         {
           status: 'submitting',
-          target: { columnIndex: 0, fieldName: 'name', rowIndex: 1 },
+          target: {
+            columnIndex: 0,
+            fieldName: 'name',
+            fieldNames: ['name'],
+            key: 1,
+            rowIndex: 1,
+          },
         },
       );
     }).toThrow(EditorOperationBusyError);

@@ -5,7 +5,7 @@ import {
   DataTablesEditor as AltEditorLite,
   registerAltEditorLite,
   type FieldConfig,
-} from '../../src/index.js';
+} from '../../src/datatables.js';
 
 import {
   createTestTable,

@@ -99,7 +99,9 @@ function createUmdLocaleConfig(localeName: string, isMinified: boolean): Rolldow
 
 const coreEsmConfig: RolldownOptions = {
   input: {
+    datatables: 'src/datatables.ts',
     index: 'src/index.ts',
+    standalone: 'src/standalone.ts',
   },
   external: [...peerPackageNames],
   output: {

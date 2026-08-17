@@ -1,12 +1,12 @@
 import { EditorTargetUnavailableError } from '../core/alt-editor-lite-error.js';
+
 import {
   createEditTargetSnapshot,
   createRemoveTargetSnapshot,
   isOwnedConnectedRowNode,
   type EditTargetSnapshot,
   type RemoveTargetSnapshot,
-} from '../core/editor-snapshot.js';
-
+} from './editor-snapshot.js';
 import { resolveUniqueRowIndexById } from './row-id-resolution.js';
 
 import type { Api } from 'datatables.net';

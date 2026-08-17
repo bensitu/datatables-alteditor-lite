@@ -25,7 +25,7 @@
   },
   "sideEffects": [
     "./dist/umd/alt-editor-lite.css",
-    "./dist/esm/index.js"
+    "./dist/esm/datatables.js"
   ],
   "main": "./dist/esm/index.js",
   "module": "./dist/esm/index.js",
@@ -37,6 +37,14 @@
     ".": {
       "types": "./dist/esm/index.d.ts",
       "import": "./dist/esm/index.js"
+    },
+    "./datatables": {
+      "types": "./dist/esm/datatables.d.ts",
+      "import": "./dist/esm/datatables.js"
+    },
+    "./standalone": {
+      "types": "./dist/esm/standalone.d.ts",
+      "import": "./dist/esm/standalone.js"
     },
     "./style.css": "./dist/umd/alt-editor-lite.css",
     "./locales/*.json": "./dist/esm/locales/*.json",
@@ -71,6 +79,7 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "test:types": "tsd",
+    "verify:package": "node scripts/verify-package-boundaries.mjs",
     "build:js": "rolldown -c",
     "build:css": "node scripts/build-css.mjs",
     "build:locales": "node scripts/build-locales.mjs",
@@ -85,6 +94,9 @@
     "datatables.net-select": ">=4.0.0 <5"
   },
   "peerDependenciesMeta": {
+    "datatables.net": {
+      "optional": true
+    },
     "datatables.net-buttons": {
       "optional": true
     },

@@ -1,0 +1,23 @@
+import DataTable from 'datatables.net';
+
+import './datatables/datatables-augmentation.js';
+import { registerAltEditorLite } from './datatables/register-alt-editor-lite.js';
+
+registerAltEditorLite(DataTable);
+
+export * from './public-api.js';
+export { DataTablesEditor } from './datatables/data-tables-editor.js';
+export { DataTablesHost } from './datatables/data-tables-host.js';
+export { registerAltEditorLite } from './datatables/register-alt-editor-lite.js';
+export type {
+  DataTablesInlineTarget,
+  DataTablesRecordTarget,
+} from './datatables/data-tables-host.js';
+export type {
+  EditTargetSnapshot,
+  RemoveTargetSnapshot,
+} from './datatables/editor-snapshot.js';
+export type {
+  InlineEditState as DataTablesInlineEditState,
+  InlineTargetSummary,
+} from './inline/inline-edit-state.js';

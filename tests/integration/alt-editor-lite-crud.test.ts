@@ -10,7 +10,7 @@ import {
   type AltEditorLiteOptions,
   type FieldConfig,
   type OperationContext,
-} from '../../src/index.js';
+} from '../../src/datatables.js';
 
 import {
   createTestTable,

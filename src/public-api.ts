@@ -1,12 +1,4 @@
 export { AltEditorLite } from './core/alt-editor-lite.js';
-export { DataTablesHost } from './datatables/data-tables-host.js';
-export { DataTablesEditor } from './datatables/data-tables-editor.js';
-export { StandaloneHost } from './standalone/standalone-host.js';
-export type {
-  DataTablesInlineTarget,
-  DataTablesRecordTarget,
-} from './datatables/data-tables-host.js';
-export type { StandaloneHostOptions } from './standalone/standalone-host.js';
 export {
   ENGLISH_LANGUAGE,
   resolveLanguage,
@@ -79,10 +71,8 @@ export type {
   EditorOperationMode,
   EditorOperationTarget,
 } from './core/editor-operation.js';
-export type { EditTargetSnapshot, RemoveTargetSnapshot } from './core/editor-snapshot.js';
 export type { EditorState } from './core/editor-state.js';
 export type { BuiltinValue, DeepPartial, EditorValues } from './core/editor-values.js';
-export { registerAltEditorLite } from './datatables/register-alt-editor-lite.js';
 export type {
   BaseFieldConfig,
   BaseSearchSelectFieldConfig,
@@ -145,7 +135,6 @@ export type {
 } from './form/form-validation.js';
 export type { FieldPath, FieldPathValue } from './object-path/field-path.js';
 export type { InlineKeyboardShortcut } from './inline/inline-keyboard-shortcut.js';
-export type { InlineEditState, InlineTargetSummary } from './inline/inline-edit-state.js';
 export type {
   EditorHost,
   HostApplyContext,
@@ -155,3 +144,4 @@ export type {
   HostRowCollectionCapability,
   HostSelectionCapability,
 } from './host/editor-host.js';
+export type { HostInlineState as InlineEditState } from './host/inline-host-runtime.js';

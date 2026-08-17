@@ -85,9 +85,12 @@ export function captureInlineTarget<TRow extends object, TFormValues extends obj
   }
 
   const rowCapture = captureEditTarget(table, rowIndex, unavailableMessage);
+  const key = rowCapture.snapshot.rowId ?? rowIndex;
   const summary = Object.freeze({
     columnIndex,
     fieldName: mapping.fieldName,
+    fieldNames: Object.freeze([mapping.fieldName]),
+    key,
     rowIndex,
     ...(rowCapture.snapshot.rowId === undefined
       ? {}

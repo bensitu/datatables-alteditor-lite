@@ -45,8 +45,7 @@ import type {
   HostRecordEntry,
   HostRowCollectionCapability,
 } from '../host/editor-host.js';
-import type { InlineHostRuntime } from '../host/inline-host-runtime.js';
-import type { InlineEditState } from '../inline/inline-edit-state.js';
+import type { HostInlineState, InlineHostRuntime } from '../host/inline-host-runtime.js';
 import type { FieldPath, FieldPathValue } from '../object-path/field-path.js';
 
 function normalizeRejectedReason(error: unknown): Error {
@@ -323,7 +322,7 @@ export class AltEditorLite<
   }
 
   /** Returns the independent inline presentation state. */
-  public getInlineState(): Readonly<InlineEditState> {
+  public getInlineState(): Readonly<HostInlineState> {
     this.assertInlineEditAvailable();
     return this.inlineController.getState();
   }

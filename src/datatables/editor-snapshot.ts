@@ -1,40 +1,24 @@
-/**
- * Immutable identity captured for one Edit target before its dialog opens.
- */
+import { createReadonlyRowView } from '../core/readonly-row-view.js';
+
+export { createReadonlyRowView } from '../core/readonly-row-view.js';
+
+/** Immutable identity captured for one DataTables Edit target. */
 export interface EditTargetSnapshot<TRow extends object> {
-  /** Stable DataTables row index at capture time. */
   readonly rowIndex: number;
-  /** Public DataTables row id when one is configured. */
   readonly rowId: string | undefined;
-  /** Rendered row node at capture time, or null for an unrendered row. */
   readonly rowNode: HTMLTableRowElement | null;
-  /** Shallow immutable copy supplied to update callbacks. */
   readonly original: Readonly<TRow>;
 }
 
-/**
- * Immutable identities captured for every Remove target before confirmation.
- */
+/** Immutable identities captured for DataTables Remove targets. */
 export interface RemoveTargetSnapshot<TRow extends object> {
-  /** Stable DataTables row indexes in capture order. */
   readonly rowIndexes: readonly number[];
-  /** Public row ids aligned with `rowIndexes`. */
   readonly rowIds: readonly (string | undefined)[];
-  /** Rendered row nodes aligned with `rowIndexes`. */
   readonly rowNodes: readonly (HTMLTableRowElement | null)[];
-  /** Shallow immutable copies aligned with `rowIndexes`. */
   readonly originals: readonly Readonly<TRow>[];
 }
 
-/**
- * Creates and freezes one Edit snapshot.
- *
- * @param rowIndex - DataTables row index.
- * @param rowId - Public row id, when available.
- * @param rowNode - Rendered row node, when available.
- * @param original - Live row data copied into the public snapshot.
- * @returns Frozen Edit snapshot.
- */
+/** Creates and freezes one DataTables Edit snapshot. */
 export function createEditTargetSnapshot<TRow extends object>(
   rowIndex: number,
   rowId: string | undefined,
@@ -49,16 +33,7 @@ export function createEditTargetSnapshot<TRow extends object>(
   });
 }
 
-/**
- * Creates and freezes an aligned Remove snapshot.
- *
- * @param rowIndexes - DataTables row indexes.
- * @param rowIds - Public row ids aligned by index.
- * @param rowNodes - Rendered row nodes aligned by index.
- * @param originals - Live row data copied into the public snapshot.
- * @returns Frozen Remove snapshot.
- * @throws TypeError when the snapshot arrays are not aligned.
- */
+/** Creates and freezes aligned DataTables Remove snapshots. */
 export function createRemoveTargetSnapshot<TRow extends object>(
   rowIndexes: readonly number[],
   rowIds: readonly (string | undefined)[],
@@ -84,16 +59,7 @@ export function createRemoveTargetSnapshot<TRow extends object>(
   });
 }
 
-/**
- * Checks whether a captured row node is still rendered by the owned table.
- *
- * Connectedness is necessary for node-based resolution but does not replace
- * row-id or guarded row-index identity checks.
- *
- * @param rowNode - Captured row node.
- * @param tableElement - Table element owned by the editor.
- * @returns Whether the node remains connected to the owned table.
- */
+/** Checks whether a captured row node still belongs to the owned table. */
 export function isOwnedConnectedRowNode(
   rowNode: HTMLTableRowElement | null,
   tableElement: HTMLTableElement,
@@ -102,6 +68,3 @@ export function isOwnedConnectedRowNode(
     rowNode !== null && rowNode.isConnected && rowNode.closest('table') === tableElement
   );
 }
-import { createReadonlyRowView } from './readonly-row-view.js';
-
-export { createReadonlyRowView } from './readonly-row-view.js';

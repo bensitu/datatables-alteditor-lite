@@ -5,7 +5,7 @@ import {
   createReadonlyRowView,
   createRemoveTargetSnapshot,
   isOwnedConnectedRowNode,
-} from '../../src/core/editor-snapshot.js';
+} from '../../src/datatables/editor-snapshot.js';
 
 interface SnapshotRow {
   readonly id: string;
