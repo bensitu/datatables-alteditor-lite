@@ -2,7 +2,7 @@ import DataTable from 'datatables.net';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import {
-  AltEditorLite,
+  DataTablesEditor as AltEditorLite,
   AltEditorLiteError,
   EditorAlreadyInitializedError,
   EditorConfigurationError,

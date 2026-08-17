@@ -11,7 +11,6 @@ import type { FieldChangeContext, FieldConfig } from '../../src/fields/field-con
 import type { FieldValidationResult } from '../../src/fields/field-controller.js';
 import type { FormController } from '../../src/form/form-controller.js';
 import type { LocalUniqueValidator } from '../../src/form/validate-editor-form.js';
-import type { Api } from 'datatables.net';
 
 interface FormValues {
   readonly profile: {
@@ -425,13 +424,12 @@ describe('FormController', () => {
     activeForm = form;
     document.body.append(form.element);
     const operationAbortController = new AbortController();
-    const submission = form.validateForSubmission<Record<string, never>>(
+    const submission = form.validateForSubmission(
       operationAbortController.signal,
       undefined,
       {
         mode: 'dialog',
         operation: 'create',
-        table: {} as Api<Record<string, never>>,
       },
     );
 

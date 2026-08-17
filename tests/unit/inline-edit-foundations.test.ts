@@ -65,9 +65,8 @@ describe('inline interaction foundations', () => {
     const owner = new OperationOwner();
     const first = owner.begin('edit', 'dialog');
     const second = owner.begin('edit', 'inline', {
-      columnIndex: 0,
       fieldNames: ['name'],
-      rowIndex: 1,
+      key: 'row-1',
     });
 
     expect(first.abortController.signal.aborted).toBe(true);

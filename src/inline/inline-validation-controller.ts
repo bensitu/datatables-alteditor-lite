@@ -25,7 +25,7 @@ export interface InlineValidationControllerArguments<
   readonly fields: readonly FieldConfig<TFormValues>[];
   readonly language: Readonly<AltEditorLiteLanguage>;
   readonly table: Api<TRow>;
-  readonly validateForm?: FormValidator<TRow, TFormValues>;
+  readonly validateForm?: FormValidator<TFormValues>;
   readonly validateUnique: (
     values: Readonly<EditorValues<TFormValues>>,
     excludedRow: TRow,
@@ -98,7 +98,6 @@ export class InlineValidationController<TRow extends object, TFormValues extends
                     mode: 'inline',
                     operation: 'edit',
                     signal: validationSignal,
-                    table: this.arguments_.table,
                   }),
                 ),
               ),

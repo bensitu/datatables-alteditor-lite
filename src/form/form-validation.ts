@@ -1,7 +1,6 @@
 import type { EditorValues } from '../core/editor-values.js';
 import type { MaybePromise } from '../fields/field-value.js';
 import type { FieldPath } from '../object-path/field-path.js';
-import type { Api } from 'datatables.net';
 
 /** Validation messages associated with declared form field paths. */
 export type FormFieldErrors<TFormValues extends object> = Partial<
@@ -18,15 +17,14 @@ export type FormValidationResult<TFormValues extends object> =
     };
 
 /** Immutable operation context supplied to a form-level validator. */
-export interface FormValidationContext<TRow extends object> {
-  readonly table: Api<TRow>;
+export interface FormValidationContext {
   readonly signal: AbortSignal;
   readonly operation: 'create' | 'edit';
   readonly mode: 'dialog' | 'inline';
 }
 
 /** Cross-field validator shared by dialog and inline editing. */
-export type FormValidator<TRow extends object, TFormValues extends object> = (
+export type FormValidator<TFormValues extends object> = (
   values: Readonly<EditorValues<TFormValues>>,
-  context: FormValidationContext<TRow>,
+  context: FormValidationContext,
 ) => MaybePromise<FormValidationResult<TFormValues>>;

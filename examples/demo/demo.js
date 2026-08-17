@@ -15,7 +15,7 @@ if (
   typeof globalThis.DataTable.version !== 'string' ||
   typeof altEditorLiteRuntime !== 'object' ||
   altEditorLiteRuntime === null ||
-  typeof altEditorLiteRuntime.AltEditorLite !== 'function'
+  typeof altEditorLiteRuntime.DataTablesEditor !== 'function'
 ) {
   failDemoInitialization(
     'The demonstration could not start because a required script did not load.',
@@ -23,7 +23,7 @@ if (
 }
 
 const {
-  AltEditorLite,
+  DataTablesEditor: AltEditorLite,
   AltEditorLiteError,
   getLocale,
   getRegisteredLocaleNames,

@@ -13,7 +13,6 @@ import type {
   EditorHooks,
 } from './alt-editor-lite-options.js';
 import type { AltEditorLite } from './alt-editor-lite.js';
-import type { InlineEventTarget } from './editor-event.js';
 
 /** Publishes normalized operation failures through the configured observers. */
 export class EditorErrorReporter<TRow extends object, TFormValues extends object> {
@@ -41,7 +40,6 @@ export class EditorErrorReporter<TRow extends object, TFormValues extends object
       return;
     }
 
-    const inlineTarget = this.createInlineTarget(context);
     dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:error'>(
       this.eventTarget,
       'alteditor-lite:error',
@@ -50,7 +48,7 @@ export class EditorErrorReporter<TRow extends object, TFormValues extends object
         error,
         mode: context.mode,
         operation: context.operation,
-        ...(inlineTarget === undefined ? {} : { target: inlineTarget }),
+        ...(context.target === undefined ? {} : { target: context.target }),
         type: 'error',
       },
     );
@@ -87,27 +85,5 @@ export class EditorErrorReporter<TRow extends object, TFormValues extends object
         );
       }
     }
-  }
-
-  private createInlineTarget(
-    context: EditorErrorHookContext,
-  ): Readonly<InlineEventTarget> | undefined {
-    if (
-      context.mode !== 'inline' ||
-      context.target?.columnIndex === undefined ||
-      context.target.fieldNames[0] === undefined
-    ) {
-      return undefined;
-    }
-
-    return {
-      columnIndex: context.target.columnIndex,
-      fieldName: context.target.fieldNames[0],
-      rowIndex: context.target.rowIndex,
-      ...(context.target.rowId === undefined ? {} : { rowId: context.target.rowId }),
-      ...(context.target.columnName === undefined
-        ? {}
-        : { columnName: context.target.columnName }),
-    };
   }
 }

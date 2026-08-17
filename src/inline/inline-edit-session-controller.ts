@@ -524,7 +524,6 @@ export class InlineEditSessionController<
       operation: 'edit',
       row: capture.rowCapture.snapshot.original,
       signal: abortController.signal,
-      table: this.arguments_.table,
       target: createInlineOperationTarget(capture.summary),
     });
     return (await Promise.resolve(hook(context))) !== false;

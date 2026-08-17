@@ -21,9 +21,8 @@ import type {
 } from '../core/editing/operation-owner.js';
 import type { EditorErrorReporter } from '../core/editor-error-reporter.js';
 import type { EditorValues } from '../core/editor-values.js';
-import type { DataTablesHost } from '../datatables/data-tables-host.js';
 import type { EditorFormController } from '../form/form-controller.js';
-import type { Api } from 'datatables.net';
+import type { EditorHost } from '../host/editor-host.js';
 
 export interface DialogCreatePresentation<TFormValues extends object> {
   startSubmission(): void;
@@ -39,21 +38,30 @@ export interface DialogCreatePresentation<TFormValues extends object> {
 export interface DialogCreateOperationArguments<
   TRow extends object,
   TFormValues extends object,
+  TTarget,
 > {
   readonly editor: AltEditorLite<TRow, TFormValues>;
-  readonly table: Api<TRow>;
-  readonly host: DataTablesHost<TRow>;
-  readonly tableElement: HTMLTableElement;
+  readonly host: EditorHost<TRow, TTarget>;
+  readonly eventTarget: EventTarget;
   readonly options: Readonly<AltEditorLiteOptions<TRow, TFormValues>>;
   readonly language: Readonly<AltEditorLiteLanguage>;
   readonly operationOwner: OperationOwner;
   readonly errorReporter: EditorErrorReporter<TRow, TFormValues>;
+  readonly onPresentationComplete: () => void;
 }
 
 /** Validates, persists, and commits one dialog Create operation. */
-export class DialogCreateOperation<TRow extends object, TFormValues extends object> {
+export class DialogCreateOperation<
+  TRow extends object,
+  TFormValues extends object,
+  TTarget,
+> {
   public constructor(
-    private readonly arguments_: DialogCreateOperationArguments<TRow, TFormValues>,
+    private readonly arguments_: DialogCreateOperationArguments<
+      TRow,
+      TFormValues,
+      TTarget
+    >,
   ) {}
 
   /** Runs one Create submission while the supplied form remains active. */
@@ -72,7 +80,6 @@ export class DialogCreateOperation<TRow extends object, TFormValues extends obje
         {
           mode: 'dialog',
           operation: 'create',
-          table: this.arguments_.table,
         },
       );
       if (!this.owns(request)) {
@@ -90,10 +97,7 @@ export class DialogCreateOperation<TRow extends object, TFormValues extends obje
       const beforeSubmit = this.arguments_.options.hooks?.beforeSubmit;
       if (beforeSubmit !== undefined) {
         const shouldContinue = await Promise.resolve(
-          beforeSubmit(
-            values,
-            this.arguments_.operationOwner.context(this.arguments_.table, request),
-          ),
+          beforeSubmit(values, this.arguments_.operationOwner.context(request)),
         );
         if (!this.owns(request)) {
           return;
@@ -106,7 +110,7 @@ export class DialogCreateOperation<TRow extends object, TFormValues extends obje
       }
 
       dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:submit'>(
-        this.arguments_.tableElement,
+        this.arguments_.eventTarget,
         'alteditor-lite:submit',
         {
           editor: this.arguments_.editor,
@@ -136,7 +140,7 @@ export class DialogCreateOperation<TRow extends object, TFormValues extends obje
         return;
       }
       dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:success'>(
-        this.arguments_.tableElement,
+        this.arguments_.eventTarget,
         'alteditor-lite:success',
         {
           editor: this.arguments_.editor,
@@ -153,12 +157,11 @@ export class DialogCreateOperation<TRow extends object, TFormValues extends obje
 
       this.arguments_.operationOwner.complete(request);
       presentation.completeSuccess(form);
-      this.arguments_.host.synchronizeExtensions();
+      this.arguments_.onPresentationComplete();
       await this.arguments_.errorReporter.runAfterSuccess({
         mode: 'dialog',
         operation: 'create',
         row,
-        table: this.arguments_.table,
         values,
       });
     } catch (rawError: unknown) {
@@ -174,11 +177,11 @@ export class DialogCreateOperation<TRow extends object, TFormValues extends obje
     values: Readonly<EditorValues<TFormValues>>,
     request: OwnedOperationRequest,
   ): Promise<TRow> {
-    const { options, operationOwner, table } = this.arguments_;
+    const { options, operationOwner } = this.arguments_;
     if (options.operations?.create !== undefined) {
       const rowCandidate: unknown = await options.operations.create(
         values,
-        operationOwner.context(table, request),
+        operationOwner.context(request),
       );
       assertCompleteRow(rowCandidate, 'operations.create');
       return rowCandidate as TRow;

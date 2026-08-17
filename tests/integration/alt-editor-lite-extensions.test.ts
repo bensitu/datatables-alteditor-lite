@@ -3,7 +3,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest
 
 import { hasSelectIntegration } from '../../src/datatables/select-integration.js';
 import {
-  AltEditorLite,
+  DataTablesEditor as AltEditorLite,
   registerAltEditorLite,
   type FieldConfig,
 } from '../../src/index.js';

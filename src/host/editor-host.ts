@@ -45,12 +45,18 @@ export interface EditorHost<TRow extends object, TTarget> {
 
 /** Optional host support for resolving consumer selection. */
 export interface HostSelectionCapability<TTarget> {
-  getSelectedTargets(): readonly TTarget[];
+  getSelectedTargets(unavailableMessage?: string): readonly TTarget[];
 }
 
 /** Optional host support for a stable consumer-visible refresh. */
 export interface HostRefreshCapability {
   refresh(signal: AbortSignal, action?: () => Promise<void>): Promise<void>;
+}
+
+/** Optional host support for editor state and presentation notifications. */
+export interface HostPresentationCapability {
+  notifyEditorStateChange(): void;
+  completeEditorPresentation(): void;
 }
 
 /** One record exposed by an optional host collection capability. */
@@ -62,4 +68,35 @@ export interface HostRecordEntry<TRow extends object, TTarget> {
 /** Optional host support for enumerating records used by local validation. */
 export interface HostRowCollectionCapability<TRow extends object, TTarget> {
   entries(): Iterable<Readonly<HostRecordEntry<TRow, TTarget>>>;
+}
+
+/** Detects selection support without adding optional methods to EditorHost. */
+export function hasHostSelectionCapability<TTarget>(
+  host: object,
+): host is HostSelectionCapability<TTarget> {
+  return 'getSelectedTargets' in host && typeof host.getSelectedTargets === 'function';
+}
+
+/** Detects refresh support without adding optional methods to EditorHost. */
+export function hasHostRefreshCapability(host: object): host is HostRefreshCapability {
+  return 'refresh' in host && typeof host.refresh === 'function';
+}
+
+/** Detects presentation notifications supplied by a concrete Host. */
+export function hasHostPresentationCapability(
+  host: object,
+): host is HostPresentationCapability {
+  return (
+    'notifyEditorStateChange' in host &&
+    typeof host.notifyEditorStateChange === 'function' &&
+    'completeEditorPresentation' in host &&
+    typeof host.completeEditorPresentation === 'function'
+  );
+}
+
+/** Detects record collection support used by local uniqueness validation. */
+export function hasHostRowCollectionCapability<TRow extends object, TTarget>(
+  host: object,
+): host is HostRowCollectionCapability<TRow, TTarget> {
+  return 'entries' in host && typeof host.entries === 'function';
 }

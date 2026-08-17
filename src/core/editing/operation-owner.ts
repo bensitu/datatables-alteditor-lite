@@ -7,7 +7,6 @@ import type {
   EditorOperationMode,
   EditorOperationTarget,
 } from '../editor-operation.js';
-import type { Api } from 'datatables.net';
 
 /** Request identity shared by dialog, inline, and refresh operations. */
 export interface OwnedOperationRequest {
@@ -58,16 +57,14 @@ export class OperationOwner {
   }
 
   /** Creates the public callback context for an owned request. */
-  public context<TRow extends object>(
-    table: Api<TRow>,
+  public context(
     request: OwnedOperationRequest,
     operation: EditorOperation = request.operation,
-  ): OperationContext<TRow> {
+  ): OperationContext {
     return Object.freeze({
       mode: request.mode,
       operation,
       signal: request.abortController.signal,
-      table,
       ...(request.target === undefined ? {} : { target: request.target }),
     });
   }

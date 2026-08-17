@@ -2,6 +2,7 @@ import { expectAssignable, expectNotAssignable, expectType } from 'tsd';
 
 import {
   AltEditorLite,
+  DataTablesHost,
   defineFormDependencies,
   EditorLanguageLoadError,
   isChoiceFieldController,
@@ -12,6 +13,8 @@ import {
   type ClientSideOperations,
   type ChoiceFieldController,
   type DialogTemplateSource,
+  type DataTablesRecordTarget,
+  type DeepPartial,
   type EditingOptions,
   type EditorErrorEventDetail,
   type EditorHooks,
@@ -82,7 +85,12 @@ expectAssignable<AltEditorLiteOptions<Row>>({
   ],
 });
 
-const editor = new AltEditorLite<Row, FormValues>(table, {
+const host = new DataTablesHost(table);
+const editor = new AltEditorLite<
+  Row,
+  FormValues,
+  ReturnType<typeof host.resolveRecordTarget>
+>(host, {
   clientSide: {
     createRow: (values) => ({
       id: 'row',
@@ -106,16 +114,23 @@ const editor = new AltEditorLite<Row, FormValues>(table, {
   ],
 });
 
-expectType<AltEditorLite<Row, FormValues>>(editor);
-expectType<AltEditorLite<Row, FormValues> | null>(table.altEditorLite<FormValues>());
-expectType<AltEditorLite<Row> | null>(table.altEditorLite());
+expectType<AltEditorLite<Row, FormValues, ReturnType<typeof host.resolveRecordTarget>>>(
+  editor,
+);
+expectType<AltEditorLite<Row, FormValues, DataTablesRecordTarget> | null>(
+  table.altEditorLite<FormValues>(),
+);
+expectType<AltEditorLite<Row, DeepPartial<Row>, DataTablesRecordTarget> | null>(
+  table.altEditorLite(),
+);
 expectType<Promise<void>>(editor.openCreateDialog());
-expectType<Promise<void>>(editor.openEditDialog('#row'));
-expectType<Promise<void>>(editor.openEditDialog(0));
-expectType<Promise<void>>(editor.openRemoveDialog(['#row-a', '#row-b']));
-expectType<Promise<void>>(editor.refreshTable());
+expectType<Promise<void>>(editor.openEditDialog(host.resolveRecordTarget('#row')));
+expectType<Promise<void>>(
+  editor.openRemoveDialog(host.resolveRecordTargets('.selected')),
+);
+expectType<Promise<void>>(editor.refresh());
 expectType<Promise<void>>(editor.closeDialog());
-expectType<Promise<void>>(editor.openInlineEdit('#row', 0));
+expectType<Promise<void>>(editor.openInlineEdit(host.createInlineTarget('#row', 0)));
 expectType<Promise<void>>(editor.submitInlineEdit());
 expectType<Promise<void>>(editor.cancelInlineEdit());
 expectType<Readonly<InlineEditState>>(editor.getInlineState());
@@ -203,8 +218,7 @@ const operations: EditorOperations<Row, FormValues> = {
   create: async (values, context) => {
     await Promise.resolve();
     expectType<Readonly<EditorValues<FormValues>>>(values);
-    expectType<OperationContext<Row>>(context);
-    expectType<Api<Row>>(context.table);
+    expectType<OperationContext>(context);
     expectType<AbortSignal>(context.signal);
     expectType<'create' | 'edit' | 'remove' | 'refresh'>(context.operation);
     expectType<'dialog' | 'inline' | 'api'>(context.mode);
@@ -216,17 +230,17 @@ const operations: EditorOperations<Row, FormValues> = {
   },
   remove: (rows, context) => {
     expectType<readonly Readonly<Row>[]>(rows);
-    expectType<OperationContext<Row>>(context);
+    expectType<OperationContext>(context);
   },
   refresh: async (context) => {
-    expectType<OperationContext<Row>>(context);
+    expectType<OperationContext>(context);
     expectType<'create' | 'edit' | 'remove' | 'refresh'>(context.operation);
     await Promise.resolve();
   },
   update: (values, original, context) => {
     expectType<Readonly<EditorValues<FormValues>>>(values);
     expectType<Readonly<Row>>(original);
-    expectType<OperationContext<Row>>(context);
+    expectType<OperationContext>(context);
     return {
       ...original,
       profile: { email: values.contact?.email ?? original.profile.email },
@@ -317,10 +331,9 @@ expectAssignable<AltEditorLiteOptions<Row, FormValues>>({
   fields: [],
 });
 
-const formValidator: FormValidator<Row, FormValues> = (values, context) => {
+const formValidator: FormValidator<FormValues> = (values, context) => {
   expectType<Readonly<EditorValues<FormValues>>>(values);
-  expectType<FormValidationContext<Row>>(context);
-  expectType<Api<Row>>(context.table);
+  expectType<FormValidationContext>(context);
   expectType<AbortSignal>(context.signal);
   expectType<'create' | 'edit'>(context.operation);
   expectType<'dialog' | 'inline'>(context.mode);

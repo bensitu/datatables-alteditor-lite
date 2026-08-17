@@ -1,7 +1,7 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import {
-  AltEditorLite,
+  DataTablesEditor as AltEditorLite,
   AltEditorLiteError,
   EditorConfigurationError,
   EditorOperationBusyError,
@@ -286,7 +286,7 @@ describe('AltEditorLite programmatic inline editing', () => {
       fields,
     });
     await editor.openInlineEdit('#row-a', 0);
-    await editor.refreshTable();
+    await editor.refresh();
     expect(editor.getInlineState().status).toBe('idle');
 
     await editor.openInlineEdit('#row-a', 0);
@@ -423,13 +423,12 @@ describe('AltEditorLite programmatic inline editing', () => {
       (
         values: Readonly<Partial<InlineValues>>,
         original: Readonly<TestRow>,
-        context: OperationContext<TestRow>,
+        context: OperationContext,
       ) => {
         expect(context.mode).toBe('inline');
         expect(context.target).toMatchObject({
-          columnIndex: 0,
           fieldNames: ['name'],
-          rowId: 'row-a',
+          key: 'row-a',
         });
         attempt += 1;
         if (attempt === 1) {
@@ -619,7 +618,7 @@ describe('AltEditorLite programmatic inline editing', () => {
     expect(beforeOpen.mock.calls[0]?.[0]).toMatchObject({
       mode: 'inline',
       operation: 'edit',
-      target: { columnIndex: 0, rowId: 'row-a' },
+      target: { fieldNames: ['name'], key: 'row-a' },
     });
     expect(editor.getInlineState()).toEqual({ status: 'idle' });
     expect(openListener).not.toHaveBeenCalled();

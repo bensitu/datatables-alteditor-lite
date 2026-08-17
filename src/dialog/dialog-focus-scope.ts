@@ -92,11 +92,11 @@ export class DialogFocusScope {
 
   /**
    * @param dialogElement - Native dialog whose focus is scoped.
-   * @param tableElement - Table used when the original trigger disappears.
+   * @param tableElement - Host element used when the original trigger disappears.
    */
   public constructor(
     private readonly dialogElement: HTMLDialogElement,
-    private readonly tableElement: HTMLTableElement,
+    private readonly tableElement: HTMLElement,
   ) {}
 
   /**

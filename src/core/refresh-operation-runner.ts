@@ -16,16 +16,14 @@ import type { OperationOwner } from './editing/operation-owner.js';
 import type { EditorErrorReporter } from './editor-error-reporter.js';
 import type { EditorStateCoordinator } from './editor-state-coordinator.js';
 import type { HostRefreshCapability } from '../host/editor-host.js';
-import type { Api } from 'datatables.net';
 
 export interface RefreshOperationRunnerArguments<
   TRow extends object,
   TFormValues extends object,
 > {
   readonly editor: AltEditorLite<TRow, TFormValues>;
-  readonly table: Api<TRow>;
   readonly host: HostRefreshCapability;
-  readonly tableElement: HTMLTableElement;
+  readonly eventTarget: EventTarget;
   readonly options: Readonly<AltEditorLiteOptions<TRow, TFormValues>>;
   readonly language: Readonly<AltEditorLiteLanguage>;
   readonly stateCoordinator: EditorStateCoordinator;
@@ -90,14 +88,13 @@ export class RefreshOperationRunner<TRow extends object, TFormValues extends obj
       options,
       host,
       stateCoordinator,
-      table,
-      tableElement,
+      eventTarget,
     } = this.arguments_;
     stateCoordinator.transitionTo({ status: 'refreshing' });
     const request = operationOwner.begin('refresh', 'api');
     let didSucceed = false;
     dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:refresh'>(
-      tableElement,
+      eventTarget,
       'alteditor-lite:refresh',
       {
         editor,
@@ -117,7 +114,7 @@ export class RefreshOperationRunner<TRow extends object, TFormValues extends obj
       } else {
         await host.refresh(request.abortController.signal, async () => {
           await Promise.resolve(
-            options.operations?.refresh?.(operationOwner.context(table, request)),
+            options.operations?.refresh?.(operationOwner.context(request)),
           );
         });
       }
@@ -126,7 +123,7 @@ export class RefreshOperationRunner<TRow extends object, TFormValues extends obj
       }
       didSucceed = true;
       dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:success'>(
-        tableElement,
+        eventTarget,
         'alteditor-lite:success',
         {
           editor,
@@ -166,7 +163,7 @@ export class RefreshOperationRunner<TRow extends object, TFormValues extends obj
     this.releaseInteraction();
     stateCoordinator.transitionTo({ status: 'ready' });
     dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:refresh'>(
-      tableElement,
+      eventTarget,
       'alteditor-lite:refresh',
       {
         editor,
@@ -180,7 +177,6 @@ export class RefreshOperationRunner<TRow extends object, TFormValues extends obj
       await errorReporter.runAfterSuccess({
         mode: 'api',
         operation: 'refresh',
-        table,
       });
     }
   }

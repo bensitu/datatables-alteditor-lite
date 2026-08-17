@@ -1,19 +1,15 @@
 import { dispatchEditorEvent } from '../core/editor-event.js';
-import { commitRowUpdate } from '../datatables/commit-row-update.js';
 
 import type { AltEditorLiteError } from '../core/alt-editor-lite-error.js';
 import type { AltEditorLiteOptions } from '../core/alt-editor-lite-options.js';
 import type { AltEditorLite } from '../core/alt-editor-lite.js';
 import type { EditOperationRunner } from '../core/editing/edit-operation-runner.js';
-import type { OwnedOperationRequest } from '../core/editing/operation-owner.js';
 import type { EditorErrorReporter } from '../core/editor-error-reporter.js';
 import type { EditorOperationTarget } from '../core/editor-operation.js';
 import type { ResolvedDialogEditingOptions } from '../core/resolve-editing-options.js';
-import type { DataTablesHost } from '../datatables/data-tables-host.js';
-import type { EditTargetCapture } from '../datatables/row-target-resolution.js';
 import type { EditorFormController } from '../form/form-controller.js';
+import type { EditorHost } from '../host/editor-host.js';
 import type { FieldPath } from '../object-path/field-path.js';
-import type { Api } from 'datatables.net';
 
 export interface DialogEditPresentation {
   startValidation(): void;
@@ -27,31 +23,36 @@ export interface DialogEditPresentation {
 export interface DialogEditOperationArguments<
   TRow extends object,
   TFormValues extends object,
+  TTarget,
 > {
   readonly editor: AltEditorLite<TRow, TFormValues>;
-  readonly table: Api<TRow>;
-  readonly tableElement: HTMLTableElement;
+  readonly eventTarget: EventTarget;
   readonly options: Readonly<AltEditorLiteOptions<TRow, TFormValues>>;
   readonly editing: Readonly<ResolvedDialogEditingOptions>;
-  readonly host: DataTablesHost<TRow>;
+  readonly host: EditorHost<TRow, TTarget>;
   readonly editOperationRunner: EditOperationRunner<TRow, TFormValues>;
   readonly errorReporter: EditorErrorReporter<TRow, TFormValues>;
-  readonly targetUnavailableMessage: string;
+  readonly onPresentationComplete: () => void;
 }
 
 /** Runs the shared Edit transaction for the dialog presentation. */
-export class DialogEditOperation<TRow extends object, TFormValues extends object> {
+export class DialogEditOperation<
+  TRow extends object,
+  TFormValues extends object,
+  TTarget,
+> {
   public constructor(
-    private readonly arguments_: DialogEditOperationArguments<TRow, TFormValues>,
+    private readonly arguments_: DialogEditOperationArguments<TRow, TFormValues, TTarget>,
   ) {}
 
   /** Validates, persists, and commits one captured row update. */
   public async run(
     form: EditorFormController<TFormValues>,
-    capture: EditTargetCapture<TRow>,
+    recordTarget: TTarget,
+    original: Readonly<TRow>,
     target: Readonly<EditorOperationTarget>,
     presentation: DialogEditPresentation,
-    updateCapture: (capture: EditTargetCapture<TRow>) => void,
+    updateOriginal: (original: Readonly<TRow>) => void,
   ): Promise<void> {
     const {
       editing,
@@ -60,9 +61,7 @@ export class DialogEditOperation<TRow extends object, TFormValues extends object
       errorReporter,
       host,
       options,
-      table,
-      tableElement,
-      targetUnavailableMessage,
+      eventTarget,
     } = this.arguments_;
 
     await editOperationRunner.run({
@@ -86,22 +85,27 @@ export class DialogEditOperation<TRow extends object, TFormValues extends object
               return shouldContinue !== false;
             },
           }),
-      commit: async (row, rowIndex, request: OwnedOperationRequest) => {
-        const result = await commitRowUpdate(host, rowIndex, row, request);
+      commit: async (row, request) => {
+        await host.applyUpdate(recordTarget, row, {
+          mode: 'dialog',
+          operation: 'edit',
+          signal: request.abortController.signal,
+        });
         if (!editing.closeOnSuccess) {
-          updateCapture(host.captureEditTarget(rowIndex, targetUnavailableMessage));
+          updateOriginal(host.read(recordTarget));
         }
-        return result;
+        return Object.freeze({ row });
       },
       dispatchSubmit: (transaction) => {
         dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:submit'>(
-          tableElement,
+          eventTarget,
           'alteditor-lite:submit',
           {
             editor,
             mode: 'dialog',
             operation: 'edit',
             original: transaction.original,
+            target,
             type: 'submit',
             values: transaction.values,
           },
@@ -109,7 +113,7 @@ export class DialogEditOperation<TRow extends object, TFormValues extends object
       },
       dispatchSuccess: (transaction, result) => {
         dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:success'>(
-          tableElement,
+          eventTarget,
           'alteditor-lite:success',
           {
             editor,
@@ -117,17 +121,18 @@ export class DialogEditOperation<TRow extends object, TFormValues extends object
             operation: 'edit',
             original: transaction.original,
             row: result.row,
+            target,
             type: 'success',
             values: transaction.values,
           },
         );
       },
       mode: 'dialog',
-      original: capture.snapshot.original,
+      original,
       presentation: {
         completeSuccess: () => {
           presentation.completeSuccess();
-          host.synchronizeExtensions();
+          this.arguments_.onPresentationComplete();
           return Promise.resolve();
         },
         restoreAfterOperationFailure: () => {
@@ -152,7 +157,6 @@ export class DialogEditOperation<TRow extends object, TFormValues extends object
             {
               mode: 'dialog',
               operation: 'edit',
-              table,
             },
           );
           signal.throwIfAborted();
@@ -175,7 +179,9 @@ export class DialogEditOperation<TRow extends object, TFormValues extends object
       reportError: (error, context, publishEvent) => {
         errorReporter.report(error, context, publishEvent);
       },
-      revalidateTarget: () => host.resolveEditTarget(capture, targetUnavailableMessage),
+      revalidateTarget: () => {
+        host.read(recordTarget);
+      },
       target,
     });
   }

@@ -339,10 +339,10 @@ export class EditorFormController<
   }
 
   /** Runs one operation-owned validation and returns its exact collected values. */
-  public async validateForSubmission<TRow extends object>(
+  public async validateForSubmission(
     operationSignal: AbortSignal,
-    validateForm: FormValidator<TRow, TFormValues> | undefined,
-    context: Omit<FormValidationContext<TRow>, 'signal'>,
+    validateForm: FormValidator<TFormValues> | undefined,
+    context: Omit<FormValidationContext, 'signal'>,
   ): Promise<FormSubmissionValidationResult<TFormValues>> {
     this.assertActive();
     this.activeFormValidationAbortController?.abort();

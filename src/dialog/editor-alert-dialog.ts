@@ -21,7 +21,7 @@ export class EditorAlertDialog {
   private isDestroyed = false;
 
   public constructor(
-    tableElement: HTMLTableElement,
+    tableElement: HTMLElement,
     instanceId: string,
     language: Readonly<AltEditorLiteLanguage>,
   ) {

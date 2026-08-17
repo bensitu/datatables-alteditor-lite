@@ -130,8 +130,8 @@ interface EditorButtonAccess {
   openCreateDialog(): Promise<void>;
   openEditDialog(): Promise<void>;
   openRemoveDialog(): Promise<void>;
-  refreshTable(): Promise<void>;
-  getIntegrationButtonState(): EditorButtonState;
+  refresh(): Promise<void>;
+  getIntegrationButtonStateInput(): EditorButtonStateInput;
 }
 
 interface ButtonController {
@@ -210,7 +210,7 @@ function invokeEditor(
       request = editor.openRemoveDialog();
       break;
     case 'altEditorLiteRefresh':
-      request = editor.refreshTable();
+      request = editor.refresh();
       break;
   }
 
@@ -291,7 +291,7 @@ function createButtonDefinition(
         currentState =
           editor === null
             ? unavailableButtonState(currentState)
-            : editor.getIntegrationButtonState();
+            : createEditorButtonState(editor.getIntegrationButtonStateInput());
         const buttonState = selectButtonState(currentState, operation);
         this.enable(buttonState.enabled);
         this.text(buttonState.text);

@@ -1,5 +1,10 @@
 export { AltEditorLite } from './core/alt-editor-lite.js';
 export { DataTablesHost } from './datatables/data-tables-host.js';
+export { DataTablesEditor } from './datatables/data-tables-editor.js';
+export type {
+  DataTablesInlineTarget,
+  DataTablesRecordTarget,
+} from './datatables/data-tables-host.js';
 export {
   ENGLISH_LANGUAGE,
   resolveLanguage,
@@ -58,7 +63,6 @@ export type {
   EditorErrorEventDetail,
   EditorEventDetailMap,
   EditorEventName,
-  InlineEventTarget,
   EditorOpenEventDetail,
   EditorRefreshSuccessEventDetail,
   EditorRemoveSubmitEventDetail,
@@ -143,6 +147,7 @@ export type { InlineEditState, InlineTargetSummary } from './inline/inline-edit-
 export type {
   EditorHost,
   HostApplyContext,
+  HostPresentationCapability,
   HostRecordEntry,
   HostRefreshCapability,
   HostRowCollectionCapability,

@@ -27,7 +27,7 @@ function initializationScript(variant: EditorFixtureVariant): string {
         data: [{ id: 'initial', name: 'Initial', rank: 1 }],
         rowId: 'id'
       });
-      globalThis.editor = new DataTablesAltEditorLite.AltEditorLite(
+      globalThis.editor = new DataTablesAltEditorLite.DataTablesEditor(
         globalThis.tableApi,
         {
           fields: [
@@ -75,7 +75,7 @@ function initializationScript(variant: EditorFixtureVariant): string {
       data: [{ id: 'initial', name: 'Initial', rank: 1 }],
       rowId: 'id'
     });
-    globalThis.editor = new DataTablesAltEditorLite.AltEditorLite(
+      globalThis.editor = new DataTablesAltEditorLite.DataTablesEditor(
       globalThis.tableApi,
       {
         fields: [

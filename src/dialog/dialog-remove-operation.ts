@@ -16,9 +16,7 @@ import type {
   OwnedOperationRequest,
 } from '../core/editing/operation-owner.js';
 import type { EditorErrorReporter } from '../core/editor-error-reporter.js';
-import type { DataTablesHost } from '../datatables/data-tables-host.js';
-import type { RemoveTargetCapture } from '../datatables/row-target-resolution.js';
-import type { Api } from 'datatables.net';
+import type { EditorHost } from '../host/editor-host.js';
 
 export interface DialogRemovePresentation {
   startSubmission(): void;
@@ -30,26 +28,36 @@ export interface DialogRemovePresentation {
 export interface DialogRemoveOperationArguments<
   TRow extends object,
   TFormValues extends object,
+  TTarget,
 > {
   readonly editor: AltEditorLite<TRow, TFormValues>;
-  readonly table: Api<TRow>;
-  readonly host: DataTablesHost<TRow>;
-  readonly tableElement: HTMLTableElement;
+  readonly host: EditorHost<TRow, TTarget>;
+  readonly eventTarget: EventTarget;
   readonly options: Readonly<AltEditorLiteOptions<TRow, TFormValues>>;
   readonly language: Readonly<AltEditorLiteLanguage>;
   readonly operationOwner: OperationOwner;
   readonly errorReporter: EditorErrorReporter<TRow, TFormValues>;
+  readonly onPresentationComplete: () => void;
 }
 
 /** Persists and commits removal of one captured row set. */
-export class DialogRemoveOperation<TRow extends object, TFormValues extends object> {
+export class DialogRemoveOperation<
+  TRow extends object,
+  TFormValues extends object,
+  TTarget,
+> {
   public constructor(
-    private readonly arguments_: DialogRemoveOperationArguments<TRow, TFormValues>,
+    private readonly arguments_: DialogRemoveOperationArguments<
+      TRow,
+      TFormValues,
+      TTarget
+    >,
   ) {}
 
   /** Runs one Remove confirmation submission. */
   public async run(
-    capture: RemoveTargetCapture<TRow>,
+    targets: readonly TTarget[],
+    rows: readonly Readonly<TRow>[],
     presentation: DialogRemovePresentation,
   ): Promise<void> {
     presentation.startSubmission();
@@ -57,15 +65,17 @@ export class DialogRemoveOperation<TRow extends object, TFormValues extends obje
     let phase: EditorErrorHookContext['phase'] = 'submit';
 
     try {
-      this.resolveTargets(capture);
+      for (const target of targets) {
+        this.arguments_.host.read(target);
+      }
       dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:submit'>(
-        this.arguments_.tableElement,
+        this.arguments_.eventTarget,
         'alteditor-lite:submit',
         {
           editor: this.arguments_.editor,
           mode: 'dialog',
           operation: 'remove',
-          rows: capture.snapshot.originals,
+          rows,
           type: 'submit',
         },
       );
@@ -73,21 +83,19 @@ export class DialogRemoveOperation<TRow extends object, TFormValues extends obje
         return;
       }
 
-      this.resolveTargets(capture);
       phase = 'persistence';
       if (this.arguments_.options.operations?.remove !== undefined) {
         await this.arguments_.options.operations.remove(
-          capture.snapshot.originals,
-          this.arguments_.operationOwner.context(this.arguments_.table, request),
+          rows,
+          this.arguments_.operationOwner.context(request),
         );
       }
       if (!this.owns(request)) {
         return;
       }
 
-      const rowIndexes = this.resolveTargets(capture);
       phase = 'commit';
-      await this.arguments_.host.applyRemove(rowIndexes, {
+      await this.arguments_.host.applyRemove(targets, {
         mode: 'dialog',
         operation: 'remove',
         signal: request.abortController.signal,
@@ -96,13 +104,13 @@ export class DialogRemoveOperation<TRow extends object, TFormValues extends obje
         return;
       }
       dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:success'>(
-        this.arguments_.tableElement,
+        this.arguments_.eventTarget,
         'alteditor-lite:success',
         {
           editor: this.arguments_.editor,
           mode: 'dialog',
           operation: 'remove',
-          rows: capture.snapshot.originals,
+          rows,
           type: 'success',
         },
       );
@@ -112,23 +120,15 @@ export class DialogRemoveOperation<TRow extends object, TFormValues extends obje
 
       this.arguments_.operationOwner.complete(request);
       presentation.completeSuccess();
-      this.arguments_.host.synchronizeExtensions();
+      this.arguments_.onPresentationComplete();
       await this.arguments_.errorReporter.runAfterSuccess({
         mode: 'dialog',
         operation: 'remove',
-        rows: capture.snapshot.originals,
-        table: this.arguments_.table,
+        rows,
       });
     } catch (rawError: unknown) {
       this.handleFailure(presentation, request, rawError, phase);
     }
-  }
-
-  private resolveTargets(capture: RemoveTargetCapture<TRow>): readonly number[] {
-    return this.arguments_.host.resolveRemoveTargets(
-      capture,
-      this.arguments_.language.errors.targetUnavailable,
-    );
   }
 
   private owns(request: OwnedOperationRequest): boolean {

@@ -1,3 +1,4 @@
+import type { DataTablesRecordTarget } from './data-tables-host.js';
 import type { AltEditorLite } from '../core/alt-editor-lite.js';
 import type { EditorInstanceLookup } from '../instance/editor-instance-store.js';
 import type { Api, DataTablesStatic } from 'datatables.net';
@@ -14,13 +15,15 @@ export function registerEditorApi(
 ): void {
   dataTable.Api.register(
     'altEditorLite()',
-    function altEditorLiteApi(this: Api<object>): AltEditorLite<object, object> | null {
+    function altEditorLiteApi(
+      this: Api<object>,
+    ): AltEditorLite<object, object, DataTablesRecordTarget> | null {
       const tableElement = this.table().node();
 
       for (const lookupInstance of instanceLookups) {
         const editor = lookupInstance(tableElement);
         if (editor !== null) {
-          return editor as AltEditorLite<object, object>;
+          return editor as AltEditorLite<object, object, DataTablesRecordTarget>;
         }
       }
 

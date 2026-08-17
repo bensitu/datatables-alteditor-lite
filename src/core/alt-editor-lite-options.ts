@@ -10,14 +10,11 @@ import type { FieldConfig } from '../fields/field-config.js';
 import type { MaybePromise } from '../fields/field-value.js';
 import type { FormDependencies } from '../form/form-dependency.js';
 import type { FormValidator } from '../form/form-validation.js';
-import type { Api } from 'datatables.net';
 
 /**
  * Context supplied to a persistence operation.
  */
-export interface OperationContext<TRow extends object> {
-  /** Public DataTables API owned by the editor. */
-  readonly table: Api<TRow>;
+export interface OperationContext {
   /** Signal aborted when the operation is closed, replaced, or destroyed. */
   readonly signal: AbortSignal;
   /** Operation currently owning the request. */
@@ -33,18 +30,17 @@ export interface BeforeOpenContext<
   TRow extends object,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars -- The form type preserves editor hook inference.
   TFormValues extends object,
-> extends OperationContext<TRow> {
+> extends OperationContext {
   readonly row?: Readonly<TRow>;
 }
 
 /** Context supplied after validation and before submission is observed. */
-export interface BeforeSubmitContext<TRow extends object> extends OperationContext<TRow> {
+export interface BeforeSubmitContext<TRow extends object> extends OperationContext {
   readonly original?: Readonly<TRow>;
 }
 
 /** Context supplied after a successful canonical row commit. */
 export interface AfterSuccessContext<TRow extends object, TFormValues extends object> {
-  readonly table: Api<TRow>;
   readonly operation: EditorOperation;
   readonly mode: EditorOperationMode;
   readonly target?: Readonly<EditorOperationTarget>;
@@ -91,11 +87,11 @@ export interface EditorOperations<TRow extends object, TFormValues extends objec
   /**
    * Persists collected Create values and returns one complete row.
    *
-   * DataTables is mutated only after this callback resolves successfully.
+   * The Host is updated only after this callback resolves successfully.
    */
   create?(
     values: Readonly<EditorValues<TFormValues>>,
-    context: OperationContext<TRow>,
+    context: OperationContext,
   ): TRow | Promise<TRow>;
   /**
    * Persists collected Edit values and returns one complete replacement row.
@@ -107,24 +103,24 @@ export interface EditorOperations<TRow extends object, TFormValues extends objec
   update?(
     values: Readonly<EditorValues<TFormValues>>,
     original: Readonly<TRow>,
-    context: OperationContext<TRow>,
+    context: OperationContext,
   ): TRow | Promise<TRow>;
   /**
    * Persists removal of every row captured by the confirmation snapshot.
    *
-   * DataTables rows are removed only after this callback resolves successfully.
+   * Host records are removed only after this callback resolves successfully.
    */
   remove?(
     rows: readonly Readonly<TRow>[],
-    context: OperationContext<TRow>,
+    context: OperationContext,
   ): void | Promise<void>;
   /**
    * Refreshes data through a consumer-owned, optionally cancellable operation.
    *
    * When configured, this callback replaces the default `ajax.reload` or local
-   * draw behavior and owns any resulting DataTables mutation.
+   * presentation behavior and owns any resulting Host update.
    */
-  refresh?(context: OperationContext<TRow>): void | Promise<void>;
+  refresh?(context: OperationContext): void | Promise<void>;
 }
 
 /**
@@ -132,7 +128,7 @@ export interface EditorOperations<TRow extends object, TFormValues extends objec
  */
 export interface ClientSideOperations<TRow extends object, TFormValues extends object> {
   /**
-   * Builds one complete DataTables row from collected form values.
+   * Builds one complete record from collected form values.
    *
    * Returning a promise is intentionally unsupported.
    */
@@ -157,7 +153,7 @@ export interface AltEditorLiteOptions<
   /** Declarative field state derived from dialog form values. */
   readonly dependencies?: FormDependencies<TFormValues>;
   /** Optional cross-field validator shared by dialog and inline editing. */
-  readonly validateForm?: FormValidator<TRow, TFormValues>;
+  readonly validateForm?: FormValidator<TFormValues>;
   /** Composable Dialog Edit and Inline Edit behavior. */
   readonly editing?: EditingOptions<TRow, TFormValues>;
   /**

@@ -11,11 +11,8 @@ export type EditorOperation = DialogAction | 'refresh';
 /** Presentation surface that initiated an editor operation. */
 export type EditorOperationMode = 'dialog' | 'inline' | 'api';
 
-/** Stable public identity associated with an Edit operation. */
-export interface EditorOperationTarget {
-  readonly rowIndex: number;
-  readonly rowId?: string;
-  readonly columnIndex?: number;
-  readonly columnName?: string;
+/** Stable host-neutral identity associated with an editor operation. */
+export interface EditorOperationTarget<TKey = unknown> {
+  readonly key?: TKey;
   readonly fieldNames: readonly string[];
 }

@@ -1,0 +1,75 @@
+import { AltEditorLite } from '../core/alt-editor-lite.js';
+
+import { DataTablesHost } from './data-tables-host.js';
+
+import type {
+  DataTablesInlineTarget,
+  DataTablesRecordTarget,
+} from './data-tables-host.js';
+import type { AltEditorLiteOptions } from '../core/alt-editor-lite-options.js';
+import type { DeepPartial } from '../core/editor-values.js';
+import type { Api, ColumnSelector, RowSelector } from 'datatables.net';
+
+/** DataTables-specific convenience facade over the neutral editor runtime. */
+export class DataTablesEditor<
+  TRow extends object,
+  TFormValues extends object = DeepPartial<TRow>,
+> extends AltEditorLite<TRow, TFormValues, DataTablesRecordTarget> {
+  public readonly dataTablesHost: DataTablesHost<TRow>;
+
+  public constructor(table: Api<TRow>, options: AltEditorLiteOptions<TRow, TFormValues>) {
+    const host = new DataTablesHost(table);
+    try {
+      super(host, options);
+    } catch (error: unknown) {
+      host.destroy();
+      throw error;
+    }
+    this.dataTablesHost = host;
+  }
+
+  public override openEditDialog(
+    target?: DataTablesRecordTarget | RowSelector<TRow>,
+  ): Promise<void> {
+    if (target === undefined || this.dataTablesHost.ownsRecordTarget(target)) {
+      return super.openEditDialog(target);
+    }
+    return super.openEditDialog(this.dataTablesHost.resolveRecordTarget(target));
+  }
+
+  public override openRemoveDialog(
+    targets?: readonly DataTablesRecordTarget[] | RowSelector<TRow>,
+  ): Promise<void> {
+    if (targets === undefined) {
+      return super.openRemoveDialog();
+    }
+    if (
+      Array.isArray(targets) &&
+      targets.every((target) => this.dataTablesHost.ownsRecordTarget(target))
+    ) {
+      return super.openRemoveDialog(targets);
+    }
+    return super.openRemoveDialog(
+      this.dataTablesHost.resolveRecordTargets(targets as RowSelector<TRow>),
+    );
+  }
+
+  public override openInlineEdit(target: DataTablesInlineTarget): Promise<void>;
+  public override openInlineEdit(
+    rowSelector: RowSelector<TRow>,
+    columnSelector: ColumnSelector,
+  ): Promise<void>;
+  public override openInlineEdit(
+    target: DataTablesInlineTarget | RowSelector<TRow>,
+    columnSelector?: ColumnSelector,
+  ): Promise<void> {
+    return super.openInlineEdit(
+      columnSelector === undefined
+        ? target
+        : this.dataTablesHost.createInlineTarget(
+            target as RowSelector<TRow>,
+            columnSelector,
+          ),
+    );
+  }
+}

@@ -2,7 +2,7 @@ import DataTable from 'datatables.net';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import {
-  AltEditorLite,
+  DataTablesEditor as AltEditorLite,
   registerAltEditorLite,
   type FieldConfig,
 } from '../../src/index.js';
@@ -189,7 +189,7 @@ describe('Buttons without Select', () => {
     });
     activeEditor = editor;
 
-    const refreshRequest = editor.refreshTable();
+    const refreshRequest = editor.refresh();
     await started;
     expect(editor.getState().status).toBe('refreshing');
     editor.destroy();

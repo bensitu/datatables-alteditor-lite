@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { EditorConfigurationError } from '../../src/core/alt-editor-lite-error.js';
-import { AltEditorLite } from '../../src/core/alt-editor-lite.js';
+import { DataTablesEditor as AltEditorLite } from '../../src/datatables/data-tables-editor.js';
 import { registerAltEditorLite } from '../../src/datatables/register-alt-editor-lite.js';
 
 import type { Api, DataTablesStatic } from 'datatables.net';

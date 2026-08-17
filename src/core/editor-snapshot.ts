@@ -27,16 +27,6 @@ export interface RemoveTargetSnapshot<TRow extends object> {
 }
 
 /**
- * Creates the readonly shallow row view exposed by a snapshot.
- *
- * @param row - Live DataTables row object.
- * @returns A frozen shallow copy that cannot replace root properties.
- */
-export function createReadonlyRowView<TRow extends object>(row: TRow): Readonly<TRow> {
-  return Object.freeze({ ...row });
-}
-
-/**
  * Creates and freezes one Edit snapshot.
  *
  * @param rowIndex - DataTables row index.
@@ -55,7 +45,7 @@ export function createEditTargetSnapshot<TRow extends object>(
     rowId,
     rowIndex,
     rowNode,
-    original: createReadonlyRowView(original),
+    original: createReadonlyRowView<TRow>(original),
   });
 }
 
@@ -88,7 +78,9 @@ export function createRemoveTargetSnapshot<TRow extends object>(
     rowIds: Object.freeze([...rowIds]),
     rowIndexes: Object.freeze([...rowIndexes]),
     rowNodes: Object.freeze([...rowNodes]),
-    originals: Object.freeze(originals.map(createReadonlyRowView)),
+    originals: Object.freeze(
+      originals.map((original) => createReadonlyRowView<TRow>(original)),
+    ),
   });
 }
 
@@ -110,3 +102,6 @@ export function isOwnedConnectedRowNode(
     rowNode !== null && rowNode.isConnected && rowNode.closest('table') === tableElement
   );
 }
+import { createReadonlyRowView } from './readonly-row-view.js';
+
+export { createReadonlyRowView } from './readonly-row-view.js';

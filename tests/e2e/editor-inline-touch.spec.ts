@@ -57,7 +57,7 @@ async function createTouchFixture(
         rowId: 'id',
         select: { style: 'single' }
       });
-      globalThis.editor = new DataTablesAltEditorLite.AltEditorLite(
+      globalThis.editor = new DataTablesAltEditorLite.DataTablesEditor(
         globalThis.tableApi,
         {
           editing: {

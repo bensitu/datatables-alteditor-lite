@@ -1,7 +1,7 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import {
-  AltEditorLite,
+  DataTablesEditor as AltEditorLite,
   AltEditorLiteError,
   ENGLISH_LANGUAGE,
   EditorConfigurationError,
@@ -298,9 +298,9 @@ describe('AltEditorLite asynchronous Create', () => {
   it('waits for persistence before adding and draws before success', async () => {
     const deferredRow = createDeferred<TestRow>();
     const lifecycleOrder: string[] = [];
-    let operationContext: OperationContext<TestRow> | undefined;
+    let operationContext: OperationContext | undefined;
     const createOperation = vi.fn(
-      (_values: Readonly<Partial<CrudValues>>, context: OperationContext<TestRow>) => {
+      (_values: Readonly<Partial<CrudValues>>, context: OperationContext) => {
         lifecycleOrder.push('persistence:start');
         operationContext = context;
         return deferredRow.promise.then((row) => {
@@ -339,7 +339,6 @@ describe('AltEditorLite asynchronous Create', () => {
     });
     expect(api.rows().count()).toBe(5);
     expect(operationContext?.operation).toBe('create');
-    expect(operationContext?.table).toBe(api);
     expect(operationContext?.signal.aborted).toBe(false);
     expect(lifecycleOrder).toEqual(['persistence:start']);
 
@@ -761,7 +760,7 @@ describe('AltEditorLite Remove snapshots', () => {
   it('confirms without a form and removes only after async persistence', async () => {
     const deferredRemoval = createDeferred<undefined>();
     const removeOperation = vi.fn(
-      (_rows: readonly Readonly<TestRow>[], context: OperationContext<TestRow>) => {
+      (_rows: readonly Readonly<TestRow>[], context: OperationContext) => {
         expect(context.operation).toBe('remove');
         return deferredRemoval.promise;
       },
@@ -925,7 +924,7 @@ describe('AltEditorLite Refresh and optional selection boundary', () => {
       parentEvents.push(event.type);
     });
 
-    await editor.refreshTable();
+    await editor.refresh();
 
     expect(eventOrder).toEqual(['refresh:start', 'success', 'refresh:complete']);
     expect(parentEvents).toEqual([]);
@@ -966,7 +965,7 @@ describe('AltEditorLite Refresh and optional selection boundary', () => {
       expect(ajaxRequestCount).toBe(1);
     });
 
-    const refreshRequest = editor.refreshTable();
+    const refreshRequest = editor.refresh();
     await vi.waitFor(() => {
       expect(ajaxRequestCount).toBe(2);
     });
@@ -978,7 +977,7 @@ describe('AltEditorLite Refresh and optional selection boundary', () => {
     expect(editor.getState().status).toBe('ready');
 
     await editor.openCreateDialog();
-    await expect(editor.refreshTable()).rejects.toThrow(EditorOperationBusyError);
+    await expect(editor.refresh()).rejects.toThrow(EditorOperationBusyError);
     await editor.closeDialog();
   });
 
@@ -1018,7 +1017,7 @@ describe('AltEditorLite Refresh and optional selection boundary', () => {
       throw new TypeError('private refresh detail');
     });
 
-    await editor.refreshTable();
+    await editor.refresh();
 
     expect(eventOrder).toEqual(['refresh:start', 'error', 'refresh:complete']);
     expect(parentEvents).toEqual([]);
@@ -1046,7 +1045,7 @@ describe('AltEditorLite Refresh and optional selection boundary', () => {
     });
     tableElement.addEventListener('alteditor-lite:error', errorListener);
 
-    await editor.refreshTable();
+    await editor.refresh();
 
     expect(phases).toEqual(['start', 'complete']);
     expect(errorListener).toHaveBeenCalledOnce();

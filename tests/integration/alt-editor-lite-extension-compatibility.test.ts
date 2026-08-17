@@ -2,7 +2,7 @@ import DataTable, { type Api } from 'datatables.net';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import {
-  AltEditorLite,
+  DataTablesEditor as AltEditorLite,
   registerAltEditorLite,
   type FieldConfig,
 } from '../../src/index.js';

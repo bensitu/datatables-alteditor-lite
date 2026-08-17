@@ -34,17 +34,17 @@ export class EditorDialog {
   /**
    * Creates and attaches one reusable native dialog element.
    *
-   * @param tableElement - Table used for focus fallback.
+   * @param focusFallback - Host element used when the opening target disappears.
    * @param instanceId - Instance-scoped DOM prefix.
    * @param language - Complete resolved language.
    */
   public constructor(
-    tableElement: HTMLTableElement,
+    focusFallback: HTMLElement,
     instanceId: string,
     language: Readonly<AltEditorLiteLanguage>,
   ) {
     this.shell = createEditorDialogShell(instanceId, language);
-    this.focusScope = new DialogFocusScope(this.shell.dialogElement, tableElement);
+    this.focusScope = new DialogFocusScope(this.shell.dialogElement, focusFallback);
     this.shell.dialogElement.addEventListener('cancel', this.handleNativeCancel);
     this.shell.cancelButton.addEventListener('click', this.handleCancelClick);
     appendDialogElement(this.shell.dialogElement);

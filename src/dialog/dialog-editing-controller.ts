@@ -3,6 +3,7 @@ import {
   EditorConfigurationError,
   EditorOperationBusyError,
   EditorSelectionCountError,
+  EditorSelectionUnavailableError,
 } from '../core/alt-editor-lite-error.js';
 import { dispatchEditorEvent, type EditorCloseReason } from '../core/editor-event.js';
 import {
@@ -10,7 +11,9 @@ import {
   NEVER_ABORTED_SIGNAL,
   normalizeOperationError,
 } from '../core/error-normalization.js';
+import { createReadonlyRowView } from '../core/readonly-row-view.js';
 import { buildEditorForm } from '../form/build-editor-form.js';
+import { hasHostSelectionCapability } from '../host/editor-host.js';
 
 import { createRemoveConfirmation } from './create-remove-confirmation.js';
 import {
@@ -45,24 +48,18 @@ import type { EditorOperationTarget } from '../core/editor-operation.js';
 import type { EditorStateCoordinator } from '../core/editor-state-coordinator.js';
 import type { LocalUniquenessValidator } from '../core/local-uniqueness-validator.js';
 import type { ResolvedDialogEditingOptions } from '../core/resolve-editing-options.js';
-import type { DataTablesHost } from '../datatables/data-tables-host.js';
-import type {
-  EditTargetCapture,
-  RemoveTargetCapture,
-} from '../datatables/row-target-resolution.js';
 import type { FieldController } from '../fields/field-controller.js';
 import type { EditorFormController } from '../form/form-controller.js';
-import type { InlineEditController } from '../inline/inline-edit-controller.js';
+import type { EditorHost } from '../host/editor-host.js';
+import type { InlineHostRuntime } from '../host/inline-host-runtime.js';
 import type { FieldPath, FieldPathValue } from '../object-path/field-path.js';
-import type { Api, RowSelector } from 'datatables.net';
 
 export interface DialogEditingControllerArguments<
   TRow extends object,
   TFormValues extends object,
+  TTarget,
 > {
   readonly editor: AltEditorLite<TRow, TFormValues>;
-  readonly table: Api<TRow>;
-  readonly tableElement: HTMLTableElement;
   readonly options: Readonly<AltEditorLiteOptions<TRow, TFormValues>>;
   readonly editing: Readonly<ResolvedDialogEditingOptions>;
   readonly capabilities: Readonly<EditorCapabilities>;
@@ -71,11 +68,13 @@ export interface DialogEditingControllerArguments<
   readonly stateCoordinator: EditorStateCoordinator;
   readonly interactionCoordinator: InteractionCoordinator;
   readonly operationOwner: OperationOwner;
-  readonly host: DataTablesHost<TRow>;
+  readonly host: EditorHost<TRow, TTarget>;
+  readonly notifyIntegration: () => void;
+  readonly onPresentationComplete: () => void;
   readonly editOperationRunner: EditOperationRunner<TRow, TFormValues>;
-  readonly inlineController: InlineEditController<TRow, TFormValues>;
+  readonly inlineController: InlineHostRuntime;
   readonly errorReporter: EditorErrorReporter<TRow, TFormValues>;
-  readonly uniquenessValidator: LocalUniquenessValidator<TRow, TFormValues>;
+  readonly uniquenessValidator: LocalUniquenessValidator<TRow, TFormValues, TTarget>;
 }
 
 function normalizeRejectedReason(error: unknown): Error {
@@ -87,14 +86,18 @@ function normalizeRejectedReason(error: unknown): Error {
 }
 
 /** Owns dialog presentation, target captures, forms, and submission routing. */
-export class DialogEditingController<TRow extends object, TFormValues extends object> {
+export class DialogEditingController<
+  TRow extends object,
+  TFormValues extends object,
+  TTarget,
+> {
   private readonly dialog: EditorDialog;
 
-  private readonly createOperation: DialogCreateOperation<TRow, TFormValues>;
+  private readonly createOperation: DialogCreateOperation<TRow, TFormValues, TTarget>;
 
-  private readonly editOperation: DialogEditOperation<TRow, TFormValues>;
+  private readonly editOperation: DialogEditOperation<TRow, TFormValues, TTarget>;
 
-  private readonly removeOperation: DialogRemoveOperation<TRow, TFormValues>;
+  private readonly removeOperation: DialogRemoveOperation<TRow, TFormValues, TTarget>;
 
   private activeForm: EditorFormController<TFormValues> | undefined;
 
@@ -102,27 +105,39 @@ export class DialogEditingController<TRow extends object, TFormValues extends ob
 
   private activeOpenAbortController: AbortController | undefined;
 
-  private editTargetCapture: EditTargetCapture<TRow> | undefined;
+  private editTarget: TTarget | undefined;
 
-  private removeTargetCapture: RemoveTargetCapture<TRow> | undefined;
+  private editOriginal: Readonly<TRow> | undefined;
+
+  private removeTargets: readonly TTarget[] | undefined;
+
+  private removeOriginals: readonly Readonly<TRow>[] | undefined;
 
   public constructor(
-    private readonly arguments_: DialogEditingControllerArguments<TRow, TFormValues>,
+    private readonly arguments_: DialogEditingControllerArguments<
+      TRow,
+      TFormValues,
+      TTarget
+    >,
   ) {
+    const focusTarget =
+      arguments_.host.eventTarget instanceof HTMLElement
+        ? arguments_.host.eventTarget
+        : document.body;
     this.dialog = new EditorDialog(
-      arguments_.tableElement,
+      focusTarget,
       arguments_.instanceId,
       arguments_.language,
     );
     const sharedOperationArguments = {
       editor: arguments_.editor,
       errorReporter: arguments_.errorReporter,
+      eventTarget: arguments_.host.eventTarget,
       host: arguments_.host,
       language: arguments_.language,
       operationOwner: arguments_.operationOwner,
       options: arguments_.options,
-      table: arguments_.table,
-      tableElement: arguments_.tableElement,
+      onPresentationComplete: arguments_.onPresentationComplete,
     };
     this.createOperation = new DialogCreateOperation(sharedOperationArguments);
     this.editOperation = new DialogEditOperation({
@@ -130,11 +145,10 @@ export class DialogEditingController<TRow extends object, TFormValues extends ob
       editor: arguments_.editor,
       editOperationRunner: arguments_.editOperationRunner,
       errorReporter: arguments_.errorReporter,
+      eventTarget: arguments_.host.eventTarget,
       host: arguments_.host,
+      onPresentationComplete: arguments_.onPresentationComplete,
       options: arguments_.options,
-      table: arguments_.table,
-      tableElement: arguments_.tableElement,
-      targetUnavailableMessage: arguments_.language.errors.targetUnavailable,
     });
     this.removeOperation = new DialogRemoveOperation(sharedOperationArguments);
   }
@@ -167,7 +181,7 @@ export class DialogEditingController<TRow extends object, TFormValues extends ob
   }
 
   /** Opens Dialog Edit for one explicit or selected row. */
-  public async openEdit(rowSelector?: RowSelector<TRow>): Promise<void> {
+  public async openEdit(target?: TTarget): Promise<void> {
     let didAcquireInteraction = false;
     try {
       this.arguments_.stateCoordinator.assertActive();
@@ -180,40 +194,35 @@ export class DialogEditingController<TRow extends object, TFormValues extends ob
       this.assertReady();
       this.acquireInteraction();
       didAcquireInteraction = true;
-      const rowIndexes = this.resolveRequestedRowIndexes(rowSelector);
-      if (rowIndexes.length !== 1 || rowIndexes[0] === undefined) {
+      const targets = this.resolveRequestedTargets(
+        target === undefined ? undefined : [target],
+      );
+      const recordTarget = targets[0];
+      if (targets.length !== 1 || recordTarget === undefined) {
         throw new EditorSelectionCountError(
           'exactly-one',
-          rowIndexes.length,
+          targets.length,
           this.arguments_.language.errors.singleSelectionRequired,
         );
       }
 
-      const rowIndex = rowIndexes[0];
-      this.editTargetCapture = this.arguments_.host.captureEditTarget(
-        rowIndex,
-        this.arguments_.language.errors.targetUnavailable,
+      this.editTarget = recordTarget;
+      this.editOriginal = createReadonlyRowView<TRow>(
+        this.arguments_.host.read(recordTarget),
       );
-      const target = this.createEditTarget(this.editTargetCapture);
-      if (
-        !(await this.runBeforeOpen(
-          'edit',
-          this.editTargetCapture.snapshot.original,
-          target,
-        ))
-      ) {
-        this.editTargetCapture = undefined;
+      const operationTarget = this.createEditOperationTarget(recordTarget);
+      if (!(await this.runBeforeOpen('edit', this.editOriginal, operationTarget))) {
+        this.editTarget = undefined;
+        this.editOriginal = undefined;
         this.releaseInteraction();
         return;
       }
-      this.arguments_.host.resolveEditTarget(
-        this.editTargetCapture,
-        this.arguments_.language.errors.targetUnavailable,
-      );
+      this.arguments_.host.read(recordTarget);
       try {
-        await this.openForm('edit', this.editTargetCapture.snapshot.original);
+        await this.openForm('edit', this.editOriginal);
       } catch (error: unknown) {
-        this.editTargetCapture = undefined;
+        this.editTarget = undefined;
+        this.editOriginal = undefined;
         throw error;
       }
     } catch (error: unknown) {
@@ -225,7 +234,7 @@ export class DialogEditingController<TRow extends object, TFormValues extends ob
   }
 
   /** Opens mandatory Remove confirmation for explicit or selected rows. */
-  public async openRemove(rowSelector?: RowSelector<TRow>): Promise<void> {
+  public async openRemove(targets?: readonly TTarget[]): Promise<void> {
     let didAcquireInteraction = false;
     try {
       this.arguments_.stateCoordinator.assertActive();
@@ -233,8 +242,8 @@ export class DialogEditingController<TRow extends object, TFormValues extends ob
       this.assertReady();
       this.acquireInteraction();
       didAcquireInteraction = true;
-      const rowIndexes = this.resolveRequestedRowIndexes(rowSelector);
-      if (rowIndexes.length === 0) {
+      const requestedTargets = this.resolveRequestedTargets(targets);
+      if (requestedTargets.length === 0) {
         throw new EditorSelectionCountError(
           'one-or-more',
           0,
@@ -242,25 +251,27 @@ export class DialogEditingController<TRow extends object, TFormValues extends ob
         );
       }
 
-      this.removeTargetCapture = this.arguments_.host.captureRemoveTargets(
-        rowIndexes,
-        this.arguments_.language.errors.targetUnavailable,
+      this.removeTargets = Object.freeze([...requestedTargets]);
+      this.removeOriginals = Object.freeze(
+        requestedTargets.map((recordTarget) =>
+          createReadonlyRowView<TRow>(this.arguments_.host.read(recordTarget)),
+        ),
       );
       if (!(await this.runBeforeOpen('remove'))) {
-        this.removeTargetCapture = undefined;
+        this.removeTargets = undefined;
+        this.removeOriginals = undefined;
         this.releaseInteraction();
         return;
       }
-      this.arguments_.host.resolveRemoveTargets(
-        this.removeTargetCapture,
-        this.arguments_.language.errors.targetUnavailable,
-      );
+      for (const recordTarget of requestedTargets) {
+        this.arguments_.host.read(recordTarget);
+      }
       this.arguments_.stateCoordinator.transitionTo({
         action: 'remove',
         status: 'opening',
       });
       const confirmationElement = createRemoveConfirmation(
-        rowIndexes.length,
+        requestedTargets.length,
         this.arguments_.language,
       );
       try {
@@ -279,7 +290,8 @@ export class DialogEditingController<TRow extends object, TFormValues extends ob
         );
       } catch (error: unknown) {
         confirmationElement.remove();
-        this.removeTargetCapture = undefined;
+        this.removeTargets = undefined;
+        this.removeOriginals = undefined;
         this.arguments_.stateCoordinator.transitionTo({ status: 'ready' });
         throw error;
       }
@@ -322,8 +334,10 @@ export class DialogEditingController<TRow extends object, TFormValues extends ob
     this.arguments_.operationOwner.abort('dialog');
     this.activeForm?.destroy();
     this.activeForm = undefined;
-    this.editTargetCapture = undefined;
-    this.removeTargetCapture = undefined;
+    this.editTarget = undefined;
+    this.editOriginal = undefined;
+    this.removeTargets = undefined;
+    this.removeOriginals = undefined;
     this.releaseInteraction();
     this.dialog.destroy();
   }
@@ -366,7 +380,6 @@ export class DialogEditingController<TRow extends object, TFormValues extends ob
       mode: 'dialog',
       operation,
       signal: abortController.signal,
-      table: this.arguments_.table,
       ...(row === undefined ? {} : { row }),
       ...(target === undefined ? {} : { target }),
     });
@@ -402,11 +415,18 @@ export class DialogEditingController<TRow extends object, TFormValues extends ob
     }
   }
 
-  private resolveRequestedRowIndexes(
-    rowSelector: RowSelector<TRow> | undefined,
-  ): readonly number[] {
-    return this.arguments_.host.resolveRequestedRowIndexes(
-      rowSelector,
+  private resolveRequestedTargets(
+    targets: readonly TTarget[] | undefined,
+  ): readonly TTarget[] {
+    if (targets !== undefined) {
+      return targets;
+    }
+    if (!hasHostSelectionCapability<TTarget>(this.arguments_.host)) {
+      throw new EditorSelectionUnavailableError(
+        this.arguments_.language.buttons.selectUnavailable,
+      );
+    }
+    return this.arguments_.host.getSelectedTargets(
       this.arguments_.language.buttons.selectUnavailable,
     );
   }
@@ -425,7 +445,7 @@ export class DialogEditingController<TRow extends object, TFormValues extends ob
         (values) =>
           this.arguments_.uniquenessValidator.validate(
             values,
-            action === 'edit' ? this.editTargetCapture?.sourceRow : undefined,
+            action === 'edit' ? this.editTarget : undefined,
           ),
         this.arguments_.editing.template,
         this.arguments_.options.dependencies,
@@ -440,8 +460,8 @@ export class DialogEditingController<TRow extends object, TFormValues extends ob
                 this.arguments_.stateCoordinator.getState().status === 'opening'
                   ? 'open'
                   : 'validation',
-              ...(action === 'edit' && this.editTargetCapture !== undefined
-                ? { target: this.createEditTarget(this.editTargetCapture) }
+              ...(action === 'edit' && this.editTarget !== undefined
+                ? { target: this.createEditOperationTarget(this.editTarget) }
                 : {}),
             },
             true,
@@ -510,12 +530,15 @@ export class DialogEditingController<TRow extends object, TFormValues extends ob
 
   private dispatchOpen(operation: 'create' | 'edit' | 'remove'): void {
     dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:open'>(
-      this.arguments_.tableElement,
+      this.arguments_.host.eventTarget,
       'alteditor-lite:open',
       {
         editor: this.arguments_.editor,
         mode: 'dialog',
         operation,
+        ...(operation === 'edit' && this.editTarget !== undefined
+          ? { target: this.createEditOperationTarget(this.editTarget) }
+          : {}),
         type: 'open',
       },
     );
@@ -534,24 +557,30 @@ export class DialogEditingController<TRow extends object, TFormValues extends ob
         break;
       }
       case 'edit': {
-        if (this.activeForm !== undefined && this.editTargetCapture !== undefined) {
-          const capture = this.editTargetCapture;
+        if (
+          this.activeForm !== undefined &&
+          this.editTarget !== undefined &&
+          this.editOriginal !== undefined
+        ) {
+          const recordTarget = this.editTarget;
           void this.editOperation.run(
             this.activeForm,
-            capture,
-            this.createEditTarget(capture),
+            recordTarget,
+            this.editOriginal,
+            this.createEditOperationTarget(recordTarget),
             this.editPresentation(this.activeForm),
-            (nextCapture) => {
-              this.editTargetCapture = nextCapture;
+            (nextOriginal) => {
+              this.editOriginal = createReadonlyRowView<TRow>(nextOriginal);
             },
           );
         }
         break;
       }
       case 'remove': {
-        if (this.removeTargetCapture !== undefined) {
+        if (this.removeTargets !== undefined && this.removeOriginals !== undefined) {
           void this.removeOperation.run(
-            this.removeTargetCapture,
+            this.removeTargets,
+            this.removeOriginals,
             this.removePresentation(),
           );
         }
@@ -719,38 +748,42 @@ export class DialogEditingController<TRow extends object, TFormValues extends ob
     this.dialog.close();
     this.activeForm?.destroy();
     this.activeForm = undefined;
-    this.editTargetCapture = undefined;
-    this.removeTargetCapture = undefined;
+    const closeTarget =
+      action === 'edit' && this.editTarget !== undefined
+        ? this.createEditOperationTarget(this.editTarget)
+        : undefined;
+    this.editTarget = undefined;
+    this.editOriginal = undefined;
+    this.removeTargets = undefined;
+    this.removeOriginals = undefined;
     this.releaseInteraction();
     this.arguments_.stateCoordinator.transitionTo({ status: 'ready' });
     dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:close'>(
-      this.arguments_.tableElement,
+      this.arguments_.host.eventTarget,
       'alteditor-lite:close',
       {
         editor: this.arguments_.editor,
         mode: 'dialog',
         operation: action,
         reason,
+        ...(closeTarget === undefined ? {} : { target: closeTarget }),
         type: 'close',
       },
     );
   }
 
-  private createEditTarget(
-    capture: EditTargetCapture<TRow>,
-  ): Readonly<EditorOperationTarget> {
+  private createEditOperationTarget(target: TTarget): Readonly<EditorOperationTarget> {
     return Object.freeze({
       fieldNames: Object.freeze(
         this.arguments_.options.fields
           .filter((field) => field.editable !== false && field.disabled !== true)
           .map((field) => field.name),
       ),
-      rowIndex: capture.snapshot.rowIndex,
-      ...(capture.snapshot.rowId === undefined ? {} : { rowId: capture.snapshot.rowId }),
+      key: target,
     });
   }
 
   private notifyIntegration(): void {
-    this.arguments_.host.notifyIntegration();
+    this.arguments_.notifyIntegration();
   }
 }

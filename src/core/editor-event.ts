@@ -4,6 +4,7 @@ import type {
   DialogAction,
   EditorOperation,
   EditorOperationMode,
+  EditorOperationTarget,
 } from './editor-operation.js';
 import type { EditorValues } from './editor-values.js';
 
@@ -21,18 +22,9 @@ export type EditorEventName =
 export type EditorCloseReason =
   'api' | 'cancel' | 'escape' | 'success' | 'unchanged' | 'redraw';
 
-/** Public cell identity included with inline lifecycle events. */
-export interface InlineEventTarget {
-  readonly rowIndex: number;
-  readonly rowId?: string;
-  readonly columnIndex: number;
-  readonly columnName?: string;
-  readonly fieldName: string;
-}
-
 interface EditorEventContext {
   readonly mode: EditorOperationMode;
-  readonly target?: Readonly<InlineEventTarget>;
+  readonly target?: Readonly<EditorOperationTarget>;
 }
 
 /** Detail published after an operation dialog is fully open and focused. */
@@ -55,7 +47,7 @@ export interface EditorCreateSubmitEventDetail<
   readonly operation: 'create';
   readonly values: Readonly<EditorValues<TFormValues>>;
   readonly mode: EditorOperationMode;
-  readonly target?: Readonly<InlineEventTarget>;
+  readonly target?: Readonly<EditorOperationTarget>;
 }
 
 /** Edit detail published after target validation, before persistence. */
@@ -69,7 +61,7 @@ export interface EditorEditSubmitEventDetail<
   readonly values: Readonly<EditorValues<TFormValues>>;
   readonly original: Readonly<TRow>;
   readonly mode: EditorOperationMode;
-  readonly target?: Readonly<InlineEventTarget>;
+  readonly target?: Readonly<EditorOperationTarget>;
 }
 
 /** Remove detail published after snapshot validation, before persistence. */
@@ -82,7 +74,7 @@ export interface EditorRemoveSubmitEventDetail<
   readonly operation: 'remove';
   readonly rows: readonly Readonly<TRow>[];
   readonly mode: EditorOperationMode;
-  readonly target?: Readonly<InlineEventTarget>;
+  readonly target?: Readonly<EditorOperationTarget>;
 }
 
 /** Concrete detail union for the three dialog submission operations. */
@@ -91,7 +83,7 @@ export type EditorSubmitEventDetail<TRow extends object, TFormValues extends obj
   | EditorEditSubmitEventDetail<TRow, TFormValues>
   | EditorRemoveSubmitEventDetail<TRow, TFormValues>;
 
-/** Detail published after DataTables accepts and draws a created row. */
+/** Detail published after the Host applies a created record. */
 export interface EditorCreateSuccessEventDetail<
   TRow extends object,
   TFormValues extends object,
@@ -102,10 +94,10 @@ export interface EditorCreateSuccessEventDetail<
   readonly values: Readonly<EditorValues<TFormValues>>;
   readonly row: Readonly<TRow>;
   readonly mode: EditorOperationMode;
-  readonly target?: Readonly<InlineEventTarget>;
+  readonly target?: Readonly<EditorOperationTarget>;
 }
 
-/** Detail published after DataTables accepts and draws an updated row. */
+/** Detail published after the Host applies an updated record. */
 export interface EditorEditSuccessEventDetail<
   TRow extends object,
   TFormValues extends object,
@@ -117,10 +109,10 @@ export interface EditorEditSuccessEventDetail<
   readonly values: Readonly<EditorValues<TFormValues>>;
   readonly row: Readonly<TRow>;
   readonly mode: EditorOperationMode;
-  readonly target?: Readonly<InlineEventTarget>;
+  readonly target?: Readonly<EditorOperationTarget>;
 }
 
-/** Detail published after DataTables removes and draws all captured rows. */
+/** Detail published after the Host removes all captured records. */
 export interface EditorRemoveSuccessEventDetail<
   TRow extends object,
   TFormValues extends object,
@@ -130,7 +122,7 @@ export interface EditorRemoveSuccessEventDetail<
   readonly operation: 'remove';
   readonly rows: readonly Readonly<TRow>[];
   readonly mode: EditorOperationMode;
-  readonly target?: Readonly<InlineEventTarget>;
+  readonly target?: Readonly<EditorOperationTarget>;
 }
 
 /** Detail published after a table refresh completes successfully. */
@@ -142,7 +134,7 @@ export interface EditorRefreshSuccessEventDetail<
   readonly editor: AltEditorLite<TRow, TFormValues>;
   readonly operation: 'refresh';
   readonly mode: EditorOperationMode;
-  readonly target?: Readonly<InlineEventTarget>;
+  readonly target?: Readonly<EditorOperationTarget>;
 }
 
 /** Concrete detail union for every successful operation. */
@@ -159,7 +151,7 @@ export interface EditorErrorEventDetail<TRow extends object, TFormValues extends
   readonly operation: EditorOperation;
   readonly error: AltEditorLiteError;
   readonly mode: EditorOperationMode;
-  readonly target?: Readonly<InlineEventTarget>;
+  readonly target?: Readonly<EditorOperationTarget>;
 }
 
 /** Detail published after dialog cleanup and focus restoration. */
@@ -169,7 +161,7 @@ export interface EditorCloseEventDetail<TRow extends object, TFormValues extends
   readonly operation: DialogAction;
   readonly reason: EditorCloseReason;
   readonly mode: EditorOperationMode;
-  readonly target?: Readonly<InlineEventTarget>;
+  readonly target?: Readonly<EditorOperationTarget>;
 }
 
 /** Detail published at the start and completion of a Refresh operation. */
@@ -182,7 +174,7 @@ export interface EditorRefreshEventDetail<
   readonly operation: 'refresh';
   readonly phase: 'start' | 'complete';
   readonly mode: EditorOperationMode;
-  readonly target?: Readonly<InlineEventTarget>;
+  readonly target?: Readonly<EditorOperationTarget>;
 }
 
 /** Detail published once after all owned resources are destroyed. */
@@ -193,7 +185,7 @@ export interface EditorDestroyEventDetail<
   readonly type: 'destroy';
   readonly editor: AltEditorLite<TRow, TFormValues>;
   readonly mode: EditorOperationMode;
-  readonly target?: Readonly<InlineEventTarget>;
+  readonly target?: Readonly<EditorOperationTarget>;
 }
 
 /**

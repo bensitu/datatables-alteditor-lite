@@ -35,7 +35,7 @@ export async function commitRowUpdate<TRow extends object>(
   row: TRow,
   request: OwnedOperationRequest,
 ): Promise<Readonly<EditCommitResult<TRow>>> {
-  const appliedTarget = await host.applyUpdate(rowIndex, row, {
+  const appliedTarget = await host.applyInlineUpdate(rowIndex, row, {
     mode: request.mode,
     operation: 'edit',
     signal: request.abortController.signal,

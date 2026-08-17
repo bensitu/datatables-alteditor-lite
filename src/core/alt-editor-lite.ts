@@ -1,18 +1,23 @@
-import { DataTablesHost } from '../datatables/data-tables-host.js';
 import { DialogEditingController } from '../dialog/dialog-editing-controller.js';
 import { validateFieldConfigurations } from '../fields/validate-field-configurations.js';
 import { validateFormDependencies } from '../form/validate-form-dependencies.js';
-import { InlineColumnMappingRegistry } from '../inline/inline-column-mapping-registry.js';
-import { InlineEditController } from '../inline/inline-edit-controller.js';
-import { createInlineEditPresentation } from '../inline/inline-edit-presentation.js';
-import { validateInlineConfiguration } from '../inline/validate-inline-configuration.js';
+import {
+  hasHostRefreshCapability,
+  hasHostPresentationCapability,
+  hasHostRowCollectionCapability,
+  hasHostSelectionCapability,
+} from '../host/editor-host.js';
+import { hasInlineHostRuntimeFactory } from '../host/inline-host-runtime.js';
 import { createInstanceId } from '../instance/create-instance-id.js';
 import {
   deleteEditorInstance,
   storeEditorInstance,
 } from '../instance/editor-instance-store.js';
 
-import { EditorConfigurationError } from './alt-editor-lite-error.js';
+import {
+  EditorConfigurationError,
+  EditorSelectionUnavailableError,
+} from './alt-editor-lite-error.js';
 import {
   resolveLanguage,
   type AltEditorLiteLanguage,
@@ -34,11 +39,15 @@ import type { AltEditorLiteOptions } from './alt-editor-lite-options.js';
 import type { EditorCapabilities } from './editor-capabilities.js';
 import type { EditorState } from './editor-state.js';
 import type { DeepPartial } from './editor-values.js';
-import type { ResolvedEditingOptions } from './resolve-editing-options.js';
 import type { FieldController } from '../fields/field-controller.js';
+import type {
+  EditorHost,
+  HostRecordEntry,
+  HostRowCollectionCapability,
+} from '../host/editor-host.js';
+import type { InlineHostRuntime } from '../host/inline-host-runtime.js';
 import type { InlineEditState } from '../inline/inline-edit-state.js';
 import type { FieldPath, FieldPathValue } from '../object-path/field-path.js';
-import type { Api, ColumnSelector, RowSelector } from 'datatables.net';
 
 function normalizeRejectedReason(error: unknown): Error {
   return error instanceof Error
@@ -48,14 +57,28 @@ function normalizeRejectedReason(error: unknown): Error {
       });
 }
 
-/** Lightweight native CRUD editor bound to one DataTables API instance. */
+function createInactiveInlineRuntime(): InlineHostRuntime {
+  const unavailable = (): Promise<void> =>
+    Promise.reject(new EditorConfigurationError('Inline Edit is unavailable.'));
+  return {
+    allowsExternalOperation: () => true,
+    cancel: unavailable,
+    destroy: () => undefined,
+    getState: () => Object.freeze({ status: 'disabled' }),
+    isEditing: () => false,
+    open: unavailable,
+    prepareForExternalOperation: () => Promise.resolve(),
+    submit: unavailable,
+  };
+}
+
+/** Lightweight CRUD editor operating through a neutral record host. */
 export class AltEditorLite<
   TRow extends object,
   TFormValues extends object = DeepPartial<TRow>,
+  TTarget = unknown,
 > {
   private readonly capabilities: Readonly<EditorCapabilities>;
-
-  private readonly editing: Readonly<ResolvedEditingOptions<TFormValues>>;
 
   private readonly instanceId = createInstanceId();
 
@@ -65,28 +88,18 @@ export class AltEditorLite<
 
   private readonly operationOwner = new OperationOwner();
 
-  private readonly host: DataTablesHost<TRow>;
-
   private readonly stateCoordinator: EditorStateCoordinator;
 
-  private readonly inlineController: InlineEditController<TRow, TFormValues>;
+  private readonly inlineController: InlineHostRuntime;
 
-  private readonly dialogController: DialogEditingController<TRow, TFormValues>;
+  private readonly dialogController: DialogEditingController<TRow, TFormValues, TTarget>;
 
-  private readonly refreshOperationRunner: RefreshOperationRunner<TRow, TFormValues>;
+  private readonly refreshOperationRunner:
+    RefreshOperationRunner<TRow, TFormValues> | undefined;
 
-  private readonly tableElement: HTMLTableElement;
-
-  /**
-   * Creates the sole active editor for a DataTables table.
-   *
-   * @param table - Public DataTables API for the owned table.
-   * @param options - Fields, persistence operations, and UI configuration.
-   * @throws EditorAlreadyInitializedError when the table already has an editor.
-   * @throws EditorConfigurationError for invalid or conflicting configuration.
-   */
+  /** Creates the sole active editor for one Host ownership identity. */
   public constructor(
-    private readonly table: Api<TRow>,
+    private readonly host: EditorHost<TRow, TTarget>,
     private readonly options: AltEditorLiteOptions<TRow, TFormValues>,
   ) {
     const editing = resolveEditingOptions(options.editing);
@@ -94,131 +107,146 @@ export class AltEditorLite<
     validateFormDependencies(options.fields, options.dependencies);
     validateOperationConfiguration(options);
     validateHooksConfiguration(options);
-    validateInlineConfiguration(table, options, editing);
 
-    this.editing = editing;
     this.capabilities = resolveEditorCapabilities(editing, {
       create:
         options.operations?.create !== undefined ||
         options.clientSide?.createRow !== undefined,
     });
     this.language = resolveLanguage(options.language);
-    this.host = new DataTablesHost(table);
-    this.tableElement = this.host.eventTarget;
     this.stateCoordinator = new EditorStateCoordinator(() => {
-      this.host.notifyIntegration();
+      this.notifyIntegration();
     });
-    const editOperationRunner = new EditOperationRunner(
-      table,
+
+    const hasRecordCollectionRequirement = options.fields.some(
+      (field) => field.unique === true,
+    );
+    if (
+      hasRecordCollectionRequirement &&
+      !hasHostRowCollectionCapability<TRow, TTarget>(host)
+    ) {
+      throw new EditorConfigurationError(
+        'Local uniqueness validation requires a Host row collection capability.',
+      );
+    }
+    const emptyCollection: HostRowCollectionCapability<TRow, TTarget> = {
+      entries: (): Iterable<Readonly<HostRecordEntry<TRow, TTarget>>> => [],
+    };
+    const uniquenessValidator = new LocalUniquenessValidator(
+      hasHostRowCollectionCapability<TRow, TTarget>(host) ? host : emptyCollection,
+      options.fields,
+      this.language,
+    );
+    const editOperationRunner = new EditOperationRunner<TRow, TFormValues>(
       this.operationOwner,
       this.language,
       options.operations,
       options.clientSide,
     );
-    const uniquenessValidator = new LocalUniquenessValidator(
-      this.host,
-      options.fields,
-      this.language,
-    );
 
-    storeEditorInstance(this.host.ownershipKey, this);
-    let inlineController: InlineEditController<TRow, TFormValues> | undefined;
-    let dialogController: DialogEditingController<TRow, TFormValues> | undefined;
+    storeEditorInstance(host.ownershipKey, this);
+    let inlineController: InlineHostRuntime | undefined;
+    let dialogController: DialogEditingController<TRow, TFormValues, TTarget> | undefined;
     let refreshOperationRunner: RefreshOperationRunner<TRow, TFormValues> | undefined;
     try {
       const errorReporter = new EditorErrorReporter(
         this,
-        this.tableElement,
+        host.eventTarget,
         this.language,
         options.hooks,
         () => this.stateCoordinator.getState().status === 'destroyed',
       );
-      const inlineMappingRegistry = new InlineColumnMappingRegistry(
-        table,
-        options.fields,
-        editing.inline,
-      );
-      const inlinePresentation = createInlineEditPresentation<TRow, TFormValues>(
-        editing.inline.activation,
-        editing.inline,
-        this.language,
-      );
-      inlineController = new InlineEditController({
-        host: this.host,
-        enabled: this.capabilities.inlineEdit,
-        editOperationRunner,
-        editor: this,
-        editorOptions: options,
-        fields: options.fields,
-        instanceId: this.instanceId,
-        interactionCoordinator: this.interactionCoordinator,
-        language: this.language,
-        mappingRegistry: inlineMappingRegistry,
-        notifyIntegration: () => {
-          this.host.notifyIntegration();
-        },
-        operationOwner: this.operationOwner,
-        options: editing.inline,
-        presentation: inlinePresentation,
-        reportError: (error, context, publishEvent) => {
-          errorReporter.report(error, context, publishEvent);
-        },
-        table,
-        tableElement: this.tableElement,
-        validateUnique: (values, excludedRow) =>
-          uniquenessValidator.validate(values, excludedRow),
-      });
+      if (hasInlineHostRuntimeFactory<TRow>(host)) {
+        inlineController = host.createInlineRuntime({
+          editing,
+          editor: this,
+          editorOptions: options,
+          enabled: this.capabilities.inlineEdit,
+          editOperationRunner,
+          fields: options.fields,
+          instanceId: this.instanceId,
+          interactionCoordinator: this.interactionCoordinator,
+          language: this.language,
+          notifyIntegration: () => {
+            this.notifyIntegration();
+          },
+          operationOwner: this.operationOwner,
+          reportError: (error, context, publishEvent) => {
+            errorReporter.report(error, context, publishEvent);
+          },
+          validateUnique: (values, excludedRow) =>
+            uniquenessValidator.validate(
+              values,
+              hasHostRowCollectionCapability<TRow, TTarget>(host)
+                ? [...host.entries()].find(({ row }) => row === excludedRow)?.target
+                : undefined,
+            ),
+        });
+      } else {
+        if (this.capabilities.inlineEdit) {
+          throw new EditorConfigurationError(
+            'Inline Edit is not supported by the configured Host.',
+          );
+        }
+        inlineController = createInactiveInlineRuntime();
+      }
+
       dialogController = new DialogEditingController({
         capabilities: this.capabilities,
         editing: editing.dialog,
         editor: this,
         editOperationRunner,
         errorReporter,
+        host,
         inlineController,
         instanceId: this.instanceId,
         interactionCoordinator: this.interactionCoordinator,
         language: this.language,
+        notifyIntegration: () => {
+          this.notifyIntegration();
+        },
+        onPresentationComplete: () => {
+          this.synchronizeHostPresentation();
+        },
         operationOwner: this.operationOwner,
         options,
         stateCoordinator: this.stateCoordinator,
-        host: this.host,
-        table,
-        tableElement: this.tableElement,
         uniquenessValidator,
       });
-      refreshOperationRunner = new RefreshOperationRunner({
-        editor: this,
-        errorReporter,
-        host: this.host,
-        interactionCoordinator: this.interactionCoordinator,
-        language: this.language,
-        operationOwner: this.operationOwner,
-        options,
-        notifyIntegration: () => {
-          this.host.notifyIntegration();
-        },
-        prepareForExternalOperation: async () => {
-          await inlineController?.prepareForExternalOperation();
-        },
-        stateCoordinator: this.stateCoordinator,
-        table,
-        tableElement: this.tableElement,
-      });
+
+      if (hasHostRefreshCapability(host)) {
+        refreshOperationRunner = new RefreshOperationRunner({
+          editor: this,
+          errorReporter,
+          eventTarget: host.eventTarget,
+          host,
+          interactionCoordinator: this.interactionCoordinator,
+          language: this.language,
+          notifyIntegration: () => {
+            this.notifyIntegration();
+          },
+          operationOwner: this.operationOwner,
+          options,
+          prepareForExternalOperation: async () => {
+            await inlineController?.prepareForExternalOperation();
+          },
+          stateCoordinator: this.stateCoordinator,
+        });
+      }
     } catch (error: unknown) {
       refreshOperationRunner?.destroy();
       dialogController?.destroy();
       inlineController?.destroy();
       this.operationOwner.destroy();
-      this.host.destroy();
       this.interactionCoordinator.destroy();
-      deleteEditorInstance(this.host.ownershipKey, this);
+      deleteEditorInstance(host.ownershipKey, this);
       throw error;
     }
 
     this.inlineController = inlineController;
     this.dialogController = dialogController;
     this.refreshOperationRunner = refreshOperationRunner;
-    this.host.notifyIntegration();
+    this.notifyIntegration();
   }
 
   /** Opens the Create dialog. */
@@ -226,18 +254,23 @@ export class AltEditorLite<
     return this.dialogController.openCreate();
   }
 
-  /** Opens Dialog Edit for one explicit or selected row. */
-  public openEditDialog(rowSelector?: RowSelector<TRow>): Promise<void> {
-    return this.dialogController.openEdit(rowSelector);
+  /** Opens Dialog Edit for one explicit or selected Host target. */
+  public openEditDialog(target?: TTarget): Promise<void> {
+    return this.dialogController.openEdit(target);
   }
 
-  /** Opens Remove confirmation for explicit or selected rows. */
-  public openRemoveDialog(rowSelector?: RowSelector<TRow>): Promise<void> {
-    return this.dialogController.openRemove(rowSelector);
+  /** Opens Remove confirmation for explicit or selected Host targets. */
+  public openRemoveDialog(targets?: readonly TTarget[]): Promise<void> {
+    return this.dialogController.openRemove(targets);
   }
 
-  /** Runs the configured refresh operation or DataTables fallback. */
-  public refreshTable(): Promise<void> {
+  /** Runs the configured Host refresh operation. */
+  public refresh(): Promise<void> {
+    if (this.refreshOperationRunner === undefined) {
+      return Promise.reject(
+        new EditorConfigurationError('Refresh is not supported by the configured Host.'),
+      );
+    }
     return this.refreshOperationRunner.run();
   }
 
@@ -259,14 +292,11 @@ export class AltEditorLite<
     return this.stateCoordinator.getState();
   }
 
-  /** Opens one eligible cell through unique public DataTables selectors. */
-  public async openInlineEdit(
-    rowSelector: RowSelector<TRow>,
-    columnSelector: ColumnSelector,
-  ): Promise<void> {
+  /** Opens one eligible inline target supplied by a Host integration. */
+  public async openInlineEdit(target: unknown): Promise<void> {
     try {
       this.assertInlineEditAvailable();
-      await this.inlineController.open(rowSelector, columnSelector);
+      await this.inlineController.open(target);
     } catch (error: unknown) {
       throw normalizeRejectedReason(error);
     }
@@ -282,7 +312,7 @@ export class AltEditorLite<
     }
   }
 
-  /** Cancels the active inline session and safely restores cell content. */
+  /** Cancels the active inline session and safely restores its presentation. */
   public cancelInlineEdit(): Promise<void> {
     try {
       this.assertInlineEditAvailable();
@@ -304,23 +334,22 @@ export class AltEditorLite<
     return this.inlineController.isEditing();
   }
 
-  /** Aborts owned work, removes DOM and listeners, and releases the table. */
+  /** Aborts owned work, removes DOM and listeners, and releases the Host. */
   public destroy(): void {
     if (this.stateCoordinator.getState().status === 'destroyed') {
       return;
     }
 
     this.dialogController.destroy();
-    this.refreshOperationRunner.destroy();
+    this.refreshOperationRunner?.destroy();
     this.operationOwner.destroy();
-    this.host.destroy();
     this.inlineController.destroy();
     this.interactionCoordinator.destroy();
     this.stateCoordinator.destroy();
     deleteEditorInstance(this.host.ownershipKey, this);
-    this.host.notifyIntegration();
+    this.notifyIntegration();
     dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:destroy'>(
-      this.tableElement,
+      this.host.eventTarget,
       'alteditor-lite:destroy',
       {
         editor: this,
@@ -328,6 +357,7 @@ export class AltEditorLite<
         type: 'destroy',
       },
     );
+    this.host.destroy();
   }
 
   private assertInlineEditAvailable(): void {
@@ -339,27 +369,44 @@ export class AltEditorLite<
     }
   }
 
-  private getIntegrationButtonState(): ReturnType<
-    DataTablesHost<TRow>['createIntegrationButtonState']
-  > {
+  private notifyIntegration(): void {
+    if (hasHostPresentationCapability(this.host)) {
+      this.host.notifyEditorStateChange();
+    }
+  }
+
+  private synchronizeHostPresentation(): void {
+    if (hasHostPresentationCapability(this.host)) {
+      this.host.completeEditorPresentation();
+    }
+  }
+
+  private getIntegrationButtonStateInput(): object {
     const interactionOwner = this.interactionCoordinator.current();
     const isReady =
       this.stateCoordinator.getState().status === 'ready' &&
       (interactionOwner === 'none' ||
         (interactionOwner === 'inline' &&
           this.inlineController.allowsExternalOperation()));
-    const hasSelect = this.host.selectionAvailable();
-    const selectedRowCount = hasSelect
-      ? this.host.resolveRequestedRowIndexes(undefined, '').length
-      : 0;
-
-    return this.host.createIntegrationButtonState({
+    let hasSelect = false;
+    let selectedRowCount = 0;
+    if (hasHostSelectionCapability<TTarget>(this.host)) {
+      try {
+        selectedRowCount = this.host.getSelectedTargets().length;
+        hasSelect = true;
+      } catch (error: unknown) {
+        if (!(error instanceof EditorSelectionUnavailableError)) {
+          throw error;
+        }
+      }
+    }
+    return {
       capabilities: this.capabilities,
       hasCreate: this.capabilities.createDialog,
       hasSelect,
       isReady,
       language: this.language,
       selectedRowCount,
-    });
+    };
   }
 }

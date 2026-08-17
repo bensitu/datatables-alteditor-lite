@@ -22,7 +22,6 @@ import type { EditorOperationTarget } from '../editor-operation.js';
 import type { EditPresentationAdapter } from './edit-presentation-adapter.js';
 import type { EditCommitResult, EditTransaction } from './edit-transaction.js';
 import type { OperationOwner, OwnedOperationRequest } from './operation-owner.js';
-import type { Api } from 'datatables.net';
 
 /** Terminal result returned to dialog and inline presentation callers. */
 export type EditOperationResult<TRow extends object> =
@@ -41,10 +40,9 @@ export interface EditOperationRunArguments<
   readonly original: Readonly<TRow>;
   readonly target: Readonly<EditorOperationTarget>;
   readonly presentation: EditPresentationAdapter<TRow, TFormValues>;
-  readonly revalidateTarget: () => number;
+  readonly revalidateTarget: () => void;
   readonly commit: (
     row: TRow,
-    rowIndex: number,
     request: OwnedOperationRequest,
   ) => Promise<Readonly<EditCommitResult<TRow>>>;
   readonly dispatchSubmit: (
@@ -71,7 +69,6 @@ export interface EditOperationRunArguments<
 /** Shared non-optimistic Edit persistence and commit runner. */
 export class EditOperationRunner<TRow extends object, TFormValues extends object> {
   public constructor(
-    private readonly table: Api<TRow>,
     private readonly operationOwner: OperationOwner,
     private readonly language: Readonly<AltEditorLiteLanguage>,
     private readonly operations:
@@ -119,7 +116,7 @@ export class EditOperationRunner<TRow extends object, TFormValues extends object
       if (runArguments.beforeSubmit !== undefined) {
         const shouldContinue = await runArguments.beforeSubmit(
           transaction,
-          this.operationOwner.context(this.table, request),
+          this.operationOwner.context(request),
         );
         if (!this.operationOwner.owns(request)) {
           return { status: 'aborted' };
@@ -143,10 +140,10 @@ export class EditOperationRunner<TRow extends object, TFormValues extends object
       if (!this.operationOwner.owns(request)) {
         return { status: 'aborted' };
       }
-      const rowIndex = runArguments.revalidateTarget();
+      runArguments.revalidateTarget();
 
       phase = 'commit';
-      const result = await runArguments.commit(row, rowIndex, request);
+      const result = await runArguments.commit(row, request);
       if (!this.operationOwner.owns(request)) {
         return { status: 'aborted' };
       }
@@ -168,7 +165,6 @@ export class EditOperationRunner<TRow extends object, TFormValues extends object
             operation: 'edit',
             original: transaction.original,
             row: result.row,
-            table: this.table,
             target: transaction.target,
             values: transaction.values,
           });
@@ -247,7 +243,7 @@ export class EditOperationRunner<TRow extends object, TFormValues extends object
       const rowCandidate: unknown = await this.operations.update(
         transaction.values,
         transaction.original,
-        this.operationOwner.context(this.table, request),
+        this.operationOwner.context(request),
       );
       assertCompleteRow(rowCandidate, 'operations.update');
       return rowCandidate as TRow;

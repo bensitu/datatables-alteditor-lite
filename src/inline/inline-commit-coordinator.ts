@@ -68,7 +68,6 @@ export class InlineCommitCoordinator<TRow extends object, TFormValues extends ob
       mappings,
       operationOwner,
       options,
-      table,
       tableElement,
       targetUnavailableMessage,
     } = this.arguments_;
@@ -94,12 +93,17 @@ export class InlineCommitCoordinator<TRow extends object, TFormValues extends ob
               return shouldContinue !== false;
             },
           }),
-      commit: async (row, rowIndex, request) => {
+      commit: async (row, request) => {
+        const rowIndex = host.resolveInlineTarget(
+          session.capture,
+          mappings,
+          targetUnavailableMessage,
+        );
         if (options.updateMode === 'refresh') {
           await host.refresh(request.abortController.signal, async () => {
             await Promise.resolve(
               editorOptions.operations?.refresh?.(
-                operationOwner.context(table, request, 'refresh'),
+                operationOwner.context(request, 'refresh'),
               ),
             );
           });

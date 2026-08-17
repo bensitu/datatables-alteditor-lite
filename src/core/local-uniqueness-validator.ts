@@ -12,11 +12,15 @@ interface UniqueFieldLookup {
 }
 
 /** Performs host-scoped uniqueness checks for configured field paths. */
-export class LocalUniquenessValidator<TRow extends object, TFormValues extends object> {
+export class LocalUniquenessValidator<
+  TRow extends object,
+  TFormValues extends object,
+  TTarget,
+> {
   private readonly fields: readonly UniqueFieldLookup[];
 
   public constructor(
-    private readonly collection: HostRowCollectionCapability<TRow, unknown>,
+    private readonly collection: HostRowCollectionCapability<TRow, TTarget>,
     fieldConfigurations: readonly FieldConfig<TFormValues>[],
     private readonly language: Readonly<AltEditorLiteLanguage>,
   ) {
@@ -33,7 +37,7 @@ export class LocalUniquenessValidator<TRow extends object, TFormValues extends o
   /** Returns messages for values duplicated by another loaded row. */
   public validate(
     values: Readonly<EditorValues<TFormValues>>,
-    excludedRow?: TRow,
+    excludedTarget?: TTarget,
   ): Readonly<Record<string, string>> {
     const fieldErrors: Record<string, string> = {};
     const candidates = this.fields.flatMap((field) => {
@@ -41,8 +45,8 @@ export class LocalUniquenessValidator<TRow extends object, TFormValues extends o
       return value === undefined ? [] : [{ ...field, value }];
     });
 
-    for (const { row } of this.collection.entries()) {
-      if (row === excludedRow) {
+    for (const { row, target } of this.collection.entries()) {
+      if (excludedTarget !== undefined && Object.is(target, excludedTarget)) {
         continue;
       }
 
