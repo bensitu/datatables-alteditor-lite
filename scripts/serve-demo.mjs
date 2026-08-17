@@ -5,8 +5,10 @@ import { fileURLToPath } from 'node:url';
 
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const demoRoot = resolve(workspaceRoot, 'examples/demo');
+const standaloneRoot = resolve(workspaceRoot, 'examples/standalone');
 const staticRoutes = [
   { prefix: '/examples/demo/', rootDirectory: demoRoot },
+  { prefix: '/examples/standalone/', rootDirectory: standaloneRoot },
   { prefix: '/dist/', rootDirectory: resolve(workspaceRoot, 'dist') },
 ];
 const contentTypeByExtension = new Map([

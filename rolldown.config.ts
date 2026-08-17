@@ -131,11 +131,22 @@ const minifiedCoreUmdConfig: RolldownOptions = {
   },
 };
 
+const standaloneUmdConfig: RolldownOptions = {
+  input: 'src/standalone-browser-global.ts',
+  output: {
+    file: 'dist/umd/datatables-alteditor-lite-standalone.js',
+    format: 'umd',
+    name: 'DataTablesAltEditorLiteStandalone',
+    sourcemap: true,
+  },
+};
+
 export default defineConfig([
   coreEsmConfig,
   ...localeNames.map((localeName) => createEsmLocaleConfig(localeName)),
   coreUmdConfig,
   minifiedCoreUmdConfig,
+  standaloneUmdConfig,
   ...localeNames.flatMap((localeName) => [
     createUmdLocaleConfig(localeName, false),
     createUmdLocaleConfig(localeName, true),
