@@ -212,7 +212,7 @@ export interface EditorEventDetailMap<TRow extends object, TFormValues extends o
 /**
  * Dispatches a non-bubbling, observation-only editor event.
  *
- * @param tableElement - Table element that owns consumer listeners.
+ * @param eventTarget - Host event destination that owns consumer listeners.
  * @param eventName - Stable event name.
  * @param detail - Concrete event detail for that name.
  */
@@ -221,11 +221,11 @@ export function dispatchEditorEvent<
   TFormValues extends object,
   TEventName extends keyof EditorEventDetailMap<TRow, TFormValues>,
 >(
-  tableElement: HTMLTableElement,
+  eventTarget: EventTarget,
   eventName: TEventName,
   detail: EditorEventDetailMap<TRow, TFormValues>[TEventName],
 ): void {
-  tableElement.dispatchEvent(
+  eventTarget.dispatchEvent(
     new CustomEvent(eventName, {
       bubbles: false,
       cancelable: false,

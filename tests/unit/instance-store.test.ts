@@ -8,6 +8,16 @@ import {
 } from '../../src/instance/editor-instance-store.js';
 
 describe('editor instance store', () => {
+  it('uses a plain object as an ownership identity', () => {
+    const ownershipKey = {};
+    const editor = {};
+
+    storeEditorInstance(ownershipKey, editor);
+
+    expect(getEditorInstance(ownershipKey)).toBe(editor);
+    expect(deleteEditorInstance(ownershipKey, editor)).toBe(true);
+  });
+
   it('stores one identity per table and deletes only for its owner', () => {
     const tableElement = document.createElement('table');
     const editor = { marker: 'editor' };

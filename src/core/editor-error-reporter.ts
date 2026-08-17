@@ -19,7 +19,7 @@ import type { InlineEventTarget } from './editor-event.js';
 export class EditorErrorReporter<TRow extends object, TFormValues extends object> {
   public constructor(
     private readonly editor: AltEditorLite<TRow, TFormValues>,
-    private readonly tableElement: HTMLTableElement,
+    private readonly eventTarget: EventTarget,
     private readonly language: Readonly<AltEditorLiteLanguage>,
     private readonly hooks: Readonly<EditorHooks<TRow, TFormValues>> | undefined,
     private readonly isDestroyed: () => boolean,
@@ -43,7 +43,7 @@ export class EditorErrorReporter<TRow extends object, TFormValues extends object
 
     const inlineTarget = this.createInlineTarget(context);
     dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:error'>(
-      this.tableElement,
+      this.eventTarget,
       'alteditor-lite:error',
       {
         editor: this.editor,

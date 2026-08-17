@@ -139,3 +139,11 @@ export type {
 export type { FieldPath, FieldPathValue } from './object-path/field-path.js';
 export type { InlineKeyboardShortcut } from './inline/inline-keyboard-shortcut.js';
 export type { InlineEditState, InlineTargetSummary } from './inline/inline-edit-state.js';
+export type {
+  EditorHost,
+  HostApplyContext,
+  HostRecordEntry,
+  HostRefreshCapability,
+  HostRowCollectionCapability,
+  HostSelectionCapability,
+} from './host/editor-host.js';
