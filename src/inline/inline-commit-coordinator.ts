@@ -1,8 +1,8 @@
+import { dispatchEditorEvent } from '../core/editor-event.js';
 import {
   commitRowUpdateWithFocus,
   type LogicalCellTarget,
-} from '../core/editing/commit-row-update.js';
-import { dispatchEditorEvent } from '../core/editor-event.js';
+} from '../datatables/commit-row-update.js';
 
 import {
   createInlineEventTarget,
@@ -18,7 +18,6 @@ import type {
   EditorErrorHookContext,
 } from '../core/alt-editor-lite-options.js';
 import type { AltEditorLite } from '../core/alt-editor-lite.js';
-import type { DrawOwnership } from '../core/editing/draw-ownership.js';
 import type {
   EditOperationResult,
   EditOperationRunner,
@@ -26,6 +25,7 @@ import type {
 import type { EditPresentationAdapter } from '../core/editing/edit-presentation-adapter.js';
 import type { OperationOwner } from '../core/editing/operation-owner.js';
 import type { ResolvedInlineEditingOptions } from '../core/resolve-editing-options.js';
+import type { DataTablesHost } from '../datatables/data-tables-host.js';
 import type { Api } from 'datatables.net';
 
 export interface InlineCommitCoordinatorArguments<
@@ -40,7 +40,7 @@ export interface InlineCommitCoordinatorArguments<
   readonly editorOptions: Readonly<AltEditorLiteOptions<TRow, TFormValues>>;
   readonly operationOwner: OperationOwner;
   readonly editOperationRunner: EditOperationRunner<TRow, TFormValues>;
-  readonly drawOwnership: DrawOwnership<TRow>;
+  readonly host: DataTablesHost<TRow>;
   readonly targetUnavailableMessage: string;
   readonly reportError: (
     error: AltEditorLiteError,
@@ -62,10 +62,10 @@ export class InlineCommitCoordinator<TRow extends object, TFormValues extends ob
     handOffFocusTarget: (target: Readonly<LogicalCellTarget<TRow>>) => void,
   ): Promise<EditOperationResult<TRow>> {
     const {
-      drawOwnership,
       editor,
       editorOptions,
       editOperationRunner,
+      host,
       mappings,
       operationOwner,
       options,
@@ -97,28 +97,23 @@ export class InlineCommitCoordinator<TRow extends object, TFormValues extends ob
           }),
       commit: async (row, rowIndex, request) => {
         if (options.updateMode === 'refresh') {
-          await drawOwnership.runWhile(
-            'refresh',
-            request.abortController.signal,
-            async () => {
-              await Promise.resolve(
-                editorOptions.operations?.refresh?.(
-                  operationOwner.context(table, request, 'refresh'),
-                ),
-              );
-            },
-          );
+          await host.refresh(request.abortController.signal, async () => {
+            await Promise.resolve(
+              editorOptions.operations?.refresh?.(
+                operationOwner.context(table, request, 'refresh'),
+              ),
+            );
+          });
           return Object.freeze({ row });
         }
 
         const commitResult = await commitRowUpdateWithFocus(
-          table,
+          host,
           rowIndex,
           row,
           session.capture.column.columnIndex,
           session.capture.column.columnName,
-          drawOwnership,
-          request.abortController.signal,
+          request,
         );
         handOffFocusTarget(commitResult.focusTarget);
         return commitResult;

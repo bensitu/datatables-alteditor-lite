@@ -40,7 +40,6 @@ import type {
   BeforeOpenContext,
 } from '../core/alt-editor-lite-options.js';
 import type { AltEditorLite } from '../core/alt-editor-lite.js';
-import type { DrawOwnership } from '../core/editing/draw-ownership.js';
 import type { EditOperationRunner } from '../core/editing/edit-operation-runner.js';
 import type {
   InteractionCoordinator,
@@ -53,6 +52,7 @@ import type { EditorOperationTarget } from '../core/editor-operation.js';
 import type { EditorStateCoordinator } from '../core/editor-state-coordinator.js';
 import type { LocalUniquenessValidator } from '../core/local-uniqueness-validator.js';
 import type { ResolvedDialogEditingOptions } from '../core/resolve-editing-options.js';
+import type { DataTablesHost } from '../datatables/data-tables-host.js';
 import type {
   EditTargetCapture,
   RemoveTargetCapture,
@@ -79,7 +79,7 @@ export interface DialogEditingControllerArguments<
   readonly stateCoordinator: EditorStateCoordinator;
   readonly interactionCoordinator: InteractionCoordinator;
   readonly operationOwner: OperationOwner;
-  readonly drawOwnership: DrawOwnership<TRow>;
+  readonly host: DataTablesHost<TRow>;
   readonly editOperationRunner: EditOperationRunner<TRow, TFormValues>;
   readonly selectIntegration: SelectIntegration<TRow>;
   readonly inlineController: InlineEditController<TRow, TFormValues>;
@@ -126,6 +126,7 @@ export class DialogEditingController<TRow extends object, TFormValues extends ob
     const sharedOperationArguments = {
       editor: arguments_.editor,
       errorReporter: arguments_.errorReporter,
+      host: arguments_.host,
       language: arguments_.language,
       operationOwner: arguments_.operationOwner,
       options: arguments_.options,
@@ -134,11 +135,11 @@ export class DialogEditingController<TRow extends object, TFormValues extends ob
     };
     this.createOperation = new DialogCreateOperation(sharedOperationArguments);
     this.editOperation = new DialogEditOperation({
-      drawOwnership: arguments_.drawOwnership,
       editing: arguments_.editing,
       editor: arguments_.editor,
       editOperationRunner: arguments_.editOperationRunner,
       errorReporter: arguments_.errorReporter,
+      host: arguments_.host,
       options: arguments_.options,
       table: arguments_.table,
       tableElement: arguments_.tableElement,

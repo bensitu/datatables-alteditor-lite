@@ -22,6 +22,7 @@ import type {
 } from '../core/editing/operation-owner.js';
 import type { EditorErrorReporter } from '../core/editor-error-reporter.js';
 import type { EditorValues } from '../core/editor-values.js';
+import type { DataTablesHost } from '../datatables/data-tables-host.js';
 import type { EditorFormController } from '../form/form-controller.js';
 import type { Api } from 'datatables.net';
 
@@ -42,6 +43,7 @@ export interface DialogCreateOperationArguments<
 > {
   readonly editor: AltEditorLite<TRow, TFormValues>;
   readonly table: Api<TRow>;
+  readonly host: DataTablesHost<TRow>;
   readonly tableElement: HTMLTableElement;
   readonly options: Readonly<AltEditorLiteOptions<TRow, TFormValues>>;
   readonly language: Readonly<AltEditorLiteLanguage>;
@@ -125,7 +127,15 @@ export class DialogCreateOperation<TRow extends object, TFormValues extends obje
         return;
       }
 
-      this.arguments_.table.rows.add([row]).draw(false);
+      phase = 'commit';
+      await this.arguments_.host.applyCreate(row, {
+        mode: 'dialog',
+        operation: 'create',
+        signal: request.abortController.signal,
+      });
+      if (!this.owns(request)) {
+        return;
+      }
       dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:success'>(
         this.arguments_.tableElement,
         'alteditor-lite:success',

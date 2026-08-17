@@ -18,8 +18,9 @@ import type {
   OwnedOperationRequest,
 } from '../core/editing/operation-owner.js';
 import type { EditorErrorReporter } from '../core/editor-error-reporter.js';
+import type { DataTablesHost } from '../datatables/data-tables-host.js';
 import type { RemoveTargetCapture } from '../datatables/row-target-resolution.js';
-import type { Api, RowSelector } from 'datatables.net';
+import type { Api } from 'datatables.net';
 
 export interface DialogRemovePresentation {
   startSubmission(): void;
@@ -34,6 +35,7 @@ export interface DialogRemoveOperationArguments<
 > {
   readonly editor: AltEditorLite<TRow, TFormValues>;
   readonly table: Api<TRow>;
+  readonly host: DataTablesHost<TRow>;
   readonly tableElement: HTMLTableElement;
   readonly options: Readonly<AltEditorLiteOptions<TRow, TFormValues>>;
   readonly language: Readonly<AltEditorLiteLanguage>;
@@ -86,10 +88,15 @@ export class DialogRemoveOperation<TRow extends object, TFormValues extends obje
       }
 
       const rowIndexes = this.resolveTargets(capture);
-      this.arguments_.table
-        .rows(rowIndexes as RowSelector<TRow>)
-        .remove()
-        .draw(false);
+      phase = 'commit';
+      await this.arguments_.host.applyRemove(rowIndexes, {
+        mode: 'dialog',
+        operation: 'remove',
+        signal: request.abortController.signal,
+      });
+      if (!this.owns(request)) {
+        return;
+      }
       dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:success'>(
         this.arguments_.tableElement,
         'alteditor-lite:success',

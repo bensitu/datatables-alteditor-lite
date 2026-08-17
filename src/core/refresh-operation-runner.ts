@@ -1,5 +1,4 @@
 import { dispatchEditorIntegrationUpdate } from '../datatables/editor-integration-event.js';
-import { refreshDataTable } from '../datatables/refresh-data-table.js';
 
 import { EditorOperationBusyError } from './alt-editor-lite-error.js';
 import { dispatchEditorEvent } from './editor-event.js';
@@ -18,6 +17,7 @@ import type {
 import type { OperationOwner } from './editing/operation-owner.js';
 import type { EditorErrorReporter } from './editor-error-reporter.js';
 import type { EditorStateCoordinator } from './editor-state-coordinator.js';
+import type { HostRefreshCapability } from '../host/editor-host.js';
 import type { Api } from 'datatables.net';
 
 export interface RefreshOperationRunnerArguments<
@@ -26,6 +26,7 @@ export interface RefreshOperationRunnerArguments<
 > {
   readonly editor: AltEditorLite<TRow, TFormValues>;
   readonly table: Api<TRow>;
+  readonly host: HostRefreshCapability;
   readonly tableElement: HTMLTableElement;
   readonly options: Readonly<AltEditorLiteOptions<TRow, TFormValues>>;
   readonly language: Readonly<AltEditorLiteLanguage>;
@@ -88,6 +89,7 @@ export class RefreshOperationRunner<TRow extends object, TFormValues extends obj
       language,
       operationOwner,
       options,
+      host,
       stateCoordinator,
       table,
       tableElement,
@@ -112,9 +114,13 @@ export class RefreshOperationRunner<TRow extends object, TFormValues extends obj
 
     try {
       if (options.operations?.refresh === undefined) {
-        await refreshDataTable(table, request.abortController.signal);
+        await host.refresh(request.abortController.signal);
       } else {
-        await options.operations.refresh(operationOwner.context(table, request));
+        await host.refresh(request.abortController.signal, async () => {
+          await Promise.resolve(
+            options.operations?.refresh?.(operationOwner.context(table, request)),
+          );
+        });
       }
       if (!operationOwner.owns(request)) {
         return;

@@ -4,19 +4,19 @@ import { lookupPathSegments } from '../object-path/get-path-value.js';
 import type { AltEditorLiteLanguage } from './alt-editor-lite-language.js';
 import type { EditorValues } from './editor-values.js';
 import type { FieldConfig } from '../fields/field-config.js';
-import type { Api } from 'datatables.net';
+import type { HostRowCollectionCapability } from '../host/editor-host.js';
 
 interface UniqueFieldLookup {
   readonly name: string;
   readonly pathSegments: readonly string[];
 }
 
-/** Performs table-scoped uniqueness checks for configured field paths. */
+/** Performs host-scoped uniqueness checks for configured field paths. */
 export class LocalUniquenessValidator<TRow extends object, TFormValues extends object> {
   private readonly fields: readonly UniqueFieldLookup[];
 
   public constructor(
-    private readonly table: Api<TRow>,
+    private readonly collection: HostRowCollectionCapability<TRow, unknown>,
     fieldConfigurations: readonly FieldConfig<TFormValues>[],
     private readonly language: Readonly<AltEditorLiteLanguage>,
   ) {
@@ -41,26 +41,23 @@ export class LocalUniquenessValidator<TRow extends object, TFormValues extends o
       return value === undefined ? [] : [{ ...field, value }];
     });
 
-    this.table
-      .rows()
-      .data()
-      .each((row) => {
-        if (row === excludedRow) {
-          return;
-        }
+    for (const { row } of this.collection.entries()) {
+      if (row === excludedRow) {
+        continue;
+      }
 
-        for (const candidate of candidates) {
-          if (
-            fieldErrors[candidate.name] === undefined &&
-            Object.is(
-              lookupPathSegments(row, candidate.pathSegments).value,
-              candidate.value,
-            )
-          ) {
-            fieldErrors[candidate.name] = this.language.validation.unique;
-          }
+      for (const candidate of candidates) {
+        if (
+          fieldErrors[candidate.name] === undefined &&
+          Object.is(
+            lookupPathSegments(row, candidate.pathSegments).value,
+            candidate.value,
+          )
+        ) {
+          fieldErrors[candidate.name] = this.language.validation.unique;
         }
-      });
+      }
+    }
 
     return fieldErrors;
   }

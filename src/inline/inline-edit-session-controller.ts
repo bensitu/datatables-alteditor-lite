@@ -45,8 +45,6 @@ import type {
   EditorErrorHookContext,
 } from '../core/alt-editor-lite-options.js';
 import type { AltEditorLite } from '../core/alt-editor-lite.js';
-import type { LogicalCellTarget } from '../core/editing/commit-row-update.js';
-import type { DrawOwnership } from '../core/editing/draw-ownership.js';
 import type {
   EditOperationResult,
   EditOperationRunner,
@@ -58,6 +56,8 @@ import type {
 import type { OperationOwner } from '../core/editing/operation-owner.js';
 import type { EditorValues } from '../core/editor-values.js';
 import type { ResolvedInlineEditingOptions } from '../core/resolve-editing-options.js';
+import type { LogicalCellTarget } from '../datatables/commit-row-update.js';
+import type { DataTablesHost } from '../datatables/data-tables-host.js';
 import type { FieldConfig } from '../fields/field-config.js';
 import type { Api, ColumnSelector, RowSelector } from 'datatables.net';
 
@@ -78,7 +78,7 @@ export interface InlineEditSessionControllerArguments<
   readonly interactionCoordinator: InteractionCoordinator;
   readonly operationOwner: OperationOwner;
   readonly editOperationRunner: EditOperationRunner<TRow, TFormValues>;
-  readonly drawOwnership: DrawOwnership<TRow>;
+  readonly host: DataTablesHost<TRow>;
   readonly validateUnique: (
     values: Readonly<EditorValues<TFormValues>>,
     excludedRow: TRow,
@@ -183,7 +183,7 @@ export class InlineEditSessionController<
       validateUnique: arguments_.validateUnique,
     });
     this.commitCoordinator = new InlineCommitCoordinator({
-      drawOwnership: arguments_.drawOwnership,
+      host: arguments_.host,
       editOperationRunner: arguments_.editOperationRunner,
       editor: arguments_.editor,
       editorOptions: arguments_.editorOptions,
@@ -546,7 +546,7 @@ export class InlineEditSessionController<
   }
 
   private readonly handleExternalDraw = (): void => {
-    if (this.arguments_.drawOwnership.ownsDraw() || !this.isEditing()) {
+    if (this.arguments_.host.ownsPresentationChange() || !this.isEditing()) {
       return;
     }
     this.activationAbortController?.abort();

@@ -5,10 +5,10 @@ import {
   EditorConfigurationError,
   EditorOperationBusyError,
 } from '../../src/core/alt-editor-lite-error.js';
-import { DrawOwnership } from '../../src/core/editing/draw-ownership.js';
 import { InteractionCoordinator } from '../../src/core/editing/interaction-coordinator.js';
 import { OperationOwner } from '../../src/core/editing/operation-owner.js';
 import { isColumnVisiblyAvailable } from '../../src/datatables/column-visibility.js';
+import { DrawOwnership } from '../../src/datatables/draw-ownership.js';
 import { normalizeKeyTableEnabledState } from '../../src/datatables/key-table-inline-integration.js';
 import {
   assertInlineEditStateTransition,

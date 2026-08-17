@@ -435,6 +435,40 @@ describe('AltEditorLite asynchronous Create', () => {
 });
 
 describe('AltEditorLite Edit snapshots', () => {
+  it('reports a draw failure as an unapplied commit and suppresses success observers', async () => {
+    const afterSuccess = vi.fn();
+    const onError = vi.fn();
+    const { api, editor, tableElement } = createCrudEditor('failed-edit-commit', {
+      hooks: { afterSuccess, onError },
+      operations: {
+        update: (values, original) => ({
+          ...original,
+          name: values.name ?? original.name,
+        }),
+      },
+    });
+    const successListener = vi.fn();
+    tableElement.addEventListener('alteditor-lite:success', successListener);
+    vi.spyOn(api, 'draw').mockImplementationOnce(() => {
+      throw new Error('Presentation update failed.');
+    });
+
+    await editor.openEditDialog('#row-a');
+    editor.getField('name')?.setValue('Unpublished update');
+    submitForm();
+
+    await vi.waitFor(() => {
+      expect(onError).toHaveBeenCalledOnce();
+    });
+    expect(onError).toHaveBeenCalledWith(
+      expect.objectContaining({ code: 'UNKNOWN' }),
+      expect.objectContaining({ committed: false, phase: 'commit' }),
+    );
+    expect(successListener).not.toHaveBeenCalled();
+    expect(afterSuccess).not.toHaveBeenCalled();
+    expect(editor.getState()).toMatchObject({ action: 'edit', status: 'open' });
+  });
+
   it('rejects duplicate loaded values while excluding the current Edit row', async () => {
     const uniqueFields = [
       { ...fields[0], unique: true },

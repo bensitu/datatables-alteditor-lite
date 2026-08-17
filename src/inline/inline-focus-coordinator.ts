@@ -1,9 +1,9 @@
 import { EditorTargetUnavailableError } from '../core/alt-editor-lite-error.js';
+import { isColumnVisiblyAvailable } from '../datatables/column-visibility.js';
 import {
   resolveLogicalCellTarget,
   type LogicalCellTarget,
-} from '../core/editing/commit-row-update.js';
-import { isColumnVisiblyAvailable } from '../datatables/column-visibility.js';
+} from '../datatables/commit-row-update.js';
 import { resolveUniqueRowIndexById } from '../datatables/row-id-resolution.js';
 import { EditorAlertDialog } from '../dialog/editor-alert-dialog.js';
 

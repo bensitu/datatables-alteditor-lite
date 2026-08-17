@@ -1,10 +1,14 @@
-import { EditorDestroyedError } from '../alt-editor-lite-error.js';
+import { EditorDestroyedError } from '../core/alt-editor-lite-error.js';
 
 import type { Api } from 'datatables.net';
 
 /** Reason associated with a DataTables draw owned by the editor. */
 export type DrawOwnershipReason =
-  'dialog-edit-success' | 'inline-edit-success' | 'refresh';
+  | 'create-success'
+  | 'dialog-edit-success'
+  | 'inline-edit-success'
+  | 'remove-success'
+  | 'refresh';
 
 /** Logical identity of the currently owned draw. */
 export interface DrawOwnershipToken {

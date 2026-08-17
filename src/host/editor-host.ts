@@ -50,7 +50,7 @@ export interface HostSelectionCapability<TTarget> {
 
 /** Optional host support for a stable consumer-visible refresh. */
 export interface HostRefreshCapability {
-  refresh(signal: AbortSignal): Promise<void>;
+  refresh(signal: AbortSignal, action?: () => Promise<void>): Promise<void>;
 }
 
 /** One record exposed by an optional host collection capability. */

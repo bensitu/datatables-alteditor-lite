@@ -1,3 +1,4 @@
+import { DataTablesHost } from '../datatables/data-tables-host.js';
 import { dispatchEditorIntegrationUpdate } from '../datatables/editor-integration-event.js';
 import {
   createEditorButtonState,
@@ -22,7 +23,6 @@ import {
   resolveLanguage,
   type AltEditorLiteLanguage,
 } from './alt-editor-lite-language.js';
-import { DrawOwnership } from './editing/draw-ownership.js';
 import { EditOperationRunner } from './editing/edit-operation-runner.js';
 import { InteractionCoordinator } from './editing/interaction-coordinator.js';
 import { OperationOwner } from './editing/operation-owner.js';
@@ -71,7 +71,7 @@ export class AltEditorLite<
 
   private readonly operationOwner = new OperationOwner();
 
-  private readonly drawOwnership: DrawOwnership<TRow>;
+  private readonly host: DataTablesHost<TRow>;
 
   private readonly stateCoordinator: EditorStateCoordinator;
 
@@ -111,17 +111,11 @@ export class AltEditorLite<
         options.clientSide?.createRow !== undefined,
     });
     this.language = resolveLanguage(options.language);
-    const tableElement: unknown = table.table().node();
-    if (!(tableElement instanceof HTMLTableElement)) {
-      throw new EditorConfigurationError(
-        'AltEditorLite requires a DataTables API that owns an HTML table element.',
-      );
-    }
-    this.tableElement = tableElement;
+    this.host = new DataTablesHost(table);
+    this.tableElement = this.host.eventTarget;
     this.stateCoordinator = new EditorStateCoordinator(() => {
       dispatchEditorIntegrationUpdate(this.tableElement);
     });
-    this.drawOwnership = new DrawOwnership(table);
     const editOperationRunner = new EditOperationRunner(
       table,
       this.operationOwner,
@@ -130,12 +124,12 @@ export class AltEditorLite<
       options.clientSide,
     );
     const uniquenessValidator = new LocalUniquenessValidator(
-      table,
+      this.host,
       options.fields,
       this.language,
     );
 
-    storeEditorInstance(this.tableElement, this);
+    storeEditorInstance(this.host.ownershipKey, this);
     let selectIntegration: SelectIntegration<TRow> | undefined;
     let inlineController: InlineEditController<TRow, TFormValues> | undefined;
     let dialogController: DialogEditingController<TRow, TFormValues> | undefined;
@@ -162,7 +156,7 @@ export class AltEditorLite<
         this.language,
       );
       inlineController = new InlineEditController({
-        drawOwnership: this.drawOwnership,
+        host: this.host,
         enabled: this.capabilities.inlineEdit,
         editOperationRunner,
         editor: this,
@@ -188,7 +182,6 @@ export class AltEditorLite<
       });
       dialogController = new DialogEditingController({
         capabilities: this.capabilities,
-        drawOwnership: this.drawOwnership,
         editing: editing.dialog,
         editor: this,
         editOperationRunner,
@@ -201,6 +194,7 @@ export class AltEditorLite<
         options,
         selectIntegration,
         stateCoordinator: this.stateCoordinator,
+        host: this.host,
         table,
         tableElement: this.tableElement,
         uniquenessValidator,
@@ -208,6 +202,7 @@ export class AltEditorLite<
       refreshOperationRunner = new RefreshOperationRunner({
         editor: this,
         errorReporter,
+        host: this.host,
         interactionCoordinator: this.interactionCoordinator,
         language: this.language,
         operationOwner: this.operationOwner,
@@ -225,9 +220,9 @@ export class AltEditorLite<
       inlineController?.destroy();
       selectIntegration?.destroy();
       this.operationOwner.destroy();
-      this.drawOwnership.destroy();
+      this.host.destroy();
       this.interactionCoordinator.destroy();
-      deleteEditorInstance(this.tableElement, this);
+      deleteEditorInstance(this.host.ownershipKey, this);
       throw error;
     }
 
@@ -330,12 +325,12 @@ export class AltEditorLite<
     this.dialogController.destroy();
     this.refreshOperationRunner.destroy();
     this.operationOwner.destroy();
-    this.drawOwnership.destroy();
+    this.host.destroy();
     this.inlineController.destroy();
     this.selectIntegration.destroy();
     this.interactionCoordinator.destroy();
     this.stateCoordinator.destroy();
-    deleteEditorInstance(this.tableElement, this);
+    deleteEditorInstance(this.host.ownershipKey, this);
     dispatchEditorIntegrationUpdate(this.tableElement);
     dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:destroy'>(
       this.tableElement,

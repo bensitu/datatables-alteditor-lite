@@ -1,4 +1,5 @@
 export { AltEditorLite } from './core/alt-editor-lite.js';
+export { DataTablesHost } from './datatables/data-tables-host.js';
 export {
   ENGLISH_LANGUAGE,
   resolveLanguage,

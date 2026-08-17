@@ -1,5 +1,5 @@
-import { commitRowUpdate } from '../core/editing/commit-row-update.js';
 import { dispatchEditorEvent } from '../core/editor-event.js';
+import { commitRowUpdate } from '../datatables/commit-row-update.js';
 import {
   captureEditTarget,
   resolveEditTarget,
@@ -9,12 +9,12 @@ import { synchronizeExtensionStateAfterCommit } from '../datatables/synchronize-
 import type { AltEditorLiteError } from '../core/alt-editor-lite-error.js';
 import type { AltEditorLiteOptions } from '../core/alt-editor-lite-options.js';
 import type { AltEditorLite } from '../core/alt-editor-lite.js';
-import type { DrawOwnership } from '../core/editing/draw-ownership.js';
 import type { EditOperationRunner } from '../core/editing/edit-operation-runner.js';
 import type { OwnedOperationRequest } from '../core/editing/operation-owner.js';
 import type { EditorErrorReporter } from '../core/editor-error-reporter.js';
 import type { EditorOperationTarget } from '../core/editor-operation.js';
 import type { ResolvedDialogEditingOptions } from '../core/resolve-editing-options.js';
+import type { DataTablesHost } from '../datatables/data-tables-host.js';
 import type { EditTargetCapture } from '../datatables/row-target-resolution.js';
 import type { EditorFormController } from '../form/form-controller.js';
 import type { FieldPath } from '../object-path/field-path.js';
@@ -38,7 +38,7 @@ export interface DialogEditOperationArguments<
   readonly tableElement: HTMLTableElement;
   readonly options: Readonly<AltEditorLiteOptions<TRow, TFormValues>>;
   readonly editing: Readonly<ResolvedDialogEditingOptions>;
-  readonly drawOwnership: DrawOwnership<TRow>;
+  readonly host: DataTablesHost<TRow>;
   readonly editOperationRunner: EditOperationRunner<TRow, TFormValues>;
   readonly errorReporter: EditorErrorReporter<TRow, TFormValues>;
   readonly targetUnavailableMessage: string;
@@ -59,11 +59,11 @@ export class DialogEditOperation<TRow extends object, TFormValues extends object
     updateCapture: (capture: EditTargetCapture<TRow>) => void,
   ): Promise<void> {
     const {
-      drawOwnership,
       editing,
       editor,
       editOperationRunner,
       errorReporter,
+      host,
       options,
       table,
       tableElement,
@@ -92,14 +92,7 @@ export class DialogEditOperation<TRow extends object, TFormValues extends object
             },
           }),
       commit: async (row, rowIndex, request: OwnedOperationRequest) => {
-        const result = await commitRowUpdate(
-          table,
-          rowIndex,
-          row,
-          drawOwnership,
-          request.abortController.signal,
-          'dialog-edit-success',
-        );
+        const result = await commitRowUpdate(host, rowIndex, row, request);
         if (!editing.closeOnSuccess) {
           updateCapture(captureEditTarget(table, rowIndex, targetUnavailableMessage));
         }

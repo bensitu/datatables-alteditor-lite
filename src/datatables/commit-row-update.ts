@@ -1,9 +1,11 @@
-import { isColumnVisiblyAvailable } from '../../datatables/column-visibility.js';
-import { resolveUniqueRowIndexById } from '../../datatables/row-id-resolution.js';
-import { EditorTargetUnavailableError } from '../alt-editor-lite-error.js';
+import { EditorTargetUnavailableError } from '../core/alt-editor-lite-error.js';
 
-import type { DrawOwnership } from './draw-ownership.js';
-import type { EditCommitResult } from './edit-transaction.js';
+import { isColumnVisiblyAvailable } from './column-visibility.js';
+import { resolveUniqueRowIndexById } from './row-id-resolution.js';
+
+import type { DataTablesHost } from './data-tables-host.js';
+import type { EditCommitResult } from '../core/editing/edit-transaction.js';
+import type { OwnedOperationRequest } from '../core/editing/operation-owner.js';
 import type { Api } from 'datatables.net';
 
 /** Logical post-commit cell identity resolved only after a draw. */
@@ -26,44 +28,36 @@ function resolveStableRowId<TRow extends object>(
   return resolveUniqueRowIndexById(table, rowId) === rowIndex ? rowId : undefined;
 }
 
-/** Replaces one canonical row and waits for the corresponding public draw. */
+/** Replaces one canonical row through the DataTables host boundary. */
 export async function commitRowUpdate<TRow extends object>(
-  table: Api<TRow>,
+  host: DataTablesHost<TRow>,
   rowIndex: number,
   row: TRow,
-  drawOwnership: DrawOwnership<TRow>,
-  signal: AbortSignal,
-  reason: 'dialog-edit-success' | 'inline-edit-success',
+  request: OwnedOperationRequest,
 ): Promise<Readonly<EditCommitResult<TRow>>> {
-  await drawOwnership.runWithDraw(reason, signal, () => {
-    table.row(rowIndex).data(row);
-    table.draw(false);
+  const appliedTarget = await host.applyUpdate(rowIndex, row, {
+    mode: request.mode,
+    operation: 'edit',
+    signal: request.abortController.signal,
   });
-  return Object.freeze({ row, rowIndex });
+  return Object.freeze({ row, rowIndex: appliedTarget });
 }
 
 /** Commits a row and captures a logical cell target from the completed draw. */
 export async function commitRowUpdateWithFocus<TRow extends object>(
-  table: Api<TRow>,
+  host: DataTablesHost<TRow>,
   rowIndex: number,
   row: TRow,
   columnIndex: number,
   columnName: string | undefined,
-  drawOwnership: DrawOwnership<TRow>,
-  signal: AbortSignal,
+  request: OwnedOperationRequest,
 ): Promise<
   Readonly<EditCommitResult<TRow>> & {
     readonly focusTarget: Readonly<LogicalCellTarget<TRow>>;
   }
 > {
-  const result = await commitRowUpdate(
-    table,
-    rowIndex,
-    row,
-    drawOwnership,
-    signal,
-    'inline-edit-success',
-  );
+  const result = await commitRowUpdate(host, rowIndex, row, request);
+  const table = host.unwrap();
   const rowId = resolveStableRowId(table, rowIndex);
   const targetBase = {
     columnIndex,
