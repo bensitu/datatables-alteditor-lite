@@ -1,10 +1,10 @@
 # Operations
 
 AltEditorLite performs non-optimistic mutations. A persistence callback must
-finish successfully before any row is added, replaced, or removed in DataTables.
+finish successfully before the Host is asked to add, replace, or remove a record.
 
 ```ts
-const editor = new AltEditorLite<UserRow, UserForm>(table, {
+const editor = new DataTablesEditor<UserRow, UserForm>(table, {
   fields,
   operations: {
     async create(values, context) {
@@ -21,17 +21,19 @@ const editor = new AltEditorLite<UserRow, UserForm>(table, {
     },
     async refresh(context) {
       const rows = await loadUsers(context.signal);
-      context.table.clear().rows.add(rows).draw(false);
+      table.clear().rows.add(rows).draw(false);
     },
   },
 });
 ```
 
-Each callback receives the owned DataTables API, an `AbortSignal`, and the current
-operation discriminator. The context also identifies the initiating `mode` as
-`dialog`, `inline`, or `api`, plus a stable `target` when Edit owns one. Closing a
-submitting presentation or destroying the editor aborts the signal. Results from
-an aborted, replaced, or destroyed request are ignored.
+Each callback receives an `AbortSignal`, the current operation discriminator, the
+initiating `mode` (`dialog`, `inline`, or `api`), and a stable neutral `target`
+when Edit owns one. Contexts do not contain a DataTables API. DataTables
+applications can retain `table` in application scope or retain a
+`DataTablesHost` and call `unwrap()` explicitly. Closing a submitting
+presentation or destroying the editor aborts the signal. Results from an aborted,
+replaced, or destroyed request are ignored.
 
 Consumer-owned callbacks also own their request deadlines. Apply an
 application-appropriate timeout in the callback and use the supplied signal to
@@ -65,8 +67,8 @@ change it. At submission, AltEditorLite resolves identity in this order:
 3. captured row index only while the same live row object still occupies it.
 
 If identity cannot be proven, `EditorTargetUnavailableError` is displayed and no
-persistence callback or table mutation occurs. Identity is checked again after an
-asynchronous callback before mutation.
+persistence callback or Host mutation occurs. Identity is checked again after an
+asynchronous callback before application.
 
 This policy intentionally fails closed. Without a configured public `rowId`, an
 external deletion or row rebuild can invalidate a captured index even when another
@@ -102,22 +104,23 @@ All targets are captured before confirmation. A later selection change is
 irrelevant. If any target becomes unavailable, the entire operation fails; partial
 deletion is not performed.
 
-`operations.remove` runs before DataTables mutation. Without it, AltEditorLite
-removes the captured rows locally after confirmation.
+`operations.remove` runs before Host application. Without it, AltEditorLite asks
+the Host to remove the captured records locally after confirmation.
 
 ## Refresh
 
-`refreshTable()` does not open a dialog, safely cancels an active double-click
+`refresh()` does not open a dialog, safely cancels an active double-click
 Inline session, and rejects while a hover Inline session awaits Submit or Cancel,
-and remains mutually exclusive with dialog operations. By default, Ajax tables
-wait for the public reload callback and local tables redraw without resetting
-paging. DataTables does not expose an
+and remains mutually exclusive with dialog operations. `DataTablesHost` waits for
+the public reload callback for Ajax tables and redraws local tables without
+resetting paging. DataTables does not expose an
 `AbortSignal` parameter for `ajax.reload()`, so aborting editor ownership cannot
 guarantee cancellation of that transport.
 
 Configure `operations.refresh(context)` when network-level cancellation is
-required. The callback receives the owned signal and DataTables API, replaces the
-default refresh behavior, and is responsible for applying its result through
+required. The callback receives the owned signal, replaces the Host's default
+refresh behavior, and is responsible for applying its result. Retain the
+DataTables API or call `DataTablesHost.unwrap()` when that implementation uses
 public DataTables methods. Aborted or superseded callback results do not publish
 AltEditorLite success events.
 

@@ -21,12 +21,12 @@ export class EditorAlertDialog {
   private isDestroyed = false;
 
   public constructor(
-    tableElement: HTMLElement,
+    fallbackElement: HTMLElement,
     instanceId: string,
     language: Readonly<AltEditorLiteLanguage>,
   ) {
     this.shell = createAlertDialogShell(instanceId, language);
-    this.focusScope = new DialogFocusScope(this.shell.dialogElement, tableElement);
+    this.focusScope = new DialogFocusScope(this.shell.dialogElement, fallbackElement);
     this.shell.dialogElement.addEventListener('cancel', this.handleCancel);
     this.shell.closeButton.addEventListener('click', this.handleClose);
     appendDialogElement(this.shell.dialogElement);

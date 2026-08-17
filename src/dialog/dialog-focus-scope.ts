@@ -88,15 +88,15 @@ export class DialogFocusScope {
 
   private isActive = false;
 
-  private ownsTemporaryTableTabIndex = false;
+  private ownsTemporaryFallbackTabIndex = false;
 
   /**
    * @param dialogElement - Native dialog whose focus is scoped.
-   * @param tableElement - Host element used when the original trigger disappears.
+   * @param fallbackElement - Host element used when the original trigger disappears.
    */
   public constructor(
     private readonly dialogElement: HTMLDialogElement,
-    private readonly tableElement: HTMLElement,
+    private readonly fallbackElement: HTMLElement,
   ) {}
 
   /**
@@ -181,10 +181,12 @@ export class DialogFocusScope {
 
     if (shouldRestore) {
       const restoreTarget =
-        this.restoreTarget?.isConnected === true ? this.restoreTarget : this.tableElement;
+        this.restoreTarget?.isConnected === true
+          ? this.restoreTarget
+          : this.fallbackElement;
 
-      if (restoreTarget === this.tableElement) {
-        this.focusTableFallback();
+      if (restoreTarget === this.fallbackElement) {
+        this.focusFallback();
       } else {
         restoreTarget.focus();
       }
@@ -198,32 +200,32 @@ export class DialogFocusScope {
    */
   public destroy(): void {
     this.deactivate(false);
-    this.restoreTableFocusability();
+    this.restoreFallbackFocusability();
     this.restoreTarget = null;
   }
 
-  private focusTableFallback(): void {
-    if (this.tableElement.getAttribute('tabindex') === null) {
-      this.tableElement.setAttribute('tabindex', '-1');
-      this.ownsTemporaryTableTabIndex = true;
-      this.tableElement.addEventListener('blur', this.restoreTableFocusability);
+  private focusFallback(): void {
+    if (this.fallbackElement.getAttribute('tabindex') === null) {
+      this.fallbackElement.setAttribute('tabindex', '-1');
+      this.ownsTemporaryFallbackTabIndex = true;
+      this.fallbackElement.addEventListener('blur', this.restoreFallbackFocusability);
     }
 
-    this.tableElement.focus();
-    if (document.activeElement !== this.tableElement) {
-      this.restoreTableFocusability();
+    this.fallbackElement.focus();
+    if (document.activeElement !== this.fallbackElement) {
+      this.restoreFallbackFocusability();
     }
   }
 
-  private readonly restoreTableFocusability = (): void => {
-    if (!this.ownsTemporaryTableTabIndex) {
+  private readonly restoreFallbackFocusability = (): void => {
+    if (!this.ownsTemporaryFallbackTabIndex) {
       return;
     }
 
-    this.ownsTemporaryTableTabIndex = false;
-    this.tableElement.removeEventListener('blur', this.restoreTableFocusability);
-    if (this.tableElement.getAttribute('tabindex') === '-1') {
-      this.tableElement.removeAttribute('tabindex');
+    this.ownsTemporaryFallbackTabIndex = false;
+    this.fallbackElement.removeEventListener('blur', this.restoreFallbackFocusability);
+    if (this.fallbackElement.getAttribute('tabindex') === '-1') {
+      this.fallbackElement.removeAttribute('tabindex');
     }
   };
 

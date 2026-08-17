@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { EditorConfigurationError } from '../../src/core/alt-editor-lite-error.js';
-import { DataTablesEditor as AltEditorLite } from '../../src/datatables/data-tables-editor.js';
+import { DataTablesEditor } from '../../src/datatables/data-tables-editor.js';
 import { registerAltEditorLite } from '../../src/datatables/register-alt-editor-lite.js';
 
 import type { Api, DataTablesStatic } from 'datatables.net';
@@ -19,7 +19,7 @@ describe('registerAltEditorLite', () => {
     } as unknown as Api<Record<string, never>>;
 
     expect(() => {
-      new AltEditorLite(table, { fields: [] });
+      new DataTablesEditor(table, { fields: [] });
     }).toThrow(
       'AltEditorLite requires a DataTables API that owns an HTML table element.',
     );

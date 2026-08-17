@@ -5,12 +5,18 @@ complete dialog behavior and optional single-cell editing.
 
 ## Install
 
-Install DataTables 3 and AltEditorLite. Buttons and Select are optional peers:
+Install AltEditorLite by itself for neutral or standalone use. Add DataTables 3
+for the DataTables integration; Buttons and Select are optional peers:
 
 ```bash
+npm install datatables-alteditor-lite
 npm install datatables.net@^3 datatables-alteditor-lite
 npm install datatables.net-buttons@^4 datatables.net-select@^4
 ```
+
+DataTables is marked as an optional peer so applications using the neutral root
+or `/standalone` entry do not install it. Applications importing `/datatables`
+must install a compatible DataTables runtime.
 
 DataTables' published TypeScript declarations reference jQuery types for its
 optional compatibility API. Projects that type-check dependencies with
@@ -21,14 +27,13 @@ runtime dependency:
 npm install --save-dev @types/jquery
 ```
 
-Import DataTables, the auto-registering ESM entry, and the stylesheet:
+Import DataTables, its explicit auto-registering integration entry, and the
+stylesheet:
 
 ```ts
 import DataTable from 'datatables.net';
-import { AltEditorLite, registerAltEditorLite } from 'datatables-alteditor-lite';
+import { DataTablesEditor } from 'datatables-alteditor-lite/datatables';
 import 'datatables-alteditor-lite/style.css';
-
-registerAltEditorLite(DataTable);
 
 interface UserRow {
   readonly id: string;
@@ -47,7 +52,7 @@ const table = new DataTable<UserRow>('#users', {
   rowId: 'id',
 });
 
-const editor = new AltEditorLite<UserRow, UserForm>(table, {
+const editor = new DataTablesEditor<UserRow, UserForm>(table, {
   clientSide: {
     createRow: (values) => ({
       id: crypto.randomUUID(),
@@ -71,10 +76,11 @@ document.querySelector('#create')?.addEventListener('click', () => {
 });
 ```
 
-The root ESM entry already registers against its imported DataTables runtime;
-the explicit idempotent `registerAltEditorLite(DataTable)` call is useful when an
-application makes runtime ownership visible or supplies another compatible
-DataTables constructor.
+The `/datatables` entry registers against its imported DataTables runtime. The
+root entry is host-neutral and does not import or register DataTables.
+`registerAltEditorLite(DataTable)` remains available from `/datatables` for an
+application that deliberately supplies another compatible constructor; repeated
+registration is safe.
 
 `TRow` is the complete DataTables row shape. `TFormValues` is the independent
 shape collected from configured fields. Persistence callbacks convert form values
@@ -83,6 +89,55 @@ to complete rows; the library never assumes that the two shapes are identical.
 Use `table.altEditorLite<UserForm>()` only to retrieve an existing instance. It
 never constructs one. Call `editor.destroy()` before replacing the table or
 creating another editor for the same table element.
+
+`DataTablesEditor` is a selector-friendly facade. Applications that want the
+neutral constructor can retain the host explicitly:
+
+```ts
+import {
+  AltEditorLite,
+  DataTablesHost,
+  type DataTablesRecordTarget,
+} from 'datatables-alteditor-lite/datatables';
+
+const host = new DataTablesHost(table);
+const editor = new AltEditorLite<UserRow, UserForm, DataTablesRecordTarget>(host, {
+  fields,
+});
+const dataTablesApi = host.unwrap();
+```
+
+`unwrap()` is an explicit DataTables escape hatch. Operation, validation, hook,
+and event contexts remain host-neutral and never receive this API implicitly.
+
+## Standalone setup
+
+The standalone host delegates record state to consumer callbacks:
+
+```ts
+import { AltEditorLite, StandaloneHost } from 'datatables-alteditor-lite/standalone';
+
+const records = new Map<string, UserRow>();
+const host = new StandaloneHost<UserRow, string>({
+  read: (target) => {
+    const row = records.get(target);
+    if (row === undefined) throw new Error('Record unavailable.');
+    return row;
+  },
+  applyUpdate: (target, row) => {
+    records.set(target, row);
+    return target;
+  },
+});
+const editor = new AltEditorLite<UserRow, UserForm, string>(host, { fields });
+```
+
+Supply `applyCreate` and `applyRemove` when those operations are used. The
+optional `refresh` callback defines the work performed by `editor.refresh()`;
+without it, the call completes without changing records. Local uniqueness fields
+also require `records`, an iterable provider returning `{ target, row }` entries.
+Lifecycle events use `host.eventTarget`; provide one when another application
+component needs to observe them.
 
 ## Editing and commit model
 
@@ -99,8 +154,8 @@ The ordered update flow is:
 3. run the veto-only `beforeSubmit` hook;
 4. publish submit and invoke the configured update implementation;
 5. confirm request ownership and target identity again;
-6. commit one complete replacement row or run the configured refresh;
-7. wait for the owned draw, publish success, and restore logical focus;
+6. ask the Host to apply one complete replacement row or run its refresh;
+7. wait for stable Host presentation, publish success, and restore logical focus;
 8. run `afterSuccess` without changing the committed result.
 
 Validation and persistence failures leave canonical DataTables data unchanged.

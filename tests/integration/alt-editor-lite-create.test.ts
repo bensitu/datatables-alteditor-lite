@@ -2,7 +2,7 @@ import DataTable from 'datatables.net';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import {
-  DataTablesEditor as AltEditorLite,
+  DataTablesEditor,
   AltEditorLiteError,
   EditorAlreadyInitializedError,
   EditorConfigurationError,
@@ -107,11 +107,11 @@ function createEditor(
   closeOnSuccess = true,
 ): {
   readonly api: ReturnType<typeof createTestTable>['api'];
-  readonly editor: AltEditorLite<TestRow, CreateValues>;
+  readonly editor: DataTablesEditor<TestRow, CreateValues>;
   readonly tableElement: HTMLTableElement;
 } {
   const { api, tableElement } = createTestTable(tableId);
-  const editor = new AltEditorLite<TestRow, CreateValues>(api, {
+  const editor = new DataTablesEditor<TestRow, CreateValues>(api, {
     clientSide: { createRow },
     editing: { dialog: { closeOnSuccess } },
     fields,
@@ -155,7 +155,7 @@ describe('AltEditorLite synchronous Create', () => {
 
     expect(
       () =>
-        new AltEditorLite<TestRow, CreateValues>(api, {
+        new DataTablesEditor<TestRow, CreateValues>(api, {
           clientSide: {
             createRow: (values) => ({
               id: 'duplicate-row',
@@ -269,7 +269,7 @@ describe('AltEditorLite synchronous Create', () => {
     }));
     const beforeSubmit = vi.fn(() => true);
     const { api } = createTestTable('create-cross-field-validation');
-    const editor = new AltEditorLite<TestRow, CreateValues>(api, {
+    const editor = new DataTablesEditor<TestRow, CreateValues>(api, {
       clientSide: { createRow },
       fields,
       hooks: { beforeSubmit },
@@ -337,7 +337,7 @@ describe('AltEditorLite synchronous Create', () => {
       rank: values.rank ?? 0,
     }));
     const { api } = createTestTable('dependent-create');
-    const editor = new AltEditorLite<TestRow, LocationValues>(api, {
+    const editor = new DataTablesEditor<TestRow, LocationValues>(api, {
       clientSide: { createRow },
       dependencies: {
         country: (country) =>
@@ -423,7 +423,7 @@ describe('AltEditorLite synchronous Create', () => {
     const { api, tableElement } = createTestTable('dependency-recovery');
     const errorListener = vi.fn();
     tableElement.addEventListener('alteditor-lite:error', errorListener);
-    const editor = new AltEditorLite<TestRow, CreateValues>(api, {
+    const editor = new DataTablesEditor<TestRow, CreateValues>(api, {
       clientSide: { createRow },
       dependencies: {
         name: (name) =>
@@ -487,7 +487,7 @@ describe('AltEditorLite synchronous Create', () => {
     const { api, tableElement } = createTestTable('destroy-dependency-open');
     const errorListener = vi.fn();
     tableElement.addEventListener('alteditor-lite:error', errorListener);
-    const editor = new AltEditorLite<TestRow, CreateValues>(api, {
+    const editor = new DataTablesEditor<TestRow, CreateValues>(api, {
       clientSide: {
         createRow: (values) => ({
           id: 'unused-row',
@@ -530,7 +530,7 @@ describe('AltEditorLite synchronous Create', () => {
     `;
     document.body.append(template);
     const { api, tableElement } = createTestTable('custom-create-layout');
-    const editor = new AltEditorLite<TestRow, CreateValues>(api, {
+    const editor = new DataTablesEditor<TestRow, CreateValues>(api, {
       clientSide: {
         createRow: (values) => ({
           id: 'custom-layout-row',
@@ -770,7 +770,7 @@ describe('AltEditorLite synchronous Create', () => {
 
   it('initializes without Create capability but rejects opening it', async () => {
     const { api } = createTestTable('unavailable');
-    const editor = new AltEditorLite<TestRow, CreateValues>(api, {
+    const editor = new DataTablesEditor<TestRow, CreateValues>(api, {
       fields,
     });
     activeEditors.add(editor);

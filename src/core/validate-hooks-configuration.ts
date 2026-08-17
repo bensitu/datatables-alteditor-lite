@@ -4,7 +4,7 @@ import type { AltEditorLiteOptions } from './alt-editor-lite-options.js';
 
 const hookNames = ['beforeOpen', 'beforeSubmit', 'afterSuccess', 'onError'] as const;
 
-/** Validates optional lifecycle callbacks before any table resources are claimed. */
+/** Validates optional lifecycle callbacks before any Host resources are claimed. */
 export function validateHooksConfiguration<
   TRow extends object,
   TFormValues extends object,

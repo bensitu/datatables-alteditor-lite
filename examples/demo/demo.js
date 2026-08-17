@@ -23,8 +23,8 @@ if (
 }
 
 const {
-  DataTablesEditor: AltEditorLite,
   AltEditorLiteError,
+  DataTablesEditor,
   getLocale,
   getRegisteredLocaleNames,
   loadEditorLanguage,
@@ -496,7 +496,7 @@ function assertUniqueEmail(table, email, excludedId) {
 }
 
 function createEmployeeEditor(table, inlineActivation, language, dialogEnabled = false) {
-  return new AltEditorLite(table, {
+  return new DataTablesEditor(table, {
     dependencies: {
       country: (country, { values }) => {
         const usesPrefecture = country === 'JP';
@@ -632,7 +632,7 @@ const workflowEditorOptions = {
 
 function createWorkflowEditor(language) {
   const usesInline = workflowPresentation === 'inline';
-  return new AltEditorLite(workflowTable, {
+  return new DataTablesEditor(workflowTable, {
     ...workflowEditorOptions,
     editing: {
       dialog: { enabled: !usesInline },

@@ -25,7 +25,7 @@ ESM applications can import an included language module:
 ```ts
 import ja from 'datatables-alteditor-lite/locales/ja';
 
-const editor = new AltEditorLite(table, {
+const editor = new DataTablesEditor(table, {
   fields,
   language: ja,
 });
@@ -48,7 +48,7 @@ Applications can provide partial language data directly in the options. The
 `locale` value is a BCP 47 identifier, and omitted text falls back to English:
 
 ```ts
-const editor = new AltEditorLite(table, {
+const editor = new DataTablesEditor(table, {
   fields,
   language: {
     locale: 'fr-FR',
@@ -66,10 +66,13 @@ For a separate JSON resource, await `loadEditorLanguage` before constructing the
 editor:
 
 ```ts
-import { AltEditorLite, loadEditorLanguage } from 'datatables-alteditor-lite';
+import {
+  DataTablesEditor,
+  loadEditorLanguage,
+} from 'datatables-alteditor-lite/datatables';
 
 const language = await loadEditorLanguage('/languages/fr-FR.json');
-const editor = new AltEditorLite(table, { fields, language });
+const editor = new DataTablesEditor(table, { fields, language });
 ```
 
 This follows the same separation between implementation and language data used by
@@ -115,7 +118,7 @@ const language = await DataTablesAltEditorLite.loadEditorLanguage(
   './languages/fr-FR.json',
   { signal: abortController.signal },
 );
-const editor = new DataTablesAltEditorLite.AltEditorLite(table, {
+const editor = new DataTablesAltEditorLite.DataTablesEditor(table, {
   fields,
   language,
 });

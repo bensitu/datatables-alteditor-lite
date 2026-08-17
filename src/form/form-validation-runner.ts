@@ -9,7 +9,7 @@ import type { FormValidationResult } from './form-validation.js';
 import type { EditorValues } from '../core/editor-values.js';
 import type { ManagedFieldController } from '../fields/managed-field-controller.js';
 
-/** Internal callback for table-scoped local uniqueness checks. */
+/** Internal callback for Host-scoped local uniqueness checks. */
 export type LocalUniqueValidator<TFormValues extends object> = (
   values: Readonly<EditorValues<TFormValues>>,
 ) => Readonly<Record<string, string>>;

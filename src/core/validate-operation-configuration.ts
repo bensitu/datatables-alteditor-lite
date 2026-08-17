@@ -5,7 +5,7 @@ import type { AltEditorLiteOptions } from './alt-editor-lite-options.js';
 /**
  * Rejects invalid operation ownership and form callback configuration.
  *
- * @param options - Editor options to validate before the table is claimed.
+ * @param options - Editor options to validate before the Host is claimed.
  * @throws EditorConfigurationError when a callback is invalid or ownership is ambiguous.
  */
 export function validateOperationConfiguration<

@@ -10,7 +10,7 @@ values without taking ownership of form controllers.
 Set `editing.dialog.template` to a selector or an element:
 
 ```ts
-const editor = new AltEditorLite<EmployeeRow, EmployeeForm>(table, {
+const editor = new DataTablesEditor<EmployeeRow, EmployeeForm>(table, {
   editing: {
     dialog: {
       template: '#employee-form-layout',
@@ -167,7 +167,7 @@ when several targets must change together.
 context. It runs for Dialog Create, Dialog Edit, and Inline Edit:
 
 ```ts
-validateForm: async (values, { mode, operation, signal, table }) => {
+validateForm: async (values, { mode, operation, signal }) => {
   await verifySchedule(values, signal);
   if (
     values.startDate !== undefined &&

@@ -1,8 +1,8 @@
 # Browser Global
 
-The Browser Global distribution exposes the same editing methods, lifecycle
-behavior, and language APIs as the ESM entry. It does not require jQuery or a UI
-framework.
+The primary Browser Global distribution preserves the DataTables-oriented editing
+methods, lifecycle behavior, and language APIs from the `/datatables` ESM entry.
+It does not require jQuery or a UI framework.
 
 ## Quick start
 
@@ -45,7 +45,7 @@ from jsDelivr:
         rowId: 'id',
       });
 
-      const editor = new DataTablesAltEditorLite.AltEditorLite(table, {
+      const editor = new DataTablesAltEditorLite.DataTablesEditor(table, {
         clientSide: {
           createRow(values) {
             return {
@@ -106,6 +106,8 @@ The npm package publishes these Browser Global files under `dist/umd/`:
 
 - `alt-editor-lite.css` and `alt-editor-lite.min.css`;
 - `datatables-alteditor-lite.js` and `datatables-alteditor-lite.min.js`;
+- `datatables-alteditor-lite-standalone.js` for a DataTables-free standalone
+  runtime;
 - Browser Global language resources under `dist/umd/locales/`.
 
 ESM entry points, declarations, and JSON language resources are published under
@@ -119,8 +121,15 @@ For self-hosting, copy the required `dist/` files and use equivalent local URLs:
 <script src="/vendor/datatables-alteditor-lite.min.js"></script>
 ```
 
-The constructor, language loader, and language registry are available through
-`globalThis.DataTablesAltEditorLite`.
+`DataTablesEditor`, `DataTablesHost`, the neutral constructor, the language
+loader, and the language registry are available through
+`globalThis.DataTablesAltEditorLite`. This main bundle requires DataTables to
+load first and registers `table.altEditorLite()` as a retrieval-only method.
+
+Standalone script users can instead load
+`datatables-alteditor-lite-standalone.js` and construct
+`DataTablesAltEditorLiteStandalone.StandaloneHost` with consumer record
+callbacks. That bundle does not import, register, or require DataTables.
 
 ## Languages
 
@@ -133,7 +142,7 @@ Included language registration bundles must load after the main browser bundle:
 
 ```js
 const language = DataTablesAltEditorLite.getLocale('ja');
-const editor = new DataTablesAltEditorLite.AltEditorLite(table, {
+const editor = new DataTablesAltEditorLite.DataTablesEditor(table, {
   fields,
   language,
 });

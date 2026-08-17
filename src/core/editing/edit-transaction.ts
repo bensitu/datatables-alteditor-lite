@@ -29,5 +29,4 @@ export type EditValidationResult<TFormValues extends object> =
 /** Result of a committed replacement or consumer-owned refresh. */
 export interface EditCommitResult<TRow extends object> {
   readonly row: Readonly<TRow>;
-  readonly rowIndex?: number;
 }

@@ -1,7 +1,7 @@
 # Events
 
-AltEditorLite publishes observation-only DOM `CustomEvent` objects from the owned
-table element:
+AltEditorLite publishes observation-only `CustomEvent` objects from
+`host.eventTarget`. `DataTablesHost` uses the owned table element:
 
 ```ts
 const tableElement = table.table().node();
@@ -13,8 +13,9 @@ tableElement.addEventListener('alteditor-lite:error', (event) => {
 });
 ```
 
-Events do not bubble and are not cancelable. Listen directly on
-`table.table().node()`.
+Events do not bubble and are not cancelable. Listen directly on the configured
+event target. `StandaloneHost` uses an application-supplied `EventTarget` or
+creates a private one exposed through `host.eventTarget`.
 
 ## Event names
 
@@ -46,19 +47,20 @@ success | error
 close (when the inline presentation actually closes)
 ```
 
-Inline details use `operation: 'edit'`, `mode: 'inline'`, and a `target` containing
-the row, column, and field identity. Dialog details use `mode: 'dialog'`.
-Programmatic refresh details use `mode: 'api'`. No separate inline event names
-are required.
+Inline details use `operation: 'edit'`, `mode: 'inline'`, and a neutral `target`
+containing an optional Host key and affected field paths. Dialog details use
+`mode: 'dialog'`. Programmatic refresh details use `mode: 'api'`. No separate
+inline event names are required.
 
 If Create or Edit form construction or source-value population fails, the editor
 cleans up and returns to `ready`, then publishes `error` without a preceding
 `open` or a following `close` event.
 
 `submit` occurs after validation, collection, and target validation but before the
-persistence callback. `success` occurs after DataTables mutation and draw.
-`error` occurs after safe normalization without an AltEditorLite table mutation.
-`close` occurs after dialog cleanup, focus restoration, and snapshot release.
+persistence callback. `success` occurs after canonical Host application and
+stable presentation. `error` occurs after safe normalization without an editor
+Host mutation. `close` occurs after dialog cleanup, focus restoration, and target
+release.
 
 Refresh publishes:
 

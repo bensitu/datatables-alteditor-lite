@@ -125,7 +125,7 @@ export interface EditorRemoveSuccessEventDetail<
   readonly target?: Readonly<EditorOperationTarget>;
 }
 
-/** Detail published after a table refresh completes successfully. */
+/** Detail published after a Host refresh completes successfully. */
 export interface EditorRefreshSuccessEventDetail<
   TRow extends object,
   TFormValues extends object,
@@ -144,7 +144,7 @@ export type EditorSuccessEventDetail<TRow extends object, TFormValues extends ob
   | EditorRemoveSuccessEventDetail<TRow, TFormValues>
   | EditorRefreshSuccessEventDetail<TRow, TFormValues>;
 
-/** Detail published after an error is visible without a table mutation. */
+/** Detail published after an error is visible without a Host mutation. */
 export interface EditorErrorEventDetail<TRow extends object, TFormValues extends object> {
   readonly type: 'error';
   readonly editor: AltEditorLite<TRow, TFormValues>;

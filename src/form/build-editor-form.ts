@@ -13,7 +13,7 @@ import type { FieldConfig } from '../fields/field-config.js';
  * @param fields - Validated field configurations.
  * @param instanceId - Instance-scoped DOM prefix.
  * @param language - Complete resolved language.
- * @param validateUnique - Optional table-scoped local uniqueness check.
+ * @param validateUnique - Optional Host-scoped local uniqueness check.
  * @param template - Optional consumer-owned layout source.
  * @param dependencies - Optional declarative field state resolvers.
  * @param onDependencyError - Optional observer for current resolver failures.

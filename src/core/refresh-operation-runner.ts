@@ -42,7 +42,7 @@ export class RefreshOperationRunner<TRow extends object, TFormValues extends obj
     private readonly arguments_: RefreshOperationRunnerArguments<TRow, TFormValues>,
   ) {}
 
-  /** Runs the configured refresh operation or the DataTables fallback. */
+  /** Runs the configured refresh operation or the Host fallback. */
   public async run(): Promise<void> {
     let didAcquireInteraction = false;
     try {

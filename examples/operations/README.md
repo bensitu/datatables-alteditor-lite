@@ -1,9 +1,12 @@
 # Asynchronous operations example
 
 ```ts
-import { AltEditorLite, AltEditorLiteError } from 'datatables-alteditor-lite';
+import {
+  AltEditorLiteError,
+  DataTablesEditor,
+} from 'datatables-alteditor-lite/datatables';
 
-const editor = new AltEditorLite(table, {
+const editor = new DataTablesEditor(table, {
   fields,
   operations: {
     async create(values, context) {

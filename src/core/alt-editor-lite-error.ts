@@ -17,7 +17,7 @@ export interface AltEditorLiteErrorOptions {
 /**
  * Base error for recoverable editor failures.
  *
- * The error itself does not mutate DataTables or transition editor state.
+ * The error itself does not mutate Host state or transition editor state.
  * Callers decide whether it is shown in an open dialog and whether retry is
  * available.
  */
@@ -32,7 +32,7 @@ export class AltEditorLiteError extends Error {
   public readonly retryable: boolean;
 
   /**
-   * Creates an editor error without changing editor or DataTables state.
+   * Creates an editor error without changing editor or Host state.
    *
    * @param options - Public error properties.
    */
@@ -49,9 +49,9 @@ export class AltEditorLiteError extends Error {
 }
 
 /**
- * Indicates that an active editor already owns the requested table element.
+ * Indicates that an active editor already owns the requested Host identity.
  *
- * Construction fails before editor state or DataTables rows are changed. The
+ * Construction fails before editor or Host state is changed. The
  * existing instance can continue to be used.
  */
 export class EditorAlreadyInitializedError extends AltEditorLiteError {
@@ -59,7 +59,7 @@ export class EditorAlreadyInitializedError extends AltEditorLiteError {
   public constructor() {
     super({
       code: 'ALREADY_INITIALIZED',
-      message: 'An AltEditorLite instance already owns this table.',
+      message: 'An AltEditorLite instance already owns this Host.',
       retryable: false,
     });
   }
@@ -68,7 +68,7 @@ export class EditorAlreadyInitializedError extends AltEditorLiteError {
 /**
  * Indicates that editor options or a configured capability are invalid.
  *
- * Configuration failures do not mutate DataTables. They are retryable only
+ * Configuration failures do not mutate Host state. They are retryable only
  * after the consumer corrects the configuration.
  */
 export class EditorConfigurationError extends AltEditorLiteError {
@@ -92,7 +92,7 @@ export class EditorConfigurationError extends AltEditorLiteError {
  * Indicates that a second operation was requested while the editor was busy.
  *
  * The active operation and current editor state remain unchanged, and
- * DataTables is not mutated.
+ * Host state is not mutated.
  */
 export class EditorOperationBusyError extends AltEditorLiteError {
   /** Creates a busy-operation error. */
@@ -106,10 +106,10 @@ export class EditorOperationBusyError extends AltEditorLiteError {
 }
 
 /**
- * Indicates that selection-based targeting was requested without Select.
+ * Indicates that selection-based targeting was requested without Host support.
  *
- * The editor remains ready and DataTables is not mutated. Supplying an
- * explicit public row selector or loading Select makes the request retryable.
+ * The editor remains ready and Host state is not mutated. Supplying an explicit
+ * target or configuring Host selection support makes the request retryable.
  */
 export class EditorSelectionUnavailableError extends AltEditorLiteError {
   /**
@@ -118,7 +118,7 @@ export class EditorSelectionUnavailableError extends AltEditorLiteError {
    * @param message - Localized safe explanation.
    */
   public constructor(
-    message = 'DataTables Select is required when no row selector is provided.',
+    message = 'Selection support is required when no explicit target is provided.',
   ) {
     super({
       code: 'SELECTION_UNAVAILABLE',
@@ -129,13 +129,13 @@ export class EditorSelectionUnavailableError extends AltEditorLiteError {
 }
 
 /**
- * Indicates that a selection or explicit selector resolved the wrong row count.
+ * Indicates that a selection or explicit target resolved the wrong record count.
  *
- * The editor remains ready and DataTables is not mutated. The caller can
- * correct the selector or selection and retry.
+ * The editor remains ready and Host state is not mutated. The caller can correct
+ * the explicit target or selection and retry.
  */
 export class EditorSelectionCountError extends AltEditorLiteError {
-  /** Number of rows resolved by the failed request. */
+  /** Number of records resolved by the failed request. */
   public readonly actualCount: number;
 
   /** Required selection cardinality. */
@@ -145,7 +145,7 @@ export class EditorSelectionCountError extends AltEditorLiteError {
    * Creates a selection-count error.
    *
    * @param expected - Required cardinality.
-   * @param actualCount - Number of rows actually resolved.
+   * @param actualCount - Number of records actually resolved.
    * @param message - Localized safe explanation.
    */
   public constructor(
@@ -164,11 +164,11 @@ export class EditorSelectionCountError extends AltEditorLiteError {
 }
 
 /**
- * Indicates that an Edit or Remove snapshot can no longer identify its rows.
+ * Indicates that an Edit or Remove target can no longer identify its records.
  *
  * The persistence callback is not invoked when detected before submission.
  * If detected after an asynchronous callback, AltEditorLite still performs no
- * DataTables mutation. Closing and opening a new dialog is required.
+ * Host mutation. Closing and opening a new dialog is required.
  */
 export class EditorTargetUnavailableError extends AltEditorLiteError {
   /**
@@ -176,7 +176,7 @@ export class EditorTargetUnavailableError extends AltEditorLiteError {
    *
    * @param message - Localized safe explanation.
    */
-  public constructor(message = 'The selected row is no longer available.') {
+  public constructor(message = 'The selected record is no longer available.') {
     super({
       code: 'TARGET_UNAVAILABLE',
       message,
@@ -188,7 +188,7 @@ export class EditorTargetUnavailableError extends AltEditorLiteError {
 /**
  * Indicates that a public method was called after the instance was destroyed.
  *
- * The destroyed state remains unchanged and DataTables is not mutated.
+ * The destroyed state remains unchanged and Host state is not mutated.
  */
 export class EditorDestroyedError extends AltEditorLiteError {
   /** Creates a destroyed-instance error. */
@@ -206,7 +206,7 @@ export class EditorDestroyedError extends AltEditorLiteError {
  */
 export class EditorLanguageLoadError extends AltEditorLiteError {
   /**
-   * Creates a language-load error without changing editor or table state.
+   * Creates a language-load error without changing editor or Host state.
    *
    * @param message - Safe explanation of the failed language load.
    * @param cause - Optional original failure.
@@ -229,7 +229,7 @@ export class EditorLanguageLoadError extends AltEditorLiteError {
 /**
  * Indicates that selected files exceed a configured size or count budget.
  *
- * The dialog stays open, no DataTables mutation occurs, and the user can retry
+ * The dialog stays open, no Host mutation occurs, and the user can retry
  * with a different file selection.
  */
 export class EditorFileLimitError extends AltEditorLiteError {

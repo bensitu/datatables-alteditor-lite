@@ -17,7 +17,7 @@
 const language = await DataTablesAltEditorLite.loadEditorLanguage(
   'https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/esm/locales/ja.json',
 );
-const editor = new DataTablesAltEditorLite.AltEditorLite(table, {
+const editor = new DataTablesAltEditorLite.DataTablesEditor(table, {
   fields,
   language,
 });

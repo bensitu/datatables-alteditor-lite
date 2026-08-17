@@ -35,12 +35,12 @@ export async function commitRowUpdate<TRow extends object>(
   row: TRow,
   request: OwnedOperationRequest,
 ): Promise<Readonly<EditCommitResult<TRow>>> {
-  const appliedTarget = await host.applyInlineUpdate(rowIndex, row, {
+  await host.applyInlineUpdate(rowIndex, row, {
     mode: request.mode,
     operation: 'edit',
     signal: request.abortController.signal,
   });
-  return Object.freeze({ row, rowIndex: appliedTarget });
+  return Object.freeze({ row });
 }
 
 /** Commits a row and captures a logical cell target from the completed draw. */

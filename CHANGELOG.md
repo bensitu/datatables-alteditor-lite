@@ -5,6 +5,54 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-08-18
+
+### Added
+
+- Added the host-neutral `EditorHost` contract and optional selection, refresh,
+  record collection, and presentation capabilities.
+- Added `DataTablesHost`, the selector-friendly `DataTablesEditor` facade, and
+  the explicit `datatables-alteditor-lite/datatables` entry.
+- Added `StandaloneHost`, a DataTables-free Dialog editor example, and ESM and
+  Browser Global standalone distributions.
+- Added repeatable package-boundary verification using a clean consumer without
+  DataTables and bundled-output inspection.
+
+### Changed
+
+- Moved record application, draw completion, refresh, selection, inline targets,
+  extension synchronization, ownership, and table event dispatch into the
+  DataTables Host boundary.
+- Made persistence complete before Host application and made Host application
+  complete before success events and `afterSuccess` callbacks.
+- Made `datatables.net` an optional peer at package level while preserving the
+  supported DataTables 3 range and optional Buttons and Select peers.
+- Kept the existing DataTables Browser Global distribution and retrieval-only
+  `table.altEditorLite()` behavior while separating neutral ESM imports.
+
+### Fixed
+
+- Suppressed success publication when a Host cannot apply a canonical result and
+  retained the presentation for a retryable failure.
+- Ensured destruction releases pending owned DataTables draws and standalone
+  callbacks cannot access a destroyed Host.
+
+### Breaking
+
+- `AltEditorLite` now requires an `EditorHost`; the former
+  `new AltEditorLite(table, options)` constructor was removed. Use
+  `new DataTablesEditor(table, options)` or construct `DataTablesHost` explicitly.
+- Removed `table` from `OperationContext`, `AfterSuccessContext`, and
+  `FormValidationContext`. Retain a `DataTablesHost` and call `unwrap()` when
+  application code intentionally requires the DataTables API.
+- Replaced DataTables row and column information in neutral operation and event
+  targets with the optional `key` and `fieldNames` shape.
+- Removed `refreshTable()` in favor of `refresh()`.
+- The neutral root no longer imports or auto-registers DataTables. DataTables
+  applications must import `datatables-alteditor-lite/datatables`.
+- Neutral methods accept opaque Host targets. Use `DataTablesEditor` when public
+  DataTables row and column selectors are required.
+
 ## [0.4.1] - 2026-08-16
 
 ### Changed

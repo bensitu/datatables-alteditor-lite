@@ -2,7 +2,7 @@
 
 ```ts
 import DataTable from 'datatables.net';
-import { AltEditorLite } from 'datatables-alteditor-lite';
+import { DataTablesEditor } from 'datatables-alteditor-lite/datatables';
 import 'datatables-alteditor-lite/style.css';
 
 const table = new DataTable('#users', {
@@ -11,7 +11,7 @@ const table = new DataTable('#users', {
   rowId: 'id',
 });
 
-const editor = new AltEditorLite(table, {
+const editor = new DataTablesEditor(table, {
   clientSide: {
     createRow: (values) => ({ id: crypto.randomUUID(), name: values.name ?? '' }),
   },
@@ -33,4 +33,4 @@ const editor = new AltEditorLite(table, {
 await editor.openCreateDialog();
 ```
 
-This recipe uses only the published root and CSS subpath.
+This recipe uses the explicit DataTables integration and the shared CSS subpath.

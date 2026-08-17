@@ -23,7 +23,7 @@ export interface EditorFormValidationResult {
  * @param controllers - Ordered form controllers.
  * @param collectValues - Lazy collection performed only after native validity.
  * @param signal - Validation request signal.
- * @param validateUnique - Optional table-scoped local uniqueness check.
+ * @param validateUnique - Optional Host-scoped local uniqueness check.
  * @param invalidMessage - Localized fallback for invalid fields.
  * @returns Stable field-error mapping.
  */

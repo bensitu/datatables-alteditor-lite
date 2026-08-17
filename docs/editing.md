@@ -4,7 +4,7 @@ AltEditorLite provides complete-form Dialog editing and compact editing for one
 cell at a time. These capabilities are composable: applications can enable
 Dialog only, Inline only, or both on one editor. Both presentations use the same
 non-optimistic Update transaction and remain mutually exclusive with work already
-in progress on the owned table.
+in progress on the owned Host.
 
 | Configuration                   | Dialog Edit | Inline Edit | Typical use                        |
 | ------------------------------- | ----------- | ----------- | ---------------------------------- |
@@ -77,7 +77,7 @@ Inline editing requires `editing.inline.enabled: true` and at least one eligible
 field with `inlineEdit: true`:
 
 ```ts
-const editor = new AltEditorLite<UserRow, UserValues>(table, {
+const editor = new DataTablesEditor<UserRow, UserValues>(table, {
   editing: {
     dialog: { enabled: true },
     inline: { activation: 'doubleClick', enabled: true },
@@ -123,7 +123,7 @@ const table = new DataTable<UserRow>('#users', {
   rowId: 'id',
 });
 
-const editor = new AltEditorLite(table, {
+const editor = new DataTablesEditor(table, {
   editing: {
     dialog: { enabled: true },
     inline: {
@@ -273,7 +273,7 @@ When neither update callback is configured, both dialog and inline Edit use the
 safe local merge and replace the DataTables row only. No remote persistence takes
 place in that fallback.
 
-The canonical DataTables row is not changed until persistence returns a complete
+The canonical Host record is not changed until persistence returns a complete
 row successfully.
 
 The default `updateMode: 'replace-row'` replaces the row and waits for an owned
@@ -343,9 +343,21 @@ cancels an active inline session with close reason `redraw`. Validation and
 persistence are aborted, late results are ignored, and detached content is not
 restored.
 
-`destroy()` aborts activation, validation, persistence, and draw waiting; removes
-inline listeners and controls; safely restores a still-valid undrawn cell when
-possible; and prevents late DOM, DataTables, focus, or event work.
+`destroy()` aborts activation, validation, persistence, and presentation waiting;
+removes inline listeners and controls; safely restores a still-valid undrawn cell
+when possible; and prevents late DOM, Host, focus, or event work.
+
+## Host boundaries
+
+The neutral `AltEditorLite` constructor accepts an `EditorHost` and opaque Host
+targets. `DataTablesEditor` adapts public row and column selectors to those
+targets and retains the detailed DataTables inline state. `StandaloneHost` does
+not provide inline presentation, so it supports the dialog workflows only.
+
+Neutral operation, hook, validation, and event contexts contain no DataTables
+API. Their target shape uses an optional `key` and `fieldNames`. Applications
+that require DataTables-native work keep the `DataTablesHost` in scope and call
+`unwrap()` explicitly.
 
 ## DataTables extension boundaries
 

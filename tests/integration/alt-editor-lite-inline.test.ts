@@ -1,7 +1,7 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import {
-  DataTablesEditor as AltEditorLite,
+  DataTablesEditor,
   AltEditorLiteError,
   EditorConfigurationError,
   EditorOperationBusyError,
@@ -47,7 +47,7 @@ const fields = [
   },
 ] as const satisfies readonly FieldConfig<InlineValues>[];
 
-const editors = new Set<AltEditorLite<TestRow, InlineValues>>();
+const editors = new Set<DataTablesEditor<TestRow, InlineValues>>();
 let originalShowModalDescriptor: PropertyDescriptor | undefined;
 let originalCloseDescriptor: PropertyDescriptor | undefined;
 
@@ -143,13 +143,13 @@ function createDeferred<TValue>(): Deferred<TValue> {
 }
 
 function createInlineEditor(
-  options: ConstructorParameters<typeof AltEditorLite<TestRow, InlineValues>>[1] = {
+  options: ConstructorParameters<typeof DataTablesEditor<TestRow, InlineValues>>[1] = {
     editing: inlineEditing(),
     fields,
   },
 ) {
   const fixture = createTestTable();
-  const editor = new AltEditorLite<TestRow, InlineValues>(fixture.api, options);
+  const editor = new DataTablesEditor<TestRow, InlineValues>(fixture.api, options);
   editors.add(editor);
   return { ...fixture, editor };
 }
@@ -167,7 +167,7 @@ function replaceInlineValue(value: string): HTMLInputElement {
 describe('AltEditorLite programmatic inline editing', () => {
   it('enforces the configured Edit presentation and refresh ownership', async () => {
     const { api } = createTestTable('inline-disabled');
-    const disabledEditor = new AltEditorLite<TestRow, InlineValues>(api, { fields });
+    const disabledEditor = new DataTablesEditor<TestRow, InlineValues>(api, { fields });
     editors.add(disabledEditor);
     expect(() => disabledEditor.getInlineState()).toThrow(
       'Inline Edit is disabled by editing.inline.enabled.',
@@ -180,7 +180,7 @@ describe('AltEditorLite programmatic inline editing', () => {
     api.destroy();
 
     const inlineFixture = createTestTable('inline-edit-mode');
-    const inlineEditor = new AltEditorLite<TestRow, InlineValues>(inlineFixture.api, {
+    const inlineEditor = new DataTablesEditor<TestRow, InlineValues>(inlineFixture.api, {
       editing: inlineEditing(),
       fields,
     });
@@ -195,7 +195,7 @@ describe('AltEditorLite programmatic inline editing', () => {
     const refreshFixture = createTestTable('inline-invalid-refresh');
     expect(
       () =>
-        new AltEditorLite<TestRow, InlineValues>(refreshFixture.api, {
+        new DataTablesEditor<TestRow, InlineValues>(refreshFixture.api, {
           editing: inlineEditing('doubleClick', { updateMode: 'refresh' }),
           fields,
           operations: {
@@ -263,7 +263,7 @@ describe('AltEditorLite programmatic inline editing', () => {
     const { api } = createTestTable('special-row-id', {
       data: [specialRow],
     });
-    const editor = new AltEditorLite<TestRow, InlineValues>(api, {
+    const editor = new DataTablesEditor<TestRow, InlineValues>(api, {
       editing: inlineEditing(),
       fields,
     });
@@ -917,7 +917,7 @@ describe('AltEditorLite hover inline editing', () => {
   it('disables both actions while validation and persistence are pending', async () => {
     const pending = createDeferred<TestRow>();
     const { api } = createTestTable('inline-hover-busy');
-    const editor = new AltEditorLite<TestRow, InlineValues>(api, {
+    const editor = new DataTablesEditor<TestRow, InlineValues>(api, {
       editing: inlineEditing('hover'),
       fields,
       operations: { update: () => pending.promise },
@@ -1131,7 +1131,7 @@ describe('AltEditorLite inline configuration', () => {
     );
     expect(
       () =>
-        new AltEditorLite<TestRow, InlineValues>(
+        new DataTablesEditor<TestRow, InlineValues>(
           api,
           options as AltEditorLiteOptions<TestRow, InlineValues>,
         ),
@@ -1142,7 +1142,7 @@ describe('AltEditorLite inline configuration', () => {
     const { api } = createTestTable('invalid-inline-hover-actions');
     expect(
       () =>
-        new AltEditorLite<TestRow, InlineValues>(api, {
+        new DataTablesEditor<TestRow, InlineValues>(api, {
           editing: inlineEditing('hover', { blurAction: 'submit' }),
           fields,
         }),
@@ -1153,7 +1153,7 @@ describe('AltEditorLite inline configuration', () => {
     const { api } = createTestTable('inline-function-source', {
       columns: [{ data: (row: TestRow) => row.name }, { data: 'rank' }],
     });
-    const editor = new AltEditorLite<TestRow, InlineValues>(api, {
+    const editor = new DataTablesEditor<TestRow, InlineValues>(api, {
       editing: inlineEditing(),
       fields,
     });
@@ -1168,7 +1168,7 @@ describe('AltEditorLite inline configuration', () => {
     const { api } = createTestTable('inline-explicit-columns', {
       columns: namedColumns,
     });
-    const editor = new AltEditorLite<TestRow, InlineValues>(api, {
+    const editor = new DataTablesEditor<TestRow, InlineValues>(api, {
       editing: inlineEditing('doubleClick', {
         columns: { displayName: 'name', rank: false },
       }),
@@ -1254,7 +1254,7 @@ describe('AltEditorLite inline interaction and redraw behavior', () => {
 
   it('keeps textarea Enter as input and submits with Ctrl+Enter', async () => {
     const { api } = createTestTable('inline-textarea');
-    const editor = new AltEditorLite<TestRow, InlineValues>(api, {
+    const editor = new DataTablesEditor<TestRow, InlineValues>(api, {
       editing: inlineEditing(),
       fields: [
         {
@@ -1289,7 +1289,7 @@ describe('AltEditorLite inline interaction and redraw behavior', () => {
 
   it('leaves Enter available to a native select control', async () => {
     const { api } = createTestTable('inline-select');
-    const editor = new AltEditorLite<TestRow, InlineValues>(api, {
+    const editor = new DataTablesEditor<TestRow, InlineValues>(api, {
       editing: inlineEditing(),
       fields: [
         {
@@ -1335,7 +1335,7 @@ describe('AltEditorLite inline interaction and redraw behavior', () => {
     const validation = createDeferred<{ readonly valid: true }>();
     let validationSignal: AbortSignal | undefined;
     const { api } = createTestTable('inline-validation-blur');
-    const editor = new AltEditorLite<TestRow, InlineValues>(api, {
+    const editor = new DataTablesEditor<TestRow, InlineValues>(api, {
       editing: inlineEditing('doubleClick', { blurAction: 'cancel' }),
       fields: [
         {
@@ -1373,7 +1373,7 @@ describe('AltEditorLite inline interaction and redraw behavior', () => {
 
   it('cancels a SearchSelect cell with one Escape press', async () => {
     const { api } = createTestTable('inline-search-select');
-    const editor = new AltEditorLite<TestRow, InlineValues>(api, {
+    const editor = new DataTablesEditor<TestRow, InlineValues>(api, {
       editing: inlineEditing(),
       fields: [
         {
@@ -1480,7 +1480,7 @@ describe('AltEditorLite inline interaction and redraw behavior', () => {
   it('supports consumer-owned refresh mode with stable row-id focus recovery', async () => {
     const { api, tableElement } = createTestTable();
     let updatedName = 'Alpha';
-    const editor = new AltEditorLite<TestRow, InlineValues>(api, {
+    const editor = new DataTablesEditor<TestRow, InlineValues>(api, {
       editing: inlineEditing('doubleClick', { updateMode: 'refresh' }),
       fields,
       operations: {

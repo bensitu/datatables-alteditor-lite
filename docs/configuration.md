@@ -1,10 +1,13 @@
 # Configuration
 
-Create one editor for an initialized DataTables API instance. The root ESM entry
-registers the retrieval API and optional Buttons integration automatically.
+Create one editor for an `EditorHost`. DataTables applications normally use the
+selector-friendly facade from the explicit integration entry, which registers
+the retrieval API and optional Buttons integration automatically.
 
 ```ts
-const editor = new AltEditorLite<Row, FormValues>(table, {
+import { DataTablesEditor } from 'datatables-alteditor-lite/datatables';
+
+const editor = new DataTablesEditor<Row, FormValues>(table, {
   editing: {
     dialog: {
       closeOnSuccess: true,
@@ -22,6 +25,18 @@ const editor = new AltEditorLite<Row, FormValues>(table, {
 
 One active editor can own a table element. `table.altEditorLite()` only retrieves
 that instance; it never creates one.
+
+The neutral form is `new AltEditorLite(host, options)`. An `EditorHost` supplies
+record reads, canonical Create/Edit/Remove application, a stable ownership key,
+an event target, and cleanup. Optional capabilities add selection, refresh,
+record enumeration, presentation notifications, or inline behavior. The root
+entry exports this neutral API without importing DataTables.
+
+`DataTablesHost` implements the relevant capabilities for DataTables. Its
+`unwrap()` method returns the owned DataTables API only when application code
+intentionally needs an integration-specific escape hatch. `StandaloneHost`
+delegates storage and refresh work to consumer callbacks and is exported from
+`datatables-alteditor-lite/standalone`.
 
 ## Options
 
@@ -182,9 +197,10 @@ Edit resolves its implementation in this order:
 2. `clientSide.updateRow`;
 3. safe merge into declared field paths.
 
-Remove uses `operations.remove` or removes captured rows locally after
-confirmation. Refresh uses `operations.refresh`, public `ajax.reload` for Ajax
-tables, or `draw(false)` for local tables.
+Remove uses `operations.remove` before asking the Host to remove captured records.
+Refresh uses `operations.refresh` or the configured Host's default behavior.
+`DataTablesHost` uses public `ajax.reload` for Ajax tables and `draw(false)` for
+local tables; `StandaloneHost` invokes its optional `refresh` callback.
 
 `hooks` configures `beforeOpen`, `beforeSubmit`, `afterSuccess`, and `onError`.
 See [Lifecycle hooks](hooks.md). `language` accepts complete language data or
@@ -211,6 +227,28 @@ After a successful Create, Edit, or Remove, detected extensions with derived
 table state are synchronized through public APIs. ColumnControl SearchList
 options are refreshed and Responsive recalculates its layout after the editor
 presentation reaches a stable state.
+
+## Migrating from v0.4.1
+
+v0.5.0 makes host ownership explicit and removes the former DataTables-specific
+shape from neutral APIs. There are no compatibility aliases.
+
+| v0.4.1                                        | v0.5.0                                                                       |
+| --------------------------------------------- | ---------------------------------------------------------------------------- |
+| `new AltEditorLite(table, options)`           | `new DataTablesEditor(table, options)` or `new AltEditorLite(host, options)` |
+| `context.table`                               | Retain `DataTablesHost` and call `host.unwrap()` in integration code         |
+| `refreshTable()`                              | `refresh()`                                                                  |
+| Neutral methods accepted DataTables selectors | Use `DataTablesEditor` selector overloads or targets created by a Host       |
+| Root import registered DataTables             | Import `datatables-alteditor-lite/datatables` explicitly                     |
+
+`OperationContext`, `AfterSuccessContext`, and `FormValidationContext` no
+longer contain `table`. Operation and event targets now expose neutral `key` and
+`fieldNames` information. DataTables-specific selector details remain available
+through the `/datatables` facade and its detailed inline state type.
+
+The DataTables integration still registers `table.altEditorLite()` as a
+retrieval-only method. It returns the current editor or `null`; it never creates
+an editor.
 
 ## Migrating from v0.3.1
 

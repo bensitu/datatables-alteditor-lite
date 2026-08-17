@@ -4,10 +4,10 @@
 [![npm](https://img.shields.io/npm/v/datatables-alteditor-lite.svg)](https://www.npmjs.com/package/datatables-alteditor-lite)
 [![jsdelivr](https://data.jsdelivr.com/v1/package/npm/datatables-alteditor-lite/badge)](https://www.jsdelivr.com/package/npm/datatables-alteditor-lite)
 
-`datatables-alteditor-lite` is an independent, lightweight editing extension for
-DataTables 3. It provides Create, Edit, Remove, and Refresh workflows using
-TypeScript, native browser controls, and the public DataTables API. It has no
-jQuery or UI-framework runtime dependency.
+`datatables-alteditor-lite` is an independent, lightweight record editor with
+neutral, DataTables 3, and standalone host APIs. It provides Create, Edit,
+Remove, and Refresh workflows using TypeScript and native browser controls. It
+has no jQuery or UI-framework runtime dependency.
 
 [Live demo](https://bensitu.github.io/datatables-alteditor-lite/examples/demo/) ·
 [Getting started](docs/getting-started.md) · [Editing](docs/editing.md) ·
@@ -39,12 +39,20 @@ jQuery or UI-framework runtime dependency.
 - External JSON languages, inline overrides, and included English, Japanese,
   Simplified Chinese, and Spanish resources
 - ESM and Browser Global distributions with responsive light and dark CSS
+- A host-neutral root API, an explicit DataTables integration, and a standalone
+  callback-backed host
 
 ## Installation
 
 ### Npm
 
-Install the core packages:
+Install the editor without a table runtime for neutral or standalone use:
+
+```bash
+npm install datatables-alteditor-lite
+```
+
+Install DataTables when using the DataTables integration:
 
 ```bash
 npm install datatables.net datatables-alteditor-lite
@@ -57,8 +65,9 @@ targeting are needed:
 npm install datatables.net-buttons datatables.net-select
 ```
 
-The package peer ranges accept compatible DataTables 3, Buttons 4, and Select 4
-releases rather than one fixed patch version.
+`datatables.net` is an optional peer at package level, so neutral and standalone
+consumers are not forced to install it. Importing the `/datatables` entry requires
+a compatible DataTables 3 installation. Buttons 4 and Select 4 remain optional.
 
 ### CDN
 
@@ -89,7 +98,10 @@ available during registration:
 import DataTable from 'datatables.net';
 import 'datatables.net-buttons';
 import 'datatables.net-select';
-import { AltEditorLite, type EditorValues } from 'datatables-alteditor-lite';
+import {
+  DataTablesEditor,
+  type EditorValues,
+} from 'datatables-alteditor-lite/datatables';
 import 'datatables-alteditor-lite/style.css';
 
 interface UserRow {
@@ -120,7 +132,7 @@ const table = new DataTable<UserRow>('#users', {
   select: { style: 'multi' },
 });
 
-const editor = new AltEditorLite<UserRow, UserForm>(table, {
+const editor = new DataTablesEditor<UserRow, UserForm>(table, {
   clientSide: {
     createRow(values: Readonly<EditorValues<UserForm>>): UserRow {
       return {
@@ -163,13 +175,62 @@ table.altEditorLite<UserForm>(); // AltEditorLite<UserRow, UserForm> | null
 Call `editor.destroy()` before replacing the table or creating another editor for
 the same table element.
 
+The `/datatables` entry registers the retrieval API and optional Buttons
+integration. The neutral root entry has no DataTables import or registration side
+effect. For integration-specific application work, keep the host exposed by the
+facade and unwrap it explicitly:
+
+```ts
+const dataTablesApi = editor.dataTablesHost.unwrap();
+```
+
+Code using `unwrap()` is intentionally DataTables-specific.
+
+## Standalone usage
+
+Use `/standalone` when the application owns record storage and does not use a
+table or grid runtime:
+
+```ts
+import { AltEditorLite, StandaloneHost } from 'datatables-alteditor-lite/standalone';
+
+const records = new Map<string, UserRow>();
+const host = new StandaloneHost<UserRow, string>({
+  read: (key) => {
+    const row = records.get(key);
+    if (row === undefined) throw new Error('Record unavailable.');
+    return row;
+  },
+  applyCreate: (row) => {
+    records.set(row.id, row);
+    return row.id;
+  },
+  applyUpdate: (key, row) => {
+    records.set(key, row);
+    return key;
+  },
+  applyRemove: (keys) => keys.forEach((key) => records.delete(key)),
+  records: () => [...records].map(([target, row]) => ({ row, target })),
+});
+
+const editor = new AltEditorLite<UserRow, UserForm, string>(host, {
+  fields,
+});
+```
+
+The `records` provider is optional unless a configured field uses local
+uniqueness validation. An optional `refresh` callback defines consumer-owned
+refresh work; without it, refresh completes without changing records. Events are
+dispatched on `host.eventTarget`, which can be supplied by the application or
+left as the host's private `EventTarget`.
+
 ## Editing
 
 Dialog Edit is enabled by default. Inline Edit can be added independently, so a
 single editor can provide complete Dialog forms and fast single-cell updates:
 
 ```ts
-const editor = new AltEditorLite<UserRow, UserForm>(table, {
+const editor = new DataTablesEditor<UserRow, UserForm>(table, {
   editing: {
     dialog: { enabled: true },
     inline: {
@@ -226,7 +287,7 @@ Remote callbacks receive the complete operation context and may be synchronous o
 asynchronous. DataTables is changed only after a callback succeeds.
 
 ```ts
-const editor = new AltEditorLite<UserRow, UserForm>(table, {
+const editor = new DataTablesEditor<UserRow, UserForm>(table, {
   fields,
   operations: {
     async create(values, context) {
@@ -256,7 +317,7 @@ Included languages can be imported without registering source files manually:
 ```ts
 import ja from 'datatables-alteditor-lite/locales/ja';
 
-const editor = new AltEditorLite(table, { fields, language: ja });
+const editor = new DataTablesEditor(table, { fields, language: ja });
 ```
 
 Applications and CDN users can load their own partial JSON resource without
@@ -266,7 +327,7 @@ modifying or rebuilding the library:
 import { loadEditorLanguage } from 'datatables-alteditor-lite';
 
 const language = await loadEditorLanguage('/languages/fr-FR.json');
-const editor = new AltEditorLite(table, { fields, language });
+const editor = new DataTablesEditor(table, { fields, language });
 ```
 
 See [Localization](docs/localization.md) for the resource shape, placeholders, and
@@ -289,17 +350,23 @@ scripts before the AltEditorLite browser bundle:
 <script src="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/umd/datatables-alteditor-lite.min.js"></script>
 ```
 
-The public API is available at `globalThis.DataTablesAltEditorLite`. Included
-language registration bundles load after the main bundle; external JSON languages
-use `DataTablesAltEditorLite.loadEditorLanguage(...)`.
+The DataTables-oriented public API, including `DataTablesEditor`, is available at
+`globalThis.DataTablesAltEditorLite`. The main browser bundle still requires
+DataTables to load first. A separate
+`datatables-alteditor-lite-standalone.js` bundle exposes the neutral editor and
+`StandaloneHost` through `globalThis.DataTablesAltEditorLiteStandalone` without
+requiring DataTables. Included language registration bundles load after the main
+DataTables bundle; external JSON languages use
+`DataTablesAltEditorLite.loadEditorLanguage(...)`.
 
 See [Browser Global](docs/browser-global.md) for a complete CDN quick start, load
 order, self-hosted paths, and language resources.
 
 ## Events
 
-Listen directly on the owned table element. Events are observation-only, do not
-bubble, and cannot cancel an operation.
+Listen directly on the host event target. DataTables uses the owned table element;
+Standalone uses the configured or host-created `EventTarget`. Events are
+observation-only, do not bubble, and cannot cancel an operation.
 
 ```ts
 table

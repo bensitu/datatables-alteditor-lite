@@ -1,52 +1,162 @@
 # API reference
 
-The ESM entry automatically registers AltEditorLite with the imported DataTables
-runtime and exports the APIs described below. Browser Global builds expose the
-same runtime values through `globalThis.DataTablesAltEditorLite`.
+## Package entries
+
+| Import path                                | Purpose                                                                    |
+| ------------------------------------------ | -------------------------------------------------------------------------- |
+| `datatables-alteditor-lite`                | Host-neutral editor, contracts, fields, operations, events, and languages. |
+| `datatables-alteditor-lite/datatables`     | DataTables host, facade, registration, selector targets, and snapshots.    |
+| `datatables-alteditor-lite/standalone`     | Neutral API plus the callback-backed standalone host.                      |
+| `datatables-alteditor-lite/style.css`      | Shared Dialog and Inline stylesheet.                                       |
+| `datatables-alteditor-lite/locales/<name>` | Included ESM language module.                                              |
+
+The neutral root and `/standalone` entries do not import DataTables. The
+`/datatables` entry imports and registers against its DataTables runtime.
+`datatables.net` is therefore an optional package peer, but applications using
+the integration entry must install a compatible DataTables 3 release.
+
+The existing `dist/umd/datatables-alteditor-lite.js` browser build remains
+DataTables-oriented and exposes its API through
+`globalThis.DataTablesAltEditorLite`. It requires DataTables to load first. The
+optional `dist/umd/datatables-alteditor-lite-standalone.js` build exposes
+`globalThis.DataTablesAltEditorLiteStandalone` without a DataTables runtime.
 
 ## AltEditorLite
 
 ```ts
-new AltEditorLite<TRow, TFormValues>(table, options);
+new AltEditorLite<TRow, TFormValues, TTarget>(host, options);
 ```
 
-`TRow` is the complete DataTables row type. `TFormValues` is the nested value
-shape collected from configured fields and defaults to `DeepPartial<TRow>`. One
-active editor may own a table element.
+`TRow` is the complete canonical record type. `TFormValues` is the nested shape
+collected from fields and defaults to `DeepPartial<TRow>`. `TTarget` is the opaque
+identity understood by the Host. Only one active editor may own a Host's
+`ownershipKey`.
 
-| Method                                        | Result                            | Description                                                                 |
-| --------------------------------------------- | --------------------------------- | --------------------------------------------------------------------------- |
-| `openCreateDialog()`                          | `Promise<void>`                   | Opens Create when `operations.create` or `clientSide.createRow` is present. |
-| `openEditDialog(rowSelector?)`                | `Promise<void>`                   | Opens Edit for one explicit or selected row.                                |
-| `openRemoveDialog(rowSelector?)`              | `Promise<void>`                   | Opens confirmation for one or more explicit or selected rows.               |
-| `openInlineEdit(rowSelector, columnSelector)` | `Promise<void>`                   | Opens one eligible cell selected through public DataTables selectors.       |
-| `submitInlineEdit()`                          | `Promise<void>`                   | Validates and submits the active inline value.                              |
-| `cancelInlineEdit()`                          | `Promise<void>`                   | Cancels the active inline presentation and restores cell content.           |
-| `getInlineState()`                            | `Readonly<InlineEditState>`       | Returns the independent inline lifecycle state.                             |
-| `isInlineEditing()`                           | `boolean`                         | Reports whether inline work is active.                                      |
-| `refreshTable()`                              | `Promise<void>`                   | Runs the configured refresh operation or the default DataTables refresh.    |
-| `closeDialog()`                               | `Promise<void>`                   | Closes an open dialog and aborts work owned by that dialog.                 |
-| `getField<TValue>(name)`                      | `FieldController<TValue> \| null` | Returns a rendered field while a form is open.                              |
-| `getState()`                                  | `Readonly<EditorState>`           | Returns the current dialog and API lifecycle state.                         |
-| `destroy()`                                   | `void`                            | Releases operations, DOM, listeners, selection integration, and ownership.  |
+| Method                       | Result                            | Description                                                                  |
+| ---------------------------- | --------------------------------- | ---------------------------------------------------------------------------- |
+| `openCreateDialog()`         | `Promise<void>`                   | Opens Create when a Create implementation is configured.                     |
+| `openEditDialog(target?)`    | `Promise<void>`                   | Opens Edit for one explicit or Host-selected target.                         |
+| `openRemoveDialog(targets?)` | `Promise<void>`                   | Opens confirmation for explicit or Host-selected targets.                    |
+| `openInlineEdit(target)`     | `Promise<void>`                   | Opens an inline target created by a Host that supports inline presentation.  |
+| `submitInlineEdit()`         | `Promise<void>`                   | Validates and submits the active inline value.                               |
+| `cancelInlineEdit()`         | `Promise<void>`                   | Cancels the active inline presentation.                                      |
+| `getInlineState()`           | `Readonly<InlineEditState>`       | Returns host-neutral inline lifecycle state.                                 |
+| `isInlineEditing()`          | `boolean`                         | Reports whether inline work is active.                                       |
+| `refresh()`                  | `Promise<void>`                   | Runs application refresh and the configured Host refresh behavior.           |
+| `closeDialog()`              | `Promise<void>`                   | Closes an open dialog and aborts its owned work.                             |
+| `getField<TValue>(name)`     | `FieldController<TValue> \| null` | Returns a rendered field while a form is open.                               |
+| `getState()`                 | `Readonly<EditorState>`           | Returns the current dialog and API lifecycle state.                          |
+| `destroy()`                  | `void`                            | Releases operations, presentation, listeners, Host resources, and ownership. |
 
 Methods that cannot run in the current state reject or throw a typed
-`AltEditorLiteError`. `destroy()` is idempotent; other instance methods are not
-available after destruction.
+`AltEditorLiteError`. `destroy()` is idempotent; other methods are unavailable
+after destruction.
 
-`openEditDialog()` requires `editing.dialog.enabled`; Inline methods require
-`editing.inline.enabled`. Both can be available on one instance. Create, Remove,
-Refresh, and Dialog Edit safely cancel an active double-click Inline session. An
-active hover session rejects those operations until Submit or Cancel resolves it.
-Operations already owned by a dialog or refresh remain mutually exclusive.
-
-The registered DataTables method retrieves an existing editor and never creates
-one:
+## EditorHost
 
 ```ts
-const editor = table.altEditorLite<TFormValues>();
-// AltEditorLite<TRow, TFormValues> | null
+interface EditorHost<TRow extends object, TTarget> {
+  readonly eventTarget: EventTarget;
+  readonly ownershipKey: object;
+
+  read(target: TTarget): Readonly<TRow>;
+  applyCreate(
+    row: TRow,
+    context: Readonly<HostApplyContext>,
+  ): Promise<TTarget | undefined>;
+  applyUpdate(
+    target: TTarget,
+    row: TRow,
+    context: Readonly<HostApplyContext>,
+  ): Promise<TTarget | undefined>;
+  applyRemove(
+    targets: readonly TTarget[],
+    context: Readonly<HostApplyContext>,
+  ): Promise<void>;
+  destroy(): void;
+}
 ```
+
+Application persistence runs before `applyCreate`, `applyUpdate`, or
+`applyRemove`. Each apply promise resolves only when consumer-visible Host
+presentation is stable. A rejection is reported as an unapplied commit and does
+not publish success.
+
+Optional contracts add selection (`HostSelectionCapability`), refresh
+(`HostRefreshCapability`), record enumeration
+(`HostRowCollectionCapability`), and presentation notification
+(`HostPresentationCapability`). Inline presentation is supplied through a
+specialized Host integration rather than required by every Host.
+
+`HostApplyContext` contains an owned `signal`, the `create`, `edit`, or `remove`
+operation, and the initiating `dialog`, `inline`, or `api` mode.
+
+## DataTables integration
+
+```ts
+import { DataTablesEditor, DataTablesHost } from 'datatables-alteditor-lite/datatables';
+
+const editor = new DataTablesEditor<TRow, TFormValues>(table, options);
+```
+
+`DataTablesEditor` extends the neutral editor and accepts public DataTables
+selectors through these overloads:
+
+```ts
+editor.openEditDialog(rowSelector?);
+editor.openRemoveDialog(rowSelector?);
+editor.openInlineEdit(rowSelector, columnSelector);
+```
+
+Its `dataTablesHost` property exposes the owned `DataTablesHost`. The host maps
+selectors to opaque `DataTablesRecordTarget` and `DataTablesInlineTarget`
+objects, owns draw completion, selection, refresh, extension synchronization,
+and the table event target. `DataTablesHost.unwrap()` returns the original
+DataTables API for deliberately integration-specific application code; it is
+never injected into neutral callbacks or events.
+
+The integration exports `DataTablesInlineEditState`, `InlineTargetSummary`,
+`EditTargetSnapshot`, and `RemoveTargetSnapshot` for DataTables-specific
+inspection. The neutral root exports only the host-neutral `InlineEditState`.
+
+The registered method remains retrieval-only:
+
+```ts
+const current = table.altEditorLite<TFormValues>();
+// active AltEditorLite instance, or null
+```
+
+It uses the table element's ownership identity and never constructs an editor.
+After `destroy()`, it returns `null`.
+
+## StandaloneHost
+
+```ts
+import { AltEditorLite, StandaloneHost } from 'datatables-alteditor-lite/standalone';
+
+const host = new StandaloneHost<TRow, TTarget>({
+  read,
+  applyCreate,
+  applyUpdate,
+  applyRemove,
+  refresh,
+  records,
+  eventTarget,
+  ownershipKey,
+});
+const editor = new AltEditorLite<TRow, TFormValues, TTarget>(host, options);
+```
+
+`read` is required. The apply callbacks are required only for operations the
+application invokes, and each callback may return a value or a promise-like
+value. `refresh` defines consumer-owned refresh work; without it, `refresh()`
+completes without changing records. `eventTarget` defaults to a new private
+`EventTarget`, while `ownershipKey` defaults to the Host instance.
+
+`records` returns iterable `{ target, row }` entries for local validation. It is
+optional unless any field has `unique: true`; construction rejects that
+configuration when the provider is absent. Standalone supports Dialog Create,
+Edit, and Remove. It intentionally does not supply DataTables inline behavior.
 
 ## Options
 
@@ -59,7 +169,7 @@ const editor = table.altEditorLite<TFormValues>();
 | `operations`   | `EditorOperations<TRow, TFormValues>`     | Optional synchronous or asynchronous editor operations. |
 | `clientSide`   | `ClientSideOperations<TRow, TFormValues>` | Optional synchronous row mappings.                      |
 | `dependencies` | `FormDependencies<TFormValues>`           | Declarative Dialog field-state resolvers.               |
-| `validateForm` | `FormValidator<TRow, TFormValues>`        | Shared cross-field validator.                           |
+| `validateForm` | `FormValidator<TFormValues>`              | Shared cross-field validator.                           |
 | `language`     | `PartialEditorLanguage`                   | Language data or overrides merged with English.         |
 | `hooks`        | `EditorHooks<TRow, TFormValues>`          | Lifecycle observation and veto callbacks.               |
 
@@ -67,12 +177,8 @@ const editor = table.altEditorLite<TFormValues>();
 `DialogEditingOptions` provides `enabled`, `template`, and `closeOnSuccess`.
 `InlineEditingOptions` provides `enabled`, `activation`, `blurAction`,
 `enterAction`, `tabAction`, `keyboardActivation`, exact named-column `columns`,
-`updateMode`, and `className`. `DialogTemplateSource` is a selector or
-consumer-owned `HTMLElement`, including `HTMLTemplateElement`.
-
-See [Configuration](configuration.md) for defaults and the capability matrix,
-[Editing](editing.md) for interaction behavior, and [Lifecycle hooks](hooks.md)
-for hook contracts.
+`updateMode`, and `className`. A Host must support inline presentation before an
+enabled inline configuration can be used.
 
 `EditorOperations` supports:
 
@@ -80,83 +186,65 @@ for hook contracts.
 interface EditorOperations<TRow extends object, TFormValues extends object> {
   create?(
     values: Readonly<EditorValues<TFormValues>>,
-    context: OperationContext<TRow>,
+    context: OperationContext,
   ): TRow | Promise<TRow>;
   update?(
     values: Readonly<EditorValues<TFormValues>>,
     original: Readonly<TRow>,
-    context: OperationContext<TRow>,
+    context: OperationContext,
   ): TRow | Promise<TRow>;
   remove?(
     rows: readonly Readonly<TRow>[],
-    context: OperationContext<TRow>,
+    context: OperationContext,
   ): void | Promise<void>;
-  refresh?(context: OperationContext<TRow>): void | Promise<void>;
+  refresh?(context: OperationContext): void | Promise<void>;
 }
 ```
 
-Every `OperationContext` contains the public DataTables `table`, the current
-`operation`, initiating `mode`, optional stable `target`, and an owned
-cancellation `signal`. `ClientSideOperations` provides synchronous
-`createRow(values)` and `updateRow(original, values)` mappings. See
-[Configuration](configuration.md) and [Operations](operations.md) for capability
-resolution and mutation timing.
+`ClientSideOperations` provides synchronous `createRow(values)` and
+`updateRow(original, values)` mappings. See [Configuration](configuration.md)
+and [Operations](operations.md) for capability resolution and application timing.
 
-## Fields
+## Contexts and targets
 
-`FieldConfig<TFormValues>` is the union of the supported field configurations.
+`OperationContext` contains `signal`, `operation`, `mode`, and an optional
+neutral `target`. `BeforeOpenContext` adds an optional readonly row;
+`BeforeSubmitContext` adds an optional original row. `AfterSuccessContext`
+contains the operation, mode, optional target, original row, committed row,
+removed rows, and submitted values as applicable.
+
+`FormValidationContext` contains only `signal`, `operation: 'create' | 'edit'`,
+and `mode: 'dialog' | 'inline'`. None of these contexts contains a DataTables API.
+
+```ts
+interface EditorOperationTarget<TKey = unknown> {
+  readonly key?: TKey;
+  readonly fieldNames: readonly string[];
+}
+```
+
+Lifecycle details use the same neutral target shape. Host event destinations are
+not embedded in event details: DataTables dispatches from the table element, and
+Standalone dispatches from its configured or generated `EventTarget`.
+
+## Fields, dependencies, and validation
+
+`FieldConfig<TFormValues>` is the union of all supported field configurations.
 Shared properties include `name`, `defaultValue`, `editable`, `visible`,
 `disabled`, `inlineEdit`, `className`, `attributes`, `onChange`, `validate`, and
-`unique`.
-Visible controls also support `label`, `description`, `required`, and `readOnly`.
+`unique`. Visible controls also support `label`, `description`, `required`, and
+`readOnly`.
 
-The package exports every concrete configuration type, `SelectOption`, remote
-SearchSelect source/loader/resolver/context types, `SearchSelectSearchOptions`,
-`InlineKeyboardShortcut`, `FieldPath`, `FieldPathValue`, `FieldValue`,
-`FieldChangeCallback`, `FieldValidator`, and their callback context types. See
-[Fields](fields.md) for value types and field-specific properties.
+`FieldController<TValue>` provides `element`, asynchronous `getValue()`,
+`setValue`, visibility, disabled, read-only, and required state methods, focus,
+validation, error presentation, and destruction. `ChoiceFieldController` adds
+`getOptions()` and `setOptions()`; use `isChoiceFieldController()` before calling
+them.
 
-`FieldController<TValue>` provides `element`, `getValue(): Promise<TValue>`,
-`setValue`, `isVisible` / `setVisible`, `isDisabled` / `setDisabled`, `isReadOnly`
-/ `setReadOnly`, `isRequired` / `setRequired`, `focus`, `validate`, `clearError`,
-`showError`, and `destroy`.
-
-`ChoiceFieldController<TValue>` adds `getOptions()` and `setOptions()`. Use the
-exported `isChoiceFieldController()` type guard before calling those methods on a
-general field controller. Calling `setValue()` with a value that its field cannot
-represent throws `EditorConfigurationError`. Calling `destroy()` cancels that
-field's work, removes it from the current form, and makes later `getField()` calls
-for the same path return `null`.
-
-`FormController` remains available for typed integrations. Its `validate()`
-method covers rendered field validation; operation submissions additionally run
-the configured form-level validator.
-
-## Dependencies and form validation
-
-The dependency API exports:
-
-- `FormDependencyContext<TFormValues>`;
-- `FieldStatePatchFor<TFormValues, TPath>` and `ChoicePatchOptions<TValue>`;
-- `FormDependencyResolver<TFormValues, TSourcePath>`;
-- `FormDependencyResult<TFormValues>` and `FormDependencies<TFormValues>`;
-- `defineFormDependencies<TFormValues>()` for source-path callback inference.
-
-Resolvers receive the typed source value, immutable complete values, and an
-`AbortSignal`. Results can change target `options`, `value`, `visible`,
-`readOnly`, `required`, and `disabled` state.
-
-The validation API exports:
-
-- `FormFieldErrors<TFormValues>`;
-- `FormValidationContext<TRow>`;
-- `FormValidationResult<TFormValues>`;
-- `FormValidator<TRow, TFormValues>`.
-
-`FormValidationContext` contains `table`, `signal`, `operation: 'create' |
-'edit'`, and `mode: 'dialog' | 'inline'`. An invalid result can contain typed
-`fieldErrors` and a submission-level `message`. See [Dynamic forms](forms.md) for
-runtime behavior and validation ordering.
+Dependency exports include `FormDependencyContext`, typed field patches,
+resolver/result types, `FormDependencies`, and `defineFormDependencies()`.
+Validation exports include `FormFieldErrors`, `FormValidationContext`,
+`FormValidationResult`, and `FormValidator`. See [Dynamic forms](forms.md).
 
 ## Localization
 
@@ -165,54 +253,33 @@ runtime behavior and validation ordering.
 | `ENGLISH_LANGUAGE`                       | Complete built-in English language object.                       |
 | `resolveLanguage(language?)`             | Merges inline language data with the English fallback.           |
 | `loadEditorLanguage(resource, options?)` | Loads, validates, and resolves a partial JSON language resource. |
-| `registerLocale(language)`               | Validates and stores language data by its locale identifier.     |
-| `registerLocale(locale, language)`       | Registers language data under an explicit locale identifier.     |
+| `registerLocale(...)`                    | Validates and stores language data by locale identifier.         |
 | `getLocale(locale)`                      | Returns registered language data or `undefined`.                 |
 | `getRegisteredLocaleNames()`             | Returns locale identifiers in registration order.                |
 
-The related public types are `AltEditorLiteLanguage`,
-`EditorLanguageDefinition`, `EditorLanguageLoadOptions`, and
-`PartialEditorLanguage`. See
-[Localization](localization.md) for resource limits, JSON structure, and CDN use.
+Related types include `AltEditorLiteLanguage`, `EditorLanguageDefinition`,
+`EditorLanguageLoadOptions`, and `PartialEditorLanguage`. See
+[Localization](localization.md).
 
-## Errors
+## Errors, events, and state
 
-`AltEditorLiteError` is the public base class for messages that are safe to show
-to users. Its options and properties are `message`, optional `code`, optional
-`fieldErrors`, optional `cause`, and `retryable`.
+`AltEditorLiteError` is the base class for safe user-facing operation failures.
+The package also exports `EditorAlreadyInitializedError`,
+`EditorConfigurationError`, `EditorDestroyedError`, `EditorFileLimitError`,
+`EditorLanguageLoadError`, `EditorOperationBusyError`,
+`EditorSelectionCountError`, `EditorSelectionUnavailableError`, and
+`EditorTargetUnavailableError`.
 
-The package also exports these specific error classes:
-
-- `EditorAlreadyInitializedError`
-- `EditorConfigurationError`
-- `EditorDestroyedError`
-- `EditorFileLimitError`
-- `EditorLanguageLoadError`
-- `EditorOperationBusyError`
-- `EditorSelectionCountError`
-- `EditorSelectionUnavailableError`
-- `EditorTargetUnavailableError`
-
-Unknown values thrown by callbacks are converted to a generic non-retryable
-`AltEditorLiteError`. Throw an explicit `AltEditorLiteError` when an operation
-needs to provide a safe message, field errors, or retry behavior.
-
-## Events and state
-
-The package exports `EditorEventName`, `EditorEventDetailMap`, concrete submit and
-success detail types, `EditorCloseReason`, `DialogAction`, `EditorOperation`,
-`EditorOperationMode`, `EditorOperationTarget`, `InlineEventTarget`,
-`InlineEditState`, `InlineTargetSummary`, and `EditorState`. Event details are
+The neutral package exports the event names and detail map, submit/success detail
+types, close reasons, dialog actions, operation and mode types,
+`EditorOperationTarget`, `InlineEditState`, and `EditorState`. Event details are
 discriminated by `type` and, where applicable, `operation` and `mode`. See
-[Events](events.md) for ordering and payloads.
-
-`EditTargetSnapshot` and `RemoveTargetSnapshot` describe the readonly row
-identities captured for editing operations. `BuiltinValue`, `DeepPartial`,
-`EditorValues`, and `MaybePromise` support application type definitions.
+[Events](events.md).
 
 ## Registration
 
-`registerAltEditorLite(dataTable)` registers retrieval and Buttons integration
-against another DataTables 3 runtime. Registration is idempotent and does not
-load optional extensions. The standard ESM entry calls it automatically, so most
-applications do not call this function directly.
+`registerAltEditorLite(dataTable)` is exported only from the `/datatables` entry
+and the DataTables browser global. It registers retrieval and optional Buttons
+integration against a DataTables 3 runtime. Registration is idempotent and does
+not load optional extensions. Importing `/datatables` calls it automatically;
+the neutral root and `/standalone` entries do not.
