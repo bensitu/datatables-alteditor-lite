@@ -1,10 +1,12 @@
 export { AltEditorLite } from './core/alt-editor-lite.js';
 export { DataTablesHost } from './datatables/data-tables-host.js';
 export { DataTablesEditor } from './datatables/data-tables-editor.js';
+export { StandaloneHost } from './standalone/standalone-host.js';
 export type {
   DataTablesInlineTarget,
   DataTablesRecordTarget,
 } from './datatables/data-tables-host.js';
+export type { StandaloneHostOptions } from './standalone/standalone-host.js';
 export {
   ENGLISH_LANGUAGE,
   resolveLanguage,
