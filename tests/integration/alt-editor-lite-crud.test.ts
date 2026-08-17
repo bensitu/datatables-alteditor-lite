@@ -297,18 +297,35 @@ describe('AltEditorLite form opening', () => {
 describe('AltEditorLite asynchronous Create', () => {
   it('waits for persistence before adding and draws before success', async () => {
     const deferredRow = createDeferred<TestRow>();
+    const lifecycleOrder: string[] = [];
     let operationContext: OperationContext<TestRow> | undefined;
     const createOperation = vi.fn(
       (_values: Readonly<Partial<CrudValues>>, context: OperationContext<TestRow>) => {
+        lifecycleOrder.push('persistence:start');
         operationContext = context;
-        return deferredRow.promise;
+        return deferredRow.promise.then((row) => {
+          lifecycleOrder.push('persistence:complete');
+          return row;
+        });
       },
     );
     const { api, editor, tableElement } = createCrudEditor('async-create', {
+      hooks: {
+        afterSuccess: () => {
+          lifecycleOrder.push('afterSuccess');
+        },
+      },
       operations: { create: createOperation },
     });
     const successListener = vi.fn(() => {
       expect(api.row('#created-async').any()).toBe(true);
+      lifecycleOrder.push('success');
+    });
+    api.one('draw.lifecycleOrder', () => {
+      lifecycleOrder.push('draw');
+    });
+    tableElement.addEventListener('alteditor-lite:close', () => {
+      lifecycleOrder.push('close');
     });
     tableElement.addEventListener('alteditor-lite:success', successListener);
 
@@ -324,6 +341,7 @@ describe('AltEditorLite asynchronous Create', () => {
     expect(operationContext?.operation).toBe('create');
     expect(operationContext?.table).toBe(api);
     expect(operationContext?.signal.aborted).toBe(false);
+    expect(lifecycleOrder).toEqual(['persistence:start']);
 
     deferredRow.resolve({ id: 'created-async', name: 'Async', rank: 7 });
     await vi.waitFor(() => {
@@ -331,6 +349,14 @@ describe('AltEditorLite asynchronous Create', () => {
     });
     expect(api.rows().count()).toBe(6);
     expect(successListener).toHaveBeenCalledOnce();
+    expect(lifecycleOrder).toEqual([
+      'persistence:start',
+      'persistence:complete',
+      'draw',
+      'success',
+      'close',
+      'afterSuccess',
+    ]);
   });
 
   it('keeps rejection non-mutating and retries with a fresh signal', async () => {
