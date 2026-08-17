@@ -5,4 +5,4 @@ const browserScope: object = globalThis;
 assertDataTableGlobal(browserScope);
 registerAltEditorLite(browserScope.DataTable);
 
-export * from './public-api.js';
+export * from './datatables-api.js';
