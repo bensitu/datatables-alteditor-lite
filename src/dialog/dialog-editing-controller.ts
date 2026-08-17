@@ -11,12 +11,6 @@ import {
   normalizeOperationError,
 } from '../core/error-normalization.js';
 import { dispatchEditorIntegrationUpdate } from '../datatables/editor-integration-event.js';
-import {
-  captureEditTarget,
-  captureRemoveTargets,
-  resolveEditTarget,
-  resolveRemoveTargets,
-} from '../datatables/row-target-resolution.js';
 import { buildEditorForm } from '../form/build-editor-form.js';
 
 import { createRemoveConfirmation } from './create-remove-confirmation.js';
@@ -57,7 +51,6 @@ import type {
   EditTargetCapture,
   RemoveTargetCapture,
 } from '../datatables/row-target-resolution.js';
-import type { SelectIntegration } from '../datatables/select-integration.js';
 import type { FieldController } from '../fields/field-controller.js';
 import type { EditorFormController } from '../form/form-controller.js';
 import type { InlineEditController } from '../inline/inline-edit-controller.js';
@@ -81,7 +74,6 @@ export interface DialogEditingControllerArguments<
   readonly operationOwner: OperationOwner;
   readonly host: DataTablesHost<TRow>;
   readonly editOperationRunner: EditOperationRunner<TRow, TFormValues>;
-  readonly selectIntegration: SelectIntegration<TRow>;
   readonly inlineController: InlineEditController<TRow, TFormValues>;
   readonly errorReporter: EditorErrorReporter<TRow, TFormValues>;
   readonly uniquenessValidator: LocalUniquenessValidator<TRow, TFormValues>;
@@ -199,8 +191,7 @@ export class DialogEditingController<TRow extends object, TFormValues extends ob
       }
 
       const rowIndex = rowIndexes[0];
-      this.editTargetCapture = captureEditTarget(
-        this.arguments_.table,
+      this.editTargetCapture = this.arguments_.host.captureEditTarget(
         rowIndex,
         this.arguments_.language.errors.targetUnavailable,
       );
@@ -216,9 +207,7 @@ export class DialogEditingController<TRow extends object, TFormValues extends ob
         this.releaseInteraction();
         return;
       }
-      resolveEditTarget(
-        this.arguments_.table,
-        this.arguments_.tableElement,
+      this.arguments_.host.resolveEditTarget(
         this.editTargetCapture,
         this.arguments_.language.errors.targetUnavailable,
       );
@@ -254,8 +243,7 @@ export class DialogEditingController<TRow extends object, TFormValues extends ob
         );
       }
 
-      this.removeTargetCapture = captureRemoveTargets(
-        this.arguments_.table,
+      this.removeTargetCapture = this.arguments_.host.captureRemoveTargets(
         rowIndexes,
         this.arguments_.language.errors.targetUnavailable,
       );
@@ -264,9 +252,7 @@ export class DialogEditingController<TRow extends object, TFormValues extends ob
         this.releaseInteraction();
         return;
       }
-      resolveRemoveTargets(
-        this.arguments_.table,
-        this.arguments_.tableElement,
+      this.arguments_.host.resolveRemoveTargets(
         this.removeTargetCapture,
         this.arguments_.language.errors.targetUnavailable,
       );
@@ -420,12 +406,10 @@ export class DialogEditingController<TRow extends object, TFormValues extends ob
   private resolveRequestedRowIndexes(
     rowSelector: RowSelector<TRow> | undefined,
   ): readonly number[] {
-    if (rowSelector === undefined) {
-      return this.arguments_.selectIntegration.selectedRowIndexes(
-        this.arguments_.language.buttons.selectUnavailable,
-      );
-    }
-    return this.arguments_.table.rows(rowSelector).indexes().toArray();
+    return this.arguments_.host.resolveRequestedRowIndexes(
+      rowSelector,
+      this.arguments_.language.buttons.selectUnavailable,
+    );
   }
 
   private async openForm(

@@ -3,7 +3,6 @@ import {
   InternalOperationAbort,
   normalizeOperationError,
 } from '../core/error-normalization.js';
-import { resolveRemoveTargets } from '../datatables/row-target-resolution.js';
 import { synchronizeExtensionStateAfterCommit } from '../datatables/synchronize-extension-state.js';
 
 import type { AltEditorLiteError } from '../core/alt-editor-lite-error.js';
@@ -127,9 +126,7 @@ export class DialogRemoveOperation<TRow extends object, TFormValues extends obje
   }
 
   private resolveTargets(capture: RemoveTargetCapture<TRow>): readonly number[] {
-    return resolveRemoveTargets(
-      this.arguments_.table,
-      this.arguments_.tableElement,
+    return this.arguments_.host.resolveRemoveTargets(
       capture,
       this.arguments_.language.errors.targetUnavailable,
     );

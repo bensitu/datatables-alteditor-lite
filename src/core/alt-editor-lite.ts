@@ -4,7 +4,6 @@ import {
   createEditorButtonState,
   type EditorButtonState,
 } from '../datatables/register-editor-buttons.js';
-import { SelectIntegration } from '../datatables/select-integration.js';
 import { DialogEditingController } from '../dialog/dialog-editing-controller.js';
 import { validateFieldConfigurations } from '../fields/validate-field-configurations.js';
 import { validateFormDependencies } from '../form/validate-form-dependencies.js';
@@ -75,8 +74,6 @@ export class AltEditorLite<
 
   private readonly stateCoordinator: EditorStateCoordinator;
 
-  private readonly selectIntegration: SelectIntegration<TRow>;
-
   private readonly inlineController: InlineEditController<TRow, TFormValues>;
 
   private readonly dialogController: DialogEditingController<TRow, TFormValues>;
@@ -111,7 +108,9 @@ export class AltEditorLite<
         options.clientSide?.createRow !== undefined,
     });
     this.language = resolveLanguage(options.language);
-    this.host = new DataTablesHost(table);
+    this.host = new DataTablesHost(table, () => {
+      dispatchEditorIntegrationUpdate(this.tableElement);
+    });
     this.tableElement = this.host.eventTarget;
     this.stateCoordinator = new EditorStateCoordinator(() => {
       dispatchEditorIntegrationUpdate(this.tableElement);
@@ -130,14 +129,10 @@ export class AltEditorLite<
     );
 
     storeEditorInstance(this.host.ownershipKey, this);
-    let selectIntegration: SelectIntegration<TRow> | undefined;
     let inlineController: InlineEditController<TRow, TFormValues> | undefined;
     let dialogController: DialogEditingController<TRow, TFormValues> | undefined;
     let refreshOperationRunner: RefreshOperationRunner<TRow, TFormValues> | undefined;
     try {
-      selectIntegration = new SelectIntegration(this.table, () => {
-        dispatchEditorIntegrationUpdate(this.tableElement);
-      });
       const errorReporter = new EditorErrorReporter(
         this,
         this.tableElement,
@@ -192,7 +187,6 @@ export class AltEditorLite<
         language: this.language,
         operationOwner: this.operationOwner,
         options,
-        selectIntegration,
         stateCoordinator: this.stateCoordinator,
         host: this.host,
         table,
@@ -218,7 +212,6 @@ export class AltEditorLite<
       refreshOperationRunner?.destroy();
       dialogController?.destroy();
       inlineController?.destroy();
-      selectIntegration?.destroy();
       this.operationOwner.destroy();
       this.host.destroy();
       this.interactionCoordinator.destroy();
@@ -226,7 +219,6 @@ export class AltEditorLite<
       throw error;
     }
 
-    this.selectIntegration = selectIntegration;
     this.inlineController = inlineController;
     this.dialogController = dialogController;
     this.refreshOperationRunner = refreshOperationRunner;
@@ -327,7 +319,6 @@ export class AltEditorLite<
     this.operationOwner.destroy();
     this.host.destroy();
     this.inlineController.destroy();
-    this.selectIntegration.destroy();
     this.interactionCoordinator.destroy();
     this.stateCoordinator.destroy();
     deleteEditorInstance(this.host.ownershipKey, this);
@@ -359,9 +350,9 @@ export class AltEditorLite<
       (interactionOwner === 'none' ||
         (interactionOwner === 'inline' &&
           this.inlineController.allowsExternalOperation()));
-    const hasSelect = this.selectIntegration.available();
+    const hasSelect = this.host.selectionAvailable();
     const selectedRowCount = hasSelect
-      ? this.selectIntegration.selectedRowIndexes().length
+      ? this.host.resolveRequestedRowIndexes(undefined, '').length
       : 0;
 
     return createEditorButtonState({

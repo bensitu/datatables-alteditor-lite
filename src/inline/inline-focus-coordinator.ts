@@ -1,27 +1,17 @@
-import { EditorTargetUnavailableError } from '../core/alt-editor-lite-error.js';
-import { isColumnVisiblyAvailable } from '../datatables/column-visibility.js';
-import {
-  resolveLogicalCellTarget,
-  type LogicalCellTarget,
-} from '../datatables/commit-row-update.js';
-import { resolveUniqueRowIndexById } from '../datatables/row-id-resolution.js';
 import { EditorAlertDialog } from '../dialog/editor-alert-dialog.js';
 
-import {
-  focusInlineCellOrTable,
-  restoreInlineOriginFocus,
-} from './inline-focus-owner.js';
+import { restoreInlineOriginFocus } from './inline-focus-owner.js';
 import { InlineFocusStateMachine } from './inline-focus-state-machine.js';
 
 import type { InlineColumnMapping } from './inline-column-mapping.js';
 import type { InlineEditSession } from './inline-edit-session.js';
-import type { InlineTargetSummary } from './inline-edit-state.js';
 import type { InlineFocusRestoreToken } from './inline-focus-state.js';
 import type { InlineNavigationIntent } from './inline-navigation.js';
 import type { AltEditorLiteError } from '../core/alt-editor-lite-error.js';
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type { ResolvedInlineEditingOptions } from '../core/resolve-editing-options.js';
-import type { Api } from 'datatables.net';
+import type { LogicalCellTarget } from '../datatables/commit-row-update.js';
+import type { DataTablesHost } from '../datatables/data-tables-host.js';
 
 export interface InlineFocusCoordinatorArguments<
   TRow extends object,
@@ -32,8 +22,7 @@ export interface InlineFocusCoordinatorArguments<
   readonly language: Readonly<AltEditorLiteLanguage>;
   readonly mappings: ReadonlyMap<number, Readonly<InlineColumnMapping<TFormValues>>>;
   readonly options: Readonly<ResolvedInlineEditingOptions<TFormValues>>;
-  readonly table: Api<TRow>;
-  readonly tableElement: HTMLTableElement;
+  readonly host: DataTablesHost<TRow>;
 }
 
 /** Owns inline alert focus, blur state, and post-commit focus recovery. */
@@ -51,7 +40,7 @@ export class InlineFocusCoordinator<TRow extends object, TFormValues extends obj
   ) {
     this.alertDialog = arguments_.enabled
       ? new EditorAlertDialog(
-          arguments_.tableElement,
+          arguments_.host.eventTarget,
           `${arguments_.instanceId}-inline`,
           arguments_.language,
         )
@@ -148,15 +137,11 @@ export class InlineFocusCoordinator<TRow extends object, TFormValues extends obj
     this.stateMachine.transition({ type: 'focus-restore-started' });
     const canRestore =
       session.host.element.isConnected &&
-      session.host.element.closest('table') === this.arguments_.tableElement;
+      session.host.element.closest('table') === this.arguments_.host.eventTarget;
     if (canRestore) {
       session.host.focus();
     } else {
-      focusInlineCellOrTable(
-        this.arguments_.table,
-        this.arguments_.tableElement,
-        undefined,
-      );
+      this.arguments_.host.focusInlineCell(undefined);
     }
     this.stateMachine.transition({
       type: canRestore ? 'focus-restored' : 'focus-restore-failed',
@@ -173,15 +158,10 @@ export class InlineFocusCoordinator<TRow extends object, TFormValues extends obj
   ): Promise<void> {
     if (navigationIntent !== undefined) {
       try {
-        const navigationRowIndex =
-          navigationIntent.rowId === undefined
-            ? navigationIntent.rowIndex
-            : resolveUniqueRowIndexById(this.arguments_.table, navigationIntent.rowId);
-        if (navigationRowIndex === undefined) {
-          throw new EditorTargetUnavailableError(
-            this.arguments_.language.inline.targetUnavailable,
-          );
-        }
+        const navigationRowIndex = this.arguments_.host.resolveInlineNavigationRow(
+          navigationIntent,
+          this.arguments_.language.inline.targetUnavailable,
+        );
         await openSession(navigationRowIndex, navigationIntent.columnIndex);
         return;
       } catch {
@@ -192,10 +172,13 @@ export class InlineFocusCoordinator<TRow extends object, TFormValues extends obj
     let cellNode: HTMLTableCellElement | undefined;
     try {
       if (this.arguments_.options.updateMode === 'refresh') {
-        cellNode = this.resolveRefreshCell(session.capture.summary);
+        cellNode = this.arguments_.host.resolveInlineRefreshCell(
+          session.capture.summary,
+          this.arguments_.mappings,
+          this.arguments_.language.inline.targetUnavailable,
+        );
       } else if (focusTarget !== undefined) {
-        cellNode = resolveLogicalCellTarget(
-          this.arguments_.table,
+        cellNode = this.arguments_.host.resolveInlineCommitCell(
           focusTarget,
           this.arguments_.language.inline.targetUnavailable,
         );
@@ -203,7 +186,7 @@ export class InlineFocusCoordinator<TRow extends object, TFormValues extends obj
     } catch {
       cellNode = undefined;
     }
-    focusInlineCellOrTable(this.arguments_.table, this.arguments_.tableElement, cellNode);
+    this.arguments_.host.focusInlineCell(cellNode);
   }
 
   /** Begins the single session teardown sequence and closes active alerts. */
@@ -235,42 +218,5 @@ export class InlineFocusCoordinator<TRow extends object, TFormValues extends obj
     this.activeAlertToken = undefined;
     this.alertDialog?.destroy();
     this.stateMachine.transition({ type: 'destroyed' });
-  }
-
-  private resolveRefreshCell(
-    summary: Readonly<InlineTargetSummary>,
-  ): HTMLTableCellElement {
-    if (summary.rowId === undefined) {
-      throw new EditorTargetUnavailableError(
-        this.arguments_.language.inline.targetUnavailable,
-      );
-    }
-    const rowIndexById = resolveUniqueRowIndexById(this.arguments_.table, summary.rowId);
-    if (rowIndexById === undefined) {
-      throw new EditorTargetUnavailableError(
-        this.arguments_.language.inline.targetUnavailable,
-      );
-    }
-    const row = this.arguments_.table.row(rowIndexById);
-    const rowIndex = row.index();
-    const column = this.arguments_.table.column(summary.columnIndex);
-    if (
-      !row.any() ||
-      typeof rowIndex !== 'number' ||
-      (summary.columnName !== undefined && column.name() !== summary.columnName) ||
-      !isColumnVisiblyAvailable(column) ||
-      this.arguments_.mappings.get(summary.columnIndex)?.fieldName !== summary.fieldName
-    ) {
-      throw new EditorTargetUnavailableError(
-        this.arguments_.language.inline.targetUnavailable,
-      );
-    }
-    const cellNode = this.arguments_.table.cell(rowIndex, summary.columnIndex).node();
-    if (!(cellNode instanceof HTMLTableCellElement) || !cellNode.isConnected) {
-      throw new EditorTargetUnavailableError(
-        this.arguments_.language.inline.targetUnavailable,
-      );
-    }
-    return cellNode;
   }
 }

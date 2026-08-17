@@ -1,23 +1,48 @@
-import { EditorConfigurationError } from '../core/alt-editor-lite-error.js';
+import {
+  EditorConfigurationError,
+  EditorTargetUnavailableError,
+} from '../core/alt-editor-lite-error.js';
+import { createInlineNavigationIntent } from '../inline/inline-navigation.js';
+import { captureInlineTarget } from '../inline/inline-target-capture.js';
+import { resolveInlineTarget } from '../inline/inline-target-resolution.js';
 
+import { isColumnVisiblyAvailable } from './column-visibility.js';
+import { resolveLogicalCellTarget } from './commit-row-update.js';
 import { DrawOwnership } from './draw-ownership.js';
 import { refreshDataTable } from './refresh-data-table.js';
+import { resolveUniqueRowIndexById } from './row-id-resolution.js';
+import {
+  captureEditTarget,
+  captureRemoveTargets,
+  resolveEditTarget,
+  resolveRemoveTargets,
+} from './row-target-resolution.js';
+import { SelectIntegration } from './select-integration.js';
 
+import type { LogicalCellTarget } from './commit-row-update.js';
+import type { EditTargetCapture, RemoveTargetCapture } from './row-target-resolution.js';
+import type { FieldConfig } from '../fields/field-config.js';
 import type {
   EditorHost,
   HostApplyContext,
   HostRecordEntry,
   HostRefreshCapability,
   HostRowCollectionCapability,
+  HostSelectionCapability,
 } from '../host/editor-host.js';
-import type { Api, RowSelector } from 'datatables.net';
+import type { InlineColumnMapping } from '../inline/inline-column-mapping.js';
+import type { InlineTargetSummary } from '../inline/inline-edit-state.js';
+import type { InlineNavigationIntent } from '../inline/inline-navigation.js';
+import type { InlineTargetCapture } from '../inline/inline-target-capture.js';
+import type { Api, ColumnSelector, RowSelector } from 'datatables.net';
 
 /** DataTables-backed implementation of the neutral record host contract. */
 export class DataTablesHost<TRow extends object>
   implements
     EditorHost<TRow, number>,
     HostRefreshCapability,
-    HostRowCollectionCapability<TRow, number>
+    HostRowCollectionCapability<TRow, number>,
+    HostSelectionCapability<number>
 {
   public readonly eventTarget: HTMLTableElement;
 
@@ -25,9 +50,14 @@ export class DataTablesHost<TRow extends object>
 
   private readonly drawOwnership: DrawOwnership<TRow>;
 
+  private readonly selectIntegration: SelectIntegration<TRow>;
+
   private isDestroyed = false;
 
-  public constructor(private readonly table: Api<TRow>) {
+  public constructor(
+    private readonly table: Api<TRow>,
+    onSelectionChange: () => void = () => undefined,
+  ) {
     const tableElement: unknown = table.table().node();
     if (!(tableElement instanceof HTMLTableElement)) {
       throw new EditorConfigurationError(
@@ -38,6 +68,7 @@ export class DataTablesHost<TRow extends object>
     this.eventTarget = tableElement;
     this.ownershipKey = tableElement;
     this.drawOwnership = new DrawOwnership(table);
+    this.selectIntegration = new SelectIntegration(table, onSelectionChange);
   }
 
   /** Returns the DataTables API for explicitly integration-specific work. */
@@ -114,6 +145,184 @@ export class DataTablesHost<TRow extends object>
     return entries;
   }
 
+  /** Reports whether the optional Select integration is available. */
+  public selectionAvailable(): boolean {
+    return this.selectIntegration.available();
+  }
+
+  /** Returns the current DataTables Select targets. */
+  public getSelectedTargets(): readonly number[] {
+    return this.selectIntegration.selectedRowIndexes();
+  }
+
+  /** Resolves an explicit row selector or the current Select selection. */
+  public resolveRequestedRowIndexes(
+    rowSelector: RowSelector<TRow> | undefined,
+    unavailableMessage: string,
+  ): readonly number[] {
+    return rowSelector === undefined
+      ? this.selectIntegration.selectedRowIndexes(unavailableMessage)
+      : this.table.rows(rowSelector).indexes().toArray();
+  }
+
+  /** Captures one validated DataTables row identity. */
+  public captureEditTarget(
+    rowIndex: number,
+    unavailableMessage: string,
+  ): EditTargetCapture<TRow> {
+    return captureEditTarget(this.table, rowIndex, unavailableMessage);
+  }
+
+  /** Captures validated DataTables row identities for removal. */
+  public captureRemoveTargets(
+    rowIndexes: readonly number[],
+    unavailableMessage: string,
+  ): RemoveTargetCapture<TRow> {
+    return captureRemoveTargets(this.table, rowIndexes, unavailableMessage);
+  }
+
+  /** Revalidates one previously captured row identity. */
+  public resolveEditTarget(
+    capture: EditTargetCapture<TRow>,
+    unavailableMessage: string,
+  ): number {
+    return resolveEditTarget(this.table, this.eventTarget, capture, unavailableMessage);
+  }
+
+  /** Revalidates a previously captured row set atomically. */
+  public resolveRemoveTargets(
+    capture: RemoveTargetCapture<TRow>,
+    unavailableMessage: string,
+  ): readonly number[] {
+    return resolveRemoveTargets(
+      this.table,
+      this.eventTarget,
+      capture,
+      unavailableMessage,
+    );
+  }
+
+  /** Captures one eligible DataTables cell for inline editing. */
+  public captureInlineTarget<TFormValues extends object>(
+    rowSelector: RowSelector<TRow>,
+    columnSelector: ColumnSelector,
+    fieldsByName: ReadonlyMap<string, Readonly<FieldConfig<TFormValues>>>,
+    mappings: ReadonlyMap<number, Readonly<InlineColumnMapping<TFormValues>>>,
+    unavailableMessage: string,
+  ): InlineTargetCapture<TRow, TFormValues> {
+    return captureInlineTarget(
+      this.table,
+      this.eventTarget,
+      rowSelector,
+      columnSelector,
+      fieldsByName,
+      mappings,
+      unavailableMessage,
+    );
+  }
+
+  /** Revalidates an inline row, field mapping, and rendered cell identity. */
+  public resolveInlineTarget<TFormValues extends object>(
+    capture: InlineTargetCapture<TRow, TFormValues>,
+    mappings: ReadonlyMap<number, Readonly<InlineColumnMapping<TFormValues>>>,
+    unavailableMessage: string,
+  ): number {
+    return resolveInlineTarget(
+      this.table,
+      this.eventTarget,
+      capture,
+      mappings,
+      unavailableMessage,
+    );
+  }
+
+  /** Resolves the next eligible inline cell on the current page. */
+  public createInlineNavigationIntent<TFormValues extends object>(
+    mappings: ReadonlyMap<number, Readonly<InlineColumnMapping<TFormValues>>>,
+    fieldsByName: ReadonlyMap<string, Readonly<FieldConfig<TFormValues>>>,
+    currentTarget: Readonly<InlineTargetSummary>,
+    direction: 'forward' | 'backward',
+  ): Readonly<InlineNavigationIntent> | undefined {
+    return createInlineNavigationIntent(
+      this.table,
+      mappings,
+      fieldsByName,
+      currentTarget,
+      direction,
+    );
+  }
+
+  /** Resolves a navigation row after a presentation update. */
+  public resolveInlineNavigationRow(
+    intent: Readonly<InlineNavigationIntent>,
+    unavailableMessage: string,
+  ): number {
+    if (intent.rowId === undefined) {
+      return intent.rowIndex;
+    }
+    const rowIndex = resolveUniqueRowIndexById(this.table, intent.rowId);
+    if (rowIndex === undefined) {
+      throw new EditorTargetUnavailableError(unavailableMessage);
+    }
+    return rowIndex;
+  }
+
+  /** Resolves the cell associated with a completed inline commit. */
+  public resolveInlineCommitCell(
+    target: Readonly<LogicalCellTarget<TRow>>,
+    unavailableMessage: string,
+  ): HTMLTableCellElement {
+    return resolveLogicalCellTarget(this.table, target, unavailableMessage);
+  }
+
+  /** Resolves a stable cell after a consumer-owned refresh. */
+  public resolveInlineRefreshCell<TFormValues extends object>(
+    summary: Readonly<InlineTargetSummary>,
+    mappings: ReadonlyMap<number, Readonly<InlineColumnMapping<TFormValues>>>,
+    unavailableMessage: string,
+  ): HTMLTableCellElement {
+    if (summary.rowId === undefined) {
+      throw new EditorTargetUnavailableError(unavailableMessage);
+    }
+    const rowIndexById = resolveUniqueRowIndexById(this.table, summary.rowId);
+    if (rowIndexById === undefined) {
+      throw new EditorTargetUnavailableError(unavailableMessage);
+    }
+    const row = this.table.row(rowIndexById);
+    const rowIndex = row.index();
+    const column = this.table.column(summary.columnIndex);
+    if (
+      !row.any() ||
+      typeof rowIndex !== 'number' ||
+      (summary.columnName !== undefined && column.name() !== summary.columnName) ||
+      !isColumnVisiblyAvailable(column) ||
+      mappings.get(summary.columnIndex)?.fieldName !== summary.fieldName
+    ) {
+      throw new EditorTargetUnavailableError(unavailableMessage);
+    }
+    const cellNode = this.table.cell(rowIndex, summary.columnIndex).node();
+    if (!(cellNode instanceof HTMLTableCellElement) || !cellNode.isConnected) {
+      throw new EditorTargetUnavailableError(unavailableMessage);
+    }
+    return cellNode;
+  }
+
+  /** Restores focus to a logical cell with the owned table as a fallback. */
+  public focusInlineCell(cellNode: HTMLTableCellElement | undefined): void {
+    if (cellNode?.isConnected === true) {
+      const cellApi = this.table.cell(cellNode) as unknown as {
+        focus?: () => unknown;
+      };
+      if (typeof cellApi.focus === 'function') {
+        cellApi.focus();
+        return;
+      }
+      this.focusElement(cellNode);
+      return;
+    }
+    this.focusElement(this.eventTarget);
+  }
+
   /** Reports whether the editor currently owns a DataTables presentation update. */
   public ownsPresentationChange(): boolean {
     return this.drawOwnership.ownsDraw();
@@ -125,6 +334,18 @@ export class DataTablesHost<TRow extends object>
       return;
     }
     this.isDestroyed = true;
+    this.selectIntegration.destroy();
     this.drawOwnership.destroy();
+  }
+
+  private focusElement(element: HTMLElement): void {
+    const existingTabIndex = element.getAttribute('tabindex');
+    if (element.tabIndex < 0 && existingTabIndex === null) {
+      element.setAttribute('tabindex', '-1');
+    }
+    element.focus();
+    if (existingTabIndex === null) {
+      element.removeAttribute('tabindex');
+    }
   }
 }

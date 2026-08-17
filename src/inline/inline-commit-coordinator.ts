@@ -8,7 +8,6 @@ import {
   createInlineEventTarget,
   createInlineOperationTarget,
 } from './inline-operation-target.js';
-import { resolveInlineTarget } from './inline-target-resolution.js';
 
 import type { InlineColumnMapping } from './inline-column-mapping.js';
 import type { InlineEditSession } from './inline-edit-session.js';
@@ -154,13 +153,7 @@ export class InlineCommitCoordinator<TRow extends object, TFormValues extends ob
       presentation,
       reportError: this.arguments_.reportError,
       revalidateTarget: () =>
-        resolveInlineTarget(
-          table,
-          tableElement,
-          session.capture,
-          mappings,
-          targetUnavailableMessage,
-        ),
+        host.resolveInlineTarget(session.capture, mappings, targetUnavailableMessage),
       target,
     });
 

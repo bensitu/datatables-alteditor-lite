@@ -18,19 +18,10 @@ import { InlineFocusCoordinator } from './inline-focus-coordinator.js';
 import { ownsInlineFocus } from './inline-focus-owner.js';
 import { resolveInlineKeyboardIntent } from './inline-keyboard.js';
 import {
-  createInlineNavigationIntent,
-  type InlineNavigationIntent,
-} from './inline-navigation.js';
-import {
   createInlineEventTarget,
   createInlineOperationTarget,
 } from './inline-operation-target.js';
 import { InlineSessionFactory } from './inline-session-factory.js';
-import {
-  captureInlineTarget,
-  type InlineTargetCapture,
-} from './inline-target-capture.js';
-import { resolveInlineTarget } from './inline-target-resolution.js';
 import { InlineValidationController } from './inline-validation-controller.js';
 
 import type { InlineColumnMapping } from './inline-column-mapping.js';
@@ -38,6 +29,8 @@ import type { InlineEditSession } from './inline-edit-session.js';
 import type { InlineEditState } from './inline-edit-state.js';
 import type { InlineEditViewFactory } from './inline-edit-view-factory.js';
 import type { ResolvedInlineInteractionBehavior } from './inline-interaction-behavior.js';
+import type { InlineNavigationIntent } from './inline-navigation.js';
+import type { InlineTargetCapture } from './inline-target-capture.js';
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type {
   AltEditorLiteOptions,
@@ -132,12 +125,11 @@ export class InlineEditSessionController<
     );
     this.focusCoordinator = new InlineFocusCoordinator({
       enabled: arguments_.enabled,
+      host: arguments_.host,
       instanceId: arguments_.instanceId,
       language: arguments_.language,
       mappings: arguments_.mappings,
       options: arguments_.options,
-      table: arguments_.table,
-      tableElement: arguments_.tableElement,
     });
     this.sessionFactory = new InlineSessionFactory({
       instanceId: arguments_.instanceId,
@@ -222,9 +214,7 @@ export class InlineEditSessionController<
     }
 
     const originalActiveElement = document.activeElement;
-    const capture = captureInlineTarget(
-      this.arguments_.table,
-      this.arguments_.tableElement,
+    const capture = this.arguments_.host.captureInlineTarget(
       rowSelector,
       columnSelector,
       this.fieldsByName,
@@ -253,9 +243,7 @@ export class InlineEditSessionController<
         return;
       }
 
-      resolveInlineTarget(
-        this.arguments_.table,
-        this.arguments_.tableElement,
+      this.arguments_.host.resolveInlineTarget(
         capture,
         this.arguments_.mappings,
         this.arguments_.language.inline.targetUnavailable,
@@ -279,9 +267,7 @@ export class InlineEditSessionController<
         }
         return;
       }
-      resolveInlineTarget(
-        this.arguments_.table,
-        this.arguments_.tableElement,
+      this.arguments_.host.resolveInlineTarget(
         capture,
         this.arguments_.mappings,
         this.arguments_.language.inline.targetUnavailable,
@@ -611,8 +597,7 @@ export class InlineEditSessionController<
     event.preventDefault();
     event.stopPropagation();
     if (intent.type === 'submit-and-move') {
-      const navigationIntent = createInlineNavigationIntent(
-        this.arguments_.table,
+      const navigationIntent = this.arguments_.host.createInlineNavigationIntent(
         this.arguments_.mappings,
         this.fieldsByName,
         session.capture.summary,
@@ -718,9 +703,7 @@ export class InlineEditSessionController<
     let canRestoreOriginalContent = false;
     if (restoreOriginalContent) {
       try {
-        resolveInlineTarget(
-          this.arguments_.table,
-          this.arguments_.tableElement,
+        this.arguments_.host.resolveInlineTarget(
           session.capture,
           this.arguments_.mappings,
           this.arguments_.language.inline.targetUnavailable,

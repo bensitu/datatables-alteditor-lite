@@ -1,9 +1,5 @@
 import { dispatchEditorEvent } from '../core/editor-event.js';
 import { commitRowUpdate } from '../datatables/commit-row-update.js';
-import {
-  captureEditTarget,
-  resolveEditTarget,
-} from '../datatables/row-target-resolution.js';
 import { synchronizeExtensionStateAfterCommit } from '../datatables/synchronize-extension-state.js';
 
 import type { AltEditorLiteError } from '../core/alt-editor-lite-error.js';
@@ -94,7 +90,7 @@ export class DialogEditOperation<TRow extends object, TFormValues extends object
       commit: async (row, rowIndex, request: OwnedOperationRequest) => {
         const result = await commitRowUpdate(host, rowIndex, row, request);
         if (!editing.closeOnSuccess) {
-          updateCapture(captureEditTarget(table, rowIndex, targetUnavailableMessage));
+          updateCapture(host.captureEditTarget(rowIndex, targetUnavailableMessage));
         }
         return result;
       },
@@ -180,8 +176,7 @@ export class DialogEditOperation<TRow extends object, TFormValues extends object
       reportError: (error, context, publishEvent) => {
         errorReporter.report(error, context, publishEvent);
       },
-      revalidateTarget: () =>
-        resolveEditTarget(table, tableElement, capture, targetUnavailableMessage),
+      revalidateTarget: () => host.resolveEditTarget(capture, targetUnavailableMessage),
       target,
     });
   }
