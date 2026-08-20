@@ -9,13 +9,10 @@ const dataTablesScriptPath = resolve(
   repositoryRoot,
   'node_modules/datatables.net/js/dataTables.js',
 );
-const browserBundlePath = resolve(
-  repositoryRoot,
-  'dist/umd/datatables-alteditor-lite.js',
-);
+const browserBundlePath = resolve(repositoryRoot, 'dist/umd/alt-editor-lite.js');
 const japaneseLocaleBundlePath = resolve(
   repositoryRoot,
-  'dist/umd/locales/datatables-alteditor-lite.ja.js',
+  'dist/umd/locales/alt-editor-lite.ja.js',
 );
 
 test('requires the DataTables browser global to load first', async ({ page }) => {

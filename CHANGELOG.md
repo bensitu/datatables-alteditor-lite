@@ -30,6 +30,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Kept the existing DataTables Browser Global distribution and retrieval-only
   `table.altEditorLite()` behavior, exposed `StandaloneHost` from that browser
   distribution, and separated neutral ESM imports.
+- Standardized Browser Global filenames on the `alt-editor-lite` name while
+  retaining the previously published main and language filenames as compatibility
+  copies until 1.0.
 
 ### Fixed
 

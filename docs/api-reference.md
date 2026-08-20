@@ -15,10 +15,10 @@ The neutral root and `/standalone` entries do not import DataTables. The
 `datatables.net` is therefore an optional package peer, but applications using
 the integration entry must install a compatible DataTables 3 release.
 
-The existing `dist/umd/datatables-alteditor-lite.js` browser build exposes the
+The `dist/umd/alt-editor-lite.js` browser build exposes the
 neutral editor, DataTables adapters, and `StandaloneHost` through
 `globalThis.DataTablesAltEditorLite`. It requires DataTables to load first. The
-optional `dist/umd/datatables-alteditor-lite-standalone.js` build exposes
+optional `dist/umd/alt-editor-lite-standalone.js` build exposes
 `globalThis.DataTablesAltEditorLiteStandalone` without a DataTables runtime.
 
 ## AltEditorLite

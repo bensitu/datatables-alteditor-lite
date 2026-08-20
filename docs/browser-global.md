@@ -37,7 +37,7 @@ from jsDelivr:
     </table>
 
     <script src="https://cdn.datatables.net/v/dt/dt-3.0.1/datatables.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/umd/datatables-alteditor-lite.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/umd/alt-editor-lite.min.js"></script>
     <script>
       const table = new DataTable('#users', {
         columns: [{ data: 'name' }, { data: 'email' }],
@@ -105,8 +105,8 @@ is shown.
 The npm package publishes these Browser Global files under `dist/umd/`:
 
 - `alt-editor-lite.css` and `alt-editor-lite.min.css`;
-- `datatables-alteditor-lite.js` and `datatables-alteditor-lite.min.js`;
-- `datatables-alteditor-lite-standalone.js` for a DataTables-free standalone
+- `alt-editor-lite.js` and `alt-editor-lite.min.js`;
+- `alt-editor-lite-standalone.js` for a DataTables-free standalone
   runtime;
 - Browser Global language resources under `dist/umd/locales/`.
 
@@ -118,7 +118,7 @@ For self-hosting, copy the required `dist/` files and use equivalent local URLs:
 <!-- prettier-ignore -->
 ```html
 <link rel="stylesheet" href="/vendor/alt-editor-lite.min.css" />
-<script src="/vendor/datatables-alteditor-lite.min.js"></script>
+<script src="/vendor/alt-editor-lite.min.js"></script>
 ```
 
 `DataTablesEditor`, `DataTablesHost`, `StandaloneHost`, the neutral constructor,
@@ -126,10 +126,14 @@ the language loader, and the language registry are available through
 `globalThis.DataTablesAltEditorLite`. This main bundle requires DataTables to
 load first and registers `table.altEditorLite()` as a retrieval-only method.
 
-Standalone script users can instead load
-`datatables-alteditor-lite-standalone.js` and construct
+Standalone script users can instead load `alt-editor-lite-standalone.js` and construct
 `DataTablesAltEditorLiteStandalone.StandaloneHost` with consumer record
 callbacks. That bundle does not import, register, or require DataTables.
+
+The 0.5 distribution also includes the former `datatables-alteditor-lite.js`,
+`datatables-alteditor-lite.min.js`, and language bundle filenames as compatibility
+copies. New integrations should use the `alt-editor-lite` filenames. The
+compatibility filenames remain available until 1.0.
 
 ## Languages
 
@@ -137,7 +141,7 @@ Included language registration bundles must load after the main browser bundle:
 
 <!-- prettier-ignore -->
 ```html
-<script src="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/umd/locales/datatables-alteditor-lite.ja.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/umd/locales/alt-editor-lite.ja.min.js"></script>
 ```
 
 ```js

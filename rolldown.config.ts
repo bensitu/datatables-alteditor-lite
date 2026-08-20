@@ -82,13 +82,17 @@ function createEsmLocaleConfig(localeName: string): RolldownOptions {
   };
 }
 
-function createUmdLocaleConfig(localeName: string, isMinified: boolean): RolldownOptions {
+function createUmdLocaleConfig(
+  localeName: string,
+  isMinified: boolean,
+  filePrefix: string,
+): RolldownOptions {
   const entryId = `virtual:alteditor-lite-language:${localeName}:browser`;
   return {
     input: entryId,
     plugins: [createLocaleEntryPlugin(localeName, true)],
     output: {
-      file: `dist/umd/locales/datatables-alteditor-lite.${localeName}${isMinified ? '.min' : ''}.js`,
+      file: `dist/umd/locales/${filePrefix}.${localeName}${isMinified ? '.min' : ''}.js`,
       name: 'DataTablesAltEditorLite',
       format: 'umd',
       minify: isMinified,
@@ -112,31 +116,23 @@ const coreEsmConfig: RolldownOptions = {
   },
 };
 
-const coreUmdConfig: RolldownOptions = {
-  input: 'src/browser-global.ts',
-  output: {
-    file: 'dist/umd/datatables-alteditor-lite.js',
-    format: 'umd',
-    name: 'DataTablesAltEditorLite',
-    sourcemap: true,
-  },
-};
-
-const minifiedCoreUmdConfig: RolldownOptions = {
-  input: 'src/browser-global.ts',
-  output: {
-    file: 'dist/umd/datatables-alteditor-lite.min.js',
-    format: 'umd',
-    minify: true,
-    name: 'DataTablesAltEditorLite',
-    sourcemap: true,
-  },
-};
+function createCoreUmdConfig(fileName: string, isMinified: boolean): RolldownOptions {
+  return {
+    input: 'src/browser-global.ts',
+    output: {
+      file: `dist/umd/${fileName}${isMinified ? '.min' : ''}.js`,
+      format: 'umd',
+      minify: isMinified,
+      name: 'DataTablesAltEditorLite',
+      sourcemap: true,
+    },
+  };
+}
 
 const standaloneUmdConfig: RolldownOptions = {
   input: 'src/standalone-browser-global.ts',
   output: {
-    file: 'dist/umd/datatables-alteditor-lite-standalone.js',
+    file: 'dist/umd/alt-editor-lite-standalone.js',
     format: 'umd',
     name: 'DataTablesAltEditorLiteStandalone',
     sourcemap: true,
@@ -146,11 +142,15 @@ const standaloneUmdConfig: RolldownOptions = {
 export default defineConfig([
   coreEsmConfig,
   ...localeNames.map((localeName) => createEsmLocaleConfig(localeName)),
-  coreUmdConfig,
-  minifiedCoreUmdConfig,
+  createCoreUmdConfig('alt-editor-lite', false),
+  createCoreUmdConfig('alt-editor-lite', true),
+  createCoreUmdConfig('datatables-alteditor-lite', false),
+  createCoreUmdConfig('datatables-alteditor-lite', true),
   standaloneUmdConfig,
   ...localeNames.flatMap((localeName) => [
-    createUmdLocaleConfig(localeName, false),
-    createUmdLocaleConfig(localeName, true),
+    createUmdLocaleConfig(localeName, false, 'alt-editor-lite'),
+    createUmdLocaleConfig(localeName, true, 'alt-editor-lite'),
+    createUmdLocaleConfig(localeName, false, 'datatables-alteditor-lite'),
+    createUmdLocaleConfig(localeName, true, 'datatables-alteditor-lite'),
   ]),
 ]);

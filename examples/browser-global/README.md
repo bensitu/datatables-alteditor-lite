@@ -9,7 +9,7 @@
 <script src="dataTables.js"></script>
 <script src="dataTables.buttons.js"></script>
 <script src="dataTables.select.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/umd/datatables-alteditor-lite.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/umd/alt-editor-lite.min.js"></script>
 <script src="app.js"></script>
 ```
 
@@ -24,7 +24,7 @@ const editor = new DataTablesAltEditorLite.DataTablesEditor(table, {
 ```
 
 An included registration bundle such as
-`dist/umd/locales/datatables-alteditor-lite.ja.min.js` can be loaded after the main
+`dist/umd/locales/alt-editor-lite.ja.min.js` can be loaded after the main
 bundle instead of fetching JSON. None of these artifacts requires jQuery. See the
 [Browser Global guide](../../docs/browser-global.md) for a complete runnable quick
 start, production version pinning, and self-hosted paths.

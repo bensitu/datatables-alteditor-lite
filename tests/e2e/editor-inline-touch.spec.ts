@@ -13,10 +13,7 @@ const selectScriptPath = resolve(
   repositoryRoot,
   'node_modules/datatables.net-select/js/dataTables.select.js',
 );
-const browserBundlePath = resolve(
-  repositoryRoot,
-  'dist/umd/datatables-alteditor-lite.js',
-);
+const browserBundlePath = resolve(repositoryRoot, 'dist/umd/alt-editor-lite.js');
 const stylesheetPath = resolve(repositoryRoot, 'dist/umd/alt-editor-lite.css');
 
 async function createTouchFixture(

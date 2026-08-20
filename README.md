@@ -77,7 +77,7 @@ distribution files:
 <!-- prettier-ignore -->
 ```html
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/umd/alt-editor-lite.min.css" />
-<script src="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/umd/datatables-alteditor-lite.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/umd/alt-editor-lite.min.js"></script>
 ```
 
 The unversioned URLs follow the latest published package. Pin the same package
@@ -347,13 +347,13 @@ scripts before the AltEditorLite browser bundle:
 <script src="https://cdn.datatables.net/3.0.1/js/dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/4.0.1/js/dataTables.buttons.min.js"></script>
 <script src="https://cdn.datatables.net/select/4.0.0/js/dataTables.select.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/umd/datatables-alteditor-lite.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/umd/alt-editor-lite.min.js"></script>
 ```
 
 The neutral editor, DataTables adapters, and `StandaloneHost` are available at
 `globalThis.DataTablesAltEditorLite`. The main browser bundle requires DataTables
 to load first. A separate
-`datatables-alteditor-lite-standalone.js` bundle exposes the neutral editor and
+`alt-editor-lite-standalone.js` bundle exposes the neutral editor and
 `StandaloneHost` through `globalThis.DataTablesAltEditorLiteStandalone` without
 requiring DataTables. Included language registration bundles load after the main
 DataTables bundle; external JSON languages use
