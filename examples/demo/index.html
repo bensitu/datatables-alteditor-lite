@@ -9,7 +9,7 @@
     />
     <meta
       name="description"
-      content="A live showcase of browser-native CRUD editing for DataTables 3."
+      content="A live showcase of browser-native record editing with DataTables 3 and standalone hosts."
     />
     <title>AltEditorLite demonstration</title>
     <link rel="icon" href="./favicon.ico" type="image/x-icon" />
@@ -48,12 +48,13 @@
     <main id="top">
       <section class="demo-hero" aria-labelledby="demo-title">
         <div class="demo-hero__copy">
-          <p class="demo-eyebrow">Lightweight DataTables editing extension</p>
-          <h1 id="demo-title">Browser-native editing workflows for DataTables.</h1>
+          <p class="demo-eyebrow">Lightweight headless record editor</p>
+          <h1 id="demo-title">
+            Browser-native record editing, with or without DataTables.
+          </h1>
           <p class="demo-hero__lead">
             Add typed Create, dialog and single-cell Edit, Remove, and Refresh operations
-            with native browser controls, explicit persistence callbacks, and no jQuery
-            runtime.
+            with native browser controls, explicit host adapters, and no jQuery runtime.
           </p>
           <div class="demo-hero__actions">
             <a class="demo-primary-link" href="#workbench">Try the live editor</a>
@@ -399,63 +400,59 @@
       </section>
 
       <section
-        id="workflow-example"
-        class="demo-table-panel"
-        aria-labelledby="workflow-example-title"
+        id="standalone-example"
+        class="demo-table-panel demo-standalone"
+        aria-labelledby="standalone-example-title"
       >
         <div class="demo-section-heading">
           <div>
-            <p class="demo-eyebrow">Rendered controls and field types</p>
-            <h2 id="workflow-example-title">Synchronous workflow editor</h2>
-            <span id="workflow-mode-indicator" class="demo-mode-indicator">
-              Inline double-click mode
-            </span>
+            <p class="demo-eyebrow">Consumer-owned record state</p>
+            <h2 id="standalone-example-title">Standalone</h2>
           </div>
           <p class="demo-section-heading__hint">
-            The table renders editable priority and support-window controls through
-            <code>columnDefs</code>. Switch modes to compare compact inline editing with
-            the complete Edit dialog.
+            The same neutral <code>AltEditorLite</code> constructor works without a table
+            or grid. <code>StandaloneHost</code> connects the dialogs to application state
+            through small callbacks.
           </p>
         </div>
-        <div class="demo-table-scroll">
-          <table id="workflows">
-            <thead>
-              <tr>
-                <th>Workflow</th>
-                <th>Priority</th>
-                <th>Contact</th>
-                <th>Support window</th>
-                <th>Review</th>
-                <th>Attachment</th>
-              </tr>
-            </thead>
-          </table>
+        <div class="demo-standalone__content">
+          <article class="demo-record-card" aria-labelledby="record-heading">
+            <h3 id="record-heading">Current record</h3>
+            <p id="empty-record" class="demo-record-card__empty">
+              No record has been created.
+            </p>
+            <dl id="record-values" hidden>
+              <div class="demo-record-card__field">
+                <dt>Name</dt>
+                <dd id="record-name"></dd>
+              </div>
+              <div class="demo-record-card__field">
+                <dt>Email</dt>
+                <dd id="record-email"></dd>
+              </div>
+            </dl>
+          </article>
+          <div class="demo-standalone__controls">
+            <p class="demo-standalone__description">
+              Create one record, update it, and remove it again. The application owns the
+              record while the editor owns validation and dialog behavior.
+            </p>
+            <div class="demo-standalone-actions" aria-label="Record actions">
+              <button id="create-record" type="button">Create</button>
+              <button id="edit-record" type="button">Edit</button>
+              <button id="remove-record" type="button">Remove</button>
+            </div>
+            <p id="standalone-status" class="demo-standalone-status" role="status">
+              Create a record to begin.
+            </p>
+          </div>
         </div>
-        <div class="demo-workflow-actions">
-          <button id="edit-workflow-priority-inline" type="button">
-            Edit priority inline
-          </button>
-          <button id="edit-workflow-support-inline" type="button">
-            Edit support window inline
-          </button>
-          <button
-            id="toggle-workflow-mode"
-            class="demo-workflow-actions__mode"
-            type="button"
-          >
-            Switch to Dialog editing
-          </button>
-        </div>
-        <p id="workflow-inline-status" class="demo-workflow-status" role="status">
-          The first workflow is selected. Change a rendered priority or support window,
-          double-click an eligible cell, or use an inline action.
-        </p>
       </section>
     </main>
 
     <footer class="demo-footer">
       <p class="demo-footer__copy">
-        Browser-native editing for DataTables 3, built on public APIs.
+        Browser-native record editing through explicit, public host APIs.
       </p>
       <a href="#top">Back to top</a>
     </footer>
