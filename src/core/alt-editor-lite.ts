@@ -99,7 +99,7 @@ export class AltEditorLite<
   /** Creates the sole active editor for one Host ownership identity. */
   public constructor(
     private readonly host: EditorHost<TRow, TTarget>,
-    private readonly options: AltEditorLiteOptions<TRow, TFormValues>,
+    options: AltEditorLiteOptions<TRow, TFormValues>,
   ) {
     const editing = resolveEditingOptions(options.editing);
     validateFieldConfigurations(options.fields);
