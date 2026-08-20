@@ -350,9 +350,9 @@ scripts before the AltEditorLite browser bundle:
 <script src="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/umd/datatables-alteditor-lite.min.js"></script>
 ```
 
-The DataTables-oriented public API, including `DataTablesEditor`, is available at
-`globalThis.DataTablesAltEditorLite`. The main browser bundle still requires
-DataTables to load first. A separate
+The neutral editor, DataTables adapters, and `StandaloneHost` are available at
+`globalThis.DataTablesAltEditorLite`. The main browser bundle requires DataTables
+to load first. A separate
 `datatables-alteditor-lite-standalone.js` bundle exposes the neutral editor and
 `StandaloneHost` through `globalThis.DataTablesAltEditorLiteStandalone` without
 requiring DataTables. Included language registration bundles load after the main
@@ -389,9 +389,9 @@ The [live demo](https://bensitu.github.io/datatables-alteditor-lite/examples/dem
 uses the Browser Global distribution, the official DataTables CDN, an Ajax JSON
 data source, asynchronous persistence, and external languages. Its employee
 directory combines Dialog and Inline Edit, a grouped custom layout, dependent
-choice fields, and cross-field date validation. Additional tables demonstrate
-hover/touch interaction, remote SearchSelect, rendered controls, and extension
-integration.
+choice fields, and cross-field date validation. Additional examples demonstrate
+hover/touch interaction, remote SearchSelect, extension integration, and
+consumer-owned records without a table or grid.
 
 See [SECURITY.md](SECURITY.md) for private vulnerability reporting.
 

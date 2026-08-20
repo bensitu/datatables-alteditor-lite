@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.5.0] - 2026-08-18
+## [0.5.0] - 2026-08-21
 
 ### Added
 
@@ -13,8 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   record collection, and presentation capabilities.
 - Added `DataTablesHost`, the selector-friendly `DataTablesEditor` facade, and
   the explicit `datatables-alteditor-lite/datatables` entry.
-- Added `StandaloneHost`, a DataTables-free Dialog editor example, and ESM and
-  Browser Global standalone distributions.
+- Added `StandaloneHost`, an integrated consumer-owned record example, and ESM
+  and Browser Global standalone distributions.
 - Added repeatable package-boundary verification using a clean consumer without
   DataTables and bundled-output inspection.
 
@@ -28,7 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Made `datatables.net` an optional peer at package level while preserving the
   supported DataTables 3 range and optional Buttons and Select peers.
 - Kept the existing DataTables Browser Global distribution and retrieval-only
-  `table.altEditorLite()` behavior while separating neutral ESM imports.
+  `table.altEditorLite()` behavior, exposed `StandaloneHost` from that browser
+  distribution, and separated neutral ESM imports.
 
 ### Fixed
 

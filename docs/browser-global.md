@@ -121,8 +121,8 @@ For self-hosting, copy the required `dist/` files and use equivalent local URLs:
 <script src="/vendor/datatables-alteditor-lite.min.js"></script>
 ```
 
-`DataTablesEditor`, `DataTablesHost`, the neutral constructor, the language
-loader, and the language registry are available through
+`DataTablesEditor`, `DataTablesHost`, `StandaloneHost`, the neutral constructor,
+the language loader, and the language registry are available through
 `globalThis.DataTablesAltEditorLite`. This main bundle requires DataTables to
 load first and registers `table.altEditorLite()` as a retrieval-only method.
 
