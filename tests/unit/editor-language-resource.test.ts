@@ -62,17 +62,13 @@ describe('external editor language resources', () => {
       message: 'The requested editor language could not be loaded.',
       retryable: true,
     });
-    await expect(loadRequest).rejects.not.toHaveProperty(
-      'message',
-      expect.stringContaining('private network detail'),
-    );
     expect(fetchMock.mock.calls[0]?.[1]).toMatchObject({
       cache: 'no-cache',
       credentials: 'omit',
     });
   });
 
-  it('rejects non-network language resource schemes before fetching', async () => {
+  it('rejects unsupported and credential-bearing language resource URLs', async () => {
     const fetchMock = vi.fn<typeof fetch>();
     vi.stubGlobal('fetch', fetchMock);
 
@@ -81,6 +77,20 @@ describe('external editor language resources', () => {
     ).rejects.toMatchObject({
       code: 'LANGUAGE_LOAD',
       message: 'Editor language resources must use an HTTP or HTTPS URL.',
+      retryable: false,
+    });
+    await expect(
+      loadEditorLanguage('//example.test/language.json'),
+    ).rejects.toMatchObject({
+      code: 'LANGUAGE_LOAD',
+      message: 'Editor language resources must not use a protocol-relative URL.',
+      retryable: false,
+    });
+    await expect(
+      loadEditorLanguage('https://reader:secret@example.test/language.json'),
+    ).rejects.toMatchObject({
+      code: 'LANGUAGE_LOAD',
+      message: 'Editor language resource URLs must not contain embedded credentials.',
       retryable: false,
     });
     expect(fetchMock).not.toHaveBeenCalled();
@@ -210,6 +220,18 @@ describe('external editor language resources', () => {
 
     await vi.advanceTimersByTimeAsync(10_000);
     await timeoutResult;
+
+    const callerAbortController = new AbortController();
+    const callerAbortResult = expect(
+      loadEditorLanguage('/cancelled', { signal: callerAbortController.signal }),
+    ).rejects.toMatchObject({
+      code: 'LANGUAGE_LOAD',
+      message: 'The requested editor language could not be loaded.',
+      retryable: true,
+    });
+    callerAbortController.abort(new DOMException('Cancelled.', 'AbortError'));
+    vi.advanceTimersByTime(10_000);
+    await callerAbortResult;
   });
 
   it('registers application languages by canonical BCP 47 identifier', () => {

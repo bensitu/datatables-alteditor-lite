@@ -1,3 +1,4 @@
+import { EditorConfigurationError } from '../core/alt-editor-lite-error.js';
 import { createReadonlyRowView } from '../core/readonly-row-view.js';
 
 export { createReadonlyRowView } from '../core/readonly-row-view.js';
@@ -46,7 +47,9 @@ export function createRemoveTargetSnapshot<TRow extends object>(
     rowNodes.length !== targetCount ||
     originals.length !== targetCount
   ) {
-    throw new TypeError('Remove snapshot arrays must have the same length.');
+    throw new EditorConfigurationError(
+      'Remove snapshot arrays must have the same length.',
+    );
   }
 
   return Object.freeze({

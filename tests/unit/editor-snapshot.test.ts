@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { EditorConfigurationError } from '../../src/core/alt-editor-lite-error.js';
 import {
   createEditTargetSnapshot,
   createReadonlyRowView,
@@ -86,7 +87,7 @@ describe('editor snapshots', () => {
         snapshotParts.rowNodes,
         snapshotParts.originals,
       ),
-    ).toThrow('same length');
+    ).toThrow(EditorConfigurationError);
   });
 
   it('creates readonly row views independently', () => {

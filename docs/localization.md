@@ -100,8 +100,8 @@ can override either Fetch API setting when a trusted resource requires a differe
 policy.
 When a response includes a `Content-Type` header, it must identify
 `application/json` or an `application/*+json` media type. Relative URLs and
-absolute HTTP or HTTPS URLs are supported. Other absolute URL schemes are
-rejected before a request is made.
+absolute HTTP or HTTPS URLs are supported. Protocol-relative URLs, embedded URL
+credentials, and other absolute URL schemes are rejected before a request is made.
 
 Templates must retain their placeholders. For example, `dialog.removeCount`
 contains `{count}`, `accessibility.searchSelectResults` contains `{count}`, and

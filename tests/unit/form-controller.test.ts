@@ -550,6 +550,29 @@ describe('FormController', () => {
           ?.element.querySelector('.alteditor-lite-field__error')?.textContent,
       ).toBe('Change failed.');
     });
+
+    form.clearErrors();
+    changeCallback.mockImplementationOnce(() => {
+      throw new AltEditorLiteError({
+        code: 'CHANGE',
+        fieldErrors: {
+          email: 'Choose another email address.',
+          unavailable: 'Unavailable field.',
+        },
+        message: 'Related values are invalid.',
+      });
+    });
+    inputElement?.dispatchEvent(new Event('input', { bubbles: true }));
+    await vi.waitFor(() => {
+      expect(
+        form.getField('email')?.element.querySelector('.alteditor-lite-field__error')
+          ?.textContent,
+      ).toBe('Choose another email address.');
+    });
+    expect(
+      form.getField('profile.name')?.element.querySelector('.alteditor-lite-field__error')
+        ?.textContent,
+    ).toBe('Related values are invalid.');
   });
 
   it('discards an explicitly superseded field validation result', async () => {

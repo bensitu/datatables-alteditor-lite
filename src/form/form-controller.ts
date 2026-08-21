@@ -662,9 +662,22 @@ export class EditorFormController<
                 message: 'A field change callback failed.',
                 retryable: true,
               });
-        controller.showError(
-          operationError.fieldErrors?.[fieldName] ?? operationError.message,
-        );
+        let didShowAssociatedError = false;
+        let hasUnmatchedError = false;
+        for (const [errorFieldName, fieldMessage] of Object.entries(
+          operationError.fieldErrors ?? {},
+        )) {
+          const errorController = this.controllerByName.get(errorFieldName);
+          if (errorController === undefined) {
+            hasUnmatchedError = true;
+          } else {
+            errorController.showError(fieldMessage);
+            didShowAssociatedError = true;
+          }
+        }
+        if (!didShowAssociatedError || hasUnmatchedError) {
+          controller.showError(operationError.message);
+        }
       }
     } finally {
       if (this.activeChangeAbortControllers.get(fieldName) === changeAbortController) {

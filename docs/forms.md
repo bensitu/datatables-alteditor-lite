@@ -43,6 +43,10 @@ cloned. AltEditorLite never detaches, moves, or mutates the source. Every form
 open receives a separate clone, so one template can serve multiple editors and
 concurrent tables.
 
+Template markup is trusted application configuration. AltEditorLite clones it as
+provided and does not sanitize elements or attributes. Use only templates created
+by the application, or sanitize externally sourced markup before configuration.
+
 Each editable non-hidden field needs exactly one
 `data-alteditor-lite-field="path"` slot. Slots must use configured safe field
 paths. Duplicate, unknown, or missing slots are configuration errors. Hidden

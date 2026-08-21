@@ -17,7 +17,9 @@ import { build } from 'rolldown';
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const npmExecutable = process.env['npm_execpath'];
 if (npmExecutable === undefined) {
-  throw new Error('The npm executable path is unavailable.');
+  throw new Error(
+    'The npm executable path is unavailable. Run npm run verify:package from the project root.',
+  );
 }
 const temporaryRoot = await mkdtemp(join(tmpdir(), 'datatables-alteditor-lite-package-'));
 

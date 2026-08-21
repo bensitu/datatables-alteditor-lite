@@ -34,16 +34,48 @@ function assertSupportedLanguageResource(resource: RequestInfo | URL): void {
         : typeof resource === 'string'
           ? resource
           : '';
+  const normalizedResourceUrl = resourceUrl.trim();
   if (
-    resourceUrl.length > 0 &&
-    ABSOLUTE_SCHEME_PATTERN.test(resourceUrl) &&
-    !/^https?:/iu.test(resourceUrl)
+    normalizedResourceUrl.startsWith('//') ||
+    normalizedResourceUrl.startsWith('\\\\')
   ) {
     throw new EditorLanguageLoadError(
-      'Editor language resources must use an HTTP or HTTPS URL.',
+      'Editor language resources must not use a protocol-relative URL.',
       undefined,
       false,
     );
+  }
+  if (
+    normalizedResourceUrl.length > 0 &&
+    ABSOLUTE_SCHEME_PATTERN.test(normalizedResourceUrl)
+  ) {
+    let parsedResourceUrl: URL;
+    try {
+      parsedResourceUrl = new URL(normalizedResourceUrl);
+    } catch (cause: unknown) {
+      throw new EditorLanguageLoadError(
+        'Editor language resources must use a valid HTTP or HTTPS URL.',
+        cause,
+        false,
+      );
+    }
+    if (
+      parsedResourceUrl.protocol !== 'http:' &&
+      parsedResourceUrl.protocol !== 'https:'
+    ) {
+      throw new EditorLanguageLoadError(
+        'Editor language resources must use an HTTP or HTTPS URL.',
+        undefined,
+        false,
+      );
+    }
+    if (parsedResourceUrl.username.length > 0 || parsedResourceUrl.password.length > 0) {
+      throw new EditorLanguageLoadError(
+        'Editor language resource URLs must not contain embedded credentials.',
+        undefined,
+        false,
+      );
+    }
   }
 }
 
@@ -58,8 +90,19 @@ function createLanguageRequestLifetime(
       ? resource.signal
       : undefined);
   let didTimeOut = false;
+  const timeoutId = globalThis.setTimeout(() => {
+    if (requestController.signal.aborted) {
+      return;
+    }
+    didTimeOut = true;
+    requestController.abort(new DOMException('The request timed out.', 'TimeoutError'));
+  }, LANGUAGE_REQUEST_TIMEOUT_MS);
 
   const forwardCallerAbort = (): void => {
+    if (requestController.signal.aborted) {
+      return;
+    }
+    globalThis.clearTimeout(timeoutId);
     requestController.abort(callerSignal?.reason);
   };
   if (callerSignal?.aborted === true) {
@@ -67,11 +110,6 @@ function createLanguageRequestLifetime(
   } else {
     callerSignal?.addEventListener('abort', forwardCallerAbort, { once: true });
   }
-
-  const timeoutId = globalThis.setTimeout(() => {
-    didTimeOut = true;
-    requestController.abort();
-  }, LANGUAGE_REQUEST_TIMEOUT_MS);
 
   return {
     signal: requestController.signal,
