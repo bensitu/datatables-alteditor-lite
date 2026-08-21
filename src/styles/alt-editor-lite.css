@@ -618,12 +618,6 @@ textarea.alteditor-lite-field__control {
   z-index: 4;
 }
 
-.alteditor-lite-inline .alteditor-lite-field__control:focus-visible,
-.alteditor-lite-inline .alteditor-lite-search-select__clear:focus-visible {
-  outline: 0;
-  box-shadow: none;
-}
-
 @media (pointer: coarse) {
   .alteditor-lite-inline-hover__trigger,
   .alteditor-lite-inline__action {

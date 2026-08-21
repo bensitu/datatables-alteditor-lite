@@ -74,9 +74,9 @@ export function captureInlineTarget<TRow extends object, TFormValues extends obj
   }
 
   const cell = table.cell(rowIndex, columnIndex);
-  const cellNode = cell.node() as HTMLTableCellElement | undefined;
+  const cellNode = cell.node();
   if (
-    cellNode === undefined ||
+    !(cellNode instanceof HTMLTableCellElement) ||
     !cellNode.isConnected ||
     cellNode.closest('table') !== tableElement ||
     cellNode.closest('tbody') === null

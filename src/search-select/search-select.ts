@@ -286,8 +286,8 @@ export class SearchSelect<TValue extends string | number> {
   }
 
   /** Reads the exact selected option value or committed manual string. */
-  public getValue(): TValue | undefined {
-    return this.selectedValue ?? (this.manualValue as TValue | undefined);
+  public getValue(): TValue | string | undefined {
+    return this.selectedValue ?? this.manualValue;
   }
 
   /** Returns the current immutable local or seed option snapshot. */

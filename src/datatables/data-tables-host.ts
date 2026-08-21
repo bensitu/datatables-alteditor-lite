@@ -71,6 +71,15 @@ interface InlineSelectorPair<TRow extends object> {
   readonly column: ColumnSelector;
 }
 
+function hasCellFocusMethod(value: unknown): value is { focus(): unknown } {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'focus' in value &&
+    typeof value.focus === 'function'
+  );
+}
+
 /** DataTables-backed implementation of the neutral record host contract. */
 export class DataTablesHost<TRow extends object>
   implements
@@ -575,10 +584,8 @@ export class DataTablesHost<TRow extends object>
       cellNode?.isConnected === true &&
       cellNode.closest('table') === this.eventTarget
     ) {
-      const cellApi = this.table.cell(cellNode) as unknown as {
-        focus?: () => unknown;
-      };
-      if (typeof cellApi.focus === 'function') {
+      const cellApi = this.table.cell(cellNode);
+      if (hasCellFocusMethod(cellApi)) {
         cellApi.focus();
         return;
       }
