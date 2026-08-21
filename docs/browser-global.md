@@ -18,7 +18,7 @@ from jsDelivr:
     <title>AltEditorLite quick start</title>
     <link
       rel="stylesheet"
-      href="https://cdn.datatables.net/v/dt/dt-3.0.1/datatables.min.css"
+      href="https://cdn.datatables.net/v/dt/dt-3.0.2/datatables.min.css"
     />
     <link
       rel="stylesheet"
@@ -36,7 +36,7 @@ from jsDelivr:
       </thead>
     </table>
 
-    <script src="https://cdn.datatables.net/v/dt/dt-3.0.1/datatables.min.js"></script>
+    <script src="https://cdn.datatables.net/v/dt/dt-3.0.2/datatables.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/umd/alt-editor-lite.min.js"></script>
     <script>
       const table = new DataTable('#users', {

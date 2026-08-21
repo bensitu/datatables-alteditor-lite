@@ -344,9 +344,9 @@ scripts before the AltEditorLite browser bundle:
   rel="stylesheet"
   href="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/umd/alt-editor-lite.min.css"
 />
-<script src="https://cdn.datatables.net/3.0.1/js/dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/4.0.1/js/dataTables.buttons.min.js"></script>
-<script src="https://cdn.datatables.net/select/4.0.0/js/dataTables.select.min.js"></script>
+<script src="https://cdn.datatables.net/3.0.2/js/dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/4.0.2/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/select/4.0.1/js/dataTables.select.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/umd/alt-editor-lite.min.js"></script>
 ```
 

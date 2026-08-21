@@ -394,6 +394,14 @@ table[class~='dataTable']
   border-color: var(--alteditor-lite-error-color);
 }
 
+table[class~='dataTable']
+  tbody
+  td.alteditor-lite-cell--editing:has(.alteditor-lite-inline :focus-visible):not(
+    :has(.alteditor-lite-inline--invalid)
+  )::after {
+  border-color: transparent;
+}
+
 @media (forced-colors: active) {
   table[class~='dataTable'] tbody td.alteditor-lite-cell--editing::after,
   table[class~='dataTable']
@@ -602,6 +610,12 @@ textarea.alteditor-lite-field__control {
 .alteditor-lite-inline .alteditor-lite-checkbox > .alteditor-lite-field__control {
   width: 1rem;
   height: 1rem;
+}
+
+.alteditor-lite-inline
+  .alteditor-lite-field__control:not([type='checkbox']):focus-visible {
+  outline-width: 2px;
+  outline-offset: -2px;
 }
 
 .alteditor-lite-checkbox:has(> .alteditor-lite-field__control:disabled) {

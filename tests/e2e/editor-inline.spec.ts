@@ -362,9 +362,18 @@ test('opens the hover pencil and exposes accessible explicit actions', async ({
   await expect(trigger).toBeVisible();
   await trigger.click();
 
-  await expect(page.getByRole('textbox', { name: 'Name' })).toHaveValue('Beta');
+  const nameInput = page.getByRole('textbox', { name: 'Name' });
+  await expect(nameInput).toHaveValue('Beta');
   await expect(page.getByRole('button', { name: 'Submit' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Cancel' })).toBeVisible();
+  const inputFocus = await nameInput.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return {
+      color: style.outlineColor,
+      style: style.outlineStyle,
+      width: Number.parseFloat(style.outlineWidth),
+    };
+  });
   const editingBorder = await cell.evaluate((element) => {
     const style = getComputedStyle(element, '::after');
     return {
@@ -373,9 +382,12 @@ test('opens the hover pencil and exposes accessible explicit actions', async ({
       width: Number.parseFloat(style.borderLeftWidth),
     };
   });
+  expect(inputFocus.style).toBe('solid');
+  expect(inputFocus.width).toBeGreaterThan(0);
+  expect(inputFocus.color).not.toBe('rgba(0, 0, 0, 0)');
   expect(editingBorder.style).toBe('solid');
   expect(editingBorder.width).toBeGreaterThan(0);
-  expect(editingBorder.color).not.toBe('rgba(0, 0, 0, 0)');
+  expect(editingBorder.color).toBe('rgba(0, 0, 0, 0)');
   const scan = await new AxeBuilder({ page }).include('.alteditor-lite-inline').analyze();
   expect(
     scan.violations.filter(
