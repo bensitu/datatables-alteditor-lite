@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   cached record captures without repeated row-id scans.
 - Kept visible keyboard focus on controls during inline editing and included
   Host and Standalone runtime modules in the existing coverage report.
+- Applied a repository-level LF checkout policy for consistent formatting checks
+  across supported development environments.
 - Documented trusted dialog template markup and restricted external language
   resources to explicit relative or HTTP and HTTPS URLs without embedded credentials.
 
