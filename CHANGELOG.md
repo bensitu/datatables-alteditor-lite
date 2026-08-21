@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] - 2026-08-22
+
+### Changed
+
+- Reduced local uniqueness validation to one record enumeration and refreshed
+  cached record captures without repeated row-id scans.
+- Kept visible keyboard focus on controls during inline editing and included
+  Host and Standalone runtime modules in the existing coverage report.
+- Documented trusted dialog template markup and restricted external language
+  resources to explicit relative or HTTP and HTTPS URLs without embedded credentials.
+
+### Fixed
+
+- Removed stale record-target mappings after row replacement and removal, and
+  rejected Remove requests that mix DataTables selectors with opaque targets.
+- Completed editor, Host, dialog, form, and inline cleanup even when one owned or
+  consumer-provided cleanup action fails.
+- Preserved associated field errors from change callbacks and distinguished
+  caller cancellation from language request timeouts.
+- Validated inline cell ownership and DOM type before focus or editing, and
+  restored temporary focus attributes after unsuccessful focus attempts.
+
 ## [0.5.0] - 2026-08-21
 
 ### Added
