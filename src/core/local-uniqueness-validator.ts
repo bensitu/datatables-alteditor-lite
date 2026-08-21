@@ -11,6 +11,11 @@ interface UniqueFieldLookup {
   readonly pathSegments: readonly string[];
 }
 
+interface UniqueValidationExclusion<TRow extends object, TTarget> {
+  readonly row?: TRow;
+  readonly target?: TTarget;
+}
+
 /** Performs host-scoped uniqueness checks for configured field paths. */
 export class LocalUniquenessValidator<
   TRow extends object,
@@ -37,26 +42,32 @@ export class LocalUniquenessValidator<
   /** Returns messages for values duplicated by another loaded row. */
   public validate(
     values: Readonly<EditorValues<TFormValues>>,
-    excludedTarget?: TTarget,
+    exclusion?: Readonly<UniqueValidationExclusion<TRow, TTarget>>,
   ): Readonly<Record<string, string>> {
     const fieldErrors: Record<string, string> = {};
-    const candidates = this.fields.flatMap((field) => {
+    const candidates: (readonly [UniqueFieldLookup, unknown])[] = [];
+    for (const field of this.fields) {
       const value = lookupPathSegments(values, field.pathSegments).value;
-      return value === undefined ? [] : [{ ...field, value }];
-    });
+      if (value !== undefined) {
+        candidates.push([field, value]);
+      }
+    }
+    if (candidates.length === 0) {
+      return fieldErrors;
+    }
 
     for (const { row, target } of this.collection.entries()) {
-      if (excludedTarget !== undefined && Object.is(target, excludedTarget)) {
+      if (
+        (exclusion?.target !== undefined && Object.is(target, exclusion.target)) ||
+        (exclusion?.row !== undefined && Object.is(row, exclusion.row))
+      ) {
         continue;
       }
 
-      for (const candidate of candidates) {
+      for (const [candidate, value] of candidates) {
         if (
           fieldErrors[candidate.name] === undefined &&
-          Object.is(
-            lookupPathSegments(row, candidate.pathSegments).value,
-            candidate.value,
-          )
+          Object.is(lookupPathSegments(row, candidate.pathSegments).value, value)
         ) {
           fieldErrors[candidate.name] = this.language.validation.unique;
         }

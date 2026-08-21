@@ -1,3 +1,4 @@
+import { EditorConfigurationError } from '../core/alt-editor-lite-error.js';
 import { AltEditorLite } from '../core/alt-editor-lite.js';
 
 import { DataTablesHost } from './data-tables-host.js';
@@ -49,6 +50,16 @@ export class DataTablesEditor<
       targets.every((target) => this.dataTablesHost.ownsRecordTarget(target))
     ) {
       return super.openRemoveDialog(targets);
+    }
+    if (
+      Array.isArray(targets) &&
+      targets.some((target) => this.dataTablesHost.ownsRecordTarget(target))
+    ) {
+      return Promise.reject(
+        new EditorConfigurationError(
+          'Remove targets must not mix DataTables selectors with record targets.',
+        ),
+      );
     }
     return super.openRemoveDialog(
       this.dataTablesHost.resolveRecordTargets(targets as RowSelector<TRow>),

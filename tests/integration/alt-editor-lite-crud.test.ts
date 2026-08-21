@@ -1085,4 +1085,14 @@ describe('AltEditorLite Refresh and optional selection boundary', () => {
     await editor.openRemoveDialog('#row-d');
     await editor.closeDialog();
   });
+
+  it('rejects a Remove request that mixes selectors and record targets', async () => {
+    const { editor } = createCrudEditor('mixed-remove-targets');
+    const target = editor.dataTablesHost.resolveRecordTarget('#row-a');
+
+    await expect(editor.openRemoveDialog([target, '#row-b'] as never)).rejects.toThrow(
+      EditorConfigurationError,
+    );
+    expect(editor.getState()).toEqual({ status: 'ready' });
+  });
 });

@@ -85,6 +85,29 @@ export function captureEditTarget<TRow extends object>(
   };
 }
 
+/** Captures one row when its optional public id was validated during enumeration. */
+export function captureEditTargetWithValidatedRowId<TRow extends object>(
+  table: Api<TRow>,
+  rowIndex: number,
+  rowId: string | undefined,
+  targetUnavailableMessage: string,
+): EditTargetCapture<TRow> {
+  const rowApi = table.row(rowIndex);
+  if (!rowApi.any()) {
+    throw new EditorTargetUnavailableError(targetUnavailableMessage);
+  }
+
+  const resolvedIndex = assertRowIndex(rowApi.index(), targetUnavailableMessage);
+  if (rowId !== undefined && rowApi.id() !== rowId) {
+    throw new EditorTargetUnavailableError(targetUnavailableMessage);
+  }
+  const sourceRow = rowApi.data();
+  return {
+    snapshot: createEditTargetSnapshot(resolvedIndex, rowId, rowApi.node(), sourceRow),
+    sourceRow,
+  };
+}
+
 /**
  * Captures every row through validated DataTables indexes.
  *

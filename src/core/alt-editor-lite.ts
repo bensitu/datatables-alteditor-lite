@@ -174,12 +174,7 @@ export class AltEditorLite<
             errorReporter.report(error, context, publishEvent);
           },
           validateUnique: (values, excludedRow) =>
-            uniquenessValidator.validate(
-              values,
-              hasHostRowCollectionCapability<TRow, TTarget>(host)
-                ? [...host.entries()].find(({ row }) => row === excludedRow)?.target
-                : undefined,
-            ),
+            uniquenessValidator.validate(values, { row: excludedRow }),
         });
       } else {
         if (this.capabilities.inlineEdit) {

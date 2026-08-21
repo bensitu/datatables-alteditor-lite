@@ -445,7 +445,9 @@ export class DialogEditingController<
         (values) =>
           this.arguments_.uniquenessValidator.validate(
             values,
-            action === 'edit' ? this.editTarget : undefined,
+            action === 'edit' && this.editTarget !== undefined
+              ? { target: this.editTarget }
+              : undefined,
           ),
         this.arguments_.editing.template,
         this.arguments_.options.dependencies,
