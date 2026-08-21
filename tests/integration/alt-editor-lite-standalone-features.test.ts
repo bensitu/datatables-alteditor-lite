@@ -7,6 +7,7 @@ import { StandaloneHost } from '../../src/standalone/standalone-host.js';
 import { installDialogElementSupport } from './standalone-test-fixture.js';
 
 import type { EditorValues } from '../../src/core/editor-values.js';
+import type { EditorHost } from '../../src/host/editor-host.js';
 
 interface FeatureRecord {
   readonly id: string;
@@ -187,5 +188,51 @@ describe('AltEditorLite Standalone editor features', () => {
       'afterSuccess',
     ]);
     editor.destroy();
+  });
+
+  it('completes destruction when consumer-owned notification and host cleanup fail', () => {
+    const ownershipKey = {};
+    const eventFailure = new Error('Notification failed.');
+    const hostFailure = new Error('Host cleanup failed.');
+    const eventTarget = new EventTarget();
+    vi.spyOn(eventTarget, 'dispatchEvent').mockImplementation((event) => {
+      if (event.type === 'alteditor-lite:destroy') {
+        throw eventFailure;
+      }
+      return true;
+    });
+    const hostDestroy = vi.fn(() => {
+      throw hostFailure;
+    });
+    const record: FeatureRecord = {
+      id: 'cleanup-record',
+      name: 'Cleanup',
+      reviewer: 'reviewer-a',
+      role: 'reader',
+    };
+    const host: EditorHost<FeatureRecord, string> = {
+      applyCreate: () => Promise.resolve(undefined),
+      applyRemove: () => Promise.resolve(),
+      applyUpdate: () => Promise.resolve(undefined),
+      destroy: hostDestroy,
+      eventTarget,
+      ownershipKey,
+      read: () => record,
+    };
+    const editor = new AltEditorLite(host, { fields: [] });
+
+    expect(() => {
+      editor.destroy();
+    }).toThrow(eventFailure);
+
+    expect(hostDestroy).toHaveBeenCalledOnce();
+    expect(() => editor.getState()).toThrow();
+    expect(document.querySelector('.alteditor-lite-dialog')).toBeNull();
+
+    const replacementEditor = new AltEditorLite(
+      { ...host, destroy: () => undefined, eventTarget: new EventTarget() },
+      { fields: [] },
+    );
+    replacementEditor.destroy();
   });
 });

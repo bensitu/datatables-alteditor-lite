@@ -4,6 +4,7 @@ import {
 } from '../core/alt-editor-lite-error.js';
 import { freezeEditorValues } from '../core/freeze-editor-values.js';
 import { RequestSequence } from '../core/request-sequence.js';
+import { runCleanupSteps } from '../core/run-cleanup-steps.js';
 import { createFieldController } from '../fields/create-field-controller.js';
 
 import {
@@ -578,20 +579,28 @@ export class EditorFormController<
     this.activeFieldValidationAbortControllers.clear();
     this.activeFormValidationAbortController?.abort();
     this.validationSequence.invalidate();
-    this.dependencyController?.destroy();
+    const dependencyController = this.dependencyController;
     this.dependencyController = undefined;
-
-    for (const controller of this.controllers) {
-      controller.destroy();
-    }
-
+    const controllers = this.controllers;
     this.controllers = [];
     this.controllerByName.clear();
     this.fieldControllerByName.clear();
     this.runtimeByName.clear();
     this.dependencyFieldByName.clear();
-    this.layout.destroy();
-    this.element.remove();
+    runCleanupSteps([
+      () => {
+        dependencyController?.destroy();
+      },
+      ...controllers.map((controller) => () => {
+        controller.destroy();
+      }),
+      () => {
+        this.layout.destroy();
+      },
+      () => {
+        this.element.remove();
+      },
+    ]);
   }
 
   private assertActive(): void {

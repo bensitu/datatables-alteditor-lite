@@ -3,6 +3,7 @@ import {
   EditorSelectionCountError,
   EditorTargetUnavailableError,
 } from '../core/alt-editor-lite-error.js';
+import { runCleanupSteps } from '../core/run-cleanup-steps.js';
 import { InlineColumnMappingRegistry } from '../inline/inline-column-mapping-registry.js';
 import { InlineEditController } from '../inline/inline-edit-controller.js';
 import { createInlineEditPresentation } from '../inline/inline-edit-presentation.js';
@@ -570,7 +571,10 @@ export class DataTablesHost<TRow extends object>
 
   /** Restores focus to a logical cell with the owned table as a fallback. */
   public focusInlineCell(cellNode: HTMLTableCellElement | undefined): void {
-    if (cellNode?.isConnected === true) {
+    if (
+      cellNode?.isConnected === true &&
+      cellNode.closest('table') === this.eventTarget
+    ) {
       const cellApi = this.table.cell(cellNode) as unknown as {
         focus?: () => unknown;
       };
@@ -595,18 +599,28 @@ export class DataTablesHost<TRow extends object>
       return;
     }
     this.isDestroyed = true;
-    this.selectIntegration.destroy();
-    this.drawOwnership.destroy();
+    runCleanupSteps([
+      () => {
+        this.selectIntegration.destroy();
+      },
+      () => {
+        this.drawOwnership.destroy();
+      },
+    ]);
   }
 
   private focusElement(element: HTMLElement): void {
     const existingTabIndex = element.getAttribute('tabindex');
-    if (element.tabIndex < 0 && existingTabIndex === null) {
+    const didAddTemporaryTabIndex = element.tabIndex < 0 && existingTabIndex === null;
+    if (didAddTemporaryTabIndex) {
       element.setAttribute('tabindex', '-1');
     }
-    element.focus();
-    if (existingTabIndex === null) {
-      element.removeAttribute('tabindex');
+    try {
+      element.focus();
+    } finally {
+      if (didAddTemporaryTabIndex) {
+        element.removeAttribute('tabindex');
+      }
     }
   }
 

@@ -33,6 +33,12 @@ export class ActionInlineEditView<TFormValues extends object> implements InlineE
 
   private readonly cancelButton: HTMLButtonElement;
 
+  private readonly handleSubmit: () => void;
+
+  private readonly handleCancel: () => void;
+
+  private isDestroyed = false;
+
   public constructor(
     private readonly host: InlineCellHost<TFormValues>,
     handlers: Readonly<InlineEditViewHandlers>,
@@ -45,10 +51,12 @@ export class ActionInlineEditView<TFormValues extends object> implements InlineE
     actions.className = 'alteditor-lite-inline__actions';
     this.submitButton = createActionButton('submit', submitLabel);
     this.cancelButton = createActionButton('cancel', cancelLabel);
-    this.submitButton.addEventListener('click', handlers.onSubmit);
-    this.cancelButton.addEventListener('click', () => {
+    this.handleSubmit = handlers.onSubmit;
+    this.handleCancel = () => {
       handlers.onCancel('cancel');
-    });
+    };
+    this.submitButton.addEventListener('click', this.handleSubmit);
+    this.cancelButton.addEventListener('click', this.handleCancel);
     actions.append(this.submitButton, this.cancelButton);
     this.element.append(actions);
   }
@@ -82,6 +90,12 @@ export class ActionInlineEditView<TFormValues extends object> implements InlineE
   }
 
   public destroy(): void {
+    if (this.isDestroyed) {
+      return;
+    }
+    this.isDestroyed = true;
+    this.submitButton.removeEventListener('click', this.handleSubmit);
+    this.cancelButton.removeEventListener('click', this.handleCancel);
     this.host.destroy();
   }
 }

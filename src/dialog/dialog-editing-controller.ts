@@ -12,6 +12,7 @@ import {
   normalizeOperationError,
 } from '../core/error-normalization.js';
 import { createReadonlyRowView } from '../core/readonly-row-view.js';
+import { runCleanupSteps } from '../core/run-cleanup-steps.js';
 import { buildEditorForm } from '../form/build-editor-form.js';
 import { hasHostSelectionCapability } from '../host/editor-host.js';
 
@@ -302,6 +303,26 @@ export class DialogEditingController<
       });
       this.dispatchOpen('remove');
     } catch (error: unknown) {
+      this.removeTargets = undefined;
+      this.removeOriginals = undefined;
+      const state = this.arguments_.stateCoordinator.getState();
+      if (
+        (state.status === 'opening' || state.status === 'open') &&
+        state.action === 'remove'
+      ) {
+        try {
+          runCleanupSteps([
+            () => {
+              this.dialog.close();
+            },
+            () => {
+              this.arguments_.stateCoordinator.transitionTo({ status: 'ready' });
+            },
+          ]);
+        } catch {
+          // Preserve the failure that interrupted opening.
+        }
+      }
       if (didAcquireInteraction) {
         this.releaseInteraction();
       }
@@ -330,16 +351,29 @@ export class DialogEditingController<
 
   /** Aborts opening and submission work and removes all dialog-owned DOM. */
   public destroy(): void {
-    this.activeOpenAbortController?.abort();
-    this.arguments_.operationOwner.abort('dialog');
-    this.activeForm?.destroy();
+    const activeForm = this.activeForm;
     this.activeForm = undefined;
     this.editTarget = undefined;
     this.editOriginal = undefined;
     this.removeTargets = undefined;
     this.removeOriginals = undefined;
-    this.releaseInteraction();
-    this.dialog.destroy();
+    runCleanupSteps([
+      () => {
+        this.activeOpenAbortController?.abort();
+      },
+      () => {
+        this.arguments_.operationOwner.abort('dialog');
+      },
+      () => {
+        activeForm?.destroy();
+      },
+      () => {
+        this.releaseInteraction();
+      },
+      () => {
+        this.dialog.destroy();
+      },
+    ]);
   }
 
   private assertReady(): void {

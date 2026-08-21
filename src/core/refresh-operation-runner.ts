@@ -54,14 +54,15 @@ export class RefreshOperationRunner<TRow extends object, TFormValues extends obj
       this.notifyIntegration();
       await this.execute();
     } catch (error: unknown) {
-      if (didAcquireInteraction) {
-        this.releaseInteraction();
-      }
       throw error instanceof Error
         ? error
         : new Error('AltEditorLite refresh failed with a non-Error value.', {
             cause: error,
           });
+    } finally {
+      if (didAcquireInteraction) {
+        this.releaseInteraction();
+      }
     }
   }
 

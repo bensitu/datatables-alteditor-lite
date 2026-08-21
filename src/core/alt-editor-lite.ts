@@ -32,6 +32,7 @@ import { EditorStateCoordinator } from './editor-state-coordinator.js';
 import { LocalUniquenessValidator } from './local-uniqueness-validator.js';
 import { RefreshOperationRunner } from './refresh-operation-runner.js';
 import { resolveEditingOptions } from './resolve-editing-options.js';
+import { runCleanupSteps } from './run-cleanup-steps.js';
 import { validateHooksConfiguration } from './validate-hooks-configuration.js';
 import { validateOperationConfiguration } from './validate-operation-configuration.js';
 
@@ -228,12 +229,30 @@ export class AltEditorLite<
         });
       }
     } catch (error: unknown) {
-      refreshOperationRunner?.destroy();
-      dialogController?.destroy();
-      inlineController?.destroy();
-      this.operationOwner.destroy();
-      this.interactionCoordinator.destroy();
-      deleteEditorInstance(host.ownershipKey, this);
+      try {
+        runCleanupSteps([
+          () => {
+            refreshOperationRunner?.destroy();
+          },
+          () => {
+            dialogController?.destroy();
+          },
+          () => {
+            inlineController?.destroy();
+          },
+          () => {
+            this.operationOwner.destroy();
+          },
+          () => {
+            this.interactionCoordinator.destroy();
+          },
+          () => {
+            deleteEditorInstance(host.ownershipKey, this);
+          },
+        ]);
+      } catch {
+        // Preserve the construction failure.
+      }
       throw error;
     }
 
@@ -334,24 +353,46 @@ export class AltEditorLite<
       return;
     }
 
-    this.dialogController.destroy();
-    this.refreshOperationRunner?.destroy();
-    this.operationOwner.destroy();
-    this.inlineController.destroy();
-    this.interactionCoordinator.destroy();
-    this.stateCoordinator.destroy();
-    deleteEditorInstance(this.host.ownershipKey, this);
-    this.notifyIntegration();
-    dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:destroy'>(
-      this.host.eventTarget,
-      'alteditor-lite:destroy',
-      {
-        editor: this,
-        mode: 'api',
-        type: 'destroy',
+    runCleanupSteps([
+      () => {
+        this.dialogController.destroy();
       },
-    );
-    this.host.destroy();
+      () => {
+        this.refreshOperationRunner?.destroy();
+      },
+      () => {
+        this.operationOwner.destroy();
+      },
+      () => {
+        this.inlineController.destroy();
+      },
+      () => {
+        this.interactionCoordinator.destroy();
+      },
+      () => {
+        this.stateCoordinator.destroy();
+      },
+      () => {
+        deleteEditorInstance(this.host.ownershipKey, this);
+      },
+      () => {
+        this.notifyIntegration();
+      },
+      () => {
+        dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:destroy'>(
+          this.host.eventTarget,
+          'alteditor-lite:destroy',
+          {
+            editor: this,
+            mode: 'api',
+            type: 'destroy',
+          },
+        );
+      },
+      () => {
+        this.host.destroy();
+      },
+    ]);
   }
 
   private assertInlineEditAvailable(): void {

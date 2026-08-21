@@ -1,3 +1,5 @@
+import { runCleanupSteps } from '../core/run-cleanup-steps.js';
+
 import { appendDialogElement } from './append-dialog-element.js';
 import { DialogFocusScope } from './dialog-focus-scope.js';
 import { createEditorDialogShell, type EditorDialogShell } from './dialog-shell.js';
@@ -201,19 +203,29 @@ export class EditorDialog {
     }
 
     this.isDestroyed = true;
-    this.detachForm();
-    this.shell.submitButton.removeEventListener('click', this.handleConfirmation);
-
-    if (this.shell.dialogElement.open) {
-      this.shell.dialogElement.close();
-    }
-
-    this.focusScope.deactivate(true);
-    this.focusScope.destroy();
-    this.shell.dialogElement.removeEventListener('cancel', this.handleNativeCancel);
-    this.shell.cancelButton.removeEventListener('click', this.handleCancelClick);
-    this.shell.dialogElement.remove();
     this.callbacks = undefined;
+    runCleanupSteps([
+      () => {
+        this.detachForm();
+        this.shell.submitButton.removeEventListener('click', this.handleConfirmation);
+        this.shell.dialogElement.removeEventListener('cancel', this.handleNativeCancel);
+        this.shell.cancelButton.removeEventListener('click', this.handleCancelClick);
+      },
+      () => {
+        if (this.shell.dialogElement.open) {
+          this.shell.dialogElement.close();
+        }
+      },
+      () => {
+        this.focusScope.deactivate(true);
+      },
+      () => {
+        this.focusScope.destroy();
+      },
+      () => {
+        this.shell.dialogElement.remove();
+      },
+    ]);
   }
 
   private detachForm(): void {

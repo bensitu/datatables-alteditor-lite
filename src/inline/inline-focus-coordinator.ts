@@ -1,3 +1,4 @@
+import { runCleanupSteps } from '../core/run-cleanup-steps.js';
 import { EditorAlertDialog } from '../dialog/editor-alert-dialog.js';
 
 import { restoreInlineOriginFocus } from './inline-focus-owner.js';
@@ -216,7 +217,13 @@ export class InlineFocusCoordinator<TRow extends object, TFormValues extends obj
   /** Removes the alert dialog and permanently closes focus coordination. */
   public destroy(): void {
     this.activeAlertToken = undefined;
-    this.alertDialog?.destroy();
-    this.stateMachine.transition({ type: 'destroyed' });
+    runCleanupSteps([
+      () => {
+        this.alertDialog?.destroy();
+      },
+      () => {
+        this.stateMachine.transition({ type: 'destroyed' });
+      },
+    ]);
   }
 }

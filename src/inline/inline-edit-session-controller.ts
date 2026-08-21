@@ -9,6 +9,7 @@ import {
   InternalOperationAbort,
   normalizeOperationError,
 } from '../core/error-normalization.js';
+import { runCleanupSteps } from '../core/run-cleanup-steps.js';
 
 import { InlineCommitCoordinator } from './inline-commit-coordinator.js';
 import { InlineEditPresentationAdapter } from './inline-edit-presentation-adapter.js';
@@ -303,9 +304,21 @@ export class InlineEditSessionController<
       if (this.session?.capture === capture) {
         this.cleanupSession('api', true, false, false);
       } else {
-        createdSession?.host.destroy();
-        createdSession?.controller.destroy();
-        this.releaseActivationInteraction();
+        try {
+          runCleanupSteps([
+            () => {
+              createdSession?.host.destroy();
+            },
+            () => {
+              createdSession?.controller.destroy();
+            },
+            () => {
+              this.releaseActivationInteraction();
+            },
+          ]);
+        } catch {
+          // Preserve the activation failure.
+        }
       }
       if ((this.state as InlineEditState).status === 'activating') {
         this.transitionTo({ status: 'idle' });
@@ -419,16 +432,35 @@ export class InlineEditSessionController<
       return;
     }
     this.isDestroyed = true;
-    this.activationAbortController?.abort();
-    this.releaseActivationInteraction();
-    this.changeAbortController?.abort();
-    this.arguments_.operationOwner.abort('inline');
-    this.arguments_.table.off('.altEditorLiteInline');
-    if (this.session !== undefined) {
-      this.cleanupSession('api', true, ownsInlineFocus(this.session.host.element));
-    }
-    this.transitionTo({ status: 'destroyed' });
-    this.focusCoordinator.destroy();
+    const session = this.session;
+    runCleanupSteps([
+      () => {
+        this.activationAbortController?.abort();
+      },
+      () => {
+        this.releaseActivationInteraction();
+      },
+      () => {
+        this.changeAbortController?.abort();
+      },
+      () => {
+        this.arguments_.operationOwner.abort('inline');
+      },
+      () => {
+        this.arguments_.table.off('.altEditorLiteInline');
+      },
+      () => {
+        if (session !== undefined && this.session === session) {
+          this.cleanupSession('api', true, ownsInlineFocus(session.host.element));
+        }
+      },
+      () => {
+        this.transitionTo({ status: 'destroyed' });
+      },
+      () => {
+        this.focusCoordinator.destroy();
+      },
+    ]);
   }
 
   private createPresentation(
@@ -687,17 +719,9 @@ export class InlineEditSessionController<
     if (session === undefined) {
       return;
     }
-    this.focusCoordinator.beginCleanup();
     this.session = undefined;
-    session.lifecycleAbortController.abort();
-    this.changeAbortController?.abort();
+    const changeAbortController = this.changeAbortController;
     this.changeAbortController = undefined;
-    session.host.element.removeEventListener('keydown', this.handleEscapeKeyDown, true);
-    session.host.element.removeEventListener('keydown', this.handleKeyDown);
-    session.host.element.removeEventListener('focusout', this.handleFocusOut);
-    session.host.element.removeEventListener('click', this.stopOwnedPointerEvent);
-    session.host.element.removeEventListener('dblclick', this.stopOwnedPointerEvent);
-    session.host.element.removeEventListener('pointerdown', this.stopOwnedPointerEvent);
     let canRestoreOriginalContent = false;
     if (restoreOriginalContent) {
       try {
@@ -711,34 +735,79 @@ export class InlineEditSessionController<
         canRestoreOriginalContent = false;
       }
     }
-    session.host.unmount({ restoreOriginalContent: canRestoreOriginalContent });
-    session.host.destroy();
-    session.controller.destroy();
-    this.arguments_.interactionCoordinator.release(session.interactionToken);
-    this.arguments_.onSessionEnd?.();
-    if (this.state.status !== 'destroyed') {
-      this.transitionTo({ status: 'idle' });
-    }
-    this.focusCoordinator.completeCleanup();
-    if (publishClose) {
-      dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:close'>(
-        this.arguments_.tableElement,
-        'alteditor-lite:close',
-        {
-          editor: this.arguments_.editor,
-          mode: 'inline',
-          operation: 'edit',
-          reason,
-          target: createInlineEventTarget(session.capture.summary),
-          type: 'close',
-        },
-      );
-    }
-    this.arguments_.notifyIntegration();
-
-    if (restoreFocus) {
-      this.focusCoordinator.restoreOrigin(session);
-    }
+    runCleanupSteps([
+      () => {
+        this.focusCoordinator.beginCleanup();
+      },
+      () => {
+        session.lifecycleAbortController.abort();
+      },
+      () => {
+        changeAbortController?.abort();
+      },
+      () => {
+        session.host.element.removeEventListener(
+          'keydown',
+          this.handleEscapeKeyDown,
+          true,
+        );
+        session.host.element.removeEventListener('keydown', this.handleKeyDown);
+        session.host.element.removeEventListener('focusout', this.handleFocusOut);
+        session.host.element.removeEventListener('click', this.stopOwnedPointerEvent);
+        session.host.element.removeEventListener('dblclick', this.stopOwnedPointerEvent);
+        session.host.element.removeEventListener(
+          'pointerdown',
+          this.stopOwnedPointerEvent,
+        );
+      },
+      () => {
+        session.host.unmount({ restoreOriginalContent: canRestoreOriginalContent });
+      },
+      () => {
+        session.host.destroy();
+      },
+      () => {
+        session.controller.destroy();
+      },
+      () => {
+        this.arguments_.interactionCoordinator.release(session.interactionToken);
+      },
+      () => {
+        this.arguments_.onSessionEnd?.();
+      },
+      () => {
+        if (this.state.status !== 'destroyed') {
+          this.transitionTo({ status: 'idle' });
+        }
+      },
+      () => {
+        this.focusCoordinator.completeCleanup();
+      },
+      () => {
+        if (publishClose) {
+          dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:close'>(
+            this.arguments_.tableElement,
+            'alteditor-lite:close',
+            {
+              editor: this.arguments_.editor,
+              mode: 'inline',
+              operation: 'edit',
+              reason,
+              target: createInlineEventTarget(session.capture.summary),
+              type: 'close',
+            },
+          );
+        }
+      },
+      () => {
+        this.arguments_.notifyIntegration();
+      },
+      () => {
+        if (restoreFocus) {
+          this.focusCoordinator.restoreOrigin(session);
+        }
+      },
+    ]);
   }
 
   private throwRejectedResult(result: EditOperationResult<TRow>): void {

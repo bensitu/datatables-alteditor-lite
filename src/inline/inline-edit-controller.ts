@@ -1,4 +1,5 @@
 import { EditorOperationBusyError } from '../core/alt-editor-lite-error.js';
+import { runCleanupSteps } from '../core/run-cleanup-steps.js';
 import { KeyTableInlineIntegration } from '../datatables/key-table-inline-integration.js';
 
 import {
@@ -130,11 +131,23 @@ export class InlineEditController<TRow extends object, TFormValues extends objec
   }
 
   public destroy(): void {
-    this.activationAbortController.abort();
-    this.detachActivation();
-    this.controllerArguments.table.off('.altEditorLiteInlineMapping');
-    this.keyTableIntegration.destroy();
-    this.sessionController.destroy();
+    runCleanupSteps([
+      () => {
+        this.activationAbortController.abort();
+      },
+      () => {
+        this.detachActivation();
+      },
+      () => {
+        this.controllerArguments.table.off('.altEditorLiteInlineMapping');
+      },
+      () => {
+        this.keyTableIntegration.destroy();
+      },
+      () => {
+        this.sessionController.destroy();
+      },
+    ]);
   }
 
   private get controllerPresentation(): Readonly<
