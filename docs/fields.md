@@ -92,8 +92,8 @@ See [Dynamic forms](forms.md) for declarative option and state changes.
 
 ## Local uniqueness
 
-Set `unique: true` on a field to reject a value already present in the rows
-currently loaded by the owned DataTables instance:
+Set `unique: true` on a field to reject a value already present in the records
+currently exposed by the Host:
 
 ```ts
 {
@@ -106,10 +106,11 @@ currently loaded by the owned DataTables instance:
 
 Edit excludes its captured source row, so keeping the current value is valid. The
 comparison preserves JavaScript value identity semantics: numeric `1` and string
-`'1'` are different. This is a fast local usability check, not a persistence
-guarantee. Server-side, paged, filtered, unloaded, or concurrently changing data
-can contain values the browser cannot see, so the persistence layer must enforce
-the final uniqueness constraint.
+`'1'` are different. `DataTablesHost` enumerates currently loaded rows;
+`StandaloneHost` uses its configured `records` provider. This is a fast local
+usability check, not a persistence guarantee. Server-side, paged, filtered,
+unloaded, or concurrently changing data can contain values the browser cannot
+see, so the persistence layer must enforce the final uniqueness constraint.
 
 ## SearchSelect
 

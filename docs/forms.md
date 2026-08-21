@@ -40,8 +40,8 @@ const editor = new DataTablesEditor<EmployeeRow, EmployeeForm>(table, {
 A string is resolved with `document.querySelector`. An `HTMLTemplateElement`
 contributes a fresh clone of its `content`; any other `HTMLElement` is deeply
 cloned. AltEditorLite never detaches, moves, or mutates the source. Every form
-open receives a separate clone, so one template can serve multiple editors and
-concurrent tables.
+open receives a separate clone, so one template can serve multiple editor
+instances.
 
 Template markup is trusted application configuration. AltEditorLite clones it as
 provided and does not sanitize elements or attributes. Use only templates created
@@ -194,8 +194,7 @@ Dialog validation waits for current dependency and `onChange` work, then runs
 native constraints, field validators, local uniqueness, and `validateForm`.
 Earlier field errors take precedence when several checks report the same path.
 `message` appears in the form submission region. A failed result keeps the form
-open and prevents `beforeSubmit`, submit events, persistence, and DataTables
-mutation.
+open and prevents `beforeSubmit`, submit events, persistence, and Host mutation.
 
 Inline validation builds a complete candidate from the canonical row plus the
 edited cell. It runs native and active-field validation, local uniqueness, waits

@@ -3,14 +3,15 @@
 AltEditorLite uses native `<dialog>`, form controls, labels, descriptions, and
 constraint semantics. Opening moves focus into the dialog. Escape closes ordinary
 dialogs, and closing restores a connected opening control or falls back to the
-table. Busy operations expose `aria-busy` and make owned form controls inert.
+Host event target when it is an element, otherwise the document body. Busy
+operations expose `aria-busy` and make owned form controls inert.
 
 Field errors have stable IDs, use `aria-invalid`, and remain associated through
 `aria-describedby`. Field-level feedback uses polite live regions to avoid a burst
 of interrupting alerts when several constraints fail together. The modal exposes
 `aria-modal`, responds to viewport and virtual-keyboard size changes, and restores
-temporary table focusability after closing. Remove always has a destructive
-confirmation step.
+temporary fallback focusability after focus leaves. Remove always has a
+destructive confirmation step.
 
 ## SearchSelect keyboard behavior
 
@@ -50,9 +51,10 @@ the dialog when leaving it.
 
 Inline Edit mounts one native control in the owned cell. Its label remains
 available to assistive technology while visual error text is presented through a
-plain-text modal alert. The editing cell supplies the visible focus outline, so
-the nested control does not create several competing focus rings. Checkbox and
-text-like controls use compact dimensions that retain the surrounding row height.
+plain-text modal alert. The focused control supplies the visible focus outline.
+The cell editing border becomes transparent while a valid descendant has visible
+focus, while an invalid cell retains its error border. Checkbox and text-like
+controls use compact dimensions that retain the surrounding row height.
 
 Hover editing uses one native pencil button with a localized accessible name.
 The explicit Submit and Cancel controls are native buttons with visible focus.

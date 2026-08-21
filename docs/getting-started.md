@@ -144,8 +144,8 @@ component needs to observe them.
 Dialog Edit and inline Edit use one persistence transaction. Presentation code
 owns field rendering, validation feedback, focus, and cleanup. Shared operation
 code owns request sequencing, target revalidation, lifecycle callbacks,
-persistence selection, complete-row validation, DataTables mutation, draw
-completion, and normalized failures.
+persistence selection, complete-row validation, Host application, stable
+presentation completion, and normalized failures.
 
 The ordered update flow is:
 
@@ -158,14 +158,14 @@ The ordered update flow is:
 7. wait for stable Host presentation, publish success, and restore logical focus;
 8. run `afterSuccess` without changing the committed result.
 
-Validation and persistence failures leave canonical DataTables data unchanged.
+Validation and persistence failures leave canonical Host data unchanged.
 Cancellation aborts owned work, and every asynchronous boundary ignores stale or
 destroyed results. Row and cell identity fail closed instead of selecting another
 target by displayed value.
 
 If neither `operations.update` nor `clientSide.updateRow` is configured, Edit
 uses the declared-field merge as a local-only update. Configure a persistence
-callback when changes must be stored outside the current DataTables instance.
+callback when changes must be stored outside the current Host.
 
 Persistence contexts identify the initiating `mode` as `dialog`, `inline`, or
 `api`, and Edit contexts include a stable `target`. Lifecycle DOM events use the

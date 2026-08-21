@@ -327,11 +327,13 @@ Render functions should return the underlying data for sorting, filtering, and
 type detection, and return HTML only for the `display` type. Treat row values as
 untrusted and escape them before placing them in HTML attributes or text.
 
-The supplied stylesheet keeps Inline controls compact: the editing cell owns one
-focus outline, text-like controls use a `2rem` control height without an inner
-border, and Inline checkboxes use a `1rem` control. This prevents normal rows
-from growing solely because a cell entered Inline Edit. Applications overriding
-these rules should preserve a visible focus indicator and the table's row rhythm.
+The supplied stylesheet keeps Inline controls compact: the focused control owns
+the visible outline, the cell editing border becomes transparent while a valid
+descendant has visible focus, text-like controls use a `2rem` control height
+without an inner border, and Inline checkboxes use a `1rem` control. Invalid cells
+retain their error border. This prevents normal rows from growing solely because
+a cell entered Inline Edit. Applications overriding these rules should preserve a
+visible focus indicator and the table's row rhythm.
 
 The hover pencil and explicit actions use native buttons, logical positioning,
 the existing theme variables, and forced-colors-safe focus indicators.

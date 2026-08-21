@@ -56,6 +56,9 @@ When both Create implementations are absent, opening Create rejects with
 await editor.openEditDialog('#user-42');
 ```
 
+The selector and identity rules below apply to `DataTablesEditor`. The neutral
+`AltEditorLite` API instead accepts an opaque target understood by its Host.
+
 An explicit DataTables row selector does not require Select. When the selector is
 omitted, Select must resolve exactly one selected row.
 
@@ -83,7 +86,8 @@ cleared to normalized `undefined` clears that property in the replacement row;
 disabled or unrendered fields remain untouched.
 
 When both `operations.update` and `clientSide.updateRow` are absent, Edit uses
-that default merge and updates the DataTables row locally. It does not persist the
+that default merge and asks the Host to apply the complete replacement row. With
+`DataTablesHost`, this updates the DataTables row locally. It does not persist the
 change to a remote service.
 
 Dialog and inline Edit use the same target validation, value collection,
@@ -115,7 +119,9 @@ and remains mutually exclusive with dialog operations. `DataTablesHost` waits fo
 the public reload callback for Ajax tables and redraws local tables without
 resetting paging. DataTables does not expose an
 `AbortSignal` parameter for `ajax.reload()`, so aborting editor ownership cannot
-guarantee cancellation of that transport.
+guarantee cancellation of that transport. `StandaloneHost` invokes its optional
+consumer-provided refresh callback and otherwise completes without changing
+records.
 
 Configure `operations.refresh(context)` when network-level cancellation is
 required. The callback receives the owned signal, replaces the Host's default

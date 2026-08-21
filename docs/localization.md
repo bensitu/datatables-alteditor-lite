@@ -144,5 +144,5 @@ Included Browser Global language bundles remain available for static script-tag
 setups and register themselves after the main bundle loads.
 
 Changing an active editor's language in place is not supported. Destroy and
-recreate the editor with the selected language; the existing DataTables rows stay
-owned by the table.
+recreate the editor and its Host adapter with the selected language. The backing
+records remain owned by DataTables or the application data store.

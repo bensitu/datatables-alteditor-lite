@@ -284,7 +284,8 @@ versus Inline boundary.
 ## Persistence operations
 
 Remote callbacks receive the complete operation context and may be synchronous or
-asynchronous. DataTables is changed only after a callback succeeds.
+asynchronous. The Host applies Create, Edit, and Remove results only after the
+corresponding persistence callback succeeds.
 
 ```ts
 const editor = new DataTablesEditor<UserRow, UserForm>(table, {

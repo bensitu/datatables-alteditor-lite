@@ -24,7 +24,8 @@ constraints are usability features and are not substitutes for server-side
 validation.
 
 Field attributes are allowlisted, unsafe object-path segments are blocked, and
-operation errors are normalized before display. SearchSelect is local-only and
-enforces a 5,000-option ceiling. File budgets are checked before data URL reads.
+operation errors are normalized before display. SearchSelect supports local
+options and consumer-provided remote loading, with a 5,000-option ceiling for each
+configured or returned result. File budgets are checked before data URL reads.
 Applications remain responsible for authentication, authorization, server-side
 validation, file inspection, uniqueness, and concurrency controls.
