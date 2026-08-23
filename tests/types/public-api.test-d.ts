@@ -53,6 +53,7 @@ import en from '../../src/locales/en.json' with { type: 'json' };
 import es from '../../src/locales/es.json' with { type: 'json' };
 import ja from '../../src/locales/ja.json' with { type: 'json' };
 import zhCn from '../../src/locales/zh-cn.json' with { type: 'json' };
+import { StandaloneHost, type StandaloneHostOptions } from '../../src/standalone.js';
 
 import type { Api } from 'datatables.net';
 
@@ -74,6 +75,23 @@ interface FormValues {
 }
 
 declare const table: Api<Row>;
+
+expectAssignable<StandaloneHostOptions<Row, string>>({
+  applyUpdates: (updates, context) => {
+    expectType<readonly Readonly<{ target: string; row: Row }>[]>(updates);
+    expectType<'batchEdit' | 'create' | 'edit' | 'remove'>(context.operation);
+  },
+  read: () => ({ id: 'row', profile: { email: '' }, rank: 0 }),
+});
+expectAssignable<StandaloneHostOptions<Row, string>>({
+  read: () => ({ id: 'row', profile: { email: '' }, rank: 0 }),
+});
+expectType<StandaloneHost<Row, string>>(
+  new StandaloneHost<Row, string>({
+    applyUpdates: () => undefined,
+    read: () => ({ id: 'row', profile: { email: '' }, rank: 0 }),
+  }),
+);
 
 expectAssignable<AltEditorLiteOptions<Row>>({
   clientSide: {

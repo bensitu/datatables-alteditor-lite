@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { DataTablesHost } from '../../src/datatables/data-tables-host.js';
 
@@ -51,6 +51,101 @@ describe('DataTablesHost', () => {
     await host.applyRemove([target], { ...context, operation: 'remove' });
 
     expect(host.findRecordTarget(replacementRow)).toBeUndefined();
+    host.destroy();
+  });
+
+  it('applies distinct replacement rows with one draw and refreshes their targets', async () => {
+    const { api } = createTestTable('host-batch-update');
+    const host = new DataTablesHost(api);
+    const targets = host.resolveRecordTargets([0, 1]);
+    const firstTarget = targets[0];
+    const secondTarget = targets[1];
+    if (firstTarget === undefined || secondTarget === undefined) {
+      throw new Error('Expected two DataTables record targets.');
+    }
+    const first = api.row(0).data();
+    const second = api.row(1).data();
+    const firstReplacement = { ...first, name: 'Updated Alpha' };
+    const secondReplacement = { ...second, name: 'Updated Beta' };
+    const draw = vi.fn();
+    api.on('draw', draw);
+
+    await host.applyUpdates(
+      [
+        { row: firstReplacement, target: firstTarget },
+        { row: secondReplacement, target: secondTarget },
+      ],
+      {
+        mode: 'dialog',
+        operation: 'batchEdit',
+        signal: new AbortController().signal,
+      },
+    );
+
+    expect(draw).toHaveBeenCalledOnce();
+    expect(host.read(firstTarget)).toBe(firstReplacement);
+    expect(host.read(secondTarget)).toBe(secondReplacement);
+    expect(host.findRecordTarget(first)).toBeUndefined();
+    expect(host.findRecordTarget(second)).toBeUndefined();
+    host.destroy();
+  });
+
+  it('resolves every target before replacing any DataTables row', async () => {
+    const { api } = createTestTable('host-batch-prevalidation');
+    const { api: otherApi } = createTestTable('host-batch-foreign-target');
+    const host = new DataTablesHost(api);
+    const otherHost = new DataTablesHost(otherApi);
+    const original = api.row(0).data();
+    const target = host.resolveRecordTarget(0);
+    const foreignTarget = otherHost.resolveRecordTarget(1);
+
+    await expect(
+      host.applyUpdates(
+        [
+          { row: { ...original, name: 'Changed' }, target },
+          { row: otherApi.row(1).data(), target: foreignTarget },
+        ],
+        {
+          mode: 'dialog',
+          operation: 'batchEdit',
+          signal: new AbortController().signal,
+        },
+      ),
+    ).rejects.toThrow('not created by this DataTables host');
+
+    expect(api.row(0).data()).toBe(original);
+    host.destroy();
+    otherHost.destroy();
+  });
+
+  it('supports batch replacement without stable row ids', async () => {
+    const { api } = createTestTable('host-batch-without-row-id', {
+      rowId: 'unavailableId',
+    });
+    const host = new DataTablesHost(api);
+    const targets = host.resolveRecordTargets([0, 1]);
+    const firstTarget = targets[0];
+    const secondTarget = targets[1];
+    if (firstTarget === undefined || secondTarget === undefined) {
+      throw new Error('Expected two DataTables record targets.');
+    }
+    const firstReplacement = { ...api.row(0).data(), rank: 10 };
+    const secondReplacement = { ...api.row(1).data(), rank: 20 };
+
+    await host.applyUpdates(
+      [
+        { row: firstReplacement, target: firstTarget },
+        { row: secondReplacement, target: secondTarget },
+      ],
+      {
+        mode: 'dialog',
+        operation: 'batchEdit',
+        signal: new AbortController().signal,
+      },
+    );
+
+    expect(host.read(firstTarget)).toBe(firstReplacement);
+    expect(host.read(secondTarget)).toBe(secondReplacement);
     host.destroy();
   });
 });

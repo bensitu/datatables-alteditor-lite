@@ -6,6 +6,7 @@ import {
 import type {
   EditorHost,
   HostApplyContext,
+  HostBatchUpdate,
   HostRecordEntry,
   HostRefreshCapability,
 } from '../host/editor-host.js';
@@ -24,6 +25,10 @@ export interface StandaloneHostOptions<TRow extends object, TTarget> {
     row: TRow,
     context: Readonly<HostApplyContext>,
   ) => HostResult<TTarget | undefined>;
+  readonly applyUpdates?: (
+    updates: readonly Readonly<HostBatchUpdate<TRow, TTarget>>[],
+    context: Readonly<HostApplyContext>,
+  ) => HostResult<void>;
   readonly applyRemove?: (
     targets: readonly TTarget[],
     context: Readonly<HostApplyContext>,
@@ -45,6 +50,13 @@ export class StandaloneHost<TRow extends object, TTarget>
   public readonly entries:
     (() => Iterable<Readonly<HostRecordEntry<TRow, TTarget>>>) | undefined;
 
+  public readonly applyUpdates:
+    | ((
+        updates: readonly Readonly<HostBatchUpdate<TRow, TTarget>>[],
+        context: Readonly<HostApplyContext>,
+      ) => Promise<void>)
+    | undefined;
+
   private isDestroyed = false;
 
   public constructor(private readonly options: StandaloneHostOptions<TRow, TTarget>) {
@@ -56,6 +68,15 @@ export class StandaloneHost<TRow extends object, TTarget>
         : () => {
             this.assertActive();
             return options.records?.() ?? [];
+          };
+    this.applyUpdates =
+      options.applyUpdates === undefined
+        ? undefined
+        : async (updates, context) => {
+            this.assertActive();
+            context.signal.throwIfAborted();
+            await options.applyUpdates?.(updates, context);
+            context.signal.throwIfAborted();
           };
   }
 

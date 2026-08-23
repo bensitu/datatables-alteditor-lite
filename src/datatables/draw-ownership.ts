@@ -6,6 +6,7 @@ import type { Api } from 'datatables.net';
 export type DrawOwnershipReason =
   | 'create-success'
   | 'dialog-edit-success'
+  | 'batch-edit-success'
   | 'inline-edit-success'
   | 'remove-success'
   | 'refresh';

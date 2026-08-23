@@ -12,6 +12,7 @@ import { captureInlineTarget } from '../inline/inline-target-capture.js';
 import { resolveInlineTarget } from '../inline/inline-target-resolution.js';
 import { validateInlineConfiguration } from '../inline/validate-inline-configuration.js';
 
+import { applyRowReplacements } from './apply-row-replacements.js';
 import { isColumnVisiblyAvailable } from './column-visibility.js';
 import { resolveLogicalCellTarget } from './commit-row-update.js';
 import { DrawOwnership } from './draw-ownership.js';
@@ -35,6 +36,8 @@ import type { FieldConfig } from '../fields/field-config.js';
 import type {
   EditorHost,
   HostApplyContext,
+  HostBatchUpdate,
+  HostBatchUpdateCapability,
   HostPresentationCapability,
   HostRecordEntry,
   HostRefreshCapability,
@@ -84,6 +87,7 @@ function hasCellFocusMethod(value: unknown): value is { focus(): unknown } {
 export class DataTablesHost<TRow extends object>
   implements
     EditorHost<TRow, DataTablesRecordTarget>,
+    HostBatchUpdateCapability<TRow, DataTablesRecordTarget>,
     HostPresentationCapability,
     HostRefreshCapability,
     HostRowCollectionCapability<TRow, DataTablesRecordTarget>,
@@ -182,6 +186,56 @@ export class DataTablesHost<TRow extends object>
     );
     this.recordTargets.set(row, target);
     return target;
+  }
+
+  /** Replaces multiple records and performs one editor-owned draw. */
+  public async applyUpdates(
+    updates: readonly Readonly<HostBatchUpdate<TRow, DataTablesRecordTarget>>[],
+    context: Readonly<HostApplyContext>,
+  ): Promise<void> {
+    const resolvedUpdates = updates.map((update) => {
+      const rowIndex = this.resolveRecordTargetCapture(update.target);
+      return {
+        previousRow: this.table.row(rowIndex).data(),
+        row: update.row,
+        rowIndex,
+        target: update.target,
+      };
+    });
+    if (
+      new Set(resolvedUpdates.map(({ rowIndex }) => rowIndex)).size !==
+      resolvedUpdates.length
+    ) {
+      throw new EditorTargetUnavailableError(
+        'Batch Edit targets must identify distinct records.',
+      );
+    }
+
+    await this.drawOwnership.runWithDraw('batch-edit-success', context.signal, () => {
+      applyRowReplacements(
+        resolvedUpdates.map((update) => ({
+          previousRow: update.previousRow,
+          row: update.row,
+          write: (row: TRow) => {
+            this.table.row(update.rowIndex).data(row);
+          },
+        })),
+      );
+      this.table.draw(false);
+    });
+
+    for (const update of resolvedUpdates) {
+      this.recordTargets.delete(update.previousRow);
+      this.recordCaptures.set(
+        update.target,
+        captureEditTarget(
+          this.table,
+          update.rowIndex,
+          'The edited record is no longer available.',
+        ),
+      );
+      this.recordTargets.set(update.row, update.target);
+    }
   }
 
   /** Removes records and waits for the editor-owned draw to complete. */

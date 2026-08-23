@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { EditorDestroyedError } from '../../src/core/alt-editor-lite-error.js';
+import { hasHostBatchUpdateCapability } from '../../src/host/editor-host.js';
 import { StandaloneHost } from '../../src/standalone/standalone-host.js';
 
 import {
@@ -12,6 +13,7 @@ import type { StandaloneHostOptions } from '../../src/standalone/standalone-host
 
 function createRecordHost(
   overrides: Partial<StandaloneHostOptions<HostContractRecord, string>> = {},
+  includeBatchApplication = true,
 ): StandaloneHost<HostContractRecord, string> {
   const records = new Map<string, HostContractRecord>([
     ['row-a', { id: 'row-a', name: 'Alpha', rank: 1 }],
@@ -31,6 +33,20 @@ function createRecordHost(
       records.set(target, row);
       return target;
     },
+    ...(includeBatchApplication
+      ? {
+          applyUpdates: (
+            updates: readonly Readonly<{
+              row: HostContractRecord;
+              target: string;
+            }>[],
+          ) => {
+            for (const { row, target } of updates) {
+              records.set(target, row);
+            }
+          },
+        }
+      : {}),
     read: (target) => {
       const row = records.get(target);
       if (row === undefined) {
@@ -90,5 +106,30 @@ describe('StandaloneHost lifecycle', () => {
     host.destroy();
 
     expect(() => host.read('row-a')).toThrow(EditorDestroyedError);
+  });
+
+  it('exposes batch application only when the consumer supplies it', async () => {
+    const applyUpdates = vi.fn();
+    const host = createRecordHost({ applyUpdates });
+    const hostWithoutBatchApplication = createRecordHost({}, false);
+    const replacement = { id: 'row-a', name: 'Updated', rank: 2 };
+
+    expect(hasHostBatchUpdateCapability(host)).toBe(true);
+    expect(hasHostBatchUpdateCapability(hostWithoutBatchApplication)).toBe(false);
+    if (!hasHostBatchUpdateCapability(host)) {
+      throw new Error('Expected Standalone batch application support.');
+    }
+    await host.applyUpdates([{ row: replacement, target: 'row-a' }], {
+      mode: 'dialog',
+      operation: 'batchEdit',
+      signal: new AbortController().signal,
+    });
+
+    expect(applyUpdates).toHaveBeenCalledWith(
+      [{ row: replacement, target: 'row-a' }],
+      expect.objectContaining({ operation: 'batchEdit' }),
+    );
+    host.destroy();
+    hostWithoutBatchApplication.destroy();
   });
 });
