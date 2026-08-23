@@ -39,6 +39,37 @@ export class DataTablesEditor<
     return super.openEditDialog(this.dataTablesHost.resolveRecordTarget(target));
   }
 
+  public override openBatchEditDialog(
+    targets?: readonly DataTablesRecordTarget[],
+  ): Promise<void>;
+  public override openBatchEditDialog(targets: RowSelector<TRow>): Promise<void>;
+  public override openBatchEditDialog(
+    targets?: readonly DataTablesRecordTarget[] | RowSelector<TRow>,
+  ): Promise<void> {
+    if (targets === undefined) {
+      return super.openBatchEditDialog();
+    }
+    if (
+      Array.isArray(targets) &&
+      targets.every((target) => this.dataTablesHost.ownsRecordTarget(target))
+    ) {
+      return super.openBatchEditDialog(targets);
+    }
+    if (
+      Array.isArray(targets) &&
+      targets.some((target) => this.dataTablesHost.ownsRecordTarget(target))
+    ) {
+      return Promise.reject(
+        new EditorConfigurationError(
+          'Batch Edit targets must not mix DataTables selectors with record targets.',
+        ),
+      );
+    }
+    return super.openBatchEditDialog(
+      this.dataTablesHost.resolveRecordTargets(targets as RowSelector<TRow>),
+    );
+  }
+
   public override openRemoveDialog(
     targets?: readonly DataTablesRecordTarget[] | RowSelector<TRow>,
   ): Promise<void> {

@@ -1,6 +1,10 @@
 import { expectAssignable, expectNotAssignable, expectType } from 'tsd';
 
-import { DataTablesHost, type DataTablesRecordTarget } from '../../src/datatables.js';
+import {
+  DataTablesHost,
+  type DataTablesEditor,
+  type DataTablesRecordTarget,
+} from '../../src/datatables.js';
 import {
   AltEditorLite,
   defineFormDependencies,
@@ -153,6 +157,8 @@ expectType<Promise<void>>(editor.openEditDialog(host.resolveRecordTarget('#row')
 expectType<Promise<void>>(
   editor.openBatchEditDialog(host.resolveRecordTargets('.selected')),
 );
+declare const dataTablesEditor: DataTablesEditor<Row, FormValues>;
+expectType<Promise<void>>(dataTablesEditor.openBatchEditDialog('.selected'));
 expectType<Promise<void>>(
   editor.openRemoveDialog(host.resolveRecordTargets('.selected')),
 );

@@ -205,6 +205,34 @@ describe('editor button enablement', () => {
     expect(noneSelected.remove.title).toContain('one or more');
   });
 
+  it('enables Edit for multiple rows only when multi-record editing is available', () => {
+    const available = createEditorButtonState({
+      capabilities: resolveEditorCapabilities(resolveEditingOptions(undefined), {
+        batchEdit: true,
+        create: false,
+      }),
+      hasCreate: false,
+      hasSelect: true,
+      isReady: true,
+      language: ENGLISH_LANGUAGE,
+      selectedRowCount: 2,
+    });
+    const unavailable = createEditorButtonState({
+      capabilities: dialogCapabilities,
+      hasCreate: true,
+      hasSelect: true,
+      isReady: true,
+      language: ENGLISH_LANGUAGE,
+      selectedRowCount: 2,
+    });
+
+    expect(available.edit).toMatchObject({
+      enabled: true,
+      title: 'Edit multiple records',
+    });
+    expect(unavailable.edit).toMatchObject({ enabled: false });
+  });
+
   it('disables every action while busy with explicit titles', () => {
     const state = createEditorButtonState({
       capabilities: dialogCapabilities,

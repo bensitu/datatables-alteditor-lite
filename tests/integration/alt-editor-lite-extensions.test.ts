@@ -313,6 +313,26 @@ describe('optional Buttons and Select integration', () => {
     expect(api.row('#row-c').any()).toBe(true);
     expect('jQuery' in globalThis).toBe(false);
   });
+
+  it('routes Edit to multi-record editing for multiple selected rows', async () => {
+    const { editor, extensionApi, tableElement } = createExtensionEditor(
+      'multi-row-edit-button',
+    );
+    const editButton = buttonByText(tableElement, 'Edit');
+    extensionApi.row(0).select();
+    extensionApi.row(1).select();
+
+    expect(editButton.disabled).toBe(false);
+    extensionApi.button(1).trigger();
+    await vi.waitFor(() => {
+      expect(editor.getState()).toMatchObject({
+        action: 'batchEdit',
+        status: 'open',
+      });
+    });
+
+    await editor.closeDialog();
+  });
 });
 
 describe('optional KeyTable and ColReorder integration', () => {

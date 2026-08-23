@@ -401,11 +401,8 @@ export class DataTablesHost<TRow extends object>
   public resolveRecordTargets(
     rowSelector: RowSelector<TRow>,
   ): readonly DataTablesRecordTarget[] {
-    return this.table
-      .rows(rowSelector)
-      .indexes()
-      .toArray()
-      .map((rowIndex) => this.createRecordTarget(rowIndex));
+    const rowIndexes = this.table.rows(rowSelector).indexes().toArray();
+    return [...new Set(rowIndexes)].map((rowIndex) => this.createRecordTarget(rowIndex));
   }
 
   /** Reports whether an opaque record target belongs to this Host wrapper. */

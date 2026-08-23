@@ -73,6 +73,11 @@ export function createEditorButtonState(
   input: Readonly<EditorButtonStateInput>,
 ): EditorButtonState {
   const { language } = input;
+  const hasSingleSelection = input.selectedRowCount === 1;
+  const hasMultipleSelection = input.selectedRowCount >= 2;
+  const canEditSelection =
+    (hasSingleSelection && input.capabilities.editDialog) ||
+    (hasMultipleSelection && input.capabilities.batchEditDialog);
   return {
     unavailableTitle: language.buttons.initialize,
     create: {
@@ -86,19 +91,17 @@ export function createEditorButtonState(
           : language.buttons.busy,
     },
     edit: {
-      visible: input.capabilities.editDialog,
-      enabled:
-        input.capabilities.editDialog &&
-        input.isReady &&
-        input.hasSelect &&
-        input.selectedRowCount === 1,
+      visible: input.capabilities.editDialog || input.capabilities.batchEditDialog,
+      enabled: input.isReady && input.hasSelect && canEditSelection,
       text: language.actions.edit,
       title: !input.hasSelect
         ? language.buttons.selectUnavailable
-        : input.selectedRowCount !== 1
+        : input.selectedRowCount === 0 || !canEditSelection
           ? language.buttons.editSelection
           : input.isReady
-            ? language.dialog.editTitle
+            ? hasMultipleSelection
+              ? 'Edit multiple records'
+              : language.dialog.editTitle
             : language.buttons.busy,
     },
     refresh: {
@@ -129,6 +132,7 @@ export function createEditorButtonState(
 interface EditorButtonAccess {
   openCreateDialog(): Promise<void>;
   openEditDialog(): Promise<void>;
+  openBatchEditDialog(): Promise<void>;
   openRemoveDialog(): Promise<void>;
   refresh(): Promise<void>;
   getIntegrationButtonStateInput(): EditorButtonStateInput;
@@ -204,7 +208,10 @@ function invokeEditor(
       request = editor.openCreateDialog();
       break;
     case 'altEditorLiteEdit':
-      request = editor.openEditDialog();
+      request =
+        editor.getIntegrationButtonStateInput().selectedRowCount >= 2
+          ? editor.openBatchEditDialog()
+          : editor.openEditDialog();
       break;
     case 'altEditorLiteRemove':
       request = editor.openRemoveDialog();
