@@ -13,10 +13,15 @@ import {
 } from '../core/error-normalization.js';
 import { createReadonlyRowView } from '../core/readonly-row-view.js';
 import { runCleanupSteps } from '../core/run-cleanup-steps.js';
+import { BatchEditorFormController } from '../form/batch-form-controller.js';
 import { buildEditorForm } from '../form/build-editor-form.js';
 import { hasHostSelectionCapability } from '../host/editor-host.js';
 
 import { createRemoveConfirmation } from './create-remove-confirmation.js';
+import {
+  DialogBatchEditOperation,
+  type DialogBatchEditPresentation,
+} from './dialog-batch-edit-operation.js';
 import {
   DialogCreateOperation,
   type DialogCreatePresentation,
@@ -37,6 +42,7 @@ import type {
   BeforeOpenContext,
 } from '../core/alt-editor-lite-options.js';
 import type { AltEditorLite } from '../core/alt-editor-lite.js';
+import type { BatchEditOperationRunner } from '../core/editing/batch-edit-operation-runner.js';
 import type { EditOperationRunner } from '../core/editing/edit-operation-runner.js';
 import type {
   InteractionCoordinator,
@@ -45,7 +51,7 @@ import type {
 import type { OperationOwner } from '../core/editing/operation-owner.js';
 import type { EditorCapabilities } from '../core/editor-capabilities.js';
 import type { EditorErrorReporter } from '../core/editor-error-reporter.js';
-import type { EditorOperationTarget } from '../core/editor-operation.js';
+import type { DialogAction, EditorOperationTarget } from '../core/editor-operation.js';
 import type { EditorStateCoordinator } from '../core/editor-state-coordinator.js';
 import type { LocalUniquenessValidator } from '../core/local-uniqueness-validator.js';
 import type { ResolvedDialogEditingOptions } from '../core/resolve-editing-options.js';
@@ -72,6 +78,7 @@ export interface DialogEditingControllerArguments<
   readonly host: EditorHost<TRow, TTarget>;
   readonly notifyIntegration: () => void;
   readonly onPresentationComplete: () => void;
+  readonly batchEditOperationRunner: BatchEditOperationRunner<TRow, TFormValues>;
   readonly editOperationRunner: EditOperationRunner<TRow, TFormValues>;
   readonly inlineController: InlineHostRuntime;
   readonly errorReporter: EditorErrorReporter<TRow, TFormValues>;
@@ -98,9 +105,17 @@ export class DialogEditingController<
 
   private readonly editOperation: DialogEditOperation<TRow, TFormValues, TTarget>;
 
+  private readonly batchEditOperation: DialogBatchEditOperation<
+    TRow,
+    TFormValues,
+    TTarget
+  >;
+
   private readonly removeOperation: DialogRemoveOperation<TRow, TFormValues, TTarget>;
 
   private activeForm: EditorFormController<TFormValues> | undefined;
+
+  private activeBatchForm: BatchEditorFormController<TFormValues> | undefined;
 
   private interactionToken: InteractionToken | undefined;
 
@@ -109,6 +124,12 @@ export class DialogEditingController<
   private editTarget: TTarget | undefined;
 
   private editOriginal: Readonly<TRow> | undefined;
+
+  private batchTargets: readonly TTarget[] | undefined;
+
+  private batchOriginals: readonly Readonly<TRow>[] | undefined;
+
+  private batchOperationTargets: readonly Readonly<EditorOperationTarget>[] | undefined;
 
   private removeTargets: readonly TTarget[] | undefined;
 
@@ -141,6 +162,16 @@ export class DialogEditingController<
       onPresentationComplete: arguments_.onPresentationComplete,
     };
     this.createOperation = new DialogCreateOperation(sharedOperationArguments);
+    this.batchEditOperation = new DialogBatchEditOperation({
+      batchEditOperationRunner: arguments_.batchEditOperationRunner,
+      editing: arguments_.editing,
+      editor: arguments_.editor,
+      errorReporter: arguments_.errorReporter,
+      eventTarget: arguments_.host.eventTarget,
+      host: arguments_.host,
+      onPresentationComplete: arguments_.onPresentationComplete,
+      options: arguments_.options,
+    });
     this.editOperation = new DialogEditOperation({
       editing: arguments_.editing,
       editor: arguments_.editor,
@@ -235,18 +266,71 @@ export class DialogEditingController<
   }
 
   /** Opens Dialog Edit for two or more explicit or selected rows. */
-  public openBatchEdit(targets?: readonly TTarget[]): Promise<void> {
-    this.arguments_.stateCoordinator.assertActive();
-    if (targets !== undefined && targets.length < 2) {
-      return Promise.reject(
-        new EditorSelectionCountError(
+  public async openBatchEdit(targets?: readonly TTarget[]): Promise<void> {
+    let didAcquireInteraction = false;
+    try {
+      this.arguments_.stateCoordinator.assertActive();
+      if (targets !== undefined && targets.length < 2) {
+        throw new EditorSelectionCountError(
           'at-least-two',
           targets.length,
           'Select at least two records to edit together.',
+        );
+      }
+      if (!this.arguments_.capabilities.batchEditDialog) {
+        throw new EditorConfigurationError(
+          'Batch Edit requires a batch-capable Host and compatible update configuration.',
+        );
+      }
+      await this.arguments_.inlineController.prepareForExternalOperation();
+      this.assertReady();
+      this.acquireInteraction();
+      didAcquireInteraction = true;
+      const requestedTargets = this.resolveRequestedTargets(targets);
+      if (requestedTargets.length < 2) {
+        throw new EditorSelectionCountError(
+          'at-least-two',
+          requestedTargets.length,
+          'Select at least two records to edit together.',
+        );
+      }
+      if (new Set(requestedTargets).size !== requestedTargets.length) {
+        throw new EditorConfigurationError('Batch Edit targets must be distinct.');
+      }
+
+      this.batchTargets = Object.freeze([...requestedTargets]);
+      this.batchOriginals = Object.freeze(
+        requestedTargets.map((recordTarget) =>
+          createReadonlyRowView<TRow>(this.arguments_.host.read(recordTarget)),
         ),
       );
+      this.batchOperationTargets = Object.freeze(
+        requestedTargets.map((recordTarget) =>
+          this.createBatchEditOperationTarget(recordTarget),
+        ),
+      );
+      if (
+        !(await this.runBeforeOpen(
+          'batchEdit',
+          this.batchOriginals,
+          this.batchOperationTargets,
+        ))
+      ) {
+        this.clearBatchTargets();
+        this.releaseInteraction();
+        return;
+      }
+      for (const recordTarget of requestedTargets) {
+        this.arguments_.host.read(recordTarget);
+      }
+      this.openBatchForm(this.batchOriginals);
+    } catch (error: unknown) {
+      this.clearBatchTargets();
+      if (didAcquireInteraction) {
+        this.releaseInteraction();
+      }
+      throw normalizeRejectedReason(error);
     }
-    return Promise.reject(new EditorConfigurationError('Batch Edit is unavailable.'));
   }
 
   /** Opens mandatory Remove confirmation for explicit or selected rows. */
@@ -359,20 +443,25 @@ export class DialogEditingController<
     }
   }
 
-  /** Returns a field facade while a Create or Edit form is active. */
+  /** Returns a field facade while an editing form is active. */
   public getField<TPath extends FieldPath<TFormValues>>(
     name: TPath,
   ): FieldController<FieldPathValue<TFormValues, TPath>> | null {
     this.arguments_.stateCoordinator.assertActive();
-    return this.activeForm?.getField(name) ?? null;
+    return (
+      this.activeForm?.getField(name) ?? this.activeBatchForm?.getField(name) ?? null
+    );
   }
 
   /** Aborts opening and submission work and removes all dialog-owned DOM. */
   public destroy(): void {
     const activeForm = this.activeForm;
+    const activeBatchForm = this.activeBatchForm;
     this.activeForm = undefined;
+    this.activeBatchForm = undefined;
     this.editTarget = undefined;
     this.editOriginal = undefined;
+    this.clearBatchTargets();
     this.removeTargets = undefined;
     this.removeOriginals = undefined;
     runCleanupSteps([
@@ -384,6 +473,9 @@ export class DialogEditingController<
       },
       () => {
         activeForm?.destroy();
+      },
+      () => {
+        activeBatchForm?.destroy();
       },
       () => {
         this.releaseInteraction();
@@ -423,12 +515,12 @@ export class DialogEditingController<
     target: Readonly<EditorOperationTarget>,
   ): Promise<boolean>;
   private runBeforeOpen(
-    operation: 'remove',
+    operation: 'batchEdit' | 'remove',
     rows: readonly Readonly<TRow>[],
     targets: readonly Readonly<EditorOperationTarget>[],
   ): Promise<boolean>;
   private async runBeforeOpen(
-    operation: 'create' | 'edit' | 'remove',
+    operation: 'create' | 'edit' | 'batchEdit' | 'remove',
     rowOrRows?: Readonly<TRow> | readonly Readonly<TRow>[],
     targetOrTargets?:
       Readonly<EditorOperationTarget> | readonly Readonly<EditorOperationTarget>[],
@@ -458,6 +550,23 @@ export class DialogEditingController<
         operation,
         phase: 'open',
         target,
+      };
+    } else if (operation === 'batchEdit') {
+      const originals = rowOrRows as readonly Readonly<TRow>[];
+      const targets = targetOrTargets as readonly Readonly<EditorOperationTarget>[];
+      context = Object.freeze({
+        mode: 'dialog',
+        operation,
+        originals,
+        signal: abortController.signal,
+        targets,
+      });
+      errorContext = {
+        committed: false,
+        mode: 'dialog',
+        operation,
+        phase: 'open',
+        targets,
       };
     } else if (operation === 'remove') {
       const rows = rowOrRows as readonly Readonly<TRow>[];
@@ -651,22 +760,106 @@ export class DialogEditingController<
     this.dispatchOpen(action);
   }
 
-  private dispatchOpen(operation: 'create' | 'edit' | 'remove'): void {
+  private openBatchForm(originals: readonly Readonly<TRow>[]): void {
+    this.arguments_.stateCoordinator.transitionTo({
+      action: 'batchEdit',
+      status: 'opening',
+    });
+    let form: BatchEditorFormController<TFormValues> | undefined;
+    try {
+      form = new BatchEditorFormController(
+        this.arguments_.options.fields,
+        originals,
+        this.arguments_.instanceId,
+        this.arguments_.language,
+        this.arguments_.editing.template,
+      );
+      this.activeBatchForm = form;
+      this.arguments_.stateCoordinator.assertActive();
+      this.dialog.openForm(
+        form.element,
+        'Edit multiple records',
+        this.arguments_.language.actions.submit,
+        {
+          onRequestClose: (reason) => {
+            this.closeNow(reason);
+          },
+          onSubmit: () => {
+            this.beginSubmission();
+          },
+        },
+      );
+    } catch (rawError: unknown) {
+      this.dialog.close();
+      form?.destroy();
+      this.activeBatchForm = undefined;
+      if (this.arguments_.stateCoordinator.getState().status === 'destroyed') {
+        throw rawError;
+      }
+      this.arguments_.stateCoordinator.transitionTo({ status: 'ready' });
+      const normalizedError = normalizeOperationError(
+        rawError,
+        NEVER_ABORTED_SIGNAL,
+        this.arguments_.language,
+      );
+      const openingError =
+        normalizedError instanceof InternalOperationAbort
+          ? new AltEditorLiteError({
+              cause: rawError,
+              code: 'UNKNOWN',
+              message: this.arguments_.language.errors.generic,
+              retryable: false,
+            })
+          : normalizedError;
+      this.arguments_.errorReporter.report(
+        openingError,
+        {
+          committed: false,
+          mode: 'dialog',
+          operation: 'batchEdit',
+          phase: 'open',
+          targets: this.batchOperationTargets ?? [],
+        },
+        true,
+      );
+      throw rawError;
+    }
+
+    this.arguments_.stateCoordinator.transitionTo({
+      action: 'batchEdit',
+      status: 'open',
+    });
+    this.dispatchOpen('batchEdit');
+  }
+
+  private dispatchOpen(operation: DialogAction): void {
     const detail =
-      operation === 'edit' && this.editTarget !== undefined
+      operation === 'batchEdit' &&
+      this.batchOriginals !== undefined &&
+      this.batchOperationTargets !== undefined
         ? {
             editor: this.arguments_.editor,
             mode: 'dialog' as const,
-            operation: 'edit' as const,
-            target: this.createEditOperationTarget(this.editTarget),
+            operation: 'batchEdit' as const,
+            originals: this.batchOriginals,
+            targets: this.batchOperationTargets,
             type: 'open' as const,
           }
-        : {
-            editor: this.arguments_.editor,
-            mode: 'dialog' as const,
-            operation: operation === 'remove' ? ('remove' as const) : ('create' as const),
-            type: 'open' as const,
-          };
+        : operation === 'edit' && this.editTarget !== undefined
+          ? {
+              editor: this.arguments_.editor,
+              mode: 'dialog' as const,
+              operation: 'edit' as const,
+              target: this.createEditOperationTarget(this.editTarget),
+              type: 'open' as const,
+            }
+          : {
+              editor: this.arguments_.editor,
+              mode: 'dialog' as const,
+              operation:
+                operation === 'remove' ? ('remove' as const) : ('create' as const),
+              type: 'open' as const,
+            };
     dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:open'>(
       this.arguments_.host.eventTarget,
       'alteditor-lite:open',
@@ -717,7 +910,27 @@ export class DialogEditingController<
         break;
       }
       case 'batchEdit': {
-        throw new EditorConfigurationError('Batch Edit presentation is unavailable.');
+        if (
+          this.activeBatchForm !== undefined &&
+          this.batchTargets !== undefined &&
+          this.batchOriginals !== undefined &&
+          this.batchOperationTargets !== undefined
+        ) {
+          const form = this.activeBatchForm;
+          void this.batchEditOperation.run(
+            form,
+            this.batchTargets,
+            this.batchOriginals,
+            this.batchOperationTargets,
+            this.batchEditPresentation(form),
+            (nextOriginals) => {
+              this.batchOriginals = Object.freeze(
+                nextOriginals.map((row) => createReadonlyRowView<TRow>(row)),
+              );
+            },
+          );
+        }
+        break;
       }
     }
   }
@@ -766,6 +979,42 @@ export class DialogEditingController<
     };
   }
 
+  private batchEditPresentation(
+    form: BatchEditorFormController<TFormValues>,
+  ): DialogBatchEditPresentation<TRow> {
+    return {
+      completeSuccess: () => {
+        if (this.arguments_.editing.closeOnSuccess) {
+          this.closeAfterSuccess('batchEdit');
+        } else {
+          if (this.batchOriginals !== undefined) {
+            form.rebase(this.batchOriginals);
+          }
+          this.restoreBatchOpen(form);
+        }
+        return Promise.resolve();
+      },
+      completeUnchanged: () => {
+        this.closeAfterResult('batchEdit', 'unchanged');
+        return Promise.resolve();
+      },
+      restoreAfterOperationFailure: () => undefined,
+      restoreAfterValidationFailure: () => {
+        this.restoreBatchOpen(form, true);
+      },
+      setBusy: (isBusy) => {
+        form.setBusy(isBusy);
+        this.dialog.setBusy(isBusy);
+      },
+      showOperationError: (error) => {
+        this.showBatchOperationError(error, form);
+      },
+      startValidation: () => {
+        this.setSubmitting('batchEdit');
+      },
+    };
+  }
+
   private removePresentation(): DialogRemovePresentation {
     return {
       completeSuccess: () => {
@@ -783,12 +1032,14 @@ export class DialogEditingController<
     };
   }
 
-  private setSubmitting(action: 'create' | 'edit' | 'remove'): void {
+  private setSubmitting(action: DialogAction): void {
     this.arguments_.stateCoordinator.transitionTo({ action, status: 'submitting' });
     this.activeForm?.setBusy(true);
+    this.activeBatchForm?.setBusy(true);
     this.dialog.setSubmitAvailable(true);
     this.dialog.setBusy(true);
     this.activeForm?.clearErrors();
+    this.activeBatchForm?.clearErrors();
     this.dialog.clearError();
   }
 
@@ -815,6 +1066,22 @@ export class DialogEditingController<
     });
   }
 
+  private restoreBatchOpen(
+    form: BatchEditorFormController<TFormValues>,
+    focusInvalid = false,
+  ): void {
+    form.setBusy(false);
+    this.dialog.setBusy(false);
+    this.dialog.setSubmitAvailable(true);
+    this.arguments_.stateCoordinator.transitionTo({
+      action: 'batchEdit',
+      status: 'open',
+    });
+    if (focusInvalid) {
+      this.dialog.focusInvalidField();
+    }
+  }
+
   private showOperationError(
     action: 'create' | 'edit' | 'remove',
     error: AltEditorLiteError,
@@ -832,6 +1099,22 @@ export class DialogEditingController<
     });
   }
 
+  private showBatchOperationError(
+    error: AltEditorLiteError,
+    form: BatchEditorFormController<TFormValues>,
+  ): void {
+    form.setBusy(false);
+    this.dialog.setBusy(false);
+    form.showSubmissionError(error);
+    this.dialog.showError(error.message);
+    this.dialog.setSubmitAvailable(error.retryable);
+    this.arguments_.stateCoordinator.transitionTo({
+      action: 'batchEdit',
+      status: 'open',
+      submissionError: error,
+    });
+  }
+
   private completeFormSuccess(
     action: 'create' | 'edit',
     form: EditorFormController<TFormValues>,
@@ -843,13 +1126,20 @@ export class DialogEditingController<
     }
   }
 
-  private closeAfterSuccess(action: 'create' | 'edit' | 'remove'): void {
+  private closeAfterSuccess(action: DialogAction): void {
+    this.closeAfterResult(action, 'success');
+  }
+
+  private closeAfterResult(
+    action: DialogAction,
+    reason: Extract<EditorCloseReason, 'success' | 'unchanged'>,
+  ): void {
     const state = this.arguments_.stateCoordinator.getState();
     if (state.status !== 'submitting' || state.action !== action) {
       throw new EditorOperationBusyError();
     }
     this.arguments_.stateCoordinator.transitionTo({ action, status: 'closing' });
-    this.finishClose(action, 'success');
+    this.finishClose(action, reason);
   }
 
   private closeNow(reason: Exclude<EditorCloseReason, 'success'>): void {
@@ -871,46 +1161,54 @@ export class DialogEditingController<
       this.arguments_.operationOwner.abort('dialog');
     }
     this.arguments_.stateCoordinator.transitionTo({ action, status: 'closing' });
-    if (action === 'batchEdit') {
-      throw new EditorConfigurationError('Batch Edit presentation is unavailable.');
-    }
     this.finishClose(action, reason);
   }
 
-  private finishClose(
-    action: 'create' | 'edit' | 'remove',
-    reason: EditorCloseReason,
-  ): void {
+  private finishClose(action: DialogAction, reason: EditorCloseReason): void {
     this.dialog.close();
     this.activeForm?.destroy();
+    this.activeBatchForm?.destroy();
     this.activeForm = undefined;
+    this.activeBatchForm = undefined;
     const closeTarget =
       action === 'edit' && this.editTarget !== undefined
         ? this.createEditOperationTarget(this.editTarget)
         : undefined;
+    const closeBatchTargets =
+      action === 'batchEdit' ? this.batchOperationTargets : undefined;
     this.editTarget = undefined;
     this.editOriginal = undefined;
+    this.clearBatchTargets();
     this.removeTargets = undefined;
     this.removeOriginals = undefined;
     this.releaseInteraction();
     this.arguments_.stateCoordinator.transitionTo({ status: 'ready' });
     const detail =
-      action === 'edit' && closeTarget !== undefined
+      action === 'batchEdit' && closeBatchTargets !== undefined
         ? {
             editor: this.arguments_.editor,
             mode: 'dialog' as const,
-            operation: 'edit' as const,
+            operation: 'batchEdit' as const,
             reason,
-            target: closeTarget,
+            targets: closeBatchTargets,
             type: 'close' as const,
           }
-        : {
-            editor: this.arguments_.editor,
-            mode: 'dialog' as const,
-            operation: action === 'remove' ? ('remove' as const) : ('create' as const),
-            reason,
-            type: 'close' as const,
-          };
+        : action === 'edit' && closeTarget !== undefined
+          ? {
+              editor: this.arguments_.editor,
+              mode: 'dialog' as const,
+              operation: 'edit' as const,
+              reason,
+              target: closeTarget,
+              type: 'close' as const,
+            }
+          : {
+              editor: this.arguments_.editor,
+              mode: 'dialog' as const,
+              operation: action === 'remove' ? ('remove' as const) : ('create' as const),
+              reason,
+              type: 'close' as const,
+            };
     dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:close'>(
       this.arguments_.host.eventTarget,
       'alteditor-lite:close',
@@ -927,6 +1225,32 @@ export class DialogEditingController<
       ),
       key: target,
     });
+  }
+
+  private createBatchEditOperationTarget(
+    target: TTarget,
+  ): Readonly<EditorOperationTarget> {
+    return Object.freeze({
+      fieldNames: Object.freeze(
+        this.arguments_.options.fields
+          .filter(
+            (field) =>
+              field.editable !== false &&
+              field.disabled !== true &&
+              field.unique !== true &&
+              field.type !== 'file' &&
+              field.type !== 'hidden',
+          )
+          .map((field) => field.name),
+      ),
+      key: target,
+    });
+  }
+
+  private clearBatchTargets(): void {
+    this.batchTargets = undefined;
+    this.batchOriginals = undefined;
+    this.batchOperationTargets = undefined;
   }
 
   private notifyIntegration(): void {

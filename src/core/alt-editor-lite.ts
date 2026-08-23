@@ -23,6 +23,7 @@ import {
   resolveLanguage,
   type AltEditorLiteLanguage,
 } from './alt-editor-lite-language.js';
+import { BatchEditOperationRunner } from './editing/batch-edit-operation-runner.js';
 import { EditOperationRunner } from './editing/edit-operation-runner.js';
 import { InteractionCoordinator } from './editing/interaction-coordinator.js';
 import { OperationOwner } from './editing/operation-owner.js';
@@ -148,6 +149,12 @@ export class AltEditorLite<
       options.operations,
       options.clientSide,
     );
+    const batchEditOperationRunner = new BatchEditOperationRunner<TRow, TFormValues>(
+      this.operationOwner,
+      this.language,
+      options.operations,
+      options.clientSide,
+    );
 
     storeEditorInstance(host.ownershipKey, this);
     let inlineController: InlineHostRuntime | undefined;
@@ -192,6 +199,7 @@ export class AltEditorLite<
       }
 
       dialogController = new DialogEditingController({
+        batchEditOperationRunner,
         capabilities: this.capabilities,
         editing: editing.dialog,
         editor: this,
