@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { AltEditorLiteError } from '../../src/core/alt-editor-lite-error.js';
 import { ENGLISH_LANGUAGE } from '../../src/core/alt-editor-lite-language.js';
+import { isChoiceFieldController } from '../../src/fields/field-controller.js';
 import { BatchEditorFormController } from '../../src/form/batch-form-controller.js';
 
 import type { FieldChangeContext, FieldConfig } from '../../src/fields/field-config.js';
@@ -144,10 +146,29 @@ describe('BatchEditorFormController', () => {
       },
     ]);
 
-    form.getField('email')?.setValue('shared@example.test');
-    form.getField('attachment')?.setValue('data:text/plain;base64,dGVzdA==');
+    const email = form.getField('email');
+    const attachment = form.getField('attachment');
+    if (email === null || attachment === null) {
+      throw new Error('Expected restricted batch fields.');
+    }
+    email.setValue('shared@example.test');
+    attachment.setValue('data:text/plain;base64,dGVzdA==');
 
-    expect(form.getField('email')?.isReadOnly()).toBe(true);
+    expect(email.isReadOnly()).toBe(true);
+    await expect(email.validate()).resolves.toMatchObject({
+      message: ENGLISH_LANGUAGE.batchEdit.uniqueRestriction,
+      valid: false,
+    });
+    await expect(attachment.validate()).resolves.toMatchObject({
+      message: ENGLISH_LANGUAGE.batchEdit.fileRestriction,
+      valid: false,
+    });
+    batchField('email')
+      .querySelector<HTMLButtonElement>(
+        '.alteditor-lite-batch-field__state .alteditor-lite-batch-field__action',
+      )
+      ?.click();
+    expect(email.element.hidden).toBe(true);
     expect(batchField('attachment').textContent).toContain(
       'File uploads cannot be modified',
     );
@@ -343,5 +364,366 @@ describe('BatchEditorFormController', () => {
       activeForm.validateForSubmission(new AbortController().signal),
     ).resolves.toMatchObject({ valid: false });
     expect(batchField('email').textContent).toContain('Unique fields cannot be assigned');
+  });
+
+  it('records a normalized dependency failure and clears it after a successful retry', async () => {
+    let shouldFail = true;
+    const onDependencyError = vi.fn();
+    const dependencyFields = [
+      { label: 'Office', name: 'office', type: 'text' },
+      { label: 'Department', name: 'department', type: 'text' },
+    ] satisfies readonly FieldConfig<BatchFormValues>[];
+    const dependencies = {
+      office: () => {
+        if (shouldFail) {
+          throw new Error('Directory lookup failed.');
+        }
+        return { department: { value: 'Recovered' } };
+      },
+    } satisfies FormDependencies<BatchFormValues>;
+    activeForm = new BatchEditorFormController<BatchFormValues>(
+      dependencyFields,
+      [
+        {
+          attachment: null,
+          department: 'Sales',
+          email: 'one@example.test',
+          office: 'Tokyo',
+          token: 'one',
+        },
+        {
+          attachment: null,
+          department: 'Sales',
+          email: 'two@example.test',
+          office: 'Osaka',
+          token: 'two',
+        },
+      ],
+      'batch-dependency-retry-test',
+      ENGLISH_LANGUAGE,
+      undefined,
+      undefined,
+      dependencies,
+      onDependencyError,
+    );
+    document.body.append(activeForm.element);
+    const officeField = batchField('office');
+    officeField
+      .querySelector<HTMLButtonElement>(
+        '.alteditor-lite-batch-field__state .alteditor-lite-batch-field__action',
+      )
+      ?.click();
+    const input = officeField.querySelector<HTMLInputElement>('input');
+    if (input === null) {
+      throw new Error('Expected an office input.');
+    }
+
+    input.value = 'Seoul';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    await activeForm.collectChanges();
+
+    expect(onDependencyError).toHaveBeenCalledWith(
+      'office',
+      expect.objectContaining({ message: ENGLISH_LANGUAGE.errors.generic }),
+    );
+    await expect(
+      activeForm.validateForSubmission(new AbortController().signal),
+    ).resolves.toMatchObject({ valid: false });
+
+    shouldFail = false;
+    input.value = 'Busan';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+
+    await expect(activeForm.collectChanges()).resolves.toMatchObject({
+      changes: { department: 'Recovered', office: 'Busan' },
+    });
+    await expect(
+      activeForm.validateForSubmission(new AbortController().signal),
+    ).resolves.toMatchObject({ valid: true });
+  });
+
+  it('treats an option-only dependency result as a shared value change when needed', async () => {
+    const choiceFields = [
+      {
+        label: 'Office',
+        name: 'office',
+        options: [
+          { label: 'Tokyo', value: 'Tokyo' },
+          { label: 'Seoul', value: 'Seoul' },
+        ],
+        type: 'select',
+      },
+      { label: 'Email', name: 'email', type: 'email' },
+    ] satisfies readonly FieldConfig<BatchFormValues>[];
+    activeForm = new BatchEditorFormController<BatchFormValues>(
+      choiceFields,
+      [
+        {
+          attachment: null,
+          email: 'shared@example.test',
+          office: 'Tokyo',
+          token: 'one',
+        },
+        {
+          attachment: null,
+          email: 'shared@example.test',
+          office: 'Tokyo',
+          token: 'two',
+        },
+      ],
+      'batch-choice-dependency-test',
+      ENGLISH_LANGUAGE,
+      undefined,
+      undefined,
+      {
+        email: () => ({
+          office: { options: [{ label: 'Seoul', value: 'Seoul' }] },
+        }),
+      },
+    );
+    document.body.append(activeForm.element);
+
+    await activeForm.initializeDependencies();
+
+    const office = activeForm.getField('office');
+    if (office === null || !isChoiceFieldController(office)) {
+      throw new Error('Expected an office choice field.');
+    }
+    expect(office.getOptions()).toEqual([{ label: 'Seoul', value: 'Seoul' }]);
+    await expect(office.getValue()).resolves.toBeUndefined();
+    const collected = await activeForm.collectChanges();
+    expect(collected.changedFields).toEqual(['office']);
+    expect(Object.hasOwn(collected.changes, 'office')).toBe(true);
+  });
+
+  it('aggregates native, custom, and record-level validation messages', async () => {
+    const validateDepartment = vi.fn(() => ({ valid: false }) as const);
+    const validateForm = vi.fn(
+      () =>
+        ({
+          message: 'The selected records cannot share these values.',
+          valid: false,
+        }) as const,
+    );
+    const validationFields = [
+      { label: 'Office', name: 'office', required: true, type: 'text' },
+      {
+        label: 'Department',
+        name: 'department',
+        type: 'text',
+        validate: validateDepartment,
+      },
+    ] satisfies readonly FieldConfig<BatchFormValues>[];
+    activeForm = new BatchEditorFormController<BatchFormValues>(
+      validationFields,
+      [
+        {
+          attachment: null,
+          department: 'Sales',
+          email: 'one@example.test',
+          office: 'Tokyo',
+          token: 'one',
+        },
+        {
+          attachment: null,
+          department: 'Sales',
+          email: 'two@example.test',
+          office: 'Tokyo',
+          token: 'two',
+        },
+      ],
+      'batch-aggregate-validation-test',
+      ENGLISH_LANGUAGE,
+      undefined,
+      validateForm,
+    );
+    document.body.append(activeForm.element);
+    activeForm.getField('office')?.setValue('');
+    activeForm.getField('department')?.setValue('Blocked');
+
+    const result = await activeForm.validateForSubmission(new AbortController().signal);
+
+    expect(result).toMatchObject({
+      error: {
+        fieldErrors: {
+          department: ENGLISH_LANGUAGE.validation.invalid,
+        },
+        message: 'The selected records cannot share these values.',
+      },
+      valid: false,
+    });
+    if (result.valid) {
+      throw new Error('Expected batch validation to fail.');
+    }
+    expect(result.error.fieldErrors).toHaveProperty('office');
+    expect(validateDepartment).toHaveBeenCalledOnce();
+    expect(validateForm).toHaveBeenCalledTimes(2);
+    expect(
+      document.querySelector('.alteditor-lite-form__submission-error')?.textContent,
+    ).toContain('The selected records cannot share these values.');
+  });
+
+  it('accepts shared changes after every effective record passes validation', async () => {
+    const validateForm = vi.fn(() => ({ valid: true }) as const);
+    const validationFields = [
+      { label: 'Office', name: 'office', type: 'text' },
+    ] satisfies readonly FieldConfig<BatchFormValues>[];
+    activeForm = new BatchEditorFormController<BatchFormValues>(
+      validationFields,
+      [
+        {
+          attachment: null,
+          email: 'one@example.test',
+          office: 'Tokyo',
+          token: 'one',
+        },
+        {
+          attachment: null,
+          email: 'two@example.test',
+          office: 'Osaka',
+          token: 'two',
+        },
+      ],
+      'batch-valid-records-test',
+      ENGLISH_LANGUAGE,
+      undefined,
+      validateForm,
+    );
+    activeForm.getField('office')?.setValue('Seoul');
+
+    await expect(
+      activeForm.validateForSubmission(new AbortController().signal),
+    ).resolves.toMatchObject({
+      changedFields: ['office'],
+      changes: { office: 'Seoul' },
+      valid: true,
+    });
+    expect(validateForm).toHaveBeenCalledTimes(2);
+  });
+
+  it('preserves public field state across rebase and supports idempotent cleanup', async () => {
+    const template = document.createElement('template');
+    template.innerHTML =
+      '<section><div data-alteditor-lite-field="office"></div></section>';
+    const lifecycleFields = [
+      { label: 'Office', name: 'office', type: 'text' },
+    ] satisfies readonly FieldConfig<BatchFormValues>[];
+    const form = new BatchEditorFormController<BatchFormValues>(
+      lifecycleFields,
+      [
+        {
+          attachment: null,
+          email: 'one@example.test',
+          office: 'Tokyo',
+          token: 'one',
+        },
+        {
+          attachment: null,
+          email: 'two@example.test',
+          office: 'Tokyo',
+          token: 'two',
+        },
+      ],
+      'batch-lifecycle-test',
+      ENGLISH_LANGUAGE,
+      template,
+    );
+    activeForm = form;
+    document.body.append(form.element);
+    const office = form.getField('office');
+    if (office === null) {
+      throw new Error('Expected an office field.');
+    }
+
+    office.setDisabled(true);
+    office.setValue('Seoul');
+    await expect(form.collectChanges()).resolves.toMatchObject({ changes: {} });
+    office.setDisabled(false);
+    office.setValue('Seoul');
+    await expect(form.collectChanges()).resolves.toMatchObject({
+      changes: { office: 'Seoul' },
+    });
+    batchField('office')
+      .querySelector<HTMLButtonElement>(':scope > .alteditor-lite-batch-field__action')
+      ?.click();
+    await expect(form.collectChanges()).resolves.toMatchObject({ changes: {} });
+
+    form.rebase([{ office: 'Osaka' }, { office: 'Osaka' }]);
+    await expect(office.getValue()).resolves.toBe('Osaka');
+    form.setBusy(true);
+    expect(form.element.inert).toBe(true);
+    form.showSubmissionError(
+      new AltEditorLiteError({
+        fieldErrors: { unavailable: 'An external field is invalid.' },
+        message: 'The request is invalid.',
+      }),
+    );
+    form.showSubmissionError(
+      new AltEditorLiteError({ message: 'A general request error occurred.' }),
+    );
+    expect(
+      document.querySelector('.alteditor-lite-form__submission-error')?.textContent,
+    ).toContain('An external field is invalid.');
+    form.clearErrors();
+
+    office.destroy();
+    office.destroy();
+    expect(form.getField('office')).toBeNull();
+    form.destroy();
+    form.destroy();
+    await expect(form.collectChanges()).rejects.toThrow(
+      'This AltEditorLite instance has been destroyed.',
+    );
+  });
+
+  it('surfaces an unexpected batch field change failure', async () => {
+    const changeFields = [
+      {
+        label: 'Office',
+        name: 'office',
+        onChange: () => {
+          throw new Error('Unexpected callback failure.');
+        },
+        type: 'text',
+      },
+    ] satisfies readonly FieldConfig<BatchFormValues>[];
+    activeForm = new BatchEditorFormController<BatchFormValues>(
+      changeFields,
+      [
+        {
+          attachment: null,
+          email: 'one@example.test',
+          office: 'Tokyo',
+          token: 'one',
+        },
+        {
+          attachment: null,
+          email: 'two@example.test',
+          office: 'Osaka',
+          token: 'two',
+        },
+      ],
+      'batch-change-error-test',
+      ENGLISH_LANGUAGE,
+    );
+    document.body.append(activeForm.element);
+    const officeField = batchField('office');
+    officeField
+      .querySelector<HTMLButtonElement>(
+        '.alteditor-lite-batch-field__state .alteditor-lite-batch-field__action',
+      )
+      ?.click();
+    const input = officeField.querySelector<HTMLInputElement>('input');
+    if (input === null) {
+      throw new Error('Expected an office input.');
+    }
+    input.value = 'Seoul';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+
+    await activeForm.collectChanges();
+
+    expect(
+      document.querySelector('.alteditor-lite-form__submission-error')?.textContent,
+    ).toContain('A field change callback failed.');
   });
 });

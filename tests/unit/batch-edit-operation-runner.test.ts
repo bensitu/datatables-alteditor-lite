@@ -1,11 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import { AltEditorLiteError } from '../../src/core/alt-editor-lite-error.js';
 import { ENGLISH_LANGUAGE } from '../../src/core/alt-editor-lite-language.js';
 import { BatchEditOperationRunner } from '../../src/core/editing/batch-edit-operation-runner.js';
 import { OperationOwner } from '../../src/core/editing/operation-owner.js';
 
 import type {
   ClientSideOperations,
+  EditorErrorHookContext,
   EditorOperations,
 } from '../../src/core/alt-editor-lite-options.js';
 import type { BatchEditValidationResult } from '../../src/core/editing/batch-edit-transaction.js';
@@ -26,6 +28,12 @@ type CommitCallback = (
   rows: readonly TestRow[],
   request: OwnedOperationRequest<'batchEdit'>,
 ) => Promise<void>;
+
+type ReportErrorCallback = (
+  error: AltEditorLiteError,
+  context: EditorErrorHookContext,
+  publishEvent: boolean,
+) => void;
 
 const originals: readonly Readonly<TestRow>[] = Object.freeze([
   Object.freeze({ id: 'a', name: 'Alice', profile: { city: 'Tokyo' } }),
@@ -69,7 +77,7 @@ function createRunArguments(presentation: ReturnType<typeof createPresentation>)
     originals,
     presentation,
     recordTargets: ['a', 'b'] as const,
-    reportError: vi.fn(),
+    reportError: vi.fn<ReportErrorCallback>(),
     revalidateTargets: vi.fn(),
     targets: operationTargets,
   };
@@ -158,11 +166,53 @@ describe('batch edit operation runner', () => {
     expect(presentation.showOperationError).toHaveBeenCalledOnce();
   });
 
+  it('reports a presentation failure together with the persistence failure', async () => {
+    const runner = new BatchEditOperationRunner<TestRow, TestValues>(
+      new OperationOwner(),
+      ENGLISH_LANGUAGE,
+      { updateMany: () => Promise.reject(new Error('Request failed.')) },
+      undefined,
+    );
+    const presentation = createPresentation();
+    presentation.showOperationError.mockImplementation(() => {
+      throw new Error('Unable to display the error.');
+    });
+    const runArguments = createRunArguments(presentation);
+
+    const result = await runner.run(runArguments);
+
+    expect(result.status).toBe('failed');
+    expect(runArguments.reportError).toHaveBeenCalledTimes(2);
+    expect(runArguments.reportError.mock.calls.map((call) => call[2])).toEqual([
+      false,
+      true,
+    ]);
+    expect(presentation.restoreAfterOperationFailure).toHaveBeenCalledOnce();
+  });
+
   it('rejects a canonical row count mismatch before commit', async () => {
     const runner = new BatchEditOperationRunner<TestRow, TestValues>(
       new OperationOwner(),
       ENGLISH_LANGUAGE,
       { updateMany: () => [originals[0] as TestRow] },
+      undefined,
+    );
+    const runArguments = createRunArguments(createPresentation());
+
+    const result = await runner.run(runArguments);
+
+    expect(result.status).toBe('failed');
+    expect(runArguments.commit).not.toHaveBeenCalled();
+  });
+
+  it('rejects a non-array remote result before commit', async () => {
+    const updateMany = vi.fn(
+      () => ({ first: originals[0], second: originals[1] }) as unknown as TestRow[],
+    );
+    const runner = new BatchEditOperationRunner<TestRow, TestValues>(
+      new OperationOwner(),
+      ENGLISH_LANGUAGE,
+      { updateMany },
       undefined,
     );
     const runArguments = createRunArguments(createPresentation());
@@ -286,6 +336,97 @@ describe('batch edit operation runner', () => {
     expect(presentation.completeUnchanged).toHaveBeenCalledOnce();
   });
 
+  it('restores the form after validation rejects the shared changes', async () => {
+    const error = new AltEditorLiteError({
+      code: 'VALIDATION',
+      message: 'The shared changes are invalid.',
+      retryable: true,
+    });
+    const validation: Readonly<BatchEditValidationResult<TestValues>> = {
+      error,
+      valid: false,
+    };
+    const runner = new BatchEditOperationRunner<TestRow, TestValues>(
+      new OperationOwner(),
+      ENGLISH_LANGUAGE,
+      undefined,
+      undefined,
+    );
+    const presentation = createPresentation(validation);
+    const runArguments = createRunArguments(presentation);
+
+    const result = await runner.run(runArguments);
+
+    expect(result).toEqual({ error, status: 'validation-failed' });
+    expect(presentation.restoreAfterValidationFailure).toHaveBeenCalledOnce();
+    expect(runArguments.dispatchSubmit).not.toHaveBeenCalled();
+  });
+
+  it('honors an asynchronous submission veto before persistence', async () => {
+    const updateMany = vi.fn(() => originals);
+    const runner = new BatchEditOperationRunner<TestRow, TestValues>(
+      new OperationOwner(),
+      ENGLISH_LANGUAGE,
+      { updateMany },
+      undefined,
+    );
+    const presentation = createPresentation();
+    const runArguments = createRunArguments(presentation);
+
+    const result = await runner.run({
+      ...runArguments,
+      beforeSubmit: () => Promise.resolve(false),
+    });
+
+    expect(result.status).toBe('vetoed');
+    expect(updateMany).not.toHaveBeenCalled();
+    expect(presentation.restoreAfterValidationFailure).toHaveBeenCalledOnce();
+  });
+
+  it('keeps a committed update successful when the success hook rejects', async () => {
+    const runner = new BatchEditOperationRunner<TestRow, TestValues>(
+      new OperationOwner(),
+      ENGLISH_LANGUAGE,
+      undefined,
+      undefined,
+    );
+    const runArguments = createRunArguments(createPresentation());
+
+    const result = await runner.run({
+      ...runArguments,
+      afterSuccess: () => Promise.reject(new Error('Notification failed.')),
+    });
+
+    expect(result.status).toBe('success');
+    expect(runArguments.commit).toHaveBeenCalledOnce();
+    const reportedError = runArguments.reportError.mock.calls[0]?.[0];
+    expect(reportedError?.message).toBe(ENGLISH_LANGUAGE.errors.generic);
+    expect(reportedError?.cause).toMatchObject({ message: 'Notification failed.' });
+    expect(runArguments.reportError).toHaveBeenCalledWith(
+      reportedError,
+      expect.objectContaining({ committed: true, phase: 'afterSuccess' }),
+      false,
+    );
+  });
+
+  it('rejects asynchronous client-side row mapping before commit', async () => {
+    const updateRow = vi.fn(() =>
+      Promise.resolve(originals[0]),
+    ) as unknown as NonNullable<ClientSideOperations<TestRow, TestValues>['updateRow']>;
+    const runner = new BatchEditOperationRunner<TestRow, TestValues>(
+      new OperationOwner(),
+      ENGLISH_LANGUAGE,
+      undefined,
+      { updateRow },
+    );
+    const runArguments = createRunArguments(createPresentation());
+
+    const result = await runner.run(runArguments);
+
+    expect(result.status).toBe('failed');
+    expect(runArguments.commit).not.toHaveBeenCalled();
+  });
+
   it('suppresses a late persistence result after cancellation', async () => {
     let resolveUpdate: ((rows: readonly TestRow[]) => void) | undefined;
     const updateMany = vi.fn<
@@ -316,6 +457,68 @@ describe('batch edit operation runner', () => {
     expect(runArguments.commit).not.toHaveBeenCalled();
   });
 
+  it.each([
+    'validation',
+    'before-submit',
+    'submit-event',
+    'commit',
+    'success-event',
+    'completion',
+  ] as const)('suppresses continuation after cancellation during %s', async (point) => {
+    const operationOwner = new OperationOwner();
+    const runner = new BatchEditOperationRunner<TestRow, TestValues>(
+      operationOwner,
+      ENGLISH_LANGUAGE,
+      undefined,
+      undefined,
+    );
+    const presentation = createPresentation();
+    const runArguments = createRunArguments(presentation);
+    if (point === 'validation') {
+      presentation.validate.mockImplementation(() => {
+        operationOwner.invalidate();
+        return Promise.resolve(validChanges());
+      });
+    }
+    if (point === 'submit-event') {
+      runArguments.dispatchSubmit.mockImplementation(() => {
+        operationOwner.invalidate();
+      });
+    }
+    if (point === 'commit') {
+      runArguments.commit.mockImplementation(() => {
+        operationOwner.invalidate();
+        return Promise.resolve();
+      });
+    }
+    if (point === 'success-event') {
+      runArguments.dispatchSuccess.mockImplementation(() => {
+        operationOwner.invalidate();
+      });
+    }
+    if (point === 'completion') {
+      presentation.completeSuccess.mockImplementation(() => {
+        operationOwner.invalidate();
+        return Promise.resolve();
+      });
+    }
+
+    const result = await runner.run({
+      ...runArguments,
+      ...(point === 'before-submit'
+        ? {
+            beforeSubmit: () => {
+              operationOwner.invalidate();
+              return Promise.resolve(true);
+            },
+          }
+        : {}),
+    });
+
+    expect(result).toEqual({ status: 'aborted' });
+    expect(runArguments.reportError).not.toHaveBeenCalled();
+  });
+
   it('rejects duplicate record targets before validation', async () => {
     const runner = new BatchEditOperationRunner<TestRow, TestValues>(
       new OperationOwner(),
@@ -332,6 +535,50 @@ describe('batch edit operation runner', () => {
     await expect(runner.run(runArguments)).rejects.toThrow(
       'Batch Edit targets must be distinct.',
     );
+    expect(presentation.startValidation).not.toHaveBeenCalled();
+  });
+
+  it('requires at least two record targets before validation', async () => {
+    const runner = new BatchEditOperationRunner<TestRow, TestValues>(
+      new OperationOwner(),
+      ENGLISH_LANGUAGE,
+      undefined,
+      undefined,
+    );
+    const presentation = createPresentation();
+    const firstOriginal = originals[0];
+    const firstOperationTarget = operationTargets[0];
+    if (firstOriginal === undefined || firstOperationTarget === undefined) {
+      throw new Error('Expected one batch edit fixture target.');
+    }
+    const runArguments = {
+      ...createRunArguments(presentation),
+      originals: [firstOriginal],
+      recordTargets: ['a'] as const,
+      targets: [firstOperationTarget],
+    };
+
+    await expect(runner.run(runArguments)).rejects.toMatchObject({
+      actualCount: 1,
+      expected: 'at-least-two',
+    });
+    expect(presentation.startValidation).not.toHaveBeenCalled();
+  });
+
+  it('requires matching target and original row counts before validation', async () => {
+    const runner = new BatchEditOperationRunner<TestRow, TestValues>(
+      new OperationOwner(),
+      ENGLISH_LANGUAGE,
+      undefined,
+      undefined,
+    );
+    const presentation = createPresentation();
+    const runArguments = {
+      ...createRunArguments(presentation),
+      originals: [originals[0] as TestRow],
+    };
+
+    await expect(runner.run(runArguments)).rejects.toThrow('must have matching lengths');
     expect(presentation.startValidation).not.toHaveBeenCalled();
   });
 });

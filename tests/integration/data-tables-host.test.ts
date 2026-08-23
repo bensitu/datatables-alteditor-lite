@@ -118,6 +118,30 @@ describe('DataTablesHost', () => {
     otherHost.destroy();
   });
 
+  it('rejects duplicate batch targets before replacing a DataTables row', async () => {
+    const { api } = createTestTable('host-batch-duplicate-target');
+    const host = new DataTablesHost(api);
+    const target = host.resolveRecordTarget(0);
+    const original = api.row(0).data();
+
+    await expect(
+      host.applyUpdates(
+        [
+          { row: { ...original, name: 'First replacement' }, target },
+          { row: { ...original, name: 'Second replacement' }, target },
+        ],
+        {
+          mode: 'dialog',
+          operation: 'batchEdit',
+          signal: new AbortController().signal,
+        },
+      ),
+    ).rejects.toThrow('must identify distinct records');
+
+    expect(api.row(0).data()).toBe(original);
+    host.destroy();
+  });
+
   it('supports batch replacement without stable row ids', async () => {
     const { api } = createTestTable('host-batch-without-row-id', {
       rowId: 'unavailableId',

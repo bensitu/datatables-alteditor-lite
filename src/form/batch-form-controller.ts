@@ -43,6 +43,11 @@ import type { FieldMountPoint, FormLayout } from './layout/form-layout.js';
 
 type BatchRestriction = 'file' | 'unique';
 
+type BatchFieldConfig<TFormValues extends object> = Exclude<
+  FieldConfig<TFormValues>,
+  { readonly type: 'hidden' }
+>;
+
 interface BatchFieldBinding<TFormValues extends object> {
   readonly config: Readonly<FieldConfig<TFormValues>>;
   readonly controller: ManagedFieldController<TFormValues>;
@@ -521,7 +526,7 @@ export class BatchEditorFormController<TFormValues extends object> {
   }
 
   private createBinding(
-    config: FieldConfig<TFormValues>,
+    config: BatchFieldConfig<TFormValues>,
     originals: readonly Readonly<object>[],
     fieldIndex: number,
     instanceId: string,
@@ -537,7 +542,7 @@ export class BatchEditorFormController<TFormValues extends object> {
     stateElement.setAttribute('role', 'status');
     const fieldLabel = document.createElement('span');
     fieldLabel.className = 'alteditor-lite-batch-field__label';
-    fieldLabel.textContent = config.type === 'hidden' ? config.name : config.label;
+    fieldLabel.textContent = config.label;
     const setValueButton = document.createElement('button');
     setValueButton.className = 'alteditor-lite-batch-field__action';
     setValueButton.type = 'button';
@@ -634,9 +639,7 @@ export class BatchEditorFormController<TFormValues extends object> {
       binding.restriction !== undefined || binding.isOverrideEditorActive;
     binding.setValueButton.disabled = binding.runtime.isDisabled();
     binding.controller.element.hidden =
-      binding.restriction === 'file' ||
-      (isMixed && !binding.isOverrideEditorActive) ||
-      (binding.restriction === 'unique' && isMixed);
+      binding.restriction === 'file' || (isMixed && !binding.isOverrideEditorActive);
     binding.restoreButton.hidden = current.status !== 'overridden';
     binding.helperElement.textContent =
       binding.restriction === 'file'
