@@ -24,6 +24,23 @@ const editor = new DataTablesEditor(table, {
       }
       return await response.json();
     },
+    async updateMany(changes, originals, context) {
+      const response = await fetch('/users/batch', {
+        body: JSON.stringify({
+          changes,
+          ids: originals.map((row) => row.id),
+        }),
+        method: 'PATCH',
+        signal: context.signal,
+      });
+      if (!response.ok) {
+        throw new AltEditorLiteError({
+          message: 'The selected users could not be updated.',
+          retryable: true,
+        });
+      }
+      return await response.json();
+    },
   },
 });
 ```

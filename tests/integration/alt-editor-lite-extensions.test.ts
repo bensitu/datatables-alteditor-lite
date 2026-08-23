@@ -216,7 +216,7 @@ describe('optional Buttons and Select integration', () => {
 
     expect(createButton.title).toBe('新建行');
     expect(createButton.getAttribute('tabindex')).toBe('7');
-    expect(editButton.title).toBe('请选择且仅选择一行进行编辑。');
+    expect(editButton.title).toBe('请至少选择一行进行编辑。');
     expect(removeButton.title).toBe('请至少选择一行进行删除。');
     expect(refreshButton.title).toBe('刷新');
 
@@ -247,7 +247,7 @@ describe('optional Buttons and Select integration', () => {
     expect(refreshButton.disabled).toBe(false);
     expect(editButton.disabled).toBe(true);
     expect(editButton.getAttribute('aria-disabled')).toBe('true');
-    expect(editButton.title).toContain('exactly one');
+    expect(editButton.title).toContain('one or more');
     expect(removeButton.disabled).toBe(true);
 
     extensionApi.row(0).select();

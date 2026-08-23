@@ -27,6 +27,7 @@ export interface AltEditorLiteLanguage {
   readonly dialog: {
     readonly createTitle: string;
     readonly editTitle: string;
+    readonly batchEditTitle: string;
     readonly removeTitle: string;
     readonly removeCount: string;
     readonly removeMessage: string;
@@ -37,6 +38,7 @@ export interface AltEditorLiteLanguage {
     readonly selectUnavailable: string;
     readonly busy: string;
     readonly editSelection: string;
+    readonly batchEditUnavailable: string;
     readonly removeSelection: string;
     readonly initialize: string;
   };
@@ -45,6 +47,17 @@ export interface AltEditorLiteLanguage {
     readonly required: string;
     readonly invalid: string;
     readonly unique: string;
+  };
+  /** Text used by multi-record editing controls and feedback. */
+  readonly batchEdit: {
+    readonly commonValue: string;
+    readonly multipleValues: string;
+    readonly setCommonValue: string;
+    readonly restoreIndividualValues: string;
+    readonly uniqueRestriction: string;
+    readonly fileRestriction: string;
+    readonly validationInvalid: string;
+    readonly selectionRequired: string;
   };
   /** Text used by SearchSelect fields. */
   readonly searchSelect: {
@@ -160,6 +173,7 @@ export function resolveLanguage(
       ENGLISH_LANGUAGE.validation,
       language?.validation,
     ),
+    batchEdit: mergeDefinedLanguageText(ENGLISH_LANGUAGE.batchEdit, language?.batchEdit),
     searchSelect: mergeDefinedLanguageText(
       ENGLISH_LANGUAGE.searchSelect,
       language?.searchSelect,

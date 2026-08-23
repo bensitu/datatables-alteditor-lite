@@ -264,7 +264,7 @@ export class BatchEditOperationRunner<TRow extends object, TFormValues extends o
       throw new EditorSelectionCountError(
         'at-least-two',
         targetCount,
-        'Select at least two records to edit together.',
+        this.language.batchEdit.selectionRequired,
       );
     }
     if (

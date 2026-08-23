@@ -5,7 +5,10 @@ SearchSelect `loading`, `loadError`, and `searchTooShort` messages. The `inline`
 section also covers unavailable or unsupported targets, and the `alert` section
 contains validation and operation error titles. Alert
 messages come from normalized errors and field validation. The Close button uses
-`actions.close`. Partial resources may omit these keys and inherit English text.
+`actions.close`. The `batchEdit` section contains common-value controls,
+restrictions, selection, and validation feedback, while the multi-record dialog
+title and unavailable button explanation are in `dialog` and `buttons`.
+Partial resources may omit these keys and inherit English text.
 
 AltEditorLite keeps translation data separate from its implementation. English is
 the built-in fallback, and every included language is stored as a JSON file under

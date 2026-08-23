@@ -58,6 +58,11 @@ and debounce or cache application-owned network work when appropriate. A newer
 change aborts the preceding callback for the same field and prevents stale
 results from replacing current state.
 
+In multi-record Dialog Edit, one logical user change invokes `onChange` once,
+regardless of the number of selected records. Its context contains known common
+values and explicit overrides; preserved differing values are omitted. Merely
+opening the input for a differing field does not invoke the callback.
+
 ## Field controllers and runtime state
 
 `editor.getField(path)` returns a `FieldController<TValue>` while a Dialog form is
@@ -89,6 +94,19 @@ Dynamic Select and Radio options retain an available current value and otherwise
 clear it. SearchSelect updates its local options or remote seed/cache with the
 same exact value identity. Changing options does not replace a remote source.
 See [Dynamic forms](forms.md) for declarative option and state changes.
+
+## Multi-record field behavior
+
+Multi-record Dialog Edit distinguishes a common baseline, a differing baseline,
+and an explicit common override. Differing values are never represented by a
+synthetic field value. A field is included in `BatchChanges` only after a real
+value is supplied, and Restore removes that override.
+
+`unique: true` fields remain visible and read-only because assigning one value to
+several records would violate the field contract. File fields remain visible
+with an explanation and cannot be overridden. Programmatic field updates and
+dependency value patches cannot bypass either restriction. Hidden fields do not
+show common or differing state and retain each record's original value.
 
 ## Local uniqueness
 

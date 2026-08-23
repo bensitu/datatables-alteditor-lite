@@ -97,6 +97,50 @@ Inline `refresh` mode requires both `operations.update` and
 `operations.refresh`; it persists first and then lets the refresh operation
 provide the canonical table data.
 
+## Multi-record Edit
+
+```ts
+await editor.openBatchEditDialog(['#user-42', '#user-43']);
+```
+
+The submitted `BatchChanges<TFormValues>` contains only fields assigned an
+explicit common value. Preserved common values, preserved differing values,
+hidden fields, unique fields, and file fields are not broadcast to other
+records. An empty change set closes as unchanged without persistence, Host
+application, or a success event.
+
+Configure remote multi-record persistence with one callback:
+
+```ts
+operations: {
+  async updateMany(changes, originals, context) {
+    return await updateUsers(
+      originals.map((row) => row.id),
+      changes,
+      context.signal,
+    );
+  },
+},
+```
+
+`updateMany` receives the common changes, readonly original rows in target
+order, and a `batchEdit` / `dialog` context. It must return the same number of
+complete canonical rows in the same order. All results are checked before the
+Host mutates any record.
+
+Resolution order is `operations.updateMany`, then synchronous
+`clientSide.updateRow(original, changes)` for each original, then the safe
+declared-field merge. If `operations.update` is configured without
+`operations.updateMany`, multi-record editing is unavailable; the single-record
+callback is never called repeatedly. Applications performing remote updates own
+their service-side transaction and partial-failure policy.
+
+`DataTablesHost` validates every target before replacement, performs one draw,
+and attempts to restore earlier synchronous replacements if a later setter
+throws. `StandaloneHost` exposes the capability only when `applyUpdates` is
+configured. These Host guarantees do not roll back remote persistence that has
+already completed.
+
 ## Remove
 
 ```ts

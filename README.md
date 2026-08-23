@@ -26,6 +26,7 @@ has no jQuery or UI-framework runtime dependency.
 - Single-cell double-click or hover/touch editing with exact column mapping,
   explicit actions, validation, and optional KeyTable activation
 - Dialog and Inline Edit can be enabled together on one editor
+- Multi-record Dialog Edit with common-value overrides and individual-value restore
 - Declarative dependent field state and shared cross-field validation
 - Create, Edit, Remove, and Ajax-aware or local Refresh operations
 - Non-optimistic asynchronous persistence with `AbortSignal`
@@ -164,6 +165,7 @@ Use explicit DataTables row selectors when Select is not installed:
 
 ```ts
 await editor.openEditDialog('#user-42');
+await editor.openBatchEditDialog(['#user-42', '#user-43']);
 await editor.openRemoveDialog(['#user-42', '#user-43']);
 ```
 
@@ -209,6 +211,9 @@ const host = new StandaloneHost<UserRow, string>({
   applyUpdate: (key, row) => {
     records.set(key, row);
     return key;
+  },
+  applyUpdates: (updates) => {
+    updates.forEach(({ target, row }) => records.set(target, row));
   },
   applyRemove: (keys) => keys.forEach((key) => records.delete(key)),
   records: () => [...records].map(([target, row]) => ({ row, target })),
@@ -259,7 +264,16 @@ const editor = new DataTablesEditor<UserRow, UserForm>(table, {
 
 await editor.openInlineEdit('#user-42', 'displayName:name');
 await editor.openEditDialog('#user-42');
+await editor.openBatchEditDialog(['#user-42', '#user-43']);
 ```
+
+Multi-record editing shows common values directly and marks differing values as
+multiple values. A differing field is unchanged until the user assigns a common
+value; restoring it removes that field from the submitted changes. Unique and
+file fields remain visible but cannot receive a shared value. The registered
+DataTables Edit button opens single-row editing for one selected row and
+multi-record editing for two or more selected rows when that capability is
+available.
 
 Double-click activation uses compact Enter, Escape, Tab, and blur behavior.
 Hover activation provides a discoverable pencil, explicit Submit / Cancel
@@ -278,7 +292,9 @@ Dialog forms can clone an application template and place fields into
 `data-alteditor-lite-field` slots. Declarative dependencies can update options,
 values, visibility, required, read-only, and disabled state with cancellation and
 stale-result protection. A typed `validateForm` callback applies the same
-cross-field data rules to Dialog Create, Dialog Edit, and Inline Edit.
+cross-field data rules to Dialog Create, Dialog Edit, multi-record Dialog Edit,
+and Inline Edit. Multi-record dependencies use only known common values and
+explicit overrides; preserved differing values are omitted.
 
 Dependency value changes do not recursively run another resolver or fire the
 target field's `onChange()`. See [Dynamic forms](docs/forms.md) for template
@@ -300,6 +316,9 @@ const editor = new DataTablesEditor<UserRow, UserForm>(table, {
     },
     async update(values, original, context) {
       return await updateUser(original.id, values, context.signal);
+    },
+    async updateMany(changes, originals, context) {
+      return await updateUsers(originals, changes, context.signal);
     },
     async remove(rows, context) {
       await removeUsers(
@@ -385,8 +404,9 @@ table
   });
 ```
 
-Create, Edit, and Remove follow `open → submit → success | error → close` when the
-dialog closes. Refresh publishes start and complete phases. See
+Create, Edit, multi-record Edit, and Remove follow
+`open → submit → success | error → close` when the dialog closes. Refresh
+publishes start and complete notifications. See
 [Events](docs/events.md) for detail types and ordering.
 
 ## Demo
@@ -394,8 +414,9 @@ dialog closes. Refresh publishes start and complete phases. See
 The [live demo](https://bensitu.github.io/datatables-alteditor-lite/examples/demo/)
 uses the Browser Global distribution, the official DataTables CDN, an Ajax JSON
 data source, asynchronous persistence, and external languages. Its employee
-directory combines Dialog and Inline Edit, a grouped custom layout, dependent
-choice fields, and cross-field date validation. Additional examples demonstrate
+directory combines single- and multi-record Dialog Edit, Inline Edit, a grouped
+custom layout, dependent choice fields, and cross-field date validation.
+Additional examples demonstrate
 hover/touch interaction, remote SearchSelect, extension integration, and
 consumer-owned records without a table or grid.
 

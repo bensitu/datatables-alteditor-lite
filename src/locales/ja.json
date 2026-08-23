@@ -12,6 +12,7 @@
   "dialog": {
     "createTitle": "行を作成",
     "editTitle": "行を編集",
+    "batchEditTitle": "複数の行を編集",
     "removeTitle": "行を削除",
     "removeCount": "選択した行: {count} 件。",
     "removeMessage": "選択した行を削除してもよろしいですか。"
@@ -20,7 +21,8 @@
     "createUnavailable": "作成操作を設定すると、この操作を使用できます。",
     "selectUnavailable": "この操作には DataTables Select が必要です。",
     "busy": "エディターは処理中です。",
-    "editSelection": "編集する行を 1 行だけ選択してください。",
+    "editSelection": "編集する行を 1 行以上選択してください。",
+    "batchEditUnavailable": "現在の設定では複数行を同時に編集できません。",
     "removeSelection": "削除する行を 1 行以上選択してください。",
     "initialize": "この操作を使用するには AltEditorLite を初期化してください。"
   },
@@ -28,6 +30,16 @@
     "required": "この項目は必須です。",
     "invalid": "有効な値を入力してください。",
     "unique": "現在読み込まれているテーブルデータに同じ値があります。"
+  },
+  "batchEdit": {
+    "commonValue": "共通の値",
+    "multipleValues": "複数の値",
+    "setCommonValue": "共通の値を設定",
+    "restoreIndividualValues": "行ごとの値に戻す",
+    "uniqueRestriction": "一意項目には複数のレコードで同じ値を設定できません。",
+    "fileRestriction": "複数行の編集ではファイルを変更できません。",
+    "validationInvalid": "選択した行の変更内容を確認してください。",
+    "selectionRequired": "同時に編集する行を 2 行以上選択してください。"
   },
   "searchSelect": {
     "placeholder": "オプションを選択",

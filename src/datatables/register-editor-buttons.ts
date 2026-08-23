@@ -97,10 +97,12 @@ export function createEditorButtonState(
       title: !input.hasSelect
         ? language.buttons.selectUnavailable
         : input.selectedRowCount === 0 || !canEditSelection
-          ? language.buttons.editSelection
+          ? input.selectedRowCount >= 2
+            ? language.buttons.batchEditUnavailable
+            : language.buttons.editSelection
           : input.isReady
             ? hasMultipleSelection
-              ? 'Edit multiple records'
+              ? language.dialog.batchEditTitle
               : language.dialog.editTitle
             : language.buttons.busy,
     },

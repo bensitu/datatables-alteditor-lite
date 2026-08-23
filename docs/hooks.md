@@ -35,6 +35,12 @@ contains an optional Host key and the affected field paths. Contexts never
 contain a DataTables API; retain a `DataTablesHost` and call `unwrap()` when a
 hook deliberately needs one.
 
+The `batchEdit` branches are explicit. `beforeOpen` receives ordered `originals`
+and `targets`; `beforeSubmit` receives override-only changes plus the originals;
+`afterSuccess` receives the changes, originals, canonical rows, and targets.
+Applications can narrow on `context.operation === 'batchEdit'` without probing
+optional single-record properties.
+
 ## beforeOpen
 
 `beforeOpen(context)` runs before a dialog or inline control is added to the DOM. Return `false` to decline opening without publishing open or close. An asynchronous hook is cancellable through `context.signal`; the target is revalidated after it resolves.

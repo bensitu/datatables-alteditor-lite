@@ -29,7 +29,7 @@ creates a private one exposed through `host.eventTarget`.
 
 ## Ordering
 
-Create, Edit, and Remove publish:
+Create, single or multi-record Edit, and Remove publish:
 
 ```text
 open
@@ -80,14 +80,17 @@ Every detail contains `editor`, `type`, and a `mode`. It also contains an
 `operation` discriminator where the event represents an operation. Edit details
 may contain a `target`; inline Edit always provides one.
 
-Create and Edit submit details contain collected `values`. Edit also contains the
-captured `original` row. Remove submit details contain the captured readonly
-`rows`.
+Create and single Edit submit details contain collected `values`. Single Edit
+also contains the captured `original` row. Multi-record Edit contains override-only
+`changes`, ordered `originals`, and ordered `targets`. Remove submit details
+contain the captured readonly `rows`.
 
 Success details are discriminated by operation:
 
 - Create contains `values` and the added `row`.
 - Edit contains `values`, `original`, and the replacement `row`.
+- Multi-record Edit contains `changes`, `originals`, replacement `rows`, and
+  `targets`.
 - Remove contains the captured readonly `rows`.
 - Refresh contains no row payload.
 

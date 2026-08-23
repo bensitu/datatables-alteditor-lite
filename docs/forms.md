@@ -157,6 +157,14 @@ current. Closing or destroying the form aborts all resolver work. A rejected
 current resolver leaves the form interactive, shows a safe error, and blocks
 submission until a later successful result clears it.
 
+Multi-record Dialog Edit supplies a logical values object containing common
+fields and explicit common overrides. Preserved differing fields are omitted and
+their resolvers do not run. When the user supplies a common value, that source
+resolver runs once for the whole selection. A dependency `value` patch becomes
+an explicit override; patches cannot assign values to unique or file fields.
+Option-only patches do not create a change unless the available options actually
+alter the current value.
+
 ### Dependency changes do not cascade
 
 A user change can run that source field's dependency resolver. A patch that
@@ -167,8 +175,8 @@ when several targets must change together.
 
 ## Form-level validation
 
-`validateForm` receives the complete immutable candidate and an operation
-context. It runs for Dialog Create, Dialog Edit, and Inline Edit:
+`validateForm` receives an immutable candidate and an operation context. It runs
+for Dialog Create, single Dialog Edit, multi-record Dialog Edit, and Inline Edit:
 
 ```ts
 validateForm: async (values, { mode, operation, signal }) => {
@@ -189,6 +197,12 @@ validateForm: async (values, { mode, operation, signal }) => {
   return { valid: true };
 },
 ```
+
+For multi-record Edit, the editor builds one effective candidate per original by
+reading configured paths and overlaying the common changes. It invokes
+`validateForm` once per candidate with `operation: 'batchEdit'` and
+`mode: 'dialog'`. Repeated identical errors are presented once, and any invalid
+candidate prevents persistence and Host application.
 
 Dialog validation waits for current dependency and `onChange` work, then runs
 native constraints, field validators, local uniqueness, and `validateForm`.

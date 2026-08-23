@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-08-24
+
+### Added
+
+- Added multi-record Dialog Edit with common, differing, overridden, and restore
+  behavior, plus `openBatchEditDialog()` for neutral, DataTables, and Standalone
+  targets.
+- Added `BatchChanges`, `operations.updateMany`, batch-specific hook and event
+  details, optional Host batch application, and Standalone `applyUpdates`.
+- Added per-record effective-value validation and logical dependency handling for
+  multi-record forms.
+
+### Changed
+
+- Routed the existing DataTables Edit button to single Edit for one selected row
+  and multi-record Edit for two or more selected rows when available.
+- Applied DataTables multi-record replacements after full target validation with
+  one draw and best-effort restoration when a synchronous setter fails.
+- Added localized multi-record editing text to every included language and
+  updated the employee demo for multi-row selection.
+
 ## [0.5.2] - 2026-08-23
 
 ### Changed

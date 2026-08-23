@@ -199,7 +199,7 @@ describe('editor button enablement', () => {
     expect(oneSelected.edit.enabled).toBe(true);
     expect(oneSelected.remove.enabled).toBe(true);
     expect(manySelected.edit.enabled).toBe(false);
-    expect(manySelected.edit.title).toContain('exactly one');
+    expect(manySelected.edit.title).toContain('not available');
     expect(manySelected.remove.enabled).toBe(true);
     expect(noneSelected.remove.enabled).toBe(false);
     expect(noneSelected.remove.title).toContain('one or more');
@@ -228,7 +228,7 @@ describe('editor button enablement', () => {
 
     expect(available.edit).toMatchObject({
       enabled: true,
-      title: 'Edit multiple records',
+      title: 'Edit multiple rows',
     });
     expect(unavailable.edit).toMatchObject({ enabled: false });
   });

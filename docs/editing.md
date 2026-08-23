@@ -26,6 +26,7 @@ integration:
 ```ts
 await editor.openCreateDialog();
 await editor.openEditDialog('#user-42');
+await editor.openBatchEditDialog(['#user-42', '#user-43']);
 await editor.openRemoveDialog(['#user-42', '#user-43']);
 await editor.closeDialog();
 ```
@@ -50,10 +51,39 @@ asynchronous persistence. Successful updates replace the complete row, wait for
 the DataTables draw, close according to configuration, and restore focus to a
 connected logical target.
 
+### Multi-record dialog editing
+
+`openBatchEditDialog(targets?)` requires at least two distinct records. The
+neutral editor accepts Host targets; `DataTablesEditor` also accepts a row
+selector or uses the current Select selection. It does not fall back to
+single-row editing when only one record resolves.
+
+Each visible field starts with one of two baselines: a common value shared by all
+records or multiple preserved values. Opening the input for a differing field
+does not change any record. The field enters the submitted `BatchChanges` only
+after an actual common value is supplied. Restore returns the field to its
+opening baseline and removes its override. Hidden fields preserve each record's
+value. Unique and file fields remain visible with an explanation but cannot be
+overridden.
+
+Only overridden fields run field validation. For cross-field validation, the
+editor reads declared paths from each original record, overlays the common
+changes, and calls `validateForm` once for each resulting value object. Any
+invalid result prevents persistence and Host application. Dependencies run once
+against known common values and explicit overrides; a preserved differing source
+does not run its resolver.
+
+Remote persistence uses `operations.updateMany(changes, originals, context)` and
+must return one complete canonical row per original in the same order. A
+configured `operations.update` is never called repeatedly. Without remote Update
+ownership, `clientSide.updateRow(original, changes)` or the safe declared-field
+merge builds each replacement. The Host applies the complete set only after all
+results are valid.
+
 ### Hybrid interaction ownership
 
 When both Edit presentations are enabled, the same fields, validators, Update
-callback, hooks, and events serve both. The Dialog Edit button and
+configuration, hooks, and events serve both. The Dialog Edit button and
 `openEditDialog()` remain available, while eligible cells also support the
 configured Inline activation.
 

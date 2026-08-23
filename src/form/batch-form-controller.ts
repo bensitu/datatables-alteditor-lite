@@ -60,16 +60,6 @@ interface BatchFieldBinding<TFormValues extends object> {
   state: Readonly<BatchFieldState<unknown>>;
 }
 
-const BATCH_TEXT = Object.freeze({
-  commonValue: 'Common value',
-  fileRestriction: 'File uploads cannot be modified in batch edit.',
-  mixedValue: 'Multiple values',
-  restore: 'Restore individual values',
-  setValue: 'Set a common value',
-  uniqueRestriction:
-    'Unique fields cannot be assigned one value across multiple records.',
-});
-
 function resolveRestriction<TFormValues extends object>(
   config: Readonly<FieldConfig<TFormValues>>,
 ): BatchRestriction | undefined {
@@ -134,6 +124,8 @@ export class BatchEditorFormController<TFormValues extends object> {
 
   private readonly invalidMessage: string;
 
+  private readonly batchValidationMessage: string;
+
   private dependencyController: FormDependencyController<TFormValues> | undefined;
 
   private originals: readonly Readonly<object>[];
@@ -146,7 +138,7 @@ export class BatchEditorFormController<TFormValues extends object> {
     private readonly fields: readonly FieldConfig<TFormValues>[],
     originals: readonly Readonly<object>[],
     instanceId: string,
-    language: Readonly<AltEditorLiteLanguage>,
+    private readonly language: Readonly<AltEditorLiteLanguage>,
     template?: DialogTemplateSource,
     private readonly validateForm?: FormValidator<TFormValues>,
     dependencies?: Readonly<FormDependencies<TFormValues>>,
@@ -154,6 +146,7 @@ export class BatchEditorFormController<TFormValues extends object> {
   ) {
     this.configuredFieldNames = new Set(fields.map(({ name }) => name));
     this.invalidMessage = language.validation.invalid;
+    this.batchValidationMessage = language.batchEdit.validationInvalid;
     this.originals = Object.freeze([...originals]);
     this.element = document.createElement('form');
     this.element.className = 'alteditor-lite-form alteditor-lite-batch-form';
@@ -313,8 +306,8 @@ export class BatchEditorFormController<TFormValues extends object> {
       if (binding.restriction !== undefined) {
         throw new EditorConfigurationError(
           binding.restriction === 'file'
-            ? BATCH_TEXT.fileRestriction
-            : BATCH_TEXT.uniqueRestriction,
+            ? this.language.batchEdit.fileRestriction
+            : this.language.batchEdit.uniqueRestriction,
         );
       }
       const fieldName = binding.config.name;
@@ -392,7 +385,7 @@ export class BatchEditorFormController<TFormValues extends object> {
           allowedFieldNames: this.configuredFieldNames,
           collectValues: () => effectiveValues,
           controllers: [],
-          invalidMessage: this.invalidMessage,
+          invalidMessage: this.batchValidationMessage,
           validateForm: async (values, currentSignal) =>
             await Promise.resolve(
               formValidator(
@@ -429,7 +422,8 @@ export class BatchEditorFormController<TFormValues extends object> {
       const error = new AltEditorLiteError({
         code: 'VALIDATION',
         ...(fieldMessages.size === 0 ? {} : { fieldErrors }),
-        message: [...generalMessages][0] ?? firstFieldMessage ?? this.invalidMessage,
+        message:
+          [...generalMessages][0] ?? firstFieldMessage ?? this.batchValidationMessage,
         retryable: true,
       });
       for (const message of generalMessages) {
@@ -547,11 +541,11 @@ export class BatchEditorFormController<TFormValues extends object> {
     const setValueButton = document.createElement('button');
     setValueButton.className = 'alteditor-lite-batch-field__action';
     setValueButton.type = 'button';
-    setValueButton.textContent = BATCH_TEXT.setValue;
+    setValueButton.textContent = this.language.batchEdit.setCommonValue;
     const restoreButton = document.createElement('button');
     restoreButton.className = 'alteditor-lite-batch-field__action';
     restoreButton.type = 'button';
-    restoreButton.textContent = BATCH_TEXT.restore;
+    restoreButton.textContent = this.language.batchEdit.restoreIndividualValues;
     const helperElement = document.createElement('p');
     helperElement.className = 'alteditor-lite-field__description';
     statePanel.append(fieldLabel, stateElement, setValueButton);
@@ -633,8 +627,8 @@ export class BatchEditorFormController<TFormValues extends object> {
     const { current } = binding.state;
     const isMixed = current.status === 'mixed';
     binding.stateElement.textContent = isMixed
-      ? BATCH_TEXT.mixedValue
-      : BATCH_TEXT.commonValue;
+      ? this.language.batchEdit.multipleValues
+      : this.language.batchEdit.commonValue;
     binding.statePanel.hidden = !isMixed && binding.restriction !== 'file';
     binding.setValueButton.hidden =
       binding.restriction !== undefined || binding.isOverrideEditorActive;
@@ -646,9 +640,9 @@ export class BatchEditorFormController<TFormValues extends object> {
     binding.restoreButton.hidden = current.status !== 'overridden';
     binding.helperElement.textContent =
       binding.restriction === 'file'
-        ? BATCH_TEXT.fileRestriction
+        ? this.language.batchEdit.fileRestriction
         : binding.restriction === 'unique'
-          ? BATCH_TEXT.uniqueRestriction
+          ? this.language.batchEdit.uniqueRestriction
           : '';
     binding.helperElement.hidden = binding.restriction === undefined;
   }
@@ -684,8 +678,8 @@ export class BatchEditorFormController<TFormValues extends object> {
     if (binding.restriction !== undefined) {
       binding.controller.showError(
         binding.restriction === 'file'
-          ? BATCH_TEXT.fileRestriction
-          : BATCH_TEXT.uniqueRestriction,
+          ? this.language.batchEdit.fileRestriction
+          : this.language.batchEdit.uniqueRestriction,
       );
       return;
     }
@@ -821,8 +815,8 @@ export class BatchEditorFormController<TFormValues extends object> {
     if (binding.restriction !== undefined) {
       throw new EditorConfigurationError(
         binding.restriction === 'file'
-          ? BATCH_TEXT.fileRestriction
-          : BATCH_TEXT.uniqueRestriction,
+          ? this.language.batchEdit.fileRestriction
+          : this.language.batchEdit.uniqueRestriction,
       );
     }
     binding.controller.setValue(value);
@@ -853,8 +847,8 @@ export class BatchEditorFormController<TFormValues extends object> {
         if (binding.restriction !== undefined) {
           throw new EditorConfigurationError(
             binding.restriction === 'file'
-              ? BATCH_TEXT.fileRestriction
-              : BATCH_TEXT.uniqueRestriction,
+              ? this.language.batchEdit.fileRestriction
+              : this.language.batchEdit.uniqueRestriction,
           );
         }
         binding.state = setBatchFieldValue(binding.state, value);
@@ -872,8 +866,8 @@ export class BatchEditorFormController<TFormValues extends object> {
     if (binding.restriction !== undefined) {
       const message =
         binding.restriction === 'file'
-          ? BATCH_TEXT.fileRestriction
-          : BATCH_TEXT.uniqueRestriction;
+          ? this.language.batchEdit.fileRestriction
+          : this.language.batchEdit.uniqueRestriction;
       binding.controller.showError(message);
       return { message, valid: false } as const;
     }

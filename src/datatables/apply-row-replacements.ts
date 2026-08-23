@@ -16,7 +16,11 @@ export function applyRowReplacements<TRow extends object>(
       appliedReplacements.push(replacement);
     }
   } catch (error: unknown) {
-    for (const replacement of appliedReplacements.toReversed()) {
+    while (appliedReplacements.length > 0) {
+      const replacement = appliedReplacements.pop();
+      if (replacement === undefined) {
+        break;
+      }
       try {
         replacement.write(replacement.previousRow);
       } catch {

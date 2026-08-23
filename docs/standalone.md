@@ -46,6 +46,12 @@ const host = new StandaloneHost<UserRecord, string>({
     renderRecords(records);
     return target;
   },
+  applyUpdates(updates) {
+    for (const { target, row } of updates) {
+      records.set(target, row);
+    }
+    renderRecords(records);
+  },
   applyRemove(targets) {
     for (const target of targets) {
       records.delete(target);
@@ -70,6 +76,17 @@ Create also requires `operations.create` or `clientSide.createRow` to produce a
 complete record. Edit uses `operations.update`, `clientSide.updateRow`, or the
 safe declared-field merge before calling `applyUpdate`. Remove calls
 `operations.remove` first when configured and then calls `applyRemove`.
+
+`applyUpdates` is optional and enables multi-record Dialog Edit. It receives all
+ordered canonical replacements after `operations.updateMany`,
+`clientSide.updateRow`, or the safe merge has completed successfully. Resolve
+only after the application view reflects the complete set. Without this callback,
+`openBatchEditDialog` is unavailable while Create, single Edit, Remove, and
+Refresh continue to work normally:
+
+```ts
+await editor.openBatchEditDialog(['user-1', 'user-2']);
+```
 
 ## Record enumeration and uniqueness
 

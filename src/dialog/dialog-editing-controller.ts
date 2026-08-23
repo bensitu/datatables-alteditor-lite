@@ -274,12 +274,12 @@ export class DialogEditingController<
         throw new EditorSelectionCountError(
           'at-least-two',
           targets.length,
-          'Select at least two records to edit together.',
+          this.arguments_.language.batchEdit.selectionRequired,
         );
       }
       if (!this.arguments_.capabilities.batchEditDialog) {
         throw new EditorConfigurationError(
-          'Batch Edit requires a batch-capable Host and compatible update configuration.',
+          this.arguments_.language.buttons.batchEditUnavailable,
         );
       }
       await this.arguments_.inlineController.prepareForExternalOperation();
@@ -291,7 +291,7 @@ export class DialogEditingController<
         throw new EditorSelectionCountError(
           'at-least-two',
           requestedTargets.length,
-          'Select at least two records to edit together.',
+          this.arguments_.language.batchEdit.selectionRequired,
         );
       }
       if (new Set(requestedTargets).size !== requestedTargets.length) {
@@ -797,7 +797,7 @@ export class DialogEditingController<
       this.arguments_.stateCoordinator.assertActive();
       this.dialog.openForm(
         form.element,
-        'Edit multiple records',
+        this.arguments_.language.dialog.batchEditTitle,
         this.arguments_.language.actions.submit,
         {
           onRequestClose: (reason) => {

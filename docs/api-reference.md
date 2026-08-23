@@ -32,21 +32,22 @@ collected from fields and defaults to `DeepPartial<TRow>`. `TTarget` is the opaq
 identity understood by the Host. Only one active editor may own a Host's
 `ownershipKey`.
 
-| Method                       | Result                            | Description                                                                  |
-| ---------------------------- | --------------------------------- | ---------------------------------------------------------------------------- |
-| `openCreateDialog()`         | `Promise<void>`                   | Opens Create when a Create implementation is configured.                     |
-| `openEditDialog(target?)`    | `Promise<void>`                   | Opens Edit for one explicit or Host-selected target.                         |
-| `openRemoveDialog(targets?)` | `Promise<void>`                   | Opens confirmation for explicit or Host-selected targets.                    |
-| `openInlineEdit(target)`     | `Promise<void>`                   | Opens an inline target created by a Host that supports inline presentation.  |
-| `submitInlineEdit()`         | `Promise<void>`                   | Validates and submits the active inline value.                               |
-| `cancelInlineEdit()`         | `Promise<void>`                   | Cancels the active inline presentation.                                      |
-| `getInlineState()`           | `Readonly<InlineEditState>`       | Returns host-neutral inline lifecycle state.                                 |
-| `isInlineEditing()`          | `boolean`                         | Reports whether inline work is active.                                       |
-| `refresh()`                  | `Promise<void>`                   | Runs application refresh and the configured Host refresh behavior.           |
-| `closeDialog()`              | `Promise<void>`                   | Closes an open dialog and aborts its owned work.                             |
-| `getField<TValue>(name)`     | `FieldController<TValue> \| null` | Returns a rendered field while a form is open.                               |
-| `getState()`                 | `Readonly<EditorState>`           | Returns the current dialog and API lifecycle state.                          |
-| `destroy()`                  | `void`                            | Releases operations, presentation, listeners, Host resources, and ownership. |
+| Method                          | Result                            | Description                                                                  |
+| ------------------------------- | --------------------------------- | ---------------------------------------------------------------------------- |
+| `openCreateDialog()`            | `Promise<void>`                   | Opens Create when a Create implementation is configured.                     |
+| `openEditDialog(target?)`       | `Promise<void>`                   | Opens Edit for one explicit or Host-selected target.                         |
+| `openBatchEditDialog(targets?)` | `Promise<void>`                   | Opens Edit for at least two distinct explicit or Host-selected targets.      |
+| `openRemoveDialog(targets?)`    | `Promise<void>`                   | Opens confirmation for explicit or Host-selected targets.                    |
+| `openInlineEdit(target)`        | `Promise<void>`                   | Opens an inline target created by a Host that supports inline presentation.  |
+| `submitInlineEdit()`            | `Promise<void>`                   | Validates and submits the active inline value.                               |
+| `cancelInlineEdit()`            | `Promise<void>`                   | Cancels the active inline presentation.                                      |
+| `getInlineState()`              | `Readonly<InlineEditState>`       | Returns host-neutral inline lifecycle state.                                 |
+| `isInlineEditing()`             | `boolean`                         | Reports whether inline work is active.                                       |
+| `refresh()`                     | `Promise<void>`                   | Runs application refresh and the configured Host refresh behavior.           |
+| `closeDialog()`                 | `Promise<void>`                   | Closes an open dialog and aborts its owned work.                             |
+| `getField<TValue>(name)`        | `FieldController<TValue> \| null` | Returns a rendered field while a form is open.                               |
+| `getState()`                    | `Readonly<EditorState>`           | Returns the current dialog and API lifecycle state.                          |
+| `destroy()`                     | `void`                            | Releases operations, presentation, listeners, Host resources, and ownership. |
 
 Methods that cannot run in the current state reject or throw a typed
 `AltEditorLiteError`. `destroy()` is idempotent; other methods are unavailable
@@ -85,11 +86,13 @@ not publish success.
 Optional contracts add selection (`HostSelectionCapability`), refresh
 (`HostRefreshCapability`), record enumeration
 (`HostRowCollectionCapability`), and presentation notification
-(`HostPresentationCapability`). Inline presentation is supplied through a
-specialized Host integration rather than required by every Host.
+(`HostPresentationCapability`). `HostBatchUpdateCapability` adds
+`applyUpdates(updates, context)` for applying ordered canonical replacements as
+one operation. Inline presentation is supplied through a specialized Host
+integration rather than required by every Host.
 
-`HostApplyContext` contains an owned `signal`, the `create`, `edit`, or `remove`
-operation, and the initiating `dialog`, `inline`, or `api` mode.
+`HostApplyContext` contains an owned `signal`, the `create`, `edit`, `batchEdit`,
+or `remove` operation, and the initiating `dialog`, `inline`, or `api` mode.
 
 ## DataTables integration
 
@@ -104,6 +107,7 @@ selectors through these overloads:
 
 ```ts
 editor.openEditDialog(rowSelector?);
+editor.openBatchEditDialog(rowSelector?);
 editor.openRemoveDialog(rowSelector?);
 editor.openInlineEdit(rowSelector, columnSelector);
 ```
@@ -138,6 +142,7 @@ const host = new StandaloneHost<TRow, TTarget>({
   read,
   applyCreate,
   applyUpdate,
+  applyUpdates,
   applyRemove,
   refresh,
   records,
@@ -152,6 +157,10 @@ application invokes, and each callback may return a value or a promise-like
 value. `refresh` defines consumer-owned refresh work; without it, `refresh()`
 completes without changing records. `eventTarget` defaults to a new private
 `EventTarget`, while `ownershipKey` defaults to the Host instance.
+
+`applyUpdates` enables multi-record editing and receives ordered `{ target, row }`
+replacements after persistence succeeds. Without it, Standalone construction and
+single-record operations remain available but `openBatchEditDialog` rejects.
 
 `records` returns iterable `{ target, row }` entries for local validation. It is
 optional unless any field has `unique: true`; construction rejects that
@@ -193,6 +202,11 @@ interface EditorOperations<TRow extends object, TFormValues extends object> {
     original: Readonly<TRow>,
     context: OperationContext,
   ): TRow | Promise<TRow>;
+  updateMany?(
+    changes: Readonly<BatchChanges<TFormValues>>,
+    originals: readonly Readonly<TRow>[],
+    context: BatchEditOperationContext,
+  ): readonly TRow[] | Promise<readonly TRow[]>;
   remove?(
     rows: readonly Readonly<TRow>[],
     context: OperationContext,
@@ -202,19 +216,21 @@ interface EditorOperations<TRow extends object, TFormValues extends object> {
 ```
 
 `ClientSideOperations` provides synchronous `createRow(values)` and
-`updateRow(original, values)` mappings. See [Configuration](configuration.md)
+`updateRow(original, valuesOrChanges)` mappings. Multi-record editing passes the
+override-only `BatchChanges` object to `updateRow`; it does not pass a complete
+effective form. See [Configuration](configuration.md)
 and [Operations](operations.md) for capability resolution and application timing.
 
 ## Contexts and targets
 
-`OperationContext` contains `signal`, `operation`, `mode`, and an optional
-neutral `target`. `BeforeOpenContext` adds an optional readonly row;
-`BeforeSubmitContext` adds an optional original row. `AfterSuccessContext`
-contains the operation, mode, optional target, original row, committed row,
-removed rows, and submitted values as applicable.
+Operation, hook, and event contexts are discriminated by `operation` and `mode`.
+The `batchEdit` branches contain ordered `targets`, `originals`, common
+`changes`, and committed `rows` where applicable. Single Edit continues to use
+one `target`, `original`, submitted `values`, and committed `row`.
 
-`FormValidationContext` contains only `signal`, `operation: 'create' | 'edit'`,
-and `mode: 'dialog' | 'inline'`. None of these contexts contains a DataTables API.
+`FormValidationContext` contains `signal` and distinguishes Create Dialog,
+single Edit Dialog or Inline, and multi-record Edit Dialog. None of these
+contexts contains a DataTables API.
 
 ```ts
 interface EditorOperationTarget<TKey = unknown> {

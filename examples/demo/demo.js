@@ -294,7 +294,7 @@ function createEmployeeTable(selector, additionalOptions = {}) {
 }
 
 const hybridEmployeeTable = createEmployeeTable('#employees', {
-  select: { style: 'single' },
+  select: { style: 'multi' },
 });
 const inlineEmployeeTable = createEmployeeTable('#employees-inline');
 const hoverEmployeeTable = createEmployeeTable('#employees-hover', {
@@ -349,6 +349,26 @@ function assertUniqueEmail(table, email, excludedId) {
       retryable: true,
     });
   }
+}
+
+function applyEmployeeChanges(original, values) {
+  return {
+    ...original,
+    active: values.active ?? original.active,
+    age: values.age ?? original.age,
+    contractEnd: values.contractEnd ?? original.contractEnd,
+    country: values.country ?? original.country,
+    email: values.email ?? original.email,
+    employmentType: values.employmentType ?? original.employmentType,
+    name: values.name ?? original.name,
+    notes: values.notes ?? original.notes,
+    officeId: values.officeId ?? original.officeId,
+    prefecture: values.prefecture ?? original.prefecture,
+    role: values.role ?? original.role,
+    salary: values.salary ?? original.salary,
+    startDate: values.startDate ?? original.startDate,
+    status: values.status ?? original.status,
+  };
 }
 
 function createEmployeeEditor(table, inlineActivation, language, dialogEnabled = false) {
@@ -424,23 +444,12 @@ function createEmployeeEditor(table, inlineActivation, language, dialogEnabled =
         await waitForLatency(context.signal);
         throwRequestedFailure();
         assertUniqueEmail(table, values.email ?? '', original.id);
-        return {
-          ...original,
-          active: values.active ?? original.active,
-          age: values.age ?? original.age,
-          contractEnd: values.contractEnd ?? original.contractEnd,
-          country: values.country ?? original.country,
-          email: values.email ?? original.email,
-          employmentType: values.employmentType ?? original.employmentType,
-          name: values.name ?? original.name,
-          notes: values.notes ?? original.notes,
-          officeId: values.officeId ?? original.officeId,
-          prefecture: values.prefecture ?? original.prefecture,
-          role: values.role ?? original.role,
-          salary: values.salary ?? original.salary,
-          startDate: values.startDate ?? original.startDate,
-          status: values.status ?? original.status,
-        };
+        return applyEmployeeChanges(original, values);
+      },
+      async updateMany(changes, originals, context) {
+        await waitForLatency(context.signal);
+        throwRequestedFailure();
+        return originals.map((original) => applyEmployeeChanges(original, changes));
       },
     },
     validateForm: (values) =>
@@ -532,17 +541,18 @@ function registerEventSource(tableElement, sourceName) {
 }
 
 function updateHybridSelectionStatus() {
-  const selectedEmployee = hybridEmployeeTable
-    .rows({ selected: true })
-    .data()
-    .toArray()[0];
+  const selectedEmployees = hybridEmployeeTable.rows({ selected: true }).data().toArray();
+  const selectedEmployee = selectedEmployees[0];
   if (selectedEmployee === undefined) {
     hybridSelectionStatus.textContent =
-      'Select an employee to enable Dialog Edit. Every row is available, and selecting another row moves the target.';
+      'Select one employee for single-row editing or several employees to apply common values.';
     hybridSelectionStatus.dataset.selection = 'empty';
     return;
   }
-  hybridSelectionStatus.textContent = `Dialog Edit is ready for ${selectedEmployee.name}. Selecting another employee moves the target.`;
+  hybridSelectionStatus.textContent =
+    selectedEmployees.length === 1
+      ? `Single-row editing is ready for ${selectedEmployee.name}.`
+      : `Multi-row editing is ready for ${String(selectedEmployees.length)} employees.`;
   hybridSelectionStatus.dataset.selection = 'ready';
 }
 

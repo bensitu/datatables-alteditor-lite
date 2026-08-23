@@ -40,16 +40,16 @@ delegates storage and refresh work to consumer callbacks and is exported from
 
 ## Options
 
-| Property       | Required | Description                                                                |
-| -------------- | -------- | -------------------------------------------------------------------------- |
-| `fields`       | Yes      | Ordered field definitions shared by Create, Dialog Edit, and Inline Edit.  |
-| `editing`      | No       | Composable Dialog Edit and Inline Edit behavior.                           |
-| `operations`   | No       | Asynchronous or synchronous persistence callbacks.                         |
-| `clientSide`   | No       | Synchronous Create and Update row mappings.                                |
-| `dependencies` | No       | Declarative Dialog field-state resolvers.                                  |
-| `validateForm` | No       | Cross-field validator used by Dialog Create, Dialog Edit, and Inline Edit. |
-| `language`     | No       | Complete language data or nested overrides merged with English.            |
-| `hooks`        | No       | Lifecycle veto and observation callbacks.                                  |
+| Property       | Required | Description                                                           |
+| -------------- | -------- | --------------------------------------------------------------------- |
+| `fields`       | Yes      | Ordered field definitions shared by Create and editing presentations. |
+| `editing`      | No       | Composable Dialog Edit and Inline Edit behavior.                      |
+| `operations`   | No       | Asynchronous or synchronous persistence callbacks.                    |
+| `clientSide`   | No       | Synchronous Create and Update row mappings.                           |
+| `dependencies` | No       | Declarative Dialog field-state resolvers.                             |
+| `validateForm` | No       | Cross-field validator used by Create and editing presentations.       |
+| `language`     | No       | Complete language data or nested overrides merged with English.       |
+| `hooks`        | No       | Lifecycle veto and observation callbacks.                             |
 
 Only declared field paths can be written by the built-in Edit merge. Disabled
 fields are omitted from collected values. A value normalized to `undefined` is
@@ -65,11 +65,11 @@ enables Dialog Edit and disables Inline Edit.
 
 ### `editing.dialog`
 
-| Property         | Default | Description                                                              |
-| ---------------- | ------- | ------------------------------------------------------------------------ |
-| `enabled`        | `true`  | Makes Dialog Edit and `openEditDialog()` available.                      |
-| `template`       | none    | Selector or consumer-owned element cloned for every Create or Edit form. |
-| `closeOnSuccess` | `true`  | Closes successful Create and Dialog Edit forms.                          |
+| Property         | Default | Description                                                                              |
+| ---------------- | ------- | ---------------------------------------------------------------------------------------- |
+| `enabled`        | `true`  | Enables single- and multi-record Dialog Edit when their Host capabilities are available. |
+| `template`       | none    | Selector or consumer-owned element cloned for every Create or Edit form.                 |
+| `closeOnSuccess` | `true`  | Closes successful Create and Dialog Edit forms.                                          |
 
 `template` and `closeOnSuccess` also affect Create forms even when Dialog Edit is
 disabled. Remove always closes after success because its captured rows no longer
@@ -134,6 +134,12 @@ one editor. An active dialog owns the editor interaction, so Inline activation i
 rejected until it closes. See [Editing](editing.md) for the different
 double-click and hover conflict policies.
 
+Multi-record Dialog Edit additionally requires a Host with
+`HostBatchUpdateCapability`. It is available when `operations.updateMany` is
+configured, or when no `operations.update` owns persistence and the editor can
+use `clientSide.updateRow` or the safe merge. A single-record `operations.update`
+callback is never invoked once per selected record.
+
 ## Dynamic forms and validation
 
 `dependencies` maps a rendered Dialog source field to a synchronous or
@@ -173,8 +179,10 @@ validateForm: (values) =>
     : { valid: true },
 ```
 
-The same validator contract runs for Dialog Create, Dialog Edit, and Inline Edit.
-Dialog dependencies do not run for Inline sessions. See [Dynamic forms](forms.md)
+The same validator contract runs for Dialog Create, single Dialog Edit,
+multi-record Dialog Edit, and Inline Edit. Multi-record validation runs once per
+effective record after common changes are overlaid. Dialog dependencies do not
+run for Inline sessions. See [Dynamic forms](forms.md)
 for template ownership, dependency ordering, cancellation, and error behavior.
 
 ## Persistence and hooks
@@ -183,6 +191,7 @@ for template ownership, dependency ordering, cancellation, and error behavior.
 
 - `create(values, context)`, which returns one complete row;
 - `update(values, original, context)`, which returns one complete replacement row;
+- `updateMany(changes, originals, context)`, which returns ordered complete rows;
 - `remove(rows, context)`, which resolves after persistence succeeds;
 - `refresh(context)`, which optionally replaces the default refresh behavior.
 
@@ -196,6 +205,10 @@ Edit resolves its implementation in this order:
 1. `operations.update`;
 2. `clientSide.updateRow`;
 3. safe merge into declared field paths.
+
+Multi-record Edit resolves `operations.updateMany` first, then applies
+`clientSide.updateRow(original, changes)` to each original, then uses the safe
+merge. `changes` contains overrides only.
 
 Remove uses `operations.remove` before asking the Host to remove captured records.
 Refresh uses `operations.refresh` or the configured Host's default behavior.
@@ -220,8 +233,9 @@ altEditorLiteRefresh
 
 Without Select, Create and Refresh buttons still work. Edit and Remove buttons
 need selection only when their APIs are invoked without explicit row selectors.
-The Edit button is available whenever `editing.dialog.enabled` is true, including
-Hybrid configuration.
+The Edit button opens single Edit for one selected row and multi-record Edit for
+two or more selected rows. It is disabled for several rows when the editor lacks
+multi-record capability.
 
 After a successful Create, Edit, or Remove, detected extensions with derived
 table state are synchronized through public APIs. ColumnControl SearchList

@@ -12,6 +12,7 @@
   "dialog": {
     "createTitle": "Create row",
     "editTitle": "Edit row",
+    "batchEditTitle": "Edit multiple rows",
     "removeTitle": "Remove rows",
     "removeCount": "Selected rows: {count}.",
     "removeMessage": "Confirm that the selected rows should be removed."
@@ -20,7 +21,8 @@
     "createUnavailable": "Configure a Create operation to enable this action.",
     "selectUnavailable": "DataTables Select is required for this action.",
     "busy": "The editor is busy.",
-    "editSelection": "Select exactly one row to edit.",
+    "editSelection": "Select one or more rows to edit.",
+    "batchEditUnavailable": "Multi-row editing is not available for this selection.",
     "removeSelection": "Select one or more rows to remove.",
     "initialize": "Initialize AltEditorLite to use this action."
   },
@@ -28,6 +30,16 @@
     "required": "This field is required.",
     "invalid": "Enter a valid value.",
     "unique": "The same value exists in the currently loaded table data."
+  },
+  "batchEdit": {
+    "commonValue": "Common value",
+    "multipleValues": "Multiple values",
+    "setCommonValue": "Set a common value",
+    "restoreIndividualValues": "Restore individual values",
+    "uniqueRestriction": "Unique fields cannot be assigned one value across multiple records.",
+    "fileRestriction": "File uploads cannot be modified in multi-row editing.",
+    "validationInvalid": "Review the changes for the selected rows.",
+    "selectionRequired": "Select at least two rows to edit together."
   },
   "searchSelect": {
     "placeholder": "Select an option",

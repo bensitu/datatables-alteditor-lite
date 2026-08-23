@@ -132,3 +132,28 @@ test('preserves touch-selected rows when removal is cancelled', async ({ page })
   await expect(alphaRow).toContainText('Alpha');
   await expect(betaRow).toContainText('Beta');
 });
+
+test('applies a common value to touch-selected rows', async ({ page }) => {
+  await createDialogTouchFixture(page, 'multi');
+  const alphaRow = page.locator('#row-a');
+  const betaRow = page.locator('#row-b');
+  const gammaRow = page.locator('#row-c');
+  const editButton = page.getByRole('button', { exact: true, name: 'Edit' });
+
+  await alphaRow.locator('td').first().tap();
+  await betaRow.locator('td').first().tap();
+  await expect(editButton).toBeEnabled();
+  await editButton.tap();
+
+  const dialog = page.getByRole('dialog', { name: 'Edit multiple rows' });
+  const nameField = dialog.locator('[data-alteditor-lite-batch-field="name"]');
+  await expect(nameField).toContainText('Multiple values');
+  await nameField.getByRole('button', { name: 'Set a common value' }).tap();
+  await nameField.getByRole('textbox', { name: 'Name' }).fill('Shared name');
+  await dialog.getByRole('button', { name: 'Submit' }).tap();
+
+  await expect(dialog).toBeHidden();
+  await expect(alphaRow).toContainText('Shared name');
+  await expect(betaRow).toContainText('Shared name');
+  await expect(gammaRow).toContainText('Gamma');
+});
