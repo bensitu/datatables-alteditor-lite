@@ -323,7 +323,7 @@ export class DialogEditingController<
       for (const recordTarget of requestedTargets) {
         this.arguments_.host.read(recordTarget);
       }
-      this.openBatchForm(this.batchOriginals);
+      await this.openBatchForm(this.batchOriginals);
     } catch (error: unknown) {
       this.clearBatchTargets();
       if (didAcquireInteraction) {
@@ -760,7 +760,7 @@ export class DialogEditingController<
     this.dispatchOpen(action);
   }
 
-  private openBatchForm(originals: readonly Readonly<TRow>[]): void {
+  private async openBatchForm(originals: readonly Readonly<TRow>[]): Promise<void> {
     this.arguments_.stateCoordinator.transitionTo({
       action: 'batchEdit',
       status: 'opening',
@@ -773,8 +773,27 @@ export class DialogEditingController<
         this.arguments_.instanceId,
         this.arguments_.language,
         this.arguments_.editing.template,
+        this.arguments_.options.validateForm,
+        this.arguments_.options.dependencies,
+        (_sourcePath, error) => {
+          this.arguments_.errorReporter.report(
+            error,
+            {
+              committed: false,
+              mode: 'dialog',
+              operation: 'batchEdit',
+              phase:
+                this.arguments_.stateCoordinator.getState().status === 'opening'
+                  ? 'open'
+                  : 'validation',
+              targets: this.batchOperationTargets ?? [],
+            },
+            true,
+          );
+        },
       );
       this.activeBatchForm = form;
+      await form.initializeDependencies();
       this.arguments_.stateCoordinator.assertActive();
       this.dialog.openForm(
         form.element,

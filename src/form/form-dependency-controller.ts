@@ -13,6 +13,7 @@ import type {
 import type { AltEditorLiteError } from '../core/alt-editor-lite-error.js';
 import type { EditorValues } from '../core/editor-values.js';
 import type { FieldConfig, SelectOption } from '../fields/field-config.js';
+import type { MaybePromise } from '../fields/field-value.js';
 import type { ManagedFieldController } from '../fields/managed-field-controller.js';
 import type { FieldPath } from '../object-path/field-path.js';
 
@@ -41,6 +42,23 @@ export interface FormDependencyControllerArguments<TFormValues extends object> {
     sourcePath: string,
     error: AltEditorLiteError | undefined,
   ) => void;
+  readonly isSourceAvailable?: (sourcePath: string) => boolean;
+  readonly applyValue?: (
+    targetPath: string,
+    binding: DependencyFieldBinding<TFormValues>,
+    value: unknown,
+  ) => MaybePromise<void>;
+  readonly afterApplyPatch?: (
+    application: Readonly<DependencyPatchApplication<TFormValues>>,
+  ) => MaybePromise<void>;
+}
+
+/** Information exposed after one validated dependency patch is applied. */
+export interface DependencyPatchApplication<TFormValues extends object> {
+  readonly binding: DependencyFieldBinding<TFormValues>;
+  readonly targetPath: string;
+  readonly hasOptions: boolean;
+  readonly hasValue: boolean;
 }
 
 interface ActiveDependencyRequest {
@@ -247,9 +265,9 @@ export class FormDependencyController<TFormValues extends object> {
   /** Resolves every source against one shared initial values snapshot. */
   public async initialize(values: Readonly<EditorValues<TFormValues>>): Promise<void> {
     const resolutions = await Promise.all(
-      [...this.resolverBySource.keys()].map(
-        async (sourcePath) => await this.startResolution(sourcePath, values),
-      ),
+      [...this.resolverBySource.keys()]
+        .filter((sourcePath) => this.arguments_.isSourceAvailable?.(sourcePath) !== false)
+        .map(async (sourcePath) => await this.startResolution(sourcePath, values)),
     );
     if (this.isDestroyed || this.arguments_.lifecycleSignal.aborted) {
       return;
@@ -269,7 +287,7 @@ export class FormDependencyController<TFormValues extends object> {
 
     const mergedResult = this.mergeInitialResults(resolved.map(({ result }) => result));
     const patches = this.validateResult(mergedResult);
-    this.applyPatches(patches);
+    await this.applyPatches(patches);
     for (const resolution of resolved) {
       if (this.isCurrent(resolution.sourcePath, resolution.revision)) {
         this.clearError(resolution.sourcePath);
@@ -286,6 +304,10 @@ export class FormDependencyController<TFormValues extends object> {
     if (!this.resolverBySource.has(sourcePath)) {
       return;
     }
+    if (this.arguments_.isSourceAvailable?.(sourcePath) === false) {
+      this.abortSource(sourcePath);
+      return;
+    }
     const resolution = await this.startResolution(sourcePath, values, parentSignal);
     if (resolution.status !== 'resolved') {
       return;
@@ -295,7 +317,7 @@ export class FormDependencyController<TFormValues extends object> {
       if (!this.isCurrent(sourcePath, resolution.revision)) {
         return;
       }
-      this.applyPatches(patches);
+      await this.applyPatches(patches);
       this.clearError(sourcePath);
     } catch (error: unknown) {
       if (this.isCurrent(sourcePath, resolution.revision)) {
@@ -594,14 +616,20 @@ export class FormDependencyController<TFormValues extends object> {
     return validatedPatches;
   }
 
-  private applyPatches(patches: readonly ValidatedFieldPatch<TFormValues>[]): void {
+  private async applyPatches(
+    patches: readonly ValidatedFieldPatch<TFormValues>[],
+  ): Promise<void> {
     for (const patch of patches) {
       const { controller, runtime } = patch.binding;
       if (patch.hasOptions) {
         controller.setOptions?.(patch.options ?? []);
       }
       if (patch.hasValue) {
-        controller.setValue(patch.value);
+        if (this.arguments_.applyValue === undefined) {
+          controller.setValue(patch.value);
+        } else {
+          await this.arguments_.applyValue(patch.targetPath, patch.binding, patch.value);
+        }
       }
       if (patch.hasVisible) {
         runtime.setVisible(patch.visible ?? false);
@@ -615,6 +643,12 @@ export class FormDependencyController<TFormValues extends object> {
       if (patch.hasDisabled) {
         runtime.setDisabled(patch.disabled ?? false);
       }
+      await this.arguments_.afterApplyPatch?.({
+        binding: patch.binding,
+        hasOptions: patch.hasOptions,
+        hasValue: patch.hasValue,
+        targetPath: patch.targetPath,
+      });
     }
   }
 
