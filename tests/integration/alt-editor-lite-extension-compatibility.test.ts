@@ -77,6 +77,23 @@ interface TableWithSearchBuilder {
   readonly searchBuilder: SearchBuilderControl;
 }
 
+interface ScrollerControl {
+  measure(redraw?: boolean): unknown;
+}
+
+interface TableWithScroller {
+  readonly scroller: ScrollerControl;
+}
+
+interface FixedHeaderControl {
+  adjust(): unknown;
+  enabled(): boolean;
+}
+
+interface TableWithFixedHeader {
+  readonly fixedHeader: FixedHeaderControl;
+}
+
 const fields = [
   {
     label: 'Name',
@@ -129,13 +146,17 @@ beforeAll(async () => {
 
   const autoFillRuntimeSpecifier = 'datatables.net-autofill';
   const columnControlRuntimeSpecifier = 'datatables.net-columncontrol';
+  const fixedHeaderRuntimeSpecifier = 'datatables.net-fixedheader';
   const responsiveRuntimeSpecifier = 'datatables.net-responsive';
   const rowReorderRuntimeSpecifier = 'datatables.net-rowreorder';
+  const scrollerRuntimeSpecifier = 'datatables.net-scroller';
   const searchBuilderRuntimeSpecifier = 'datatables.net-searchbuilder';
   await import(autoFillRuntimeSpecifier);
   await import(columnControlRuntimeSpecifier);
+  await import(fixedHeaderRuntimeSpecifier);
   await import(responsiveRuntimeSpecifier);
   await import(rowReorderRuntimeSpecifier);
+  await import(scrollerRuntimeSpecifier);
   await import(searchBuilderRuntimeSpecifier);
   registerAltEditorLite(DataTable);
 });
@@ -379,6 +400,69 @@ describe('DataTables 3 extension compatibility', () => {
     destroyEditor(editor);
 
     expect(() => extensionTable.searchBuilder.rebuild(search)).not.toThrow();
+    destroyTable(api, tableElement);
+  });
+
+  it('preserves record identity across Scroller redraws', async () => {
+    const rows = Array.from({ length: 60 }, (_, index): TestRow => ({
+      id: index === 0 ? 'row-a' : `scroller-row-${String(index)}`,
+      name: index === 0 ? 'Alpha' : `Scroller row ${String(index)}`,
+      rank: index + 1,
+    }));
+    const { api, tableElement } = createTestTable('scroller-compatibility', {
+      data: rows,
+      deferRender: true,
+      scrollY: '96px',
+      scroller: { rowHeight: 24 },
+    });
+    const editor = createEditor(api);
+    const extensionTable = api as unknown as TableWithScroller;
+
+    expect(tableElement.closest('.dt-container')?.classList.contains('dts')).toBe(true);
+    await editFirstRow(api, editor, 'Scroller edit');
+
+    api.order([[1, 'desc']]).draw(false);
+    extensionTable.scroller.measure(true);
+    expect(api.row('#row-a').data().name).toBe('Scroller edit');
+    expect(api.row('#scroller-row-1').data().name).toBe('Scroller row 1');
+
+    api.order([[1, 'asc']]).draw(false);
+    extensionTable.scroller.measure(true);
+    expect(api.cell('#row-a', 0).data()).toBe('Scroller edit');
+
+    destroyEditor(editor);
+    expect(() => extensionTable.scroller.measure(false)).not.toThrow();
+    destroyTable(api, tableElement);
+  });
+
+  it('keeps FixedHeader body cells mapped to their records', async () => {
+    const { api, tableElement } = createTestTable('fixedheader-compatibility', {
+      fixedHeader: true,
+    });
+    const editor = new DataTablesEditor<TestRow, ExtensionValues>(api, {
+      editing: {
+        dialog: { enabled: false },
+        inline: { enabled: true },
+      },
+      fields: inlineFields,
+    });
+    activeEditors.add(editor);
+    const extensionTable = api as unknown as TableWithFixedHeader;
+
+    expect(extensionTable.fixedHeader.enabled()).toBe(true);
+    await editor.openInlineEdit('#row-a', 0);
+    replaceInlineValue('FixedHeader edit');
+    await editor.submitInlineEdit();
+
+    api.order([[1, 'desc']]).draw(false);
+    extensionTable.fixedHeader.adjust();
+    api.order([[1, 'asc']]).draw(false);
+    expect(api.row('#row-a').data().name).toBe('FixedHeader edit');
+    expect(api.row('#row-b').data().name).toBe('Beta');
+    expect(api.cell('#row-a', 0).node().textContent).toBe('FixedHeader edit');
+
+    destroyEditor(editor);
+    expect(() => extensionTable.fixedHeader.adjust()).not.toThrow();
     destroyTable(api, tableElement);
   });
 });

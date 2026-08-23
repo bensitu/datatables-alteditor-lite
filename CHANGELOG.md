@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.2] - 2026-08-23
+
+### Changed
+
+- Added routine package boundary verification for neutral and Standalone
+  consumers without optional DataTables dependencies.
+- Expanded CI test coverage across every supported Node.js runtime line while
+  collecting coverage only on Node.js 24.
+- Added mobile and tablet browser coverage for touch editing, dialogs, and
+  multi-row selection.
+- Added behavioral compatibility coverage for DataTables Scroller and
+  FixedHeader.
+- Added a minified Standalone Browser Global bundle with a source map.
+- Added dedicated Standalone usage documentation and an in-memory example, and
+  corrected the documented local repository command.
+
+### Fixed
+
+- Kept Inline Edit available when Responsive is loaded but not enabled for the
+  current table, while continuing to exclude columns hidden by Responsive.
+
 ## [0.5.1] - 2026-08-22
 
 ### Changed

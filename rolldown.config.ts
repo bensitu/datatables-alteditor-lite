@@ -129,15 +129,18 @@ function createCoreUmdConfig(fileName: string, isMinified: boolean): RolldownOpt
   };
 }
 
-const standaloneUmdConfig: RolldownOptions = {
-  input: 'src/standalone-browser-global.ts',
-  output: {
-    file: 'dist/umd/alt-editor-lite-standalone.js',
-    format: 'umd',
-    name: 'DataTablesAltEditorLiteStandalone',
-    sourcemap: true,
-  },
-};
+function createStandaloneUmdConfig(isMinified: boolean): RolldownOptions {
+  return {
+    input: 'src/standalone-browser-global.ts',
+    output: {
+      file: `dist/umd/alt-editor-lite-standalone${isMinified ? '.min' : ''}.js`,
+      format: 'umd',
+      minify: isMinified,
+      name: 'DataTablesAltEditorLiteStandalone',
+      sourcemap: true,
+    },
+  };
+}
 
 export default defineConfig([
   coreEsmConfig,
@@ -146,7 +149,8 @@ export default defineConfig([
   createCoreUmdConfig('alt-editor-lite', true),
   createCoreUmdConfig('datatables-alteditor-lite', false),
   createCoreUmdConfig('datatables-alteditor-lite', true),
-  standaloneUmdConfig,
+  createStandaloneUmdConfig(false),
+  createStandaloneUmdConfig(true),
   ...localeNames.flatMap((localeName) => [
     createUmdLocaleConfig(localeName, false, 'alt-editor-lite'),
     createUmdLocaleConfig(localeName, true, 'alt-editor-lite'),

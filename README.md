@@ -10,7 +10,8 @@ Remove, and Refresh workflows using TypeScript and native browser controls. It
 has no jQuery or UI-framework runtime dependency.
 
 [Live demo](https://bensitu.github.io/datatables-alteditor-lite/examples/demo/) ·
-[Getting started](docs/getting-started.md) · [Editing](docs/editing.md) ·
+[Getting started](docs/getting-started.md) · [Standalone](docs/standalone.md) ·
+[Editing](docs/editing.md) ·
 [Configuration](docs/configuration.md) · [Fields](docs/fields.md) ·
 [Dynamic forms](docs/forms.md) ·
 [Operations](docs/operations.md) · [API reference](docs/api-reference.md) ·
@@ -224,6 +225,9 @@ refresh work; without it, refresh completes without changing records. Events are
 dispatched on `host.eventTarget`, which can be supplied by the application or
 left as the host's private `EventTarget`.
 
+See [Standalone usage](docs/standalone.md) for record callback semantics,
+refresh, event ownership, cleanup, and a complete in-memory example.
+
 ## Editing
 
 Dialog Edit is enabled by default. Inline Edit can be added independently, so a
@@ -354,10 +358,11 @@ scripts before the AltEditorLite browser bundle:
 The neutral editor, DataTables adapters, and `StandaloneHost` are available at
 `globalThis.DataTablesAltEditorLite`. The main browser bundle requires DataTables
 to load first. A separate
-`alt-editor-lite-standalone.js` bundle exposes the neutral editor and
-`StandaloneHost` through `globalThis.DataTablesAltEditorLiteStandalone` without
-requiring DataTables. Included language registration bundles load after the main
-DataTables bundle; external JSON languages use
+`alt-editor-lite-standalone.js` and `alt-editor-lite-standalone.min.js` bundles
+expose the neutral editor and `StandaloneHost` through
+`globalThis.DataTablesAltEditorLiteStandalone` without requiring DataTables.
+Included language registration bundles load after the main DataTables bundle;
+external JSON languages use
 `DataTablesAltEditorLite.loadEditorLanguage(...)`.
 
 See [Browser Global](docs/browser-global.md) for a complete CDN quick start, load

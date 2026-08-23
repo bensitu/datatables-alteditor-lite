@@ -114,15 +114,27 @@ describe('inline interaction foundations', () => {
     }).toThrow(EditorOperationBusyError);
   });
 
-  it('combines DataTables and Responsive column visibility', () => {
+  it('combines DataTables, Responsive, and rendered header visibility', () => {
+    const visibleHeader = document.createElement('th');
+    const hiddenHeader = document.createElement('th');
+    hiddenHeader.style.display = 'none';
+
     expect(isColumnVisiblyAvailable({ visible: () => true })).toBe(true);
     expect(isColumnVisiblyAvailable({ visible: () => false })).toBe(false);
     expect(
       isColumnVisiblyAvailable({
+        header: () => hiddenHeader,
         responsiveHidden: () => false,
         visible: () => true,
       }),
     ).toBe(false);
+    expect(
+      isColumnVisiblyAvailable({
+        header: () => visibleHeader,
+        responsiveHidden: () => false,
+        visible: () => true,
+      }),
+    ).toBe(true);
     expect(
       isColumnVisiblyAvailable({
         responsiveHidden: () => true,

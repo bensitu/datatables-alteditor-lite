@@ -12,7 +12,7 @@ Universal instructions for AI coding agents. Merge with project-specific command
 ## Project commands
 
 - Install dependencies: `npm install`
-- Run local development/watch mode: `npm run dev`
+- Run the local demo: `npm run demo`
 - Run tests: `npm test`
 - Build: `npm run build`
 

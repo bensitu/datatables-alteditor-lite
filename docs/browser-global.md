@@ -106,7 +106,9 @@ The npm package publishes these Browser Global files under `dist/umd/`:
 
 - `alt-editor-lite.css` and `alt-editor-lite.min.css`;
 - `alt-editor-lite.js` and `alt-editor-lite.min.js`;
-- `alt-editor-lite-standalone.js` for a DataTables-free standalone
+- `alt-editor-lite-standalone.js`, `alt-editor-lite-standalone.js.map`,
+  `alt-editor-lite-standalone.min.js`, and
+  `alt-editor-lite-standalone.min.js.map` for a DataTables-free standalone
   runtime;
 - Browser Global language resources under `dist/umd/locales/`.
 
@@ -126,9 +128,12 @@ the language loader, and the language registry are available through
 `globalThis.DataTablesAltEditorLite`. This main bundle requires DataTables to
 load first and registers `table.altEditorLite()` as a retrieval-only method.
 
-Standalone script users can instead load `alt-editor-lite-standalone.js` and construct
+Standalone script users can instead load `alt-editor-lite-standalone.js` or its
+minified counterpart and construct
 `DataTablesAltEditorLiteStandalone.StandaloneHost` with consumer record
-callbacks. That bundle does not import, register, or require DataTables.
+callbacks. Both bundles are published with source maps and neither imports,
+registers, or requires DataTables. See [Standalone usage](standalone.md) for the
+Host and record ownership contract.
 
 The 0.5 distribution also includes the former `datatables-alteditor-lite.js`,
 `datatables-alteditor-lite.min.js`, and language bundle filenames as compatibility

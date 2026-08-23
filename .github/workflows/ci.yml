@@ -28,17 +28,27 @@ jobs:
       - run: npm run lint:styles
 
   tests:
-    name: Unit and integration tests
+    name: Unit and integration tests (Node.js ${{ matrix.node-version }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version:
+          - '20.19.x'
+          - '22.13.x'
+          - '24.x'
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: '24.x'
+          node-version: ${{ matrix.node-version }}
           cache: npm
       - run: npm ci
-      - run: npm run test:coverage
-      - if: always()
+      - if: matrix.node-version != '24.x'
+        run: npm test
+      - if: matrix.node-version == '24.x'
+        run: npm run test:coverage
+      - if: always() && matrix.node-version == '24.x'
         uses: actions/upload-artifact@v7
         with:
           name: coverage
@@ -56,6 +66,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+      - run: npm run verify:package
       - run: npm run test:types
       - uses: actions/upload-artifact@v7
         with:
@@ -86,5 +97,25 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: playwright-report-${{ matrix.browser }}
+          path: playwright-report/
+          if-no-files-found: ignore
+
+  touch-tests:
+    name: Touch browser tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24.x'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium webkit
+      - run: npm run test:e2e -- --project=mobile-chromium --project=mobile-webkit --project=tablet-webkit
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report-touch
           path: playwright-report/
           if-no-files-found: ignore

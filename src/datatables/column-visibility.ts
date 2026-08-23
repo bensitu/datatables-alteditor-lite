@@ -1,4 +1,5 @@
 interface ColumnVisibilityApi {
+  header?(): HTMLElement | null;
   responsiveHidden?: () => unknown;
   visible(): boolean;
 }
@@ -10,8 +11,16 @@ export function isColumnVisiblyAvailable(column: ColumnVisibilityApi): boolean {
   }
 
   const responsiveVisibility = column.responsiveHidden;
-  return (
-    typeof responsiveVisibility !== 'function' ||
-    responsiveVisibility.call(column) === true
-  );
+  if (typeof responsiveVisibility !== 'function') {
+    return true;
+  }
+
+  const responsiveState = responsiveVisibility.call(column);
+  if (responsiveState !== false) {
+    return responsiveState === true;
+  }
+
+  // Responsive also returns false when its API is registered but the table has not enabled it.
+  const header = column.header?.();
+  return header !== undefined && header !== null && header.style.display !== 'none';
 }

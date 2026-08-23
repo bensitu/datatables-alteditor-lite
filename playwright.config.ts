@@ -19,32 +19,32 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      testIgnore: /editor-inline-touch\.spec\.ts/,
+      testIgnore: /editor-(?:dialog|inline)-touch\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
     {
       name: 'firefox',
-      testIgnore: /editor-inline-touch\.spec\.ts/,
+      testIgnore: /editor-(?:dialog|inline)-touch\.spec\.ts/,
       use: { ...devices['Desktop Firefox'] },
     },
     {
       name: 'webkit',
-      testIgnore: /editor-inline-touch\.spec\.ts/,
+      testIgnore: /editor-(?:dialog|inline)-touch\.spec\.ts/,
       use: { ...devices['Desktop Safari'] },
     },
     {
       name: 'mobile-chromium',
-      testMatch: /editor-inline-touch\.spec\.ts/,
+      testMatch: /editor-(?:dialog|inline)-touch\.spec\.ts/,
       use: { ...devices['Pixel 7'] },
     },
     {
       name: 'mobile-webkit',
-      testMatch: /editor-inline-touch\.spec\.ts/,
+      testMatch: /editor-(?:dialog|inline)-touch\.spec\.ts/,
       use: { ...devices['iPhone 13'] },
     },
     {
       name: 'tablet-webkit',
-      testMatch: /editor-inline-touch\.spec\.ts/,
+      testMatch: /editor-(?:dialog|inline)-touch\.spec\.ts/,
       use: { ...devices['iPad Pro 11'] },
     },
   ],

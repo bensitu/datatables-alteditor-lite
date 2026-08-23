@@ -137,7 +137,8 @@ optional `refresh` callback defines the work performed by `editor.refresh()`;
 without it, the call completes without changing records. Local uniqueness fields
 also require `records`, an iterable provider returning `{ target, row }` entries.
 Lifecycle events use `host.eventTarget`; provide one when another application
-component needs to observe them.
+component needs to observe them. See [Standalone usage](standalone.md) for the
+complete Host callback and cleanup contract.
 
 ## Editing and commit model
 
