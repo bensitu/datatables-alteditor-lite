@@ -650,14 +650,25 @@ test('keeps Hybrid Dialog Edit available while changing employee selection', asy
   const janeRow = employeeDirectory.getByRole('row', { name: /Jane Smith/ });
 
   await expect(janeRow).toBeVisible();
-  await expect(selectionStatus).toContainText('Every row is available');
+  await expect(selectionStatus).toContainText(
+    'Select one employee for single-row editing or several employees to apply common values.',
+  );
   await aikoRow.click();
-  await expect(selectionStatus).toContainText('Dialog Edit is ready for Aiko Tanaka');
+  await expect(selectionStatus).toContainText(
+    'Single-row editing is ready for Aiko Tanaka.',
+  );
 
   await janeRow.click();
+  await expect(employeeDirectory.locator('tbody tr.selected')).toHaveCount(2);
+  await expect(selectionStatus).toContainText(
+    'Multi-row editing is ready for 2 employees.',
+  );
+  await aikoRow.click();
   await expect(employeeDirectory.locator('tbody tr.selected')).toHaveCount(1);
   await expect(janeRow).toHaveClass(/selected/);
-  await expect(selectionStatus).toContainText('Dialog Edit is ready for Jane Smith');
+  await expect(selectionStatus).toContainText(
+    'Single-row editing is ready for Jane Smith.',
+  );
   await expect(editButton).toBeEnabled();
   await editButton.click();
 
