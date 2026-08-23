@@ -145,12 +145,14 @@ describe('editing configuration', () => {
 
 describe('editor button enablement', () => {
   const dialogCapabilities = resolveEditorCapabilities(resolveEditingOptions(undefined), {
+    batchEdit: false,
     create: true,
   });
 
   it('disables unavailable selection actions', () => {
     const state = createEditorButtonState({
       capabilities: resolveEditorCapabilities(resolveEditingOptions(undefined), {
+        batchEdit: false,
         create: false,
       }),
       hasCreate: false,
@@ -231,7 +233,7 @@ describe('editor button enablement', () => {
           dialog: { enabled: false },
           inline: { enabled: true },
         }),
-        { create: true },
+        { batchEdit: false, create: true },
       ),
       hasCreate: true,
       hasSelect: true,
@@ -249,10 +251,11 @@ describe('editor button enablement', () => {
   it('keeps Create and Remove independent from Dialog Edit', () => {
     const capabilities = resolveEditorCapabilities(
       resolveEditingOptions({ dialog: { enabled: false } }),
-      { create: true },
+      { batchEdit: false, create: true },
     );
 
     expect(capabilities).toEqual({
+      batchEditDialog: false,
       createDialog: true,
       editDialog: false,
       inlineEdit: false,
@@ -261,13 +264,28 @@ describe('editor button enablement', () => {
     });
   });
 
+  it('derives batch dialog editing from its own capability owner', () => {
+    const available = resolveEditorCapabilities(resolveEditingOptions(undefined), {
+      batchEdit: true,
+      create: false,
+    });
+    const dialogDisabled = resolveEditorCapabilities(
+      resolveEditingOptions({ dialog: { enabled: false } }),
+      { batchEdit: true, create: false },
+    );
+
+    expect(available.batchEditDialog).toBe(true);
+    expect(available.editDialog).toBe(true);
+    expect(dialogDisabled.batchEditDialog).toBe(false);
+  });
+
   it('keeps the Dialog Edit button available with inline editing enabled', () => {
     const capabilities = resolveEditorCapabilities(
       resolveEditingOptions({
         dialog: { enabled: true },
         inline: { enabled: true },
       }),
-      { create: true },
+      { batchEdit: false, create: true },
     );
     const state = createEditorButtonState({
       capabilities,

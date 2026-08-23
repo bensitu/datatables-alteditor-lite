@@ -2,6 +2,7 @@ import { DialogEditingController } from '../dialog/dialog-editing-controller.js'
 import { validateFieldConfigurations } from '../fields/validate-field-configurations.js';
 import { validateFormDependencies } from '../form/validate-form-dependencies.js';
 import {
+  hasHostBatchUpdateCapability,
   hasHostRefreshCapability,
   hasHostPresentationCapability,
   hasHostRowCollectionCapability,
@@ -109,6 +110,10 @@ export class AltEditorLite<
     validateHooksConfiguration(options);
 
     this.capabilities = resolveEditorCapabilities(editing, {
+      batchEdit:
+        hasHostBatchUpdateCapability<TRow, TTarget>(host) &&
+        (options.operations?.updateMany !== undefined ||
+          options.operations?.update === undefined),
       create:
         options.operations?.create !== undefined ||
         options.clientSide?.createRow !== undefined,
@@ -270,6 +275,11 @@ export class AltEditorLite<
   /** Opens Dialog Edit for one explicit or selected Host target. */
   public openEditDialog(target?: TTarget): Promise<void> {
     return this.dialogController.openEdit(target);
+  }
+
+  /** Opens Dialog Edit for two or more explicit or selected Host targets. */
+  public openBatchEditDialog(targets?: readonly TTarget[]): Promise<void> {
+    return this.dialogController.openBatchEdit(targets);
   }
 
   /** Opens Remove confirmation for explicit or selected Host targets. */

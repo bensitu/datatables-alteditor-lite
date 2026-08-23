@@ -63,7 +63,10 @@ describe('inline interaction foundations', () => {
 
   it('invalidates late operation continuations when a new request begins', () => {
     const owner = new OperationOwner();
-    const first = owner.begin('edit', 'dialog');
+    const first = owner.begin('edit', 'dialog', {
+      fieldNames: ['name'],
+      key: 'row-0',
+    });
     const second = owner.begin('edit', 'inline', {
       fieldNames: ['name'],
       key: 'row-1',
@@ -78,7 +81,9 @@ describe('inline interaction foundations', () => {
     const owner = new OperationOwner();
     owner.destroy();
 
-    expect(() => owner.begin('edit', 'inline')).toThrow(EditorDestroyedError);
+    expect(() =>
+      owner.begin('edit', 'inline', { fieldNames: ['name'], key: 'row-1' }),
+    ).toThrow(EditorDestroyedError);
   });
 
   it('accepts only declared inline lifecycle transitions', () => {

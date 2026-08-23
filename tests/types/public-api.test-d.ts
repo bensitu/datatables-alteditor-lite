@@ -10,9 +10,13 @@ import {
   registerLocale,
   type AltEditorLiteOptions,
   type AltEditorLiteLanguage,
+  type BatchChanges,
+  type BatchEditOperationContext,
+  type BatchFieldState,
   type ClientSideOperations,
   type ChoiceFieldController,
   type DialogTemplateSource,
+  type DialogAction,
   type DeepPartial,
   type EditingOptions,
   type EditorErrorEventDetail,
@@ -20,6 +24,8 @@ import {
   type EditorLanguageDefinition,
   type EditorLanguageLoadOptions,
   type EditorOperations,
+  type CreateOperationContext,
+  type EditOperationContext,
   type EditorSubmitEventDetail,
   type EditorSuccessEventDetail,
   type EditorValues,
@@ -31,7 +37,9 @@ import {
   type FieldValue,
   type InlineEditingOptions,
   type InlineEditState,
-  type OperationContext,
+  type HostBatchUpdateCapability,
+  type RefreshOperationContext,
+  type RemoveOperationContext,
   type FormDependencies,
   type FormFieldErrors,
   type FormValidationContext,
@@ -125,6 +133,9 @@ expectType<AltEditorLite<Row, DeepPartial<Row>, DataTablesRecordTarget> | null>(
 expectType<Promise<void>>(editor.openCreateDialog());
 expectType<Promise<void>>(editor.openEditDialog(host.resolveRecordTarget('#row')));
 expectType<Promise<void>>(
+  editor.openBatchEditDialog(host.resolveRecordTargets('.selected')),
+);
+expectType<Promise<void>>(
   editor.openRemoveDialog(host.resolveRecordTargets('.selected')),
 );
 expectType<Promise<void>>(editor.refresh());
@@ -202,10 +213,16 @@ expectNotAssignable<FieldConfig<FormValues>>({
 
 expectAssignable<EditorHooks<Row, FormValues>>({
   beforeSubmit: (_values, context) => {
-    expectType<'dialog' | 'inline' | 'api'>(context.mode);
-    expectType<Readonly<import('../../src/index.js').EditorOperationTarget> | undefined>(
-      context.target,
-    );
+    expectType<'dialog' | 'inline'>(context.mode);
+    if (context.operation === 'edit') {
+      expectType<Readonly<import('../../src/index.js').EditorOperationTarget>>(
+        context.target,
+      );
+    } else if (context.operation === 'batchEdit') {
+      expectType<readonly Readonly<import('../../src/index.js').EditorOperationTarget>[]>(
+        context.targets,
+      );
+    }
     return false;
   },
 });
@@ -217,10 +234,10 @@ const operations: EditorOperations<Row, FormValues> = {
   create: async (values, context) => {
     await Promise.resolve();
     expectType<Readonly<EditorValues<FormValues>>>(values);
-    expectType<OperationContext>(context);
+    expectType<CreateOperationContext>(context);
     expectType<AbortSignal>(context.signal);
-    expectType<'create' | 'edit' | 'remove' | 'refresh'>(context.operation);
-    expectType<'dialog' | 'inline' | 'api'>(context.mode);
+    expectType<'create'>(context.operation);
+    expectType<'dialog'>(context.mode);
     return {
       id: 'created',
       profile: { email: values.contact?.email ?? '' },
@@ -229,22 +246,31 @@ const operations: EditorOperations<Row, FormValues> = {
   },
   remove: (rows, context) => {
     expectType<readonly Readonly<Row>[]>(rows);
-    expectType<OperationContext>(context);
+    expectType<RemoveOperationContext>(context);
   },
   refresh: async (context) => {
-    expectType<OperationContext>(context);
-    expectType<'create' | 'edit' | 'remove' | 'refresh'>(context.operation);
+    expectType<RefreshOperationContext>(context);
+    expectType<'refresh'>(context.operation);
     await Promise.resolve();
   },
   update: (values, original, context) => {
     expectType<Readonly<EditorValues<FormValues>>>(values);
     expectType<Readonly<Row>>(original);
-    expectType<OperationContext>(context);
+    expectType<EditOperationContext>(context);
     return {
       ...original,
       profile: { email: values.contact?.email ?? original.profile.email },
       rank: values.rank ?? original.rank,
     };
+  },
+  updateMany: (changes, originals, context) => {
+    expectType<Readonly<BatchChanges<FormValues>>>(changes);
+    expectType<readonly Readonly<Row>[]>(originals);
+    expectType<BatchEditOperationContext>(context);
+    return originals.map((original) => ({
+      ...original,
+      rank: changes.rank ?? original.rank,
+    }));
   },
 };
 expectAssignable<EditorOperations<Row, FormValues>>(operations);
@@ -277,6 +303,12 @@ if (submitDetail.operation === 'create') {
 } else if (submitDetail.operation === 'edit') {
   expectType<Readonly<Row>>(submitDetail.original);
   expectType<Readonly<EditorValues<FormValues>>>(submitDetail.values);
+} else if (submitDetail.operation === 'batchEdit') {
+  expectType<Readonly<BatchChanges<FormValues>>>(submitDetail.changes);
+  expectType<readonly Readonly<Row>[]>(submitDetail.originals);
+  expectType<readonly Readonly<import('../../src/index.js').EditorOperationTarget>[]>(
+    submitDetail.targets,
+  );
 } else {
   expectType<readonly Readonly<Row>[]>(submitDetail.rows);
 }
@@ -289,12 +321,15 @@ if (successDetail.operation === 'create') {
   expectType<Readonly<Row>>(successDetail.row);
 } else if (successDetail.operation === 'remove') {
   expectType<readonly Readonly<Row>[]>(successDetail.rows);
+} else if (successDetail.operation === 'batchEdit') {
+  expectType<Readonly<BatchChanges<FormValues>>>(successDetail.changes);
+  expectType<readonly Readonly<Row>[]>(successDetail.rows);
 } else {
   expectType<'refresh'>(successDetail.operation);
 }
 
 declare const errorDetail: EditorErrorEventDetail<Row, FormValues>;
-expectType<'create' | 'edit' | 'remove' | 'refresh'>(errorDetail.operation);
+expectType<'create' | 'edit' | 'batchEdit' | 'remove' | 'refresh'>(errorDetail.operation);
 expectType<'dialog' | 'inline' | 'api'>(errorDetail.mode);
 
 expectAssignable<FieldPath<FormValues>>('contact.email');
@@ -334,7 +369,7 @@ const formValidator: FormValidator<FormValues> = (values, context) => {
   expectType<Readonly<EditorValues<FormValues>>>(values);
   expectType<FormValidationContext>(context);
   expectType<AbortSignal>(context.signal);
-  expectType<'create' | 'edit'>(context.operation);
+  expectType<'create' | 'edit' | 'batchEdit'>(context.operation);
   expectType<'dialog' | 'inline'>(context.mode);
   return {
     fieldErrors: { rank: 'Rank must match the selected role.' },
@@ -354,6 +389,16 @@ expectAssignable<FormValidationResult<FormValues>>({ valid: true });
 expectNotAssignable<FormValidationResult<FormValues>>({
   fieldErrors: { missing: 'Unknown field.' },
   valid: false,
+});
+
+expectAssignable<DialogAction>('batchEdit');
+expectAssignable<BatchChanges<FormValues>>({ rank: 4 });
+expectAssignable<BatchFieldState<string>>({
+  baseline: { status: 'mixed' },
+  current: { status: 'overridden', value: 'Tokyo' },
+});
+expectAssignable<HostBatchUpdateCapability<Row, string>>({
+  applyUpdates: () => Promise.resolve(),
 });
 
 expectNotAssignable<FieldConfig<FormValues>>({

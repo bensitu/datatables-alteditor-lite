@@ -1,7 +1,7 @@
 /**
  * Operations that own a modal editor dialog.
  */
-export type DialogAction = 'create' | 'edit' | 'remove';
+export type DialogAction = 'create' | 'edit' | 'batchEdit' | 'remove';
 
 /**
  * Operations exposed by the complete editor lifecycle.

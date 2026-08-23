@@ -228,6 +228,7 @@ function unavailableButtonState(
     previousState ??
     createEditorButtonState({
       capabilities: {
+        batchEditDialog: false,
         createDialog: true,
         editDialog: false,
         inlineEdit: false,

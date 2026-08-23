@@ -29,6 +29,7 @@ export {
   type AltEditorLiteErrorOptions,
 } from './core/alt-editor-lite-error.js';
 export type {
+  BatchEditOperationContext,
   AfterSuccessContext,
   AltEditorLiteOptions,
   BeforeOpenContext,
@@ -38,7 +39,16 @@ export type {
   EditorHooks,
   EditorOperations,
   OperationContext,
+  CreateOperationContext,
+  EditOperationContext,
+  RefreshOperationContext,
+  RemoveOperationContext,
 } from './core/alt-editor-lite-options.js';
+export type {
+  BatchFieldBaseline,
+  BatchFieldCurrentState,
+  BatchFieldState,
+} from './core/batch-field-state.js';
 export type {
   DialogEditingOptions,
   DialogTemplateSource,
@@ -49,6 +59,8 @@ export type {
 export type {
   EditorCreateSubmitEventDetail,
   EditorCreateSuccessEventDetail,
+  EditorBatchEditSubmitEventDetail,
+  EditorBatchEditSuccessEventDetail,
   EditorCloseEventDetail,
   EditorCloseReason,
   EditorDestroyEventDetail,
@@ -72,7 +84,12 @@ export type {
   EditorOperationTarget,
 } from './core/editor-operation.js';
 export type { EditorState } from './core/editor-state.js';
-export type { BuiltinValue, DeepPartial, EditorValues } from './core/editor-values.js';
+export type {
+  BatchChanges,
+  BuiltinValue,
+  DeepPartial,
+  EditorValues,
+} from './core/editor-values.js';
 export type {
   BaseFieldConfig,
   BaseSearchSelectFieldConfig,
@@ -138,6 +155,8 @@ export type { InlineKeyboardShortcut } from './inline/inline-keyboard-shortcut.j
 export type {
   EditorHost,
   HostApplyContext,
+  HostBatchUpdate,
+  HostBatchUpdateCapability,
   HostPresentationCapability,
   HostRecordEntry,
   HostRefreshCapability,

@@ -1,12 +1,7 @@
 import type { AltEditorLiteError } from './alt-editor-lite-error.js';
 import type { AltEditorLite } from './alt-editor-lite.js';
-import type {
-  DialogAction,
-  EditorOperation,
-  EditorOperationMode,
-  EditorOperationTarget,
-} from './editor-operation.js';
-import type { EditorValues } from './editor-values.js';
+import type { EditorOperationMode, EditorOperationTarget } from './editor-operation.js';
+import type { BatchChanges, EditorValues } from './editor-values.js';
 
 /** Names of the stable DOM events published by the editor. */
 export type EditorEventName =
@@ -22,20 +17,40 @@ export type EditorEventName =
 export type EditorCloseReason =
   'api' | 'cancel' | 'escape' | 'success' | 'unchanged' | 'redraw';
 
-interface EditorEventContext {
-  readonly mode: EditorOperationMode;
-  readonly target?: Readonly<EditorOperationTarget>;
+interface EditorEventDetailBase<TRow extends object, TFormValues extends object> {
+  readonly editor: AltEditorLite<TRow, TFormValues>;
 }
 
-/** Detail published after an operation dialog is fully open and focused. */
-export interface EditorOpenEventDetail<
+/** Detail published after an operation dialog or inline editor is fully open. */
+export type EditorOpenEventDetail<
   TRow extends object,
   TFormValues extends object,
-> extends EditorEventContext {
-  readonly type: 'open';
-  readonly editor: AltEditorLite<TRow, TFormValues>;
-  readonly operation: DialogAction;
-}
+> = EditorEventDetailBase<TRow, TFormValues> &
+  (
+    | {
+        readonly type: 'open';
+        readonly operation: 'create';
+        readonly mode: 'dialog';
+      }
+    | {
+        readonly type: 'open';
+        readonly operation: 'edit';
+        readonly mode: 'dialog' | 'inline';
+        readonly target: Readonly<EditorOperationTarget>;
+      }
+    | {
+        readonly type: 'open';
+        readonly operation: 'batchEdit';
+        readonly mode: 'dialog';
+        readonly originals: readonly Readonly<TRow>[];
+        readonly targets: readonly Readonly<EditorOperationTarget>[];
+      }
+    | {
+        readonly type: 'open';
+        readonly operation: 'remove';
+        readonly mode: 'dialog';
+      }
+  );
 
 /** Create detail published after validation and collection, before persistence. */
 export interface EditorCreateSubmitEventDetail<
@@ -60,8 +75,22 @@ export interface EditorEditSubmitEventDetail<
   readonly operation: 'edit';
   readonly values: Readonly<EditorValues<TFormValues>>;
   readonly original: Readonly<TRow>;
-  readonly mode: EditorOperationMode;
-  readonly target?: Readonly<EditorOperationTarget>;
+  readonly mode: 'dialog' | 'inline';
+  readonly target: Readonly<EditorOperationTarget>;
+}
+
+/** Batch Edit detail published after validation, before persistence. */
+export interface EditorBatchEditSubmitEventDetail<
+  TRow extends object,
+  TFormValues extends object,
+> {
+  readonly type: 'submit';
+  readonly editor: AltEditorLite<TRow, TFormValues>;
+  readonly operation: 'batchEdit';
+  readonly changes: Readonly<BatchChanges<TFormValues>>;
+  readonly originals: readonly Readonly<TRow>[];
+  readonly mode: 'dialog';
+  readonly targets: readonly Readonly<EditorOperationTarget>[];
 }
 
 /** Remove detail published after snapshot validation, before persistence. */
@@ -81,6 +110,7 @@ export interface EditorRemoveSubmitEventDetail<
 export type EditorSubmitEventDetail<TRow extends object, TFormValues extends object> =
   | EditorCreateSubmitEventDetail<TRow, TFormValues>
   | EditorEditSubmitEventDetail<TRow, TFormValues>
+  | EditorBatchEditSubmitEventDetail<TRow, TFormValues>
   | EditorRemoveSubmitEventDetail<TRow, TFormValues>;
 
 /** Detail published after the Host applies a created record. */
@@ -108,8 +138,23 @@ export interface EditorEditSuccessEventDetail<
   readonly original: Readonly<TRow>;
   readonly values: Readonly<EditorValues<TFormValues>>;
   readonly row: Readonly<TRow>;
-  readonly mode: EditorOperationMode;
-  readonly target?: Readonly<EditorOperationTarget>;
+  readonly mode: 'dialog' | 'inline';
+  readonly target: Readonly<EditorOperationTarget>;
+}
+
+/** Detail published after the Host applies a batch of canonical rows. */
+export interface EditorBatchEditSuccessEventDetail<
+  TRow extends object,
+  TFormValues extends object,
+> {
+  readonly type: 'success';
+  readonly editor: AltEditorLite<TRow, TFormValues>;
+  readonly operation: 'batchEdit';
+  readonly changes: Readonly<BatchChanges<TFormValues>>;
+  readonly originals: readonly Readonly<TRow>[];
+  readonly rows: readonly Readonly<TRow>[];
+  readonly mode: 'dialog';
+  readonly targets: readonly Readonly<EditorOperationTarget>[];
 }
 
 /** Detail published after the Host removes all captured records. */
@@ -141,28 +186,59 @@ export interface EditorRefreshSuccessEventDetail<
 export type EditorSuccessEventDetail<TRow extends object, TFormValues extends object> =
   | EditorCreateSuccessEventDetail<TRow, TFormValues>
   | EditorEditSuccessEventDetail<TRow, TFormValues>
+  | EditorBatchEditSuccessEventDetail<TRow, TFormValues>
   | EditorRemoveSuccessEventDetail<TRow, TFormValues>
   | EditorRefreshSuccessEventDetail<TRow, TFormValues>;
 
 /** Detail published after an error is visible without a Host mutation. */
-export interface EditorErrorEventDetail<TRow extends object, TFormValues extends object> {
+export type EditorErrorEventDetail<
+  TRow extends object,
+  TFormValues extends object,
+> = EditorEventDetailBase<TRow, TFormValues> & {
   readonly type: 'error';
-  readonly editor: AltEditorLite<TRow, TFormValues>;
-  readonly operation: EditorOperation;
   readonly error: AltEditorLiteError;
-  readonly mode: EditorOperationMode;
-  readonly target?: Readonly<EditorOperationTarget>;
-}
+} & (
+    | { readonly operation: 'create'; readonly mode: 'dialog' }
+    | {
+        readonly operation: 'edit';
+        readonly mode: 'dialog' | 'inline';
+        readonly target: Readonly<EditorOperationTarget>;
+      }
+    | {
+        readonly operation: 'batchEdit';
+        readonly mode: 'dialog';
+        readonly targets: readonly Readonly<EditorOperationTarget>[];
+      }
+    | { readonly operation: 'remove'; readonly mode: 'dialog' }
+    | { readonly operation: 'refresh'; readonly mode: 'api' }
+    | {
+        readonly operation: 'refresh';
+        readonly mode: 'inline';
+        readonly target: Readonly<EditorOperationTarget>;
+      }
+  );
 
 /** Detail published after dialog cleanup and focus restoration. */
-export interface EditorCloseEventDetail<TRow extends object, TFormValues extends object> {
+export type EditorCloseEventDetail<
+  TRow extends object,
+  TFormValues extends object,
+> = EditorEventDetailBase<TRow, TFormValues> & {
   readonly type: 'close';
-  readonly editor: AltEditorLite<TRow, TFormValues>;
-  readonly operation: DialogAction;
   readonly reason: EditorCloseReason;
-  readonly mode: EditorOperationMode;
-  readonly target?: Readonly<EditorOperationTarget>;
-}
+} & (
+    | { readonly operation: 'create'; readonly mode: 'dialog' }
+    | {
+        readonly operation: 'edit';
+        readonly mode: 'dialog' | 'inline';
+        readonly target: Readonly<EditorOperationTarget>;
+      }
+    | {
+        readonly operation: 'batchEdit';
+        readonly mode: 'dialog';
+        readonly targets: readonly Readonly<EditorOperationTarget>[];
+      }
+    | { readonly operation: 'remove'; readonly mode: 'dialog' }
+  );
 
 /** Detail published at the start and completion of a Refresh operation. */
 export interface EditorRefreshEventDetail<

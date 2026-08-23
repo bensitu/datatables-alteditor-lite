@@ -139,7 +139,7 @@ export class EditorSelectionCountError extends AltEditorLiteError {
   public readonly actualCount: number;
 
   /** Required selection cardinality. */
-  public readonly expected: 'exactly-one' | 'one-or-more';
+  public readonly expected: 'exactly-one' | 'one-or-more' | 'at-least-two';
 
   /**
    * Creates a selection-count error.
@@ -149,7 +149,7 @@ export class EditorSelectionCountError extends AltEditorLiteError {
    * @param message - Localized safe explanation.
    */
   public constructor(
-    expected: 'exactly-one' | 'one-or-more',
+    expected: 'exactly-one' | 'one-or-more' | 'at-least-two',
     actualCount: number,
     message: string,
   ) {

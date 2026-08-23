@@ -131,13 +131,13 @@ export class DialogRemoveOperation<
     }
   }
 
-  private owns(request: OwnedOperationRequest): boolean {
+  private owns(request: OwnedOperationRequest<'remove'>): boolean {
     return this.arguments_.operationOwner.owns(request);
   }
 
   private handleFailure(
     presentation: DialogRemovePresentation,
-    request: OwnedOperationRequest,
+    request: OwnedOperationRequest<'remove'>,
     rawError: unknown,
     phase: EditorErrorHookContext['phase'],
   ): void {

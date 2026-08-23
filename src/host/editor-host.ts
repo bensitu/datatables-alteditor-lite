@@ -5,9 +5,26 @@ export interface HostApplyContext {
   /** Signal aborted when the owning operation is cancelled or destroyed. */
   readonly signal: AbortSignal;
   /** Operation whose canonical result is being applied. */
-  readonly operation: Extract<EditorOperation, 'create' | 'edit' | 'remove'>;
+  readonly operation: Extract<
+    EditorOperation,
+    'create' | 'edit' | 'batchEdit' | 'remove'
+  >;
   /** Presentation surface that initiated the operation. */
   readonly mode: EditorOperationMode;
+}
+
+/** One canonical row replacement supplied to a batch-capable Host. */
+export interface HostBatchUpdate<TRow extends object, TTarget> {
+  readonly target: TTarget;
+  readonly row: TRow;
+}
+
+/** Optional Host support for applying multiple canonical replacement rows. */
+export interface HostBatchUpdateCapability<TRow extends object, TTarget> {
+  applyUpdates(
+    updates: readonly Readonly<HostBatchUpdate<TRow, TTarget>>[],
+    context: Readonly<HostApplyContext>,
+  ): Promise<void>;
 }
 
 /** Minimal record operations required by the host-independent editor runtime. */
@@ -75,6 +92,13 @@ export function hasHostSelectionCapability<TTarget>(
   host: object,
 ): host is HostSelectionCapability<TTarget> {
   return 'getSelectedTargets' in host && typeof host.getSelectedTargets === 'function';
+}
+
+/** Detects support for applying multiple canonical replacement rows. */
+export function hasHostBatchUpdateCapability<TRow extends object, TTarget>(
+  host: object,
+): host is HostBatchUpdateCapability<TRow, TTarget> {
+  return 'applyUpdates' in host && typeof host.applyUpdates === 'function';
 }
 
 /** Detects refresh support without adding optional methods to EditorHost. */

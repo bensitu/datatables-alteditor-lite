@@ -16,12 +16,16 @@ export type FormValidationResult<TFormValues extends object> =
       readonly message?: string;
     };
 
+/** Operation and presentation supplied before a validation signal is attached. */
+export type FormValidationRequestContext =
+  | { readonly operation: 'create'; readonly mode: 'dialog' }
+  | { readonly operation: 'edit'; readonly mode: 'dialog' | 'inline' }
+  | { readonly operation: 'batchEdit'; readonly mode: 'dialog' };
+
 /** Immutable operation context supplied to a form-level validator. */
-export interface FormValidationContext {
+export type FormValidationContext = FormValidationRequestContext & {
   readonly signal: AbortSignal;
-  readonly operation: 'create' | 'edit';
-  readonly mode: 'dialog' | 'inline';
-}
+};
 
 /** Cross-field validator shared by dialog and inline editing. */
 export type FormValidator<TFormValues extends object> = (

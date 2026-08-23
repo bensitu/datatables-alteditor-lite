@@ -169,13 +169,13 @@ export class DialogCreateOperation<
     }
   }
 
-  private owns(request: OwnedOperationRequest): boolean {
+  private owns(request: OwnedOperationRequest<'create'>): boolean {
     return this.arguments_.operationOwner.owns(request);
   }
 
   private async createRow(
     values: Readonly<EditorValues<TFormValues>>,
-    request: OwnedOperationRequest,
+    request: OwnedOperationRequest<'create'>,
   ): Promise<TRow> {
     const { options, operationOwner } = this.arguments_;
     if (options.operations?.create !== undefined) {
@@ -206,7 +206,7 @@ export class DialogCreateOperation<
   private handleFailure(
     form: EditorFormController<TFormValues>,
     presentation: DialogCreatePresentation<TFormValues>,
-    request: OwnedOperationRequest,
+    request: OwnedOperationRequest<'create'>,
     rawError: unknown,
     phase: EditorErrorHookContext['phase'],
   ): void {

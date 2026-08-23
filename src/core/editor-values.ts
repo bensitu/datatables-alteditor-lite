@@ -31,3 +31,6 @@ export type DeepPartial<TValue> = TValue extends
  * Describes the partial values collected from an editor form.
  */
 export type EditorValues<TFormValues extends object> = DeepPartial<TFormValues>;
+
+/** Fields explicitly assigned one common value during a batch edit. */
+export type BatchChanges<TFormValues extends object> = EditorValues<TFormValues>;

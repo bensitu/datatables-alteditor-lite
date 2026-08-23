@@ -10,7 +10,7 @@ import {
   type StandaloneValues,
 } from './standalone-test-fixture.js';
 
-import type { OperationContext } from '../../src/core/alt-editor-lite-options.js';
+import type { EditOperationContext } from '../../src/core/alt-editor-lite-options.js';
 import type { EditorValues } from '../../src/core/editor-values.js';
 
 function replaceName(value: string): void {
@@ -52,7 +52,7 @@ describe('AltEditorLite Standalone Edit', () => {
       (
         values: Readonly<EditorValues<StandaloneValues>>,
         original: Readonly<StandaloneRecord>,
-        context: OperationContext,
+        context: EditOperationContext,
       ) => {
         lifecycle.push('persist');
         originalFromPersistence = original;

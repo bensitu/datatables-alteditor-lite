@@ -31,7 +31,7 @@ import {
 } from './validate-editor-form.js';
 
 import type { FormDependencies } from './form-dependency.js';
-import type { FormValidationContext, FormValidator } from './form-validation.js';
+import type { FormValidationRequestContext, FormValidator } from './form-validation.js';
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type { DialogTemplateSource } from '../core/editing-options.js';
 import type { DeepPartial, EditorValues } from '../core/editor-values.js';
@@ -343,7 +343,7 @@ export class EditorFormController<
   public async validateForSubmission(
     operationSignal: AbortSignal,
     validateForm: FormValidator<TFormValues> | undefined,
-    context: Omit<FormValidationContext, 'signal'>,
+    context: FormValidationRequestContext,
   ): Promise<FormSubmissionValidationResult<TFormValues>> {
     this.assertActive();
     this.activeFormValidationAbortController?.abort();

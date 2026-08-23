@@ -2,6 +2,7 @@ import type { ResolvedEditingOptions } from './resolve-editing-options.js';
 
 /** Features available from one editor instance. */
 export interface EditorCapabilities {
+  readonly batchEditDialog: boolean;
   readonly createDialog: boolean;
   readonly editDialog: boolean;
   readonly inlineEdit: boolean;
@@ -11,6 +12,7 @@ export interface EditorCapabilities {
 
 /** Persistence ownership relevant to editor capabilities. */
 export interface EditorCapabilityOwners {
+  readonly batchEdit: boolean;
   readonly create: boolean;
 }
 
@@ -20,6 +22,7 @@ export function resolveEditorCapabilities<TFormValues extends object>(
   owners: Readonly<EditorCapabilityOwners>,
 ): Readonly<EditorCapabilities> {
   return Object.freeze({
+    batchEditDialog: editing.dialog.enabled && owners.batchEdit,
     createDialog: owners.create,
     editDialog: editing.dialog.enabled,
     inlineEdit: editing.inline.enabled,

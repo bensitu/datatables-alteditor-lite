@@ -13,8 +13,8 @@ import { mergeDeclaredFieldValues } from '../merge-declared-field-values.js';
 import type { AltEditorLiteLanguage } from '../alt-editor-lite-language.js';
 import type {
   AfterSuccessContext,
-  BeforeSubmitContext,
   ClientSideOperations,
+  EditOperationContext,
   EditorOperations,
   EditorErrorHookContext,
 } from '../alt-editor-lite-options.js';
@@ -43,7 +43,7 @@ export interface EditOperationRunArguments<
   readonly revalidateTarget: () => void;
   readonly commit: (
     row: TRow,
-    request: OwnedOperationRequest,
+    request: OwnedOperationRequest<'edit'>,
   ) => Promise<Readonly<EditCommitResult<TRow>>>;
   readonly dispatchSubmit: (
     transaction: Readonly<EditTransaction<TRow, TFormValues>>,
@@ -54,7 +54,7 @@ export interface EditOperationRunArguments<
   ) => void;
   readonly beforeSubmit?: (
     transaction: Readonly<EditTransaction<TRow, TFormValues>>,
-    context: BeforeSubmitContext<TRow>,
+    context: EditOperationContext,
   ) => Promise<boolean>;
   readonly afterSuccess?: (
     context: AfterSuccessContext<TRow, TFormValues>,
@@ -237,7 +237,7 @@ export class EditOperationRunner<TRow extends object, TFormValues extends object
 
   private async updateRow(
     transaction: Readonly<EditTransaction<TRow, TFormValues>>,
-    request: OwnedOperationRequest,
+    request: OwnedOperationRequest<'edit'>,
   ): Promise<TRow> {
     if (this.operations?.update !== undefined) {
       const rowCandidate: unknown = await this.operations.update(

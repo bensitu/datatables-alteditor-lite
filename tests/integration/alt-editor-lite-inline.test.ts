@@ -11,7 +11,7 @@ import {
   type EditingOptions,
   type InlineActivation,
   type InlineEditingOptions,
-  type OperationContext,
+  type EditOperationContext,
 } from '../../src/datatables.js';
 
 import {
@@ -423,7 +423,7 @@ describe('AltEditorLite programmatic inline editing', () => {
       (
         values: Readonly<Partial<InlineValues>>,
         original: Readonly<TestRow>,
-        context: OperationContext,
+        context: EditOperationContext,
       ) => {
         expect(context.mode).toBe('inline');
         expect(context.target).toMatchObject({
