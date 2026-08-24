@@ -16,7 +16,7 @@ if (
   typeof altEditorLiteRuntime !== 'object' ||
   altEditorLiteRuntime === null ||
   typeof altEditorLiteRuntime.AltEditorLite !== 'function' ||
-  typeof altEditorLiteRuntime.DataTablesHost !== 'function' ||
+  typeof altEditorLiteRuntime.Editor !== 'function' ||
   typeof altEditorLiteRuntime.StandaloneHost !== 'function'
 ) {
   failDemoInitialization(
@@ -25,9 +25,9 @@ if (
 }
 
 const {
-  AltEditorLite,
+  AltEditorLite: CoreEditor,
   AltEditorLiteError,
-  DataTablesHost,
+  Editor,
   StandaloneHost,
   getLocale,
   getRegisteredLocaleNames,
@@ -372,8 +372,7 @@ function applyEmployeeChanges(original, values) {
 }
 
 function createEmployeeEditor(table, inlineActivation, language, dialogEnabled = false) {
-  const host = new DataTablesHost(table);
-  return new AltEditorLite(host, {
+  return new Editor(table, {
     dependencies: {
       country: (country, { values }) => {
         const usesPrefecture = country === 'JP';
@@ -610,7 +609,7 @@ const standaloneHost = new StandaloneHost({
   },
 });
 
-const standaloneEditor = new AltEditorLite(standaloneHost, {
+const standaloneEditor = new CoreEditor(standaloneHost, {
   clientSide: {
     createRow: (values) => ({
       email: values.email ?? '',
