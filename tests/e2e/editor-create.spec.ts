@@ -24,7 +24,7 @@ function initializationScript(variant: EditorFixtureVariant): string {
         data: [{ id: 'initial', name: 'Initial', rank: 1 }],
         rowId: 'id'
       });
-      globalThis.editor = new AltEditorLite.AltEditorLite(
+      globalThis.editor = new AltEditorLite.Editor(
         globalThis.tableApi,
         {
           fields: [
@@ -72,7 +72,7 @@ function initializationScript(variant: EditorFixtureVariant): string {
       data: [{ id: 'initial', name: 'Initial', rank: 1 }],
       rowId: 'id'
     });
-      globalThis.editor = new AltEditorLite.AltEditorLite(
+      globalThis.editor = new AltEditorLite.Editor(
       globalThis.tableApi,
       {
         fields: [

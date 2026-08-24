@@ -70,7 +70,7 @@ async function createDialogTouchFixture(
         rowId: 'id',
         select: { style: '${selectionStyle}' }
       });
-      globalThis.editor = new AltEditorLite.AltEditorLite(
+      globalThis.editor = new AltEditorLite.Editor(
         globalThis.tableApi,
         {
           fields: [

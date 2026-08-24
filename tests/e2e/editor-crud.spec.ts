@@ -75,7 +75,7 @@ async function createCrudFixture(page: Page): Promise<void> {
         order: [[1, 'asc']],
         rowId: 'id'
       });
-      globalThis.editor = new AltEditorLite.AltEditorLite(
+      globalThis.editor = new AltEditorLite.Editor(
         globalThis.tableApi,
         {
           fields: [
@@ -199,7 +199,7 @@ async function createDynamicFormFixture(page: Page): Promise<void> {
         }],
         rowId: 'id'
       });
-      globalThis.editor = new AltEditorLite.AltEditorLite(
+      globalThis.editor = new AltEditorLite.Editor(
         globalThis.tableApi,
         {
           dependencies: {
@@ -342,7 +342,7 @@ async function createExtensionsFixture(page: Page): Promise<void> {
         rowId: 'id',
         select: true
       });
-      globalThis.editor = new AltEditorLite.AltEditorLite(
+      globalThis.editor = new AltEditorLite.Editor(
         globalThis.tableApi,
         {
           clientSide: {

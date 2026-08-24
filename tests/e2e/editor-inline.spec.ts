@@ -70,7 +70,7 @@ async function createInlineFixture(
         ],
         rowId: 'id'
       });
-      globalThis.editor = new AltEditorLite.AltEditorLite(
+      globalThis.editor = new AltEditorLite.Editor(
         globalThis.tableApi,
         {
           fields: [
@@ -142,7 +142,7 @@ async function createSearchSelectInlineFixture(page: Page): Promise<void> {
         data: [{ id: 'row-a', office: 'beijing' }],
         rowId: 'id'
       });
-      globalThis.editor = new AltEditorLite.AltEditorLite(
+      globalThis.editor = new AltEditorLite.Editor(
         globalThis.tableApi,
         {
           editing: {
@@ -250,7 +250,7 @@ async function createRenderedControlsFixture(page: Page): Promise<void> {
             }
           ],
       };
-      globalThis.editor = new AltEditorLite.AltEditorLite(
+      globalThis.editor = new AltEditorLite.Editor(
         globalThis.tableApi,
         {
           ...globalThis.editorOptions,
@@ -294,7 +294,7 @@ async function createExtensionInlineFixture(page: Page): Promise<void> {
         keys: true,
         rowId: 'id'
       });
-      globalThis.editor = new AltEditorLite.AltEditorLite(
+      globalThis.editor = new AltEditorLite.Editor(
         globalThis.tableApi,
         {
           editing: {

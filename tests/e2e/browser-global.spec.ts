@@ -79,14 +79,14 @@ test('loads after globalThis.DataTable without introducing jQuery', async ({ pag
         readonly version?: unknown;
       };
       AltEditorLite?: {
-        readonly AltEditorLite?: new (
+        readonly Editor?: new (
           table: object,
           options: { readonly fields: readonly [] },
         ) => { destroy(): void };
       };
     };
     const dataTableConstructor = runtimeScope.DataTable;
-    const editorConstructor = runtimeScope.AltEditorLite?.AltEditorLite;
+    const editorConstructor = runtimeScope.AltEditorLite?.Editor;
 
     if (dataTableConstructor === undefined || editorConstructor === undefined) {
       throw new Error('Expected both browser globals after bundle loading.');
