@@ -137,11 +137,6 @@ callbacks. Both standalone files are published with source maps and neither
 imports, registers, or requires DataTables. See [Standalone
 usage](standalone.md) for the Host and record ownership contract.
 
-The current distribution also includes the former `datatables-alteditor-lite.js`,
-`datatables-alteditor-lite.min.js`, and language bundle filenames as compatibility
-copies. New integrations should use the `alt-editor-lite` filenames. The
-compatibility filenames remain available until 1.0.
-
 ## Languages
 
 Included language registration bundles must load after the main browser bundle:

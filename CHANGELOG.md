@@ -29,6 +29,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   namespace as `globalThis.AltEditorLite`, its DataTables constructor as
   `AltEditorLite.Editor`, and the standalone namespace as
   `globalThis.AltEditorLiteStandalone`.
+- Updated the product-facing name to AltEditorLite while retaining the existing
+  `datatables-alteditor-lite` npm package name and import paths.
 
 ### Breaking
 
@@ -38,6 +40,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `globalThis.DataTablesAltEditorLiteStandalone` browser namespaces without
   runtime aliases. Browser DataTables construction now uses
   `new AltEditorLite.Editor(table, options)`.
+- Removed the `datatables-alteditor-lite`-prefixed UMD main and language
+  compatibility files. Browser integrations must use the `alt-editor-lite`
+  filenames.
 
 ## [0.5.2] - 2026-08-23
 
@@ -113,7 +118,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   distribution, and separated neutral ESM imports.
 - Standardized Browser Global filenames on the `alt-editor-lite` name while
   retaining the previously published main and language filenames as compatibility
-  copies until 1.0.
+  copies in that release.
 
 ### Fixed
 

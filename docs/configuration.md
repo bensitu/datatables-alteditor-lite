@@ -253,6 +253,8 @@ names are not retained as runtime aliases.
 | `globalThis.DataTablesAltEditorLite`           | `globalThis.AltEditorLite`           |
 | `DataTablesAltEditorLite.DataTablesEditor`     | `AltEditorLite.Editor`               |
 | `globalThis.DataTablesAltEditorLiteStandalone` | `globalThis.AltEditorLiteStandalone` |
+| `dist/umd/datatables-alteditor-lite*.js`       | `dist/umd/alt-editor-lite*.js`       |
+| `locales/datatables-alteditor-lite.*.js`       | `locales/alt-editor-lite.*.js`       |
 
 ## Migrating from v0.4.1
 

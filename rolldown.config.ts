@@ -82,17 +82,13 @@ function createEsmLocaleConfig(localeName: string): RolldownOptions {
   };
 }
 
-function createUmdLocaleConfig(
-  localeName: string,
-  isMinified: boolean,
-  filePrefix: string,
-): RolldownOptions {
+function createUmdLocaleConfig(localeName: string, isMinified: boolean): RolldownOptions {
   const entryId = `virtual:alteditor-lite-language:${localeName}:browser`;
   return {
     input: entryId,
     plugins: [createLocaleEntryPlugin(localeName, true)],
     output: {
-      file: `dist/umd/locales/${filePrefix}.${localeName}${isMinified ? '.min' : ''}.js`,
+      file: `dist/umd/locales/alt-editor-lite.${localeName}${isMinified ? '.min' : ''}.js`,
       name: 'AltEditorLite',
       format: 'umd',
       minify: isMinified,
@@ -116,11 +112,11 @@ const coreEsmConfig: RolldownOptions = {
   },
 };
 
-function createCoreUmdConfig(fileName: string, isMinified: boolean): RolldownOptions {
+function createCoreUmdConfig(isMinified: boolean): RolldownOptions {
   return {
     input: 'src/browser-global.ts',
     output: {
-      file: `dist/umd/${fileName}${isMinified ? '.min' : ''}.js`,
+      file: `dist/umd/alt-editor-lite${isMinified ? '.min' : ''}.js`,
       format: 'umd',
       minify: isMinified,
       name: 'AltEditorLite',
@@ -145,16 +141,12 @@ function createStandaloneUmdConfig(isMinified: boolean): RolldownOptions {
 export default defineConfig([
   coreEsmConfig,
   ...localeNames.map((localeName) => createEsmLocaleConfig(localeName)),
-  createCoreUmdConfig('alt-editor-lite', false),
-  createCoreUmdConfig('alt-editor-lite', true),
-  createCoreUmdConfig('datatables-alteditor-lite', false),
-  createCoreUmdConfig('datatables-alteditor-lite', true),
+  createCoreUmdConfig(false),
+  createCoreUmdConfig(true),
   createStandaloneUmdConfig(false),
   createStandaloneUmdConfig(true),
   ...localeNames.flatMap((localeName) => [
-    createUmdLocaleConfig(localeName, false, 'alt-editor-lite'),
-    createUmdLocaleConfig(localeName, true, 'alt-editor-lite'),
-    createUmdLocaleConfig(localeName, false, 'datatables-alteditor-lite'),
-    createUmdLocaleConfig(localeName, true, 'datatables-alteditor-lite'),
+    createUmdLocaleConfig(localeName, false),
+    createUmdLocaleConfig(localeName, true),
   ]),
 ]);

@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
-  <title id="title">datatables-alteditor-lite showcase</title>
-  <desc id="desc">A static product showcase featuring DataTables CRUD buttons, a selected row, inline editing, and an edit dialog.</desc>
+  <title id="title">AltEditorLite showcase</title>
+  <desc id="desc">AltEditorLite interface with DataTables controls, a selected record, an inline field, and an Edit dialog.</desc>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#f4f3ef"/>
@@ -49,8 +49,8 @@
     <g transform="translate(92,62)">
       <rect width="58" height="58" rx="16" fill="url(#heroGlow)"/>
       <text x="29" y="35" text-anchor="middle" fill="#ffffff" font-size="18" font-weight="800" letter-spacing="1.2">AEL</text>
-      <text x="78" y="25" class="dark" font-size="30" font-weight="780">datatables-alteditor-lite</text>
-      <text x="78" y="50" class="muted" font-size="15.5" font-weight="560">Browser-native editing workflows for DataTables 3</text>
+      <text x="78" y="25" class="dark" font-size="30" font-weight="780">AltEditorLite</text>
+      <text x="78" y="50" class="muted" font-size="15.5" font-weight="560">Native record editing for DataTables and standalone applications</text>
     </g>
 
     <g transform="translate(1138,68)">
@@ -58,7 +58,7 @@
       <circle cx="19" cy="17" r="5" fill="#ff5c35"/>
       <text x="33" y="22" class="dark" font-size="13" font-weight="700">TypeScript</text>
       <rect x="122" y="0" width="106" height="34" rx="17" fill="#ffffff" stroke="#d8d6cf"/>
-      <text x="175" y="22" text-anchor="middle" class="dark" font-size="13" font-weight="700"><tspan fill="#147554">0</tspan> jQuery</text>
+      <text x="175" y="22" text-anchor="middle" class="dark" font-size="13" font-weight="700">No jQuery</text>
       <rect x="240" y="0" width="120" height="34" rx="17" fill="#ffffff" stroke="#d8d6cf"/>
       <text x="300" y="22" text-anchor="middle" class="dark" font-size="13" font-weight="700">MIT</text>
     </g>
@@ -77,7 +77,7 @@
     <circle cx="132" cy="178" r="6" fill="#d8d6cf"/>
     <circle cx="152" cy="178" r="6" fill="#d8d6cf"/>
     <rect x="608" y="165" width="384" height="27" rx="13.5" fill="#ffffff" stroke="#d8d6cf"/>
-    <text x="800" y="183" text-anchor="middle" fill="#171815" opacity="0.52" font-size="12" font-weight="620">employee-directory · altEditorLite</text>
+    <text x="800" y="183" text-anchor="middle" fill="#171815" opacity="0.52" font-size="12" font-weight="620">employee-directory · AltEditorLite</text>
   </g>
 
   <!-- toolbar -->
@@ -101,7 +101,7 @@
     <rect x="1261" y="234" width="226" height="44" rx="11" fill="#ffffff" stroke="#d8d6cf"/>
     <circle cx="1283" cy="256" r="7.5" fill="none" stroke="#171815" stroke-opacity="0.55" stroke-width="2"/>
     <line x1="1288" y1="261" x2="1295" y2="268" stroke="#171815" stroke-opacity="0.55" stroke-width="2" stroke-linecap="round"/>
-    <text x="1307" y="262" fill="#171815" opacity="0.42" font-size="14">type to filter…</text>
+    <text x="1307" y="262" fill="#171815" opacity="0.42" font-size="14">Type to filter…</text>
   </g>
 
   <!-- table header -->
@@ -203,7 +203,7 @@
     <rect x="958" y="438" width="468" height="310" rx="22" fill="#ffffff" stroke="#d8d6cf"/>
     <rect x="958" y="438" width="468" height="58" rx="22" fill="url(#heroGlow)"/>
     <rect x="958" y="474" width="468" height="22" fill="url(#heroGlow)"/>
-    <text x="988" y="475" fill="#ffffff" font-size="19" font-weight="760">Edit employee</text>
+    <text x="988" y="475" fill="#ffffff" font-size="19" font-weight="760">Edit row</text>
     <text x="1389" y="475" text-anchor="middle" fill="#ffffff" opacity="0.72" font-size="20">×</text>
 
     <text x="990" y="529" fill="#171815" opacity="0.68" font-size="12" font-weight="760" letter-spacing="0.8">NAME</text>
@@ -228,17 +228,17 @@
     <rect x="1234" y="700" width="72" height="34" rx="9" fill="#ffffff" stroke="#d8d6cf"/>
     <text x="1270" y="722" text-anchor="middle" fill="#171815" font-size="13" font-weight="720">Cancel</text>
     <rect x="1318" y="700" width="76" height="34" rx="9" fill="url(#accentGradient)"/>
-    <text x="1356" y="722" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="760">Save</text>
+    <text x="1356" y="722" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="760">Submit</text>
   </g>
 
   <!-- lower feature strip -->
   <g class="ui" transform="translate(102,812)">
-    <text x="0" y="23" fill="#171815" opacity="0.68" font-size="13" font-weight="760" letter-spacing="0.8">BUILT TO STAY OUT OF YOUR WAY</text>
+    <text x="0" y="23" fill="#171815" opacity="0.68" font-size="13" font-weight="760" letter-spacing="0.8">CORE EDITING CAPABILITIES</text>
 
     <g transform="translate(342,0)">
       <circle cx="15" cy="15" r="15" fill="#ff5c35" fill-opacity="0.10"/>
       <text x="15" y="20" text-anchor="middle" fill="#d83b16" font-size="15" font-weight="800">💬</text>
-      <text x="40" y="20" fill="#171815" font-size="14" font-weight="700">Native dialog</text>
+      <text x="40" y="20" fill="#171815" font-size="14" font-weight="700">Dialog forms</text>
     </g>
     <g transform="translate(510,0)">
       <circle cx="15" cy="15" r="15" fill="#ff5c35" fill-opacity="0.10"/>
@@ -248,7 +248,7 @@
     <g transform="translate(654,0)">
       <circle cx="15" cy="15" r="15" fill="#ff5c35" fill-opacity="0.10"/>
       <text x="15" y="20" text-anchor="middle" fill="#d83b16" font-size="14" font-weight="800">🛡️</text>
-      <text x="40" y="20" fill="#171815" font-size="14" font-weight="700">Async-safe</text>
+      <text x="40" y="20" fill="#171815" font-size="14" font-weight="700">Async operations</text>
     </g>
     <g transform="translate(799,0)">
       <circle cx="15" cy="15" r="15" fill="#ff5c35" fill-opacity="0.10"/>
@@ -260,9 +260,9 @@
       <text x="15" y="20" text-anchor="middle" fill="#d83b16" font-size="14" font-weight="800">{ }</text>
       <text x="40" y="20" fill="#171815" font-size="14" font-weight="700">Typed fields</text>
     </g>
-    <g transform="translate(1088,0)">
-      <rect width="282" height="34" rx="17" fill="url(#heroGlow)"/>
-      <text x="141" y="22" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="720">Create · Edit · Remove · Refresh</text>
+    <g transform="translate(1058,0)">
+      <rect width="312" height="34" rx="17" fill="url(#heroGlow)"/>
+      <text x="156" y="22" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="720">Create · Edit · Batch edit · Remove · Refresh</text>
     </g>
   </g>
 </svg>

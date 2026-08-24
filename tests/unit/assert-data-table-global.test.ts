@@ -33,6 +33,6 @@ describe('browser-global DataTables boundary', () => {
     expect(hasDataTableGlobal(runtimeScope)).toBe(false);
     expect(() => {
       assertDataTableGlobal(runtimeScope);
-    }).toThrow('DataTables must be loaded before datatables-alteditor-lite.');
+    }).toThrow('DataTables must be loaded before AltEditorLite.');
   });
 });

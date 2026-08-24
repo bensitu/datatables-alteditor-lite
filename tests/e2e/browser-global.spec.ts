@@ -22,9 +22,7 @@ test('requires the DataTables browser global to load first', async ({ page }) =>
   await page.addScriptTag({ path: browserBundlePath });
 
   const pageError = await pageErrorPromise;
-  expect(pageError.message).toContain(
-    'DataTables must be loaded before datatables-alteditor-lite.',
-  );
+  expect(pageError.message).toContain('DataTables must be loaded before AltEditorLite.');
   await expect(page.evaluate(() => 'jQuery' in globalThis)).resolves.toBe(false);
 });
 

@@ -41,6 +41,6 @@ export function assertDataTableGlobal(
   runtimeScope: object,
 ): asserts runtimeScope is DataTableGlobalScopeWithConstructor {
   if (!hasDataTableGlobal(runtimeScope)) {
-    throw new Error('DataTables must be loaded before datatables-alteditor-lite.');
+    throw new Error('DataTables must be loaded before AltEditorLite.');
   }
 }

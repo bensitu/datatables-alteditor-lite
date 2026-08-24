@@ -1,13 +1,13 @@
-# datatables-alteditor-lite
+# AltEditorLite
 
 [![npm](https://img.shields.io/npm/l/datatables-alteditor-lite.svg)](https://github.com/bensitu/datatables-alteditor-lite)
 [![npm](https://img.shields.io/npm/v/datatables-alteditor-lite.svg)](https://www.npmjs.com/package/datatables-alteditor-lite)
 [![jsdelivr](https://data.jsdelivr.com/v1/package/npm/datatables-alteditor-lite/badge)](https://www.jsdelivr.com/package/npm/datatables-alteditor-lite)
 
-`datatables-alteditor-lite` is an independent, lightweight record editor with
-neutral, DataTables 3, and standalone host APIs. It provides Create, Edit,
-Remove, and Refresh workflows using TypeScript and native browser controls. It
-has no jQuery or UI-framework runtime dependency.
+AltEditorLite is an independent, lightweight record editor published as
+`datatables-alteditor-lite`. It provides neutral, DataTables 3, and standalone
+Host APIs for Create, Edit, Remove, and Refresh workflows using TypeScript and
+native browser controls. It has no jQuery or UI-framework runtime dependency.
 
 [Live demo](https://bensitu.github.io/datatables-alteditor-lite/examples/demo/) ·
 [Getting started](docs/getting-started.md) · [Standalone](docs/standalone.md) ·
@@ -17,7 +17,7 @@ has no jQuery or UI-framework runtime dependency.
 [Operations](docs/operations.md) · [API reference](docs/api-reference.md) ·
 [Localization](docs/localization.md)
 
-[![datatables-alteditor-lite](examples/images/datatables-alteditor-lite.svg)](https://bensitu.github.io/datatables-alteditor-lite/examples/demo/)
+[![AltEditorLite](examples/images/alt-editor-lite.svg)](https://bensitu.github.io/datatables-alteditor-lite/examples/demo/)
 
 ## Highlights
 
