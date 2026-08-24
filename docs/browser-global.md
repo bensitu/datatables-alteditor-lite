@@ -1,8 +1,8 @@
 # Browser Global
 
-The primary Browser Global distribution preserves the DataTables-oriented editing
-methods, lifecycle behavior, and language APIs from the `/datatables` ESM entry.
-It does not require jQuery or a UI framework.
+The primary Browser Global distribution provides the DataTables facade, the
+neutral constructor, lifecycle APIs, and language utilities. It does not require
+jQuery or a UI framework.
 
 ## Quick start
 
@@ -45,7 +45,7 @@ from jsDelivr:
         rowId: 'id',
       });
 
-      const editor = new DataTablesAltEditorLite.DataTablesEditor(table, {
+      const editor = new AltEditorLite.Editor(table, {
         clientSide: {
           createRow(values) {
             return {
@@ -90,8 +90,8 @@ The unversioned jsDelivr URLs follow the latest package. Pin the same
 compatible DataTables build through the
 [DataTables download builder](https://datatables.net/download/) when Buttons,
 Select, KeyTable, ColReorder, or another extension is needed. Load optional
-extensions before constructing an editor; hover keyboard and live reorder support
-are detected at runtime. For externally hosted production assets, add
+extensions before the AltEditorLite browser bundle; hover keyboard and live
+reorder support are detected at runtime. For externally hosted production assets, add
 independently verified Subresource Integrity metadata and
 `crossorigin="anonymous"`, or self-host the exact files.
 
@@ -123,19 +123,21 @@ For self-hosting, copy the required `dist/` files and use equivalent local URLs:
 <script src="/vendor/alt-editor-lite.min.js"></script>
 ```
 
-`DataTablesEditor`, `DataTablesHost`, `StandaloneHost`, the neutral constructor,
-the language loader, and the language registry are available through
-`globalThis.DataTablesAltEditorLite`. This main bundle requires DataTables to
+`Editor`, `AltEditorLite`, `DataTablesHost`, `StandaloneHost`, the language
+loader, and the language registry are available through
+`globalThis.AltEditorLite`. This main bundle requires DataTables to
 load first and registers `table.altEditorLite()` as a retrieval-only method.
+`AltEditorLite.Editor` is the DataTables facade, while
+`AltEditorLite.AltEditorLite` is the neutral Host-based constructor.
 
 Standalone script users can instead load `alt-editor-lite-standalone.js` or its
 minified counterpart and construct
-`DataTablesAltEditorLiteStandalone.StandaloneHost` with consumer record
+`AltEditorLiteStandalone.StandaloneHost` with consumer record
 callbacks. Both bundles are published with source maps and neither imports,
 registers, or requires DataTables. See [Standalone usage](standalone.md) for the
 Host and record ownership contract.
 
-The 0.5 distribution also includes the former `datatables-alteditor-lite.js`,
+The current distribution also includes the former `datatables-alteditor-lite.js`,
 `datatables-alteditor-lite.min.js`, and language bundle filenames as compatibility
 copies. New integrations should use the `alt-editor-lite` filenames. The
 compatibility filenames remain available until 1.0.
@@ -150,8 +152,8 @@ Included language registration bundles must load after the main browser bundle:
 ```
 
 ```js
-const language = DataTablesAltEditorLite.getLocale('ja');
-const editor = new DataTablesAltEditorLite.DataTablesEditor(table, {
+const language = AltEditorLite.getLocale('ja');
+const editor = new AltEditorLite.Editor(table, {
   fields,
   language,
 });
@@ -161,9 +163,7 @@ Available locale filenames use `en`, `ja`, `zh-cn`, and `es`. A custom partial
 JSON resource can be loaded without changing the library:
 
 ```js
-const language = await DataTablesAltEditorLite.loadEditorLanguage(
-  './languages/fr-FR.json',
-);
+const language = await AltEditorLite.loadEditorLanguage('./languages/fr-FR.json');
 ```
 
 Evaluating the main bundle before DataTables throws a load-order error. Evaluating

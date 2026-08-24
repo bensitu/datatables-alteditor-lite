@@ -25,6 +25,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   one draw and best-effort restoration when a synchronous setter fails.
 - Added localized multi-record editing text to every included language and
   updated the employee demo for multi-row selection.
+- Standardized the DataTables facade as `AltEditorLite`, the main browser
+  namespace as `globalThis.AltEditorLite`, its DataTables constructor as
+  `AltEditorLite.Editor`, and the standalone namespace as
+  `globalThis.AltEditorLiteStandalone`.
+
+### Breaking
+
+- Renamed the `/datatables` `DataTablesEditor` export to `AltEditorLite` without
+  a compatibility alias.
+- Renamed the `globalThis.DataTablesAltEditorLite` and
+  `globalThis.DataTablesAltEditorLiteStandalone` browser namespaces without
+  runtime aliases. Browser DataTables construction now uses
+  `new AltEditorLite.Editor(table, options)`.
 
 ## [0.5.2] - 2026-08-23
 

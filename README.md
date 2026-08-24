@@ -87,7 +87,7 @@ version in both URLs for production, for example by inserting `@<version>` after
 the package name. For externally hosted production assets, add independently
 verified Subresource Integrity metadata and `crossorigin="anonymous"`, or
 self-host the exact files. The script exposes
-`globalThis.DataTablesAltEditorLite`; it does not bundle DataTables. Package
+`globalThis.AltEditorLite`; it does not bundle DataTables. Package
 metadata declares the browser script and stylesheet separately so jsDelivr can
 identify both default assets.
 
@@ -100,10 +100,7 @@ available during registration:
 import DataTable from 'datatables.net';
 import 'datatables.net-buttons';
 import 'datatables.net-select';
-import {
-  DataTablesEditor,
-  type EditorValues,
-} from 'datatables-alteditor-lite/datatables';
+import { AltEditorLite, type EditorValues } from 'datatables-alteditor-lite/datatables';
 import 'datatables-alteditor-lite/style.css';
 
 interface UserRow {
@@ -134,7 +131,7 @@ const table = new DataTable<UserRow>('#users', {
   select: { style: 'multi' },
 });
 
-const editor = new DataTablesEditor<UserRow, UserForm>(table, {
+const editor = new AltEditorLite<UserRow, UserForm>(table, {
   clientSide: {
     createRow(values: Readonly<EditorValues<UserForm>>): UserRow {
       return {
@@ -239,7 +236,7 @@ Dialog Edit is enabled by default. Inline Edit can be added independently, so a
 single editor can provide complete Dialog forms and fast single-cell updates:
 
 ```ts
-const editor = new DataTablesEditor<UserRow, UserForm>(table, {
+const editor = new AltEditorLite<UserRow, UserForm>(table, {
   editing: {
     dialog: { enabled: true },
     inline: {
@@ -308,7 +305,7 @@ asynchronous. The Host applies Create, Edit, and Remove results only after the
 corresponding persistence callback succeeds.
 
 ```ts
-const editor = new DataTablesEditor<UserRow, UserForm>(table, {
+const editor = new AltEditorLite<UserRow, UserForm>(table, {
   fields,
   operations: {
     async create(values, context) {
@@ -341,7 +338,7 @@ Included languages can be imported without registering source files manually:
 ```ts
 import ja from 'datatables-alteditor-lite/locales/ja';
 
-const editor = new DataTablesEditor(table, { fields, language: ja });
+const editor = new AltEditorLite(table, { fields, language: ja });
 ```
 
 Applications and CDN users can load their own partial JSON resource without
@@ -351,7 +348,7 @@ modifying or rebuilding the library:
 import { loadEditorLanguage } from 'datatables-alteditor-lite';
 
 const language = await loadEditorLanguage('/languages/fr-FR.json');
-const editor = new DataTablesEditor(table, { fields, language });
+const editor = new AltEditorLite(table, { fields, language });
 ```
 
 See [Localization](docs/localization.md) for the resource shape, placeholders, and
@@ -375,14 +372,15 @@ scripts before the AltEditorLite browser bundle:
 ```
 
 The neutral editor, DataTables adapters, and `StandaloneHost` are available at
-`globalThis.DataTablesAltEditorLite`. The main browser bundle requires DataTables
-to load first. A separate
+`globalThis.AltEditorLite`. The main browser bundle requires DataTables
+to load first. Use `AltEditorLite.Editor` for the DataTables facade and
+`AltEditorLite.AltEditorLite` for the neutral constructor. A separate
 `alt-editor-lite-standalone.js` and `alt-editor-lite-standalone.min.js` bundles
 expose the neutral editor and `StandaloneHost` through
-`globalThis.DataTablesAltEditorLiteStandalone` without requiring DataTables.
+`globalThis.AltEditorLiteStandalone` without requiring DataTables.
 Included language registration bundles load after the main DataTables bundle;
 external JSON languages use
-`DataTablesAltEditorLite.loadEditorLanguage(...)`.
+`AltEditorLite.loadEditorLanguage(...)`.
 
 See [Browser Global](docs/browser-global.md) for a complete CDN quick start, load
 order, self-hosted paths, and language resources.

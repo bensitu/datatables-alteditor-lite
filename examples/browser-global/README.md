@@ -14,10 +14,10 @@
 ```
 
 ```js
-const language = await DataTablesAltEditorLite.loadEditorLanguage(
+const language = await AltEditorLite.loadEditorLanguage(
   'https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/esm/locales/ja.json',
 );
-const editor = new DataTablesAltEditorLite.DataTablesEditor(table, {
+const editor = new AltEditorLite.Editor(table, {
   fields,
   language,
 });

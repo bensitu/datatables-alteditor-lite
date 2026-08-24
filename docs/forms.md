@@ -10,7 +10,7 @@ values without taking ownership of form controllers.
 Set `editing.dialog.template` to a selector or an element:
 
 ```ts
-const editor = new DataTablesEditor<EmployeeRow, EmployeeForm>(table, {
+const editor = new AltEditorLite<EmployeeRow, EmployeeForm>(table, {
   editing: {
     dialog: {
       template: '#employee-form-layout',

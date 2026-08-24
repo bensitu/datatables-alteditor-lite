@@ -2,7 +2,7 @@
 
 ```ts
 import DataTable from 'datatables.net';
-import { DataTablesEditor } from 'datatables-alteditor-lite/datatables';
+import { AltEditorLite } from 'datatables-alteditor-lite/datatables';
 import 'datatables-alteditor-lite/style.css';
 
 const table = new DataTable('#users', {
@@ -11,7 +11,7 @@ const table = new DataTable('#users', {
   rowId: 'id',
 });
 
-const editor = new DataTablesEditor(table, {
+const editor = new AltEditorLite(table, {
   clientSide: {
     createRow: (values) => ({ id: crypto.randomUUID(), name: values.name ?? '' }),
   },

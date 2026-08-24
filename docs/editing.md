@@ -54,9 +54,9 @@ connected logical target.
 ### Multi-record dialog editing
 
 `openBatchEditDialog(targets?)` requires at least two distinct records. The
-neutral editor accepts Host targets; `DataTablesEditor` also accepts a row
-selector or uses the current Select selection. It does not fall back to
-single-row editing when only one record resolves.
+neutral editor accepts Host targets; the `/datatables` `AltEditorLite` facade
+also accepts a row selector or uses the current Select selection. It does not
+fall back to single-row editing when only one record resolves.
 
 Each visible field starts with one of two baselines: a common value shared by all
 records or multiple preserved values. Opening the input for a differing field
@@ -107,7 +107,7 @@ Inline editing requires `editing.inline.enabled: true` and at least one eligible
 field with `inlineEdit: true`:
 
 ```ts
-const editor = new DataTablesEditor<UserRow, UserValues>(table, {
+const editor = new AltEditorLite<UserRow, UserValues>(table, {
   editing: {
     dialog: { enabled: true },
     inline: { activation: 'doubleClick', enabled: true },
@@ -153,7 +153,7 @@ const table = new DataTable<UserRow>('#users', {
   rowId: 'id',
 });
 
-const editor = new DataTablesEditor(table, {
+const editor = new AltEditorLite(table, {
   editing: {
     dialog: { enabled: true },
     inline: {
@@ -382,9 +382,10 @@ when possible; and prevents late DOM, Host, focus, or event work.
 ## Host boundaries
 
 The neutral `AltEditorLite` constructor accepts an `EditorHost` and opaque Host
-targets. `DataTablesEditor` adapts public row and column selectors to those
-targets and retains the detailed DataTables inline state. `StandaloneHost` does
-not provide inline presentation, so it supports the dialog workflows only.
+targets. The `/datatables` `AltEditorLite` facade adapts public row and column
+selectors to those targets and retains the detailed DataTables inline state.
+`StandaloneHost` does not provide inline presentation, so it supports the dialog
+workflows only.
 
 Neutral operation, hook, validation, and event contexts contain no DataTables
 API. Their target shape uses an optional `key` and `fieldNames`. Applications

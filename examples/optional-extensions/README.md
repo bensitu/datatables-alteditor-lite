@@ -9,7 +9,7 @@ import 'datatables.net-buttons';
 import 'datatables.net-colreorder';
 import 'datatables.net-keytable';
 import 'datatables.net-select';
-import { DataTablesEditor } from 'datatables-alteditor-lite/datatables';
+import { AltEditorLite } from 'datatables-alteditor-lite/datatables';
 import 'datatables-alteditor-lite/style.css';
 
 const table = new DataTable('#users', {
@@ -28,7 +28,7 @@ const table = new DataTable('#users', {
   select: { style: 'multi' },
 });
 
-const editor = new DataTablesEditor(table, { fields });
+const editor = new AltEditorLite(table, { fields });
 ```
 
 Without Select, pass an explicit public row selector to Edit and Remove.

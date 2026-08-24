@@ -32,7 +32,7 @@ stylesheet:
 
 ```ts
 import DataTable from 'datatables.net';
-import { DataTablesEditor } from 'datatables-alteditor-lite/datatables';
+import { AltEditorLite } from 'datatables-alteditor-lite/datatables';
 import 'datatables-alteditor-lite/style.css';
 
 interface UserRow {
@@ -52,7 +52,7 @@ const table = new DataTable<UserRow>('#users', {
   rowId: 'id',
 });
 
-const editor = new DataTablesEditor<UserRow, UserForm>(table, {
+const editor = new AltEditorLite<UserRow, UserForm>(table, {
   clientSide: {
     createRow: (values) => ({
       id: crypto.randomUUID(),
@@ -90,18 +90,18 @@ Use `table.altEditorLite<UserForm>()` only to retrieve an existing instance. It
 never constructs one. Call `editor.destroy()` before replacing the table or
 creating another editor for the same table element.
 
-`DataTablesEditor` is a selector-friendly facade. Applications that want the
+`AltEditorLite` is a selector-friendly facade. Applications that want the
 neutral constructor can retain the host explicitly:
 
 ```ts
+import { AltEditorLite as CoreEditor } from 'datatables-alteditor-lite';
 import {
-  AltEditorLite,
   DataTablesHost,
   type DataTablesRecordTarget,
 } from 'datatables-alteditor-lite/datatables';
 
 const host = new DataTablesHost(table);
-const editor = new AltEditorLite<UserRow, UserForm, DataTablesRecordTarget>(host, {
+const editor = new CoreEditor<UserRow, UserForm, DataTablesRecordTarget>(host, {
   fields,
 });
 const dataTablesApi = host.unwrap();

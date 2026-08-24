@@ -5,9 +5,9 @@ selector-friendly facade from the explicit integration entry, which registers
 the retrieval API and optional Buttons integration automatically.
 
 ```ts
-import { DataTablesEditor } from 'datatables-alteditor-lite/datatables';
+import { AltEditorLite } from 'datatables-alteditor-lite/datatables';
 
-const editor = new DataTablesEditor<Row, FormValues>(table, {
+const editor = new AltEditorLite<Row, FormValues>(table, {
   editing: {
     dialog: {
       closeOnSuccess: true,
@@ -242,18 +242,33 @@ table state are synchronized through public APIs. ColumnControl SearchList
 options are refreshed and Responsive recalculates its layout after the editor
 presentation reaches a stable state.
 
+## Migrating from v0.5.x
+
+v0.6.0 standardizes the DataTables facade and Browser Global names. The previous
+names are not retained as runtime aliases.
+
+| v0.5.x Browser or ESM API                      | v0.6.0 API                           |
+| ---------------------------------------------- | ------------------------------------ |
+| `DataTablesEditor` from `/datatables`          | `AltEditorLite` from `/datatables`   |
+| `globalThis.DataTablesAltEditorLite`           | `globalThis.AltEditorLite`           |
+| `DataTablesAltEditorLite.DataTablesEditor`     | `AltEditorLite.Editor`               |
+| `globalThis.DataTablesAltEditorLiteStandalone` | `globalThis.AltEditorLiteStandalone` |
+
 ## Migrating from v0.4.1
 
-v0.5.0 makes host ownership explicit and removes the former DataTables-specific
-shape from neutral APIs. There are no compatibility aliases.
+v0.5.0 made Host ownership explicit and removed the former DataTables-specific
+shape from neutral APIs. v0.6.0 uses the same `AltEditorLite` constructor name
+for the neutral root and the selector-friendly `/datatables` entry; the import
+path determines which constructor contract is used.
 
-| v0.4.1                                        | v0.5.0                                                                       |
-| --------------------------------------------- | ---------------------------------------------------------------------------- |
-| `new AltEditorLite(table, options)`           | `new DataTablesEditor(table, options)` or `new AltEditorLite(host, options)` |
-| `context.table`                               | Retain `DataTablesHost` and call `host.unwrap()` in integration code         |
-| `refreshTable()`                              | `refresh()`                                                                  |
-| Neutral methods accepted DataTables selectors | Use `DataTablesEditor` selector overloads or targets created by a Host       |
-| Root import registered DataTables             | Import `datatables-alteditor-lite/datatables` explicitly                     |
+| v0.4.1                                        | v0.6.0 current API                                                   |
+| --------------------------------------------- | -------------------------------------------------------------------- |
+| `new AltEditorLite(table, options)`           | Import `/datatables` and call `new AltEditorLite(table, options)`    |
+| Direct construction with a table              | Import the neutral root and call `new AltEditorLite(host, options)`  |
+| `context.table`                               | Retain `DataTablesHost` and call `host.unwrap()` in integration code |
+| `refreshTable()`                              | `refresh()`                                                          |
+| Neutral methods accepted DataTables selectors | Use the `/datatables` facade or targets created by a Host            |
+| Root import registered DataTables             | Import `datatables-alteditor-lite/datatables` explicitly             |
 
 `OperationContext`, `AfterSuccessContext`, and `FormValidationContext` no
 longer contain `table`. Operation and event targets now expose neutral `key` and

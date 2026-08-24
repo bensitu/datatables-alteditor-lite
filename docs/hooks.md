@@ -4,7 +4,7 @@ Four optional lifecycle hooks extend the operation lifecycle. DOM events remain
 non-cancelable observation points.
 
 ```ts
-const editor = new DataTablesEditor(table, {
+const editor = new AltEditorLite(table, {
   fields,
   hooks: {
     beforeOpen(context) {

@@ -4,7 +4,7 @@ AltEditorLite performs non-optimistic mutations. A persistence callback must
 finish successfully before the Host is asked to add, replace, or remove a record.
 
 ```ts
-const editor = new DataTablesEditor<UserRow, UserForm>(table, {
+const editor = new AltEditorLite<UserRow, UserForm>(table, {
   fields,
   operations: {
     async create(values, context) {
@@ -56,8 +56,9 @@ When both Create implementations are absent, opening Create rejects with
 await editor.openEditDialog('#user-42');
 ```
 
-The selector and identity rules below apply to `DataTablesEditor`. The neutral
-`AltEditorLite` API instead accepts an opaque target understood by its Host.
+The selector and identity rules below apply to the `/datatables` `AltEditorLite`
+facade. The neutral root API instead accepts an opaque target understood by its
+Host.
 
 An explicit DataTables row selector does not require Select. When the selector is
 omitted, Select must resolve exactly one selected row.

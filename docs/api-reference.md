@@ -17,9 +17,11 @@ the integration entry must install a compatible DataTables 3 release.
 
 The `dist/umd/alt-editor-lite.js` browser build exposes the
 neutral editor, DataTables adapters, and `StandaloneHost` through
-`globalThis.DataTablesAltEditorLite`. It requires DataTables to load first. The
+`globalThis.AltEditorLite`. The namespace provides the DataTables facade as
+`Editor` and the neutral constructor as `AltEditorLite`. It requires DataTables
+to load first. The
 optional `dist/umd/alt-editor-lite-standalone.js` build exposes
-`globalThis.DataTablesAltEditorLiteStandalone` without a DataTables runtime.
+`globalThis.AltEditorLiteStandalone` without a DataTables runtime.
 
 ## AltEditorLite
 
@@ -97,12 +99,12 @@ or `remove` operation, and the initiating `dialog`, `inline`, or `api` mode.
 ## DataTables integration
 
 ```ts
-import { DataTablesEditor, DataTablesHost } from 'datatables-alteditor-lite/datatables';
+import { AltEditorLite, DataTablesHost } from 'datatables-alteditor-lite/datatables';
 
-const editor = new DataTablesEditor<TRow, TFormValues>(table, options);
+const editor = new AltEditorLite<TRow, TFormValues>(table, options);
 ```
 
-`DataTablesEditor` extends the neutral editor and accepts public DataTables
+`AltEditorLite` extends the neutral editor and accepts public DataTables
 selectors through these overloads:
 
 ```ts

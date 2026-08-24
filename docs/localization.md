@@ -28,7 +28,7 @@ ESM applications can import an included language module:
 ```ts
 import ja from 'datatables-alteditor-lite/locales/ja';
 
-const editor = new DataTablesEditor(table, {
+const editor = new AltEditorLite(table, {
   fields,
   language: ja,
 });
@@ -51,7 +51,7 @@ Applications can provide partial language data directly in the options. The
 `locale` value is a BCP 47 identifier, and omitted text falls back to English:
 
 ```ts
-const editor = new DataTablesEditor(table, {
+const editor = new AltEditorLite(table, {
   fields,
   language: {
     locale: 'fr-FR',
@@ -69,13 +69,10 @@ For a separate JSON resource, await `loadEditorLanguage` before constructing the
 editor:
 
 ```ts
-import {
-  DataTablesEditor,
-  loadEditorLanguage,
-} from 'datatables-alteditor-lite/datatables';
+import { AltEditorLite, loadEditorLanguage } from 'datatables-alteditor-lite/datatables';
 
 const language = await loadEditorLanguage('/languages/fr-FR.json');
-const editor = new DataTablesEditor(table, { fields, language });
+const editor = new AltEditorLite(table, { fields, language });
 ```
 
 This follows the same separation between implementation and language data used by
@@ -117,11 +114,10 @@ The same loader is available to CDN and script-tag users:
 
 ```js
 const abortController = new AbortController();
-const language = await DataTablesAltEditorLite.loadEditorLanguage(
-  './languages/fr-FR.json',
-  { signal: abortController.signal },
-);
-const editor = new DataTablesAltEditorLite.DataTablesEditor(table, {
+const language = await AltEditorLite.loadEditorLanguage('./languages/fr-FR.json', {
+  signal: abortController.signal,
+});
+const editor = new AltEditorLite.Editor(table, {
   fields,
   language,
 });
@@ -131,7 +127,7 @@ Included JSON files are also addressable through npm CDNs. Pin the package versi
 used by the main bundle in production:
 
 ```js
-const language = await DataTablesAltEditorLite.loadEditorLanguage(
+const language = await AltEditorLite.loadEditorLanguage(
   'https://cdn.jsdelivr.net/npm/datatables-alteditor-lite@<version>/dist/esm/locales/ja.json',
 );
 ```
@@ -139,8 +135,8 @@ const language = await DataTablesAltEditorLite.loadEditorLanguage(
 Applications that want name-based lookup can register the result:
 
 ```js
-DataTablesAltEditorLite.registerLocale(language);
-DataTablesAltEditorLite.getLocale('fr-fr'); // canonical lookup
+AltEditorLite.registerLocale(language);
+AltEditorLite.getLocale('fr-fr'); // canonical lookup
 ```
 
 Included Browser Global language bundles remain available for static script-tag
