@@ -1,7 +1,7 @@
 # Asynchronous operations example
 
 ```ts
-import { AltEditorLiteError, AltEditorLite } from 'datatables-alteditor-lite/datatables';
+import { AltEditorLite, AltEditorLiteError } from 'datatables-alteditor-lite/datatables';
 
 const editor = new AltEditorLite(table, {
   fields,

@@ -1,6 +1,6 @@
 # Browser Global
 
-The primary Browser Global distribution provides the DataTables facade, the
+The primary Browser Global distribution provides the DataTables constructor, the
 neutral constructor, lifecycle APIs, and language utilities. It does not require
 jQuery or a UI framework.
 
@@ -127,15 +127,15 @@ For self-hosting, copy the required `dist/` files and use equivalent local URLs:
 loader, and the language registry are available through
 `globalThis.AltEditorLite`. This main bundle requires DataTables to
 load first and registers `table.altEditorLite()` as a retrieval-only method.
-`AltEditorLite.Editor` is the DataTables facade, while
+`AltEditorLite.Editor` is the DataTables constructor, while
 `AltEditorLite.AltEditorLite` is the neutral Host-based constructor.
 
 Standalone script users can instead load `alt-editor-lite-standalone.js` or its
 minified counterpart and construct
 `AltEditorLiteStandalone.StandaloneHost` with consumer record
-callbacks. Both bundles are published with source maps and neither imports,
-registers, or requires DataTables. See [Standalone usage](standalone.md) for the
-Host and record ownership contract.
+callbacks. Both standalone files are published with source maps and neither
+imports, registers, or requires DataTables. See [Standalone
+usage](standalone.md) for the Host and record ownership contract.
 
 The current distribution also includes the former `datatables-alteditor-lite.js`,
 `datatables-alteditor-lite.min.js`, and language bundle filenames as compatibility

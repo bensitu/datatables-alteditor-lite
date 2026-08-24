@@ -158,12 +158,15 @@ Create requires either `clientSide.createRow` or `operations.create`. Edit safel
 merges declared fields by default, and Remove operates locally unless a persistence
 callback is supplied.
 
-Use explicit DataTables row selectors when Select is not installed:
+Each line below is an independent action to connect to an application control.
+Explicit DataTables row selectors do not require Select:
 
 ```ts
+await editor.openCreateDialog();
 await editor.openEditDialog('#user-42');
 await editor.openBatchEditDialog(['#user-42', '#user-43']);
 await editor.openRemoveDialog(['#user-42', '#user-43']);
+await editor.refresh();
 ```
 
 The registered API method only retrieves an existing instance:
@@ -373,7 +376,7 @@ scripts before the AltEditorLite browser bundle:
 
 The neutral editor, DataTables adapters, and `StandaloneHost` are available at
 `globalThis.AltEditorLite`. The main browser bundle requires DataTables
-to load first. Use `AltEditorLite.Editor` for the DataTables facade and
+to load first. Use `AltEditorLite.Editor` for the DataTables constructor and
 `AltEditorLite.AltEditorLite` for the neutral constructor. A separate
 `alt-editor-lite-standalone.js` and `alt-editor-lite-standalone.min.js` bundles
 expose the neutral editor and `StandaloneHost` through

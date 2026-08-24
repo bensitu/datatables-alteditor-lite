@@ -263,8 +263,7 @@ path determines which constructor contract is used.
 
 | v0.4.1                                        | v0.6.0 current API                                                   |
 | --------------------------------------------- | -------------------------------------------------------------------- |
-| `new AltEditorLite(table, options)`           | Import `/datatables` and call `new AltEditorLite(table, options)`    |
-| Direct construction with a table              | Import the neutral root and call `new AltEditorLite(host, options)`  |
+| `new AltEditorLite(table, options)`           | Use `/datatables` with a table, or the neutral root with a Host      |
 | `context.table`                               | Retain `DataTablesHost` and call `host.unwrap()` in integration code |
 | `refreshTable()`                              | `refresh()`                                                          |
 | Neutral methods accepted DataTables selectors | Use the `/datatables` facade or targets created by a Host            |

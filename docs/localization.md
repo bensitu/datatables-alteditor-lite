@@ -26,6 +26,7 @@ build configuration entry, or package export change is required.
 ESM applications can import an included language module:
 
 ```ts
+import { AltEditorLite } from 'datatables-alteditor-lite/datatables';
 import ja from 'datatables-alteditor-lite/locales/ja';
 
 const editor = new AltEditorLite(table, {

@@ -19,11 +19,10 @@ The `dist/umd/alt-editor-lite.js` browser build exposes the
 neutral editor, DataTables adapters, and `StandaloneHost` through
 `globalThis.AltEditorLite`. The namespace provides the DataTables facade as
 `Editor` and the neutral constructor as `AltEditorLite`. It requires DataTables
-to load first. The
-optional `dist/umd/alt-editor-lite-standalone.js` build exposes
+to load first. The optional `dist/umd/alt-editor-lite-standalone.js` build exposes
 `globalThis.AltEditorLiteStandalone` without a DataTables runtime.
 
-## AltEditorLite
+## Neutral AltEditorLite
 
 ```ts
 new AltEditorLite<TRow, TFormValues, TTarget>(host, options);

@@ -76,6 +76,16 @@ document.querySelector('#create')?.addEventListener('click', () => {
 });
 ```
 
+Each line below is an independent action to connect to an application control.
+Explicit selectors do not require the Select extension:
+
+```ts
+await editor.openEditDialog('#user-1');
+await editor.openBatchEditDialog(['#user-1', '#user-2']);
+await editor.openRemoveDialog('#user-1');
+await editor.refresh();
+```
+
 The `/datatables` entry registers against its imported DataTables runtime. The
 root entry is host-neutral and does not import or register DataTables.
 `registerAltEditorLite(DataTable)` remains available from `/datatables` for an
@@ -90,8 +100,9 @@ Use `table.altEditorLite<UserForm>()` only to retrieve an existing instance. It
 never constructs one. Call `editor.destroy()` before replacing the table or
 creating another editor for the same table element.
 
-`AltEditorLite` is a selector-friendly facade. Applications that want the
-neutral constructor can retain the host explicitly:
+The `/datatables` `AltEditorLite` export accepts public DataTables row and column
+selectors. Applications that want the neutral root constructor can retain the
+Host explicitly:
 
 ```ts
 import { AltEditorLite as CoreEditor } from 'datatables-alteditor-lite';
