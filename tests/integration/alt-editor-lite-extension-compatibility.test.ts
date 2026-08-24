@@ -2,7 +2,7 @@ import DataTable, { type Api } from 'datatables.net';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import {
-  DataTablesEditor,
+  AltEditorLite,
   registerAltEditorLite,
   type FieldConfig,
 } from '../../src/datatables.js';
@@ -114,7 +114,7 @@ const inlineFields = fields.map((field) => ({
   inlineEdit: true,
 })) satisfies readonly FieldConfig<ExtensionValues>[];
 
-const activeEditors = new Set<DataTablesEditor<TestRow, ExtensionValues>>();
+const activeEditors = new Set<AltEditorLite<TestRow, ExtensionValues>>();
 let originalShowModalDescriptor: PropertyDescriptor | undefined;
 let originalCloseDescriptor: PropertyDescriptor | undefined;
 
@@ -187,8 +187,8 @@ afterEach(() => {
   destroyTestTables();
 });
 
-function createEditor(api: Api<TestRow>): DataTablesEditor<TestRow, ExtensionValues> {
-  const editor = new DataTablesEditor<TestRow, ExtensionValues>(api, { fields });
+function createEditor(api: Api<TestRow>): AltEditorLite<TestRow, ExtensionValues> {
+  const editor = new AltEditorLite<TestRow, ExtensionValues>(api, { fields });
   activeEditors.add(editor);
   return editor;
 }
@@ -219,7 +219,7 @@ function replaceInlineValue(value: string): void {
 
 async function editFirstRow(
   api: Api<TestRow>,
-  editor: DataTablesEditor<TestRow, ExtensionValues>,
+  editor: AltEditorLite<TestRow, ExtensionValues>,
   nextName: string,
 ): Promise<void> {
   await editor.openEditDialog('#row-a');
@@ -232,7 +232,7 @@ async function editFirstRow(
   expect(api.row('#row-a').data().name).toBe(nextName);
 }
 
-function destroyEditor(editor: DataTablesEditor<TestRow, ExtensionValues>): void {
+function destroyEditor(editor: AltEditorLite<TestRow, ExtensionValues>): void {
   editor.destroy();
   activeEditors.delete(editor);
 }
@@ -268,7 +268,7 @@ describe('DataTables 3 extension compatibility', () => {
     const { api, tableElement } = createTestTable('responsive-compatibility', {
       responsive: true,
     });
-    const editor = new DataTablesEditor<TestRow, ExtensionValues>(api, {
+    const editor = new AltEditorLite<TestRow, ExtensionValues>(api, {
       editing: {
         dialog: { enabled: false },
         inline: { enabled: true },
@@ -439,7 +439,7 @@ describe('DataTables 3 extension compatibility', () => {
     const { api, tableElement } = createTestTable('fixedheader-compatibility', {
       fixedHeader: true,
     });
-    const editor = new DataTablesEditor<TestRow, ExtensionValues>(api, {
+    const editor = new AltEditorLite<TestRow, ExtensionValues>(api, {
       editing: {
         dialog: { enabled: false },
         inline: { enabled: true },

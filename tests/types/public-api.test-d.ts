@@ -1,12 +1,12 @@
 import { expectAssignable, expectNotAssignable, expectType } from 'tsd';
 
 import {
+  type AltEditorLite as TableEditor,
   DataTablesHost,
-  type DataTablesEditor,
   type DataTablesRecordTarget,
 } from '../../src/datatables.js';
 import {
-  AltEditorLite,
+  AltEditorLite as CoreEditor,
   defineFormDependencies,
   EditorLanguageLoadError,
   isChoiceFieldController,
@@ -115,7 +115,7 @@ expectAssignable<AltEditorLiteOptions<Row>>({
 });
 
 const host = new DataTablesHost(table);
-const editor = new AltEditorLite<
+const editor = new CoreEditor<
   Row,
   FormValues,
   ReturnType<typeof host.resolveRecordTarget>
@@ -143,13 +143,13 @@ const editor = new AltEditorLite<
   ],
 });
 
-expectType<AltEditorLite<Row, FormValues, ReturnType<typeof host.resolveRecordTarget>>>(
+expectType<CoreEditor<Row, FormValues, ReturnType<typeof host.resolveRecordTarget>>>(
   editor,
 );
-expectType<AltEditorLite<Row, FormValues, DataTablesRecordTarget> | null>(
+expectType<CoreEditor<Row, FormValues, DataTablesRecordTarget> | null>(
   table.altEditorLite<FormValues>(),
 );
-expectType<AltEditorLite<Row, DeepPartial<Row>, DataTablesRecordTarget> | null>(
+expectType<CoreEditor<Row, DeepPartial<Row>, DataTablesRecordTarget> | null>(
   table.altEditorLite(),
 );
 expectType<Promise<void>>(editor.openCreateDialog());
@@ -157,8 +157,8 @@ expectType<Promise<void>>(editor.openEditDialog(host.resolveRecordTarget('#row')
 expectType<Promise<void>>(
   editor.openBatchEditDialog(host.resolveRecordTargets('.selected')),
 );
-declare const dataTablesEditor: DataTablesEditor<Row, FormValues>;
-expectType<Promise<void>>(dataTablesEditor.openBatchEditDialog('.selected'));
+declare const altEditorLite: TableEditor<Row, FormValues>;
+expectType<Promise<void>>(altEditorLite.openBatchEditDialog('.selected'));
 expectType<Promise<void>>(
   editor.openRemoveDialog(host.resolveRecordTargets('.selected')),
 );

@@ -10,7 +10,7 @@ interface AltEditorLiteBrowserGlobal {
 }
 
 interface LocaleBrowserScope {
-  readonly DataTablesAltEditorLite?: AltEditorLiteBrowserGlobal;
+  readonly AltEditorLite?: AltEditorLiteBrowserGlobal;
 }
 
 /**
@@ -23,10 +23,10 @@ export function registerBrowserGlobalLocale(
   language: Readonly<AltEditorLiteLanguage>,
 ): void {
   const browserScope = globalThis as LocaleBrowserScope;
-  const registerLocale = browserScope.DataTablesAltEditorLite?.registerLocale;
+  const registerLocale = browserScope.AltEditorLite?.registerLocale;
   if (registerLocale === undefined) {
     throw new Error(
-      'The DataTablesAltEditorLite browser bundle must be loaded before a language bundle.',
+      'The AltEditorLite browser bundle must be loaded before a language bundle.',
     );
   }
 

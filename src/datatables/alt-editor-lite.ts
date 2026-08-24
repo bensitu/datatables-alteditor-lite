@@ -1,5 +1,5 @@
 import { EditorConfigurationError } from '../core/alt-editor-lite-error.js';
-import { AltEditorLite } from '../core/alt-editor-lite.js';
+import { AltEditorLite as CoreAltEditorLite } from '../core/alt-editor-lite.js';
 
 import { DataTablesHost } from './data-tables-host.js';
 
@@ -13,10 +13,10 @@ import type { InlineEditState } from '../inline/inline-edit-state.js';
 import type { Api, ColumnSelector, RowSelector } from 'datatables.net';
 
 /** DataTables-specific convenience facade over the neutral editor runtime. */
-export class DataTablesEditor<
+export class AltEditorLite<
   TRow extends object,
   TFormValues extends object = DeepPartial<TRow>,
-> extends AltEditorLite<TRow, TFormValues, DataTablesRecordTarget> {
+> extends CoreAltEditorLite<TRow, TFormValues, DataTablesRecordTarget> {
   public readonly dataTablesHost: DataTablesHost<TRow>;
 
   public constructor(table: Api<TRow>, options: AltEditorLiteOptions<TRow, TFormValues>) {

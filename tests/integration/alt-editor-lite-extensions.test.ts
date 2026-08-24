@@ -3,7 +3,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest
 
 import { hasSelectIntegration } from '../../src/datatables/select-integration.js';
 import {
-  DataTablesEditor,
+  AltEditorLite,
   registerAltEditorLite,
   type FieldConfig,
 } from '../../src/datatables.js';
@@ -51,7 +51,7 @@ const fields = [
   },
 ] satisfies readonly FieldConfig<ExtensionValues>[];
 
-const activeEditors = new Set<DataTablesEditor<TestRow, ExtensionValues>>();
+const activeEditors = new Set<AltEditorLite<TestRow, ExtensionValues>>();
 let originalShowModalDescriptor: PropertyDescriptor | undefined;
 let originalCloseDescriptor: PropertyDescriptor | undefined;
 
@@ -123,7 +123,7 @@ function createExtensionEditor(
   language?: Readonly<PartialEditorLanguage>,
 ): {
   readonly api: Api<TestRow>;
-  readonly editor: DataTablesEditor<TestRow, ExtensionValues>;
+  readonly editor: AltEditorLite<TestRow, ExtensionValues>;
   readonly extensionApi: ExtensionsApi;
   readonly tableElement: HTMLTableElement;
 } {
@@ -140,7 +140,7 @@ function createExtensionEditor(
     },
     select: true,
   });
-  const editor = new DataTablesEditor<TestRow, ExtensionValues>(api, {
+  const editor = new AltEditorLite<TestRow, ExtensionValues>(api, {
     clientSide: {
       createRow: (values) => ({
         id: 'extension-created',
@@ -365,7 +365,7 @@ describe('optional KeyTable and ColReorder integration', () => {
     });
     const extensionApi = api as unknown as ExtensionTableApi;
     extensionApi.keys.enable('navigation-only');
-    const editor = new DataTablesEditor<TestRow, ExtensionValues>(api, {
+    const editor = new AltEditorLite<TestRow, ExtensionValues>(api, {
       editing: {
         dialog: { enabled: false },
         inline: {
@@ -414,7 +414,7 @@ describe('optional KeyTable and ColReorder integration', () => {
       keys: true,
     });
     const extensionApi = api as unknown as ExtensionTableApi;
-    const editor = new DataTablesEditor<TestRow, ExtensionValues>(api, {
+    const editor = new AltEditorLite<TestRow, ExtensionValues>(api, {
       editing: {
         dialog: { enabled: false },
         inline: { activation: 'hover', enabled: true },

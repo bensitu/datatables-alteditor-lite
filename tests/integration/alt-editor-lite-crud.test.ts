@@ -1,7 +1,7 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import {
-  DataTablesEditor,
+  AltEditorLite,
   AltEditorLiteError,
   ENGLISH_LANGUAGE,
   EditorConfigurationError,
@@ -123,11 +123,11 @@ function createCrudEditor(
   tableOptions: object = {},
 ): {
   readonly api: ReturnType<typeof createTestTable>['api'];
-  readonly editor: DataTablesEditor<TestRow, CrudValues>;
+  readonly editor: AltEditorLite<TestRow, CrudValues>;
   readonly tableElement: HTMLTableElement;
 } {
   const { api, tableElement } = createTestTable(tableId, tableOptions);
-  const editor = new DataTablesEditor<TestRow, CrudValues>(api, {
+  const editor = new AltEditorLite<TestRow, CrudValues>(api, {
     fields,
     ...editorOptions,
   });
@@ -479,7 +479,7 @@ describe('AltEditorLite Edit snapshots', () => {
       name: values.name ?? '',
       rank: values.rank ?? 0,
     }));
-    const editor = new DataTablesEditor<TestRow, CrudValues>(api, {
+    const editor = new AltEditorLite<TestRow, CrudValues>(api, {
       fields: uniqueFields,
       operations: { create: createOperation },
     });
@@ -656,7 +656,7 @@ describe('AltEditorLite Edit snapshots', () => {
     const { api } = createTestTable('default-clear', {
       columns: [{ data: 'name' }, { data: 'rank', defaultContent: '' }],
     });
-    const editor = new DataTablesEditor<TestRow, ClearValues>(api, {
+    const editor = new AltEditorLite<TestRow, ClearValues>(api, {
       fields: [{ label: 'Rank', name: 'rank', type: 'number' }],
     });
     activeEditors.add(editor);

@@ -75,7 +75,7 @@ async function createCrudFixture(page: Page): Promise<void> {
         order: [[1, 'asc']],
         rowId: 'id'
       });
-      globalThis.editor = new DataTablesAltEditorLite.DataTablesEditor(
+      globalThis.editor = new AltEditorLite.AltEditorLite(
         globalThis.tableApi,
         {
           fields: [
@@ -113,7 +113,7 @@ async function createCrudFixture(page: Page): Promise<void> {
               }
               if (globalThis.shouldFailUpdate) {
                 globalThis.shouldFailUpdate = false;
-                throw new DataTablesAltEditorLite.AltEditorLiteError({
+                throw new AltEditorLite.AltEditorLiteError({
                   code: 'TEMPORARY_UPDATE',
                   message: 'Retry update.',
                   retryable: true
@@ -199,7 +199,7 @@ async function createDynamicFormFixture(page: Page): Promise<void> {
         }],
         rowId: 'id'
       });
-      globalThis.editor = new DataTablesAltEditorLite.DataTablesEditor(
+      globalThis.editor = new AltEditorLite.AltEditorLite(
         globalThis.tableApi,
         {
           dependencies: {
@@ -342,7 +342,7 @@ async function createExtensionsFixture(page: Page): Promise<void> {
         rowId: 'id',
         select: true
       });
-      globalThis.editor = new DataTablesAltEditorLite.DataTablesEditor(
+      globalThis.editor = new AltEditorLite.AltEditorLite(
         globalThis.tableApi,
         {
           clientSide: {

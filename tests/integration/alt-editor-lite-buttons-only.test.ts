@@ -2,7 +2,7 @@ import DataTable from 'datatables.net';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import {
-  DataTablesEditor,
+  AltEditorLite,
   registerAltEditorLite,
   type FieldConfig,
 } from '../../src/datatables.js';
@@ -32,7 +32,7 @@ const fields = [
   },
 ] satisfies readonly FieldConfig<ButtonOnlyValues>[];
 
-let activeEditor: DataTablesEditor<TestRow, ButtonOnlyValues> | undefined;
+let activeEditor: AltEditorLite<TestRow, ButtonOnlyValues> | undefined;
 let originalShowModalDescriptor: PropertyDescriptor | undefined;
 let originalCloseDescriptor: PropertyDescriptor | undefined;
 
@@ -116,7 +116,7 @@ describe('Buttons without Select', () => {
         },
       },
     });
-    const editor = new DataTablesEditor<TestRow, ButtonOnlyValues>(api, {
+    const editor = new AltEditorLite<TestRow, ButtonOnlyValues>(api, {
       clientSide: {
         createRow: (values) => ({
           id: 'buttons-created',
@@ -183,7 +183,7 @@ describe('Buttons without Select', () => {
         });
       },
     );
-    const editor = new DataTablesEditor<TestRow, ButtonOnlyValues>(api, {
+    const editor = new AltEditorLite<TestRow, ButtonOnlyValues>(api, {
       fields,
       operations: { refresh },
     });

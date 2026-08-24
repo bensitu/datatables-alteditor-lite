@@ -93,7 +93,7 @@ function createUmdLocaleConfig(
     plugins: [createLocaleEntryPlugin(localeName, true)],
     output: {
       file: `dist/umd/locales/${filePrefix}.${localeName}${isMinified ? '.min' : ''}.js`,
-      name: 'DataTablesAltEditorLite',
+      name: 'AltEditorLite',
       format: 'umd',
       minify: isMinified,
       sourcemap: true,
@@ -123,7 +123,7 @@ function createCoreUmdConfig(fileName: string, isMinified: boolean): RolldownOpt
       file: `dist/umd/${fileName}${isMinified ? '.min' : ''}.js`,
       format: 'umd',
       minify: isMinified,
-      name: 'DataTablesAltEditorLite',
+      name: 'AltEditorLite',
       sourcemap: true,
     },
   };
@@ -136,7 +136,7 @@ function createStandaloneUmdConfig(isMinified: boolean): RolldownOptions {
       file: `dist/umd/alt-editor-lite-standalone${isMinified ? '.min' : ''}.js`,
       format: 'umd',
       minify: isMinified,
-      name: 'DataTablesAltEditorLiteStandalone',
+      name: 'AltEditorLiteStandalone',
       sourcemap: true,
     },
   };

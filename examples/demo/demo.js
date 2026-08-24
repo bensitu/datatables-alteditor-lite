@@ -8,7 +8,7 @@ function failDemoInitialization(message) {
   throw new Error(message);
 }
 
-const altEditorLiteRuntime = globalThis.DataTablesAltEditorLite;
+const altEditorLiteRuntime = globalThis.AltEditorLite;
 if (
   typeof globalThis.DataTable !== 'function' ||
   typeof globalThis.DataTable.Api !== 'function' ||

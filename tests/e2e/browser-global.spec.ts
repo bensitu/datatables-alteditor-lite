@@ -78,15 +78,15 @@ test('loads after globalThis.DataTable without introducing jQuery', async ({ pag
         };
         readonly version?: unknown;
       };
-      DataTablesAltEditorLite?: {
-        readonly DataTablesEditor?: new (
+      AltEditorLite?: {
+        readonly AltEditorLite?: new (
           table: object,
           options: { readonly fields: readonly [] },
         ) => { destroy(): void };
       };
     };
     const dataTableConstructor = runtimeScope.DataTable;
-    const editorConstructor = runtimeScope.DataTablesAltEditorLite?.DataTablesEditor;
+    const editorConstructor = runtimeScope.AltEditorLite?.AltEditorLite;
 
     if (dataTableConstructor === undefined || editorConstructor === undefined) {
       throw new Error('Expected both browser globals after bundle loading.');
@@ -120,7 +120,7 @@ test('requires the main browser bundle before a language bundle', async ({ page 
 
   const pageError = await pageErrorPromise;
   expect(pageError.message).toContain(
-    'The DataTablesAltEditorLite browser bundle must be loaded before a language bundle.',
+    'The AltEditorLite browser bundle must be loaded before a language bundle.',
   );
 });
 
@@ -139,7 +139,7 @@ test('registers locale bundles through the public core registry', async ({ page 
 
   const localeState = await page.evaluate(() => {
     const runtimeScope = globalThis as typeof globalThis & {
-      DataTablesAltEditorLite?: {
+      AltEditorLite?: {
         getLocale(localeName: string):
           | {
               readonly actions: { readonly create: string };
@@ -150,7 +150,7 @@ test('registers locale bundles through the public core registry', async ({ page 
         registerLocale(localeName: string, language: object): void;
       };
     };
-    const localeApi = runtimeScope.DataTablesAltEditorLite;
+    const localeApi = runtimeScope.AltEditorLite;
     if (localeApi === undefined) {
       throw new Error('Expected the AltEditorLite Browser Global.');
     }
