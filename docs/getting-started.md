@@ -239,7 +239,7 @@ The browser runtime requires these native platform capabilities:
 | Capability                              | Used for                              |
 | --------------------------------------- | ------------------------------------- |
 | `<dialog>` and `::backdrop`             | Modal rendering and focus containment |
-| `AbortController` and `AbortSignal.any` | Operation and validation cancellation |
+| `AbortController`                      | Operation and validation cancellation |
 | `Object.hasOwn`                         | Safe form-value path traversal        |
 | ES modules and modern `CustomEvent`     | Package loading and lifecycle events  |
 

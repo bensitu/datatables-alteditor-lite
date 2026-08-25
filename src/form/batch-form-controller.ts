@@ -4,6 +4,7 @@ import {
   EditorDestroyedError,
 } from '../core/alt-editor-lite-error.js';
 import { freezeEditorValues } from '../core/freeze-editor-values.js';
+import { mergeAbortSignals } from '../core/merge-abort-signals.js';
 import { runCleanupSteps } from '../core/run-cleanup-steps.js';
 import { createFieldController } from '../fields/create-field-controller.js';
 import { getPathValue } from '../object-path/get-path-value.js';
@@ -277,7 +278,7 @@ export class BatchEditorFormController<TFormValues extends object> {
         controller.showError(message);
       },
       validate: async () =>
-        await this.validateBinding(binding, new AbortController().signal),
+        await this.validateBinding(binding, this.lifecycleAbortController.signal),
     };
     this.fieldControllerByName.set(name, publicController);
     return publicController as FieldController<FieldPathValue<TFormValues, TPath>>;
@@ -333,7 +334,7 @@ export class BatchEditorFormController<TFormValues extends object> {
   ): Promise<Readonly<BatchEditValidationResult<TFormValues>>> {
     this.assertActive();
     await this.waitForChanges();
-    const signal = AbortSignal.any([
+    const signal = mergeAbortSignals([
       operationSignal,
       this.lifecycleAbortController.signal,
     ]);
@@ -729,7 +730,7 @@ export class BatchEditorFormController<TFormValues extends object> {
     this.activeChangeAbortControllers.get(binding.config.name)?.abort();
     const abortController = new AbortController();
     this.activeChangeAbortControllers.set(binding.config.name, abortController);
-    const signal = AbortSignal.any([
+    const signal = mergeAbortSignals([
       abortController.signal,
       this.lifecycleAbortController.signal,
     ]);

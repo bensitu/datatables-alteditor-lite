@@ -1,4 +1,5 @@
 import { EditorConfigurationError } from '../core/alt-editor-lite-error.js';
+import { mergeAbortSignals } from '../core/merge-abort-signals.js';
 import { ChoiceOptionStore } from '../fields/choice-option-store.js';
 import { parseFieldPath } from '../object-path/field-path.js';
 import { getPathValue } from '../object-path/get-path-value.js';
@@ -377,7 +378,7 @@ export class FormDependencyController<TFormValues extends object> {
     const abortController = new AbortController();
     const request = { abortController, revision };
     this.activeRequestBySource.set(sourcePath, request);
-    const signal = AbortSignal.any([
+    const signal = mergeAbortSignals([
       abortController.signal,
       this.arguments_.lifecycleSignal,
       ...(parentSignal === undefined ? [] : [parentSignal]),

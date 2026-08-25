@@ -1,4 +1,5 @@
 import { EditorConfigurationError } from '../core/alt-editor-lite-error.js';
+import { mergeAbortSignals } from '../core/merge-abort-signals.js';
 
 import {
   createNativeControlController,
@@ -76,6 +77,7 @@ function createTypedFileController<TFormValues extends object, TValue>(
   const lifecycleAbortController = new AbortController();
   const fileBudget = resolveFileBudget(config);
   let isReadOnly = false;
+  let activeReadAbortController: AbortController | undefined;
 
   inputElement.type = 'file';
   inputElement.multiple = config.multiple === true;
@@ -116,12 +118,15 @@ function createTypedFileController<TFormValues extends object, TValue>(
   const adapter: NativeControlAdapter<TValue> = {
     control: inputElement,
     readValue: (signal?: AbortSignal) => {
+      activeReadAbortController?.abort();
+      activeReadAbortController = new AbortController();
       const selection = selectedFiles(inputElement);
       validateFileBudget(selection, fileBudget, budgetMessages);
-      const readSignal =
-        signal === undefined
-          ? lifecycleAbortController.signal
-          : AbortSignal.any([lifecycleAbortController.signal, signal]);
+      const readSignal = mergeAbortSignals([
+        lifecycleAbortController.signal,
+        activeReadAbortController.signal,
+        ...(signal === undefined ? [] : [signal]),
+      ]);
       return readValue(selection, readSignal);
     },
     writeValue: (value: unknown) => {
@@ -140,6 +145,8 @@ function createTypedFileController<TFormValues extends object, TValue>(
     validateNative: validateSelection,
     destroy: () => {
       lifecycleAbortController.abort();
+      activeReadAbortController?.abort();
+      activeReadAbortController = undefined;
       inputElement.removeEventListener('click', preventReadOnlyPointerInteraction);
       inputElement.removeEventListener('keydown', preventReadOnlyKeyboardInteraction);
     },

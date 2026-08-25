@@ -132,6 +132,24 @@ describe('file field controller', () => {
     ]);
   });
 
+  it('cancels an earlier data URL read when collection restarts', async () => {
+    const controller = createController({
+      encoding: 'data-url',
+      label: 'Encoded attachment',
+      name: 'encodedAttachment',
+      type: 'file',
+    });
+    const inputElement = getInput(controller);
+    setSelectedFiles(inputElement, [new File(['first'], 'first.txt')]);
+    const firstRead = Promise.resolve(controller.getValue());
+
+    setSelectedFiles(inputElement, [new File(['second'], 'second.txt')]);
+    const secondRead = Promise.resolve(controller.getValue());
+
+    await expect(firstRead).rejects.toMatchObject({ name: 'AbortError' });
+    await expect(secondRead).resolves.toContain('data:application/octet-stream;base64,');
+  });
+
   it('rejects over-budget selections before collection', () => {
     const countController = createController({
       label: 'Attachments',

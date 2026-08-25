@@ -90,7 +90,7 @@ export async function readFilesAsDataUrls(
   signal: AbortSignal,
 ): Promise<readonly string[]> {
   const batchAbortController = new AbortController();
-  const batchSignal = AbortSignal.any([signal, batchAbortController.signal]);
+  const batchSignal = mergeAbortSignals([signal, batchAbortController.signal]);
   try {
     return await Promise.all(
       files.map(async (file) => await readFileAsDataUrl(file, batchSignal)),
@@ -100,3 +100,4 @@ export async function readFilesAsDataUrls(
     throw error;
   }
 }
+import { mergeAbortSignals } from '../core/merge-abort-signals.js';

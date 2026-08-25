@@ -159,26 +159,8 @@ export class InlineHoverActivation<
         !(event.target instanceof Node) ||
         !cell.contains(event.target)
       ) {
-        event.preventDefault();
-        event.stopPropagation();
         this.clearTouchFallback();
-        queueMicrotask(() => {
-          if (
-            this.pendingTouchCell !== cell ||
-            this.isSuspended ||
-            context.signal.aborted ||
-            resolveInlineCellTarget(
-              context.table,
-              context.tableElement,
-              cell,
-              context.mappings,
-            ) === undefined
-          ) {
-            return;
-          }
-          this.pendingTouchCell = undefined;
-          this.trigger.moveTo(cell);
-        });
+        this.pendingTouchCell = undefined;
         return;
       }
       this.clearTouchFallback();

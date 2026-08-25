@@ -2,6 +2,7 @@ import {
   InternalOperationAbort,
   normalizeOperationError,
 } from '../core/error-normalization.js';
+import { mergeAbortSignals } from '../core/merge-abort-signals.js';
 import { FormValidationRunner } from '../form/form-validation-runner.js';
 
 import { createInlineOperationTarget } from './inline-operation-target.js';
@@ -59,7 +60,7 @@ export class InlineValidationController<TRow extends object, TFormValues extends
     signal: AbortSignal,
   ): Promise<Readonly<EditValidationResult<TFormValues>>> {
     const validateForm = this.arguments_.validateForm;
-    const currentSignal = AbortSignal.any([
+    const currentSignal = mergeAbortSignals([
       signal,
       session.lifecycleAbortController.signal,
     ]);

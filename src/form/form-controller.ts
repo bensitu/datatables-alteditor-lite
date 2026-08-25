@@ -3,6 +3,7 @@ import {
   EditorDestroyedError,
 } from '../core/alt-editor-lite-error.js';
 import { freezeEditorValues } from '../core/freeze-editor-values.js';
+import { mergeAbortSignals } from '../core/merge-abort-signals.js';
 import { RequestSequence } from '../core/request-sequence.js';
 import { runCleanupSteps } from '../core/run-cleanup-steps.js';
 import { createFieldController } from '../fields/create-field-controller.js';
@@ -289,7 +290,7 @@ export class EditorFormController<
     this.activeFormValidationAbortController?.abort();
     const validationAbortController = new AbortController();
     this.activeFormValidationAbortController = validationAbortController;
-    const signal = AbortSignal.any([
+    const signal = mergeAbortSignals([
       validationAbortController.signal,
       this.lifecycleAbortController.signal,
     ]);
@@ -349,7 +350,7 @@ export class EditorFormController<
     this.activeFormValidationAbortController?.abort();
     const validationAbortController = new AbortController();
     this.activeFormValidationAbortController = validationAbortController;
-    const signal = AbortSignal.any([
+    const signal = mergeAbortSignals([
       validationAbortController.signal,
       this.lifecycleAbortController.signal,
       operationSignal,
@@ -632,7 +633,7 @@ export class EditorFormController<
     this.activeChangeAbortControllers.get(fieldName)?.abort();
     const changeAbortController = new AbortController();
     this.activeChangeAbortControllers.set(fieldName, changeAbortController);
-    const signal = AbortSignal.any([
+    const signal = mergeAbortSignals([
       changeAbortController.signal,
       this.lifecycleAbortController.signal,
     ]);
@@ -748,7 +749,7 @@ export class EditorFormController<
       return nativeResult;
     }
 
-    const signal = AbortSignal.any([
+    const signal = mergeAbortSignals([
       validationAbortController.signal,
       this.lifecycleAbortController.signal,
     ]);

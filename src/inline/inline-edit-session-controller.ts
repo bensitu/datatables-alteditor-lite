@@ -323,6 +323,14 @@ export class InlineEditSessionController<
       if ((this.state as InlineEditState).status === 'activating') {
         this.transitionTo({ status: 'idle' });
       }
+      if (
+        originalActiveElement instanceof HTMLElement &&
+        originalActiveElement.isConnected
+      ) {
+        originalActiveElement.focus();
+      } else {
+        this.arguments_.host.focusInlineCell(undefined);
+      }
       const error = normalizeOperationError(
         rawError,
         activationAbortController.signal,
@@ -361,6 +369,7 @@ export class InlineEditSessionController<
     }
 
     const navigationIntent = session.navigationIntent;
+    delete session.navigationIntent;
     let focusTarget: Readonly<LogicalCellTarget<TRow>> | undefined;
     const presentation = this.createPresentation(
       session,

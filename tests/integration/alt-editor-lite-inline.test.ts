@@ -448,11 +448,10 @@ describe('AltEditorLite programmatic inline editing', () => {
     });
 
     await editor.openInlineEdit('#row-a', 0);
-    replaceInlineValue('');
-    const invalidSubmission = editor.submitInlineEdit();
-    const invalidExpectation = expect(invalidSubmission).rejects.toMatchObject({
-      code: 'VALIDATION',
-    });
+    const invalidInput = replaceInlineValue('');
+    invalidInput.dispatchEvent(
+      new KeyboardEvent('keydown', { bubbles: true, key: 'Tab' }),
+    );
     await vi.waitFor(() => {
       expect(document.querySelector('.alteditor-lite-dialog--alert')).toHaveProperty(
         'open',
@@ -464,7 +463,9 @@ describe('AltEditorLite programmatic inline editing', () => {
         '.alteditor-lite-dialog--alert .alteditor-lite-dialog__button',
       )
       ?.click();
-    await invalidExpectation;
+    await vi.waitFor(() => {
+      expect(editor.getInlineState().status).toBe('error');
+    });
     expect(editor.getInlineState().status).toBe('error');
     expect(update).not.toHaveBeenCalled();
 
@@ -493,6 +494,7 @@ describe('AltEditorLite programmatic inline editing', () => {
 
     await editor.submitInlineEdit();
     expect(api.row('#row-a').data().name).toBe('Retried Alpha');
+    expect(editor.getInlineState().status).toBe('idle');
   });
 
   it('summarizes unrelated Inline field errors without submitting', async () => {
@@ -675,6 +677,9 @@ describe('AltEditorLite programmatic inline editing', () => {
     const originalNode = cell.firstChild;
     const closeListener = vi.fn();
     tableElement.addEventListener('alteditor-lite:close', closeListener);
+    const activationTarget = document.createElement('button');
+    document.body.append(activationTarget);
+    activationTarget.focus();
     const focus = vi
       .spyOn(HTMLInputElement.prototype, 'focus')
       .mockImplementationOnce(() => {
@@ -695,6 +700,7 @@ describe('AltEditorLite programmatic inline editing', () => {
     expect(document.querySelector('.alteditor-lite-inline')).toBeNull();
     expect(closeListener).not.toHaveBeenCalled();
     expect(onError).toHaveBeenCalledOnce();
+    expect(document.activeElement).toBe(activationTarget);
 
     await editor.openInlineEdit('#row-a', 0);
     await editor.cancelInlineEdit();
@@ -762,7 +768,7 @@ describe('AltEditorLite hover inline editing', () => {
     await editor.cancelInlineEdit();
   });
 
-  it('contains a mismatched compatibility click and clears touch discovery', async () => {
+  it('leaves an unrelated click untouched and clears touch discovery', async () => {
     const { api, tableElement } = createInlineEditor({
       editing: inlineEditing('hover'),
       fields,
@@ -781,17 +787,13 @@ describe('AltEditorLite hover inline editing', () => {
     header.dispatchEvent(mismatchedClick);
     await Promise.resolve();
 
-    expect(mismatchedClick.defaultPrevented).toBe(true);
-    expect(cell.querySelector('.alteditor-lite-inline-hover__trigger')).not.toBeNull();
-    dispatchPointerEvent(tableElement, 'pointerleave', 'touch');
-    expect(cell.querySelector('.alteditor-lite-inline-hover__trigger')).not.toBeNull();
-    dispatchPointerEvent(tableElement, 'pointerleave', 'mouse');
+    expect(mismatchedClick.defaultPrevented).toBe(false);
     expect(cell.querySelector('.alteditor-lite-inline-hover__trigger')).toBeNull();
 
     dispatchPointerEvent(cell, 'pointerup', 'touch');
     header.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
     await Promise.resolve();
-    expect(cell.querySelector('.alteditor-lite-inline-hover__trigger')).not.toBeNull();
+    expect(cell.querySelector('.alteditor-lite-inline-hover__trigger')).toBeNull();
     dispatchPointerEvent(document.body, 'pointerdown', 'touch');
     expect(cell.querySelector('.alteditor-lite-inline-hover__trigger')).toBeNull();
   });
