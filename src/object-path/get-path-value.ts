@@ -1,3 +1,5 @@
+import { hasOwn } from '../core/has-own.js';
+
 import { parseFieldPath } from './field-path.js';
 
 /** Result of an own-property-only path lookup. */
@@ -22,7 +24,7 @@ export function lookupPathSegments(
     if (
       typeof currentValue !== 'object' ||
       currentValue === null ||
-      !Object.hasOwn(currentValue, fieldPathSegment)
+      !hasOwn(currentValue, fieldPathSegment)
     ) {
       return { found: false, value: undefined };
     }

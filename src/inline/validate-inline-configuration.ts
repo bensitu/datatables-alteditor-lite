@@ -44,7 +44,7 @@ function formatPropertyNames(propertyNames: readonly string[]): string {
   if (propertyNames.length === 2) {
     return propertyNames.join(' and ');
   }
-  return `${propertyNames.slice(0, -1).join(', ')}, and ${propertyNames.at(-1) ?? ''}`;
+  return `${propertyNames.slice(0, -1).join(', ')}, and ${propertyNames[propertyNames.length - 1] ?? ''}`;
 }
 
 function assertExplicitMappings<TRow extends object, TFormValues extends object>(

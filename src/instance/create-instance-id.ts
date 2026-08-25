@@ -4,6 +4,22 @@ const INSTANCE_SEQUENCE_KEY = Symbol.for(
 
 type InstanceSequenceScope = typeof globalThis & Record<symbol, unknown>;
 
+interface CryptoWithOptionalRandomUuid {
+  readonly randomUUID?: () => string;
+}
+
+let fallbackSequence = 0;
+
+function createFallbackInstanceId(): string {
+  fallbackSequence += 1;
+  const randomUuid = (globalThis.crypto as CryptoWithOptionalRandomUuid).randomUUID;
+  const randomId =
+    typeof randomUuid === 'function' ? randomUuid.call(globalThis.crypto) : undefined;
+  return randomId === undefined
+    ? `alteditor-lite-${Date.now().toString(36)}-${String(fallbackSequence)}`
+    : `alteditor-lite-${randomId}`;
+}
+
 /**
  * Creates a document-safe prefix used by editor-owned DOM identifiers.
  *
@@ -22,11 +38,16 @@ export function createInstanceId(): string {
       ? currentSequence + 1
       : 1;
 
-  Object.defineProperty(runtimeScope, INSTANCE_SEQUENCE_KEY, {
-    configurable: true,
-    enumerable: false,
-    value: nextSequence,
-    writable: true,
-  });
-  return `alteditor-lite-${String(nextSequence)}`;
+  try {
+    if (
+      Reflect.set(runtimeScope, INSTANCE_SEQUENCE_KEY, nextSequence) &&
+      runtimeScope[INSTANCE_SEQUENCE_KEY] === nextSequence
+    ) {
+      return `alteditor-lite-${String(nextSequence)}`;
+    }
+  } catch {
+    // A restricted global scope cannot share the sequence property.
+  }
+
+  return createFallbackInstanceId();
 }

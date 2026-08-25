@@ -3,6 +3,7 @@ import {
   EditorDestroyedError,
 } from '../core/alt-editor-lite-error.js';
 import { freezeEditorValues } from '../core/freeze-editor-values.js';
+import { hasOwn } from '../core/has-own.js';
 import { mergeAbortSignals } from '../core/merge-abort-signals.js';
 import { RequestSequence } from '../core/request-sequence.js';
 import { runCleanupSteps } from '../core/run-cleanup-steps.js';
@@ -208,7 +209,7 @@ export class EditorFormController<
         runtime.setReadOnly(runtime.isReadOnly());
         runtime.setRequired(runtime.isRequired());
 
-        if (Object.hasOwn(config, 'defaultValue')) {
+        if (hasOwn(config, 'defaultValue')) {
           controller.setValue(config.defaultValue);
         }
       }

@@ -29,4 +29,22 @@ describe('editor instance identifiers', () => {
     expect(createInstanceId()).toBe('alteditor-lite-43');
     expect(Reflect.get(globalThis, instanceSequenceKey)).toBe(43);
   });
+
+  it('creates distinct identifiers when the shared sequence cannot be written', () => {
+    Object.defineProperty(globalThis, instanceSequenceKey, {
+      configurable: true,
+      get: () => 9,
+      set: () => {
+        throw new TypeError('The shared sequence is read-only.');
+      },
+    });
+
+    const firstId = createInstanceId();
+    const secondId = createInstanceId();
+
+    expect(firstId).toMatch(/^alteditor-lite-/u);
+    expect(secondId).toMatch(/^alteditor-lite-/u);
+    expect(secondId).not.toBe(firstId);
+    expect(Reflect.get(globalThis, instanceSequenceKey)).toBe(9);
+  });
 });

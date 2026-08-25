@@ -3,6 +3,7 @@ import {
   EditorConfigurationError,
 } from '../core/alt-editor-lite-error.js';
 import { freezeEditorValues } from '../core/freeze-editor-values.js';
+import { hasOwn } from '../core/has-own.js';
 import { parseFieldPath } from '../object-path/field-path.js';
 
 import type { FormValidationResult } from './form-validation.js';
@@ -128,7 +129,7 @@ function mergeFirstErrors(
   source: Readonly<Record<string, string | undefined>>,
 ): void {
   for (const [fieldName, message] of Object.entries(source)) {
-    if (message !== undefined && !Object.hasOwn(target, fieldName)) {
+    if (message !== undefined && !hasOwn(target, fieldName)) {
       target[fieldName] = message;
     }
   }

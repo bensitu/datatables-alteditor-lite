@@ -1,3 +1,5 @@
+import { hasOwn } from '../core/has-own.js';
+
 import { isInlineFieldEligible } from './inline-field-capability.js';
 
 import type { ResolvedInlineEditingOptions } from '../core/resolve-editing-options.js';
@@ -38,7 +40,7 @@ export function createInlineColumnMappings<
     const dataSrc =
       typeof configuredDataSource === 'string' ? configuredDataSource : undefined;
     const hasExplicitMapping =
-      columnName !== undefined && Object.hasOwn(options.columns, columnName);
+      columnName !== undefined && hasOwn(options.columns, columnName);
     const configuredFieldName = hasExplicitMapping
       ? options.columns[columnName]
       : dataSrc;

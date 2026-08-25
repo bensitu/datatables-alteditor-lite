@@ -2,7 +2,7 @@ import { EditorSelectionUnavailableError } from '../core/alt-editor-lite-error.j
 
 import type { Api } from 'datatables.net';
 
-interface SelectRowApi {
+interface SelectRowsApi {
   readonly select?: unknown;
 }
 
@@ -23,8 +23,8 @@ interface SelectCapableTable {
  * @returns Whether Select has extended the table API.
  */
 export function hasSelectIntegration<TRow extends object>(table: Api<TRow>): boolean {
-  const rowApi = table.row(0) as unknown as SelectRowApi;
-  return typeof rowApi.select === 'function';
+  const rowsApi = table.rows() as unknown as SelectRowsApi;
+  return typeof rowsApi.select === 'function';
 }
 
 /**

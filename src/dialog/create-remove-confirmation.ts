@@ -18,10 +18,9 @@ export function createRemoveConfirmation(
   confirmationElement.className = 'alteditor-lite-remove-confirmation';
   countElement.className = 'alteditor-lite-remove-confirmation__count';
   warningElement.className = 'alteditor-lite-remove-confirmation__warning';
-  countElement.textContent = language.dialog.removeCount.replaceAll(
-    '{count}',
-    String(targetCount),
-  );
+  countElement.textContent = language.dialog.removeCount
+    .split('{count}')
+    .join(String(targetCount));
   warningElement.textContent = language.dialog.removeMessage;
   confirmationElement.append(countElement, warningElement);
 

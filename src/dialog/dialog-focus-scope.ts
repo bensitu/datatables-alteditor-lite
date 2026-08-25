@@ -244,7 +244,7 @@ export class DialogFocusScope {
     }
 
     const firstElement = focusableElements[0];
-    const lastElement = focusableElements.at(-1);
+    const lastElement = focusableElements[focusableElements.length - 1];
     const activeElement = document.activeElement;
     const hasContainedFocus =
       activeElement !== this.dialogElement && this.dialogElement.contains(activeElement);

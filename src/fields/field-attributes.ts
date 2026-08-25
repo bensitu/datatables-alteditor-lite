@@ -1,4 +1,5 @@
 import { EditorConfigurationError } from '../core/alt-editor-lite-error.js';
+import { hasOwn } from '../core/has-own.js';
 
 export type FieldAttributeTarget =
   | 'checkbox'
@@ -71,7 +72,7 @@ function attributeTargetForControl(control: HTMLElement): FieldAttributeTarget {
   }
   if (control instanceof HTMLInputElement) {
     const inputType = control.type;
-    if (Object.hasOwn(ALLOWED_ATTRIBUTES_BY_TARGET, inputType)) {
+    if (hasOwn(ALLOWED_ATTRIBUTES_BY_TARGET, inputType)) {
       return inputType as FieldAttributeTarget;
     }
   }

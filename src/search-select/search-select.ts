@@ -91,7 +91,7 @@ function formatAnnouncement(
 ): string {
   let announcement = template;
   for (const [tokenName, replacement] of Object.entries(replacements)) {
-    announcement = announcement.replaceAll(`{${tokenName}}`, replacement);
+    announcement = announcement.split(`{${tokenName}}`).join(replacement);
   }
   return announcement;
 }

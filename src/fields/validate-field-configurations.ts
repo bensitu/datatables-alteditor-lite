@@ -1,4 +1,5 @@
 import { EditorConfigurationError } from '../core/alt-editor-lite-error.js';
+import { hasOwn } from '../core/has-own.js';
 import { parseFieldPath } from '../object-path/field-path.js';
 import { SEARCH_SELECT_MAX_OPTION_COUNT } from '../search-select/search-select.js';
 
@@ -42,7 +43,7 @@ function assertSupportedFieldType<TFormValues extends object>(
 function assertValidDefaultValue<TFormValues extends object>(
   config: FieldConfig<TFormValues>,
 ): void {
-  if (!Object.hasOwn(config, 'defaultValue')) {
+  if (!hasOwn(config, 'defaultValue')) {
     return;
   }
 
@@ -160,7 +161,7 @@ export function validateFieldConfigurations<TFormValues extends object>(
     assertValidDefaultValue(config);
 
     if (config.type === 'hidden') {
-      if (Object.hasOwn(config, 'label')) {
+      if (hasOwn(config, 'label')) {
         throw new EditorConfigurationError(
           `Hidden field "${config.name}" cannot define a label.`,
         );
@@ -188,7 +189,7 @@ export function validateFieldConfigurations<TFormValues extends object>(
       const rawConfig = config as unknown as Readonly<Record<string, unknown>>;
       if (
         ['searchThreshold', 'debounceMs', 'loadOptions', 'resolveOption'].some(
-          (propertyName) => Object.hasOwn(rawConfig, propertyName),
+          (propertyName) => hasOwn(rawConfig, propertyName),
         )
       ) {
         throw new EditorConfigurationError(

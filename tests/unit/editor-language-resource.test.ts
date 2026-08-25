@@ -93,6 +93,11 @@ describe('external editor language resources', () => {
       message: 'Editor language resource URLs must not contain embedded credentials.',
       retryable: false,
     });
+    await expect(loadEditorLanguage('java\nscript:alert(1)')).rejects.toMatchObject({
+      code: 'LANGUAGE_LOAD',
+      message: 'Editor language resources must not contain control characters.',
+      retryable: false,
+    });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 

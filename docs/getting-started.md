@@ -236,12 +236,11 @@ tooling; the runtime itself is browser code.
 
 The browser runtime requires these native platform capabilities:
 
-| Capability                              | Used for                              |
-| --------------------------------------- | ------------------------------------- |
-| `<dialog>` and `::backdrop`             | Modal rendering and focus containment |
-| `AbortController`                      | Operation and validation cancellation |
-| `Object.hasOwn`                         | Safe form-value path traversal        |
-| ES modules and modern `CustomEvent`     | Package loading and lifecycle events  |
+| Capability                          | Used for                              |
+| ----------------------------------- | ------------------------------------- |
+| `<dialog>` and `::backdrop`         | Modal rendering and focus containment |
+| `AbortController`                   | Operation and validation cancellation |
+| ES modules and modern `CustomEvent` | Package loading and lifecycle events  |
 
 No compatibility polyfills are bundled. Applications that support older browser
 engines must provide these capabilities before initializing the editor. The CSS

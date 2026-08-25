@@ -23,7 +23,7 @@ export function resolveSearchSelectActiveIndex(
   }
 
   if (key === 'End') {
-    return enabledOptionIndices.at(-1);
+    return enabledOptionIndices[enabledOptionIndices.length - 1];
   }
 
   const activePosition =

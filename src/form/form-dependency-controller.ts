@@ -1,4 +1,5 @@
 import { EditorConfigurationError } from '../core/alt-editor-lite-error.js';
+import { hasOwn } from '../core/has-own.js';
 import { mergeAbortSignals } from '../core/merge-abort-signals.js';
 import { ChoiceOptionStore } from '../fields/choice-option-store.js';
 import { parseFieldPath } from '../object-path/field-path.js';
@@ -525,10 +526,10 @@ export class FormDependencyController<TFormValues extends object> {
         }
       }
 
-      const hasVisible = Object.hasOwn(rawPatch, 'visible');
-      const hasDisabled = Object.hasOwn(rawPatch, 'disabled');
-      const hasReadOnly = Object.hasOwn(rawPatch, 'readOnly');
-      const hasRequired = Object.hasOwn(rawPatch, 'required');
+      const hasVisible = hasOwn(rawPatch, 'visible');
+      const hasDisabled = hasOwn(rawPatch, 'disabled');
+      const hasReadOnly = hasOwn(rawPatch, 'readOnly');
+      const hasRequired = hasOwn(rawPatch, 'required');
       for (const propertyName of [
         'visible',
         'disabled',
@@ -536,7 +537,7 @@ export class FormDependencyController<TFormValues extends object> {
         'required',
       ] as const) {
         if (
-          Object.hasOwn(rawPatch, propertyName) &&
+          hasOwn(rawPatch, propertyName) &&
           typeof rawPatch[propertyName] !== 'boolean'
         ) {
           throw new EditorConfigurationError(
@@ -554,7 +555,7 @@ export class FormDependencyController<TFormValues extends object> {
         );
       }
 
-      const hasOptions = Object.hasOwn(rawPatch, 'options');
+      const hasOptions = hasOwn(rawPatch, 'options');
       let options: readonly SelectOption[] | undefined;
       if (hasOptions) {
         if (
@@ -591,7 +592,7 @@ export class FormDependencyController<TFormValues extends object> {
         }
       }
 
-      const hasValue = Object.hasOwn(rawPatch, 'value');
+      const hasValue = hasOwn(rawPatch, 'value');
       const candidateOptions = options ?? binding.controller.getOptions?.() ?? [];
       if (hasValue) {
         assertCompatibleValue(binding.config, rawPatch['value'], candidateOptions);

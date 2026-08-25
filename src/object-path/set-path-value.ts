@@ -1,3 +1,5 @@
+import { hasOwn } from '../core/has-own.js';
+
 import { parseFieldPath } from './field-path.js';
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
@@ -43,7 +45,7 @@ export function setPathValue(
   let currentValues = targetValues;
 
   for (const fieldPathSegment of fieldPathSegments.slice(0, -1)) {
-    if (!Object.hasOwn(currentValues, fieldPathSegment)) {
+    if (!hasOwn(currentValues, fieldPathSegment)) {
       currentValues[fieldPathSegment] = {};
     }
 
@@ -57,7 +59,7 @@ export function setPathValue(
     currentValues = nestedValues;
   }
 
-  const finalFieldPathSegment = fieldPathSegments.at(-1);
+  const finalFieldPathSegment = fieldPathSegments[fieldPathSegments.length - 1];
   if (finalFieldPathSegment === undefined) {
     throw new TypeError('A field path must contain at least one segment.');
   }

@@ -8,11 +8,22 @@ import {
   type AltEditorLiteLanguage,
   type EditorLanguageDefinition,
 } from '../core/alt-editor-lite-language.js';
+import { hasOwn } from '../core/has-own.js';
 
 const placeholderPattern = /\{[^{}]+\}/gu;
 const LANGUAGE_REQUEST_TIMEOUT_MS = 10_000;
 const DEFAULT_MAX_LANGUAGE_RESOURCE_BYTES = 64 * 1024;
 const ABSOLUTE_SCHEME_PATTERN = /^[a-z][a-z\d+.-]*:/iu;
+
+function containsRawUrlControlCharacter(value: string): boolean {
+  for (const character of value) {
+    const codePoint = character.codePointAt(0);
+    if (codePoint !== undefined && (codePoint <= 0x1f || codePoint === 0x7f)) {
+      return true;
+    }
+  }
+  return false;
+}
 
 /** Fetch settings and resource limits for an external editor language. */
 export interface EditorLanguageLoadOptions extends RequestInit {
@@ -35,6 +46,13 @@ function assertSupportedLanguageResource(resource: RequestInfo | URL): void {
           ? resource
           : '';
   const normalizedResourceUrl = resourceUrl.trim();
+  if (containsRawUrlControlCharacter(resourceUrl)) {
+    throw new EditorLanguageLoadError(
+      'Editor language resources must not contain control characters.',
+      undefined,
+      false,
+    );
+  }
   if (
     normalizedResourceUrl.startsWith('//') ||
     normalizedResourceUrl.startsWith('\\\\')
@@ -211,7 +229,7 @@ function assertLanguageShape(
 ): void {
   for (const [key, nestedValue] of Object.entries(value)) {
     const path = parentPath.length === 0 ? key : `${parentPath}.${key}`;
-    if (!Object.hasOwn(reference, key)) {
+    if (!hasOwn(reference, key)) {
       throw new EditorConfigurationError(`Unknown editor language key: "${path}".`);
     }
 
