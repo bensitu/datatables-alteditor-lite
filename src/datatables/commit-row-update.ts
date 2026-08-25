@@ -90,7 +90,7 @@ export function resolveLogicalCellTarget<TRow extends object>(
   if (
     !rowApi.any() ||
     typeof resolvedRowIndex !== 'number' ||
-    rowApi.data() !== target.row ||
+    (target.rowId === undefined && rowApi.data() !== target.row) ||
     (target.rowId !== undefined && rowApi.id() !== target.rowId) ||
     (target.columnName !== undefined && column.name() !== target.columnName) ||
     !isColumnVisiblyAvailable(column)

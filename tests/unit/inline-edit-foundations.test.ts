@@ -233,9 +233,14 @@ describe('owned DataTables draws', () => {
     const draw = vi.fn();
     abortController.abort();
 
-    await owner.runWithDraw('inline-edit-success', abortController.signal, draw);
+    const didDraw = await owner.runWithDraw(
+      'inline-edit-success',
+      abortController.signal,
+      draw,
+    );
 
     expect(draw).not.toHaveBeenCalled();
+    expect(didDraw).toBe(false);
     expect(owner.ownsDraw()).toBe(false);
   });
 

@@ -167,7 +167,7 @@ export class DataTablesHost<TRow extends object>
   ): Promise<DataTablesRecordTarget> {
     const rowIndex = this.resolveRecordTargetCapture(target);
     const previousRow = this.table.row(rowIndex).data();
-    await this.drawOwnership.runWithDraw(
+    const didApply = await this.drawOwnership.runWithDraw(
       context.mode === 'inline' ? 'inline-edit-success' : 'dialog-edit-success',
       context.signal,
       () => {
@@ -175,6 +175,9 @@ export class DataTablesHost<TRow extends object>
         this.table.draw(false);
       },
     );
+    if (!didApply) {
+      return target;
+    }
     this.recordTargets.delete(previousRow);
     this.recordCaptures.set(
       target,
@@ -211,18 +214,25 @@ export class DataTablesHost<TRow extends object>
       );
     }
 
-    await this.drawOwnership.runWithDraw('batch-edit-success', context.signal, () => {
-      applyRowReplacements(
-        resolvedUpdates.map((update) => ({
-          previousRow: update.previousRow,
-          row: update.row,
-          write: (row: TRow) => {
-            this.table.row(update.rowIndex).data(row);
-          },
-        })),
-      );
-      this.table.draw(false);
-    });
+    const didApply = await this.drawOwnership.runWithDraw(
+      'batch-edit-success',
+      context.signal,
+      () => {
+        applyRowReplacements(
+          resolvedUpdates.map((update) => ({
+            previousRow: update.previousRow,
+            row: update.row,
+            write: (row: TRow) => {
+              this.table.row(update.rowIndex).data(row);
+            },
+          })),
+        );
+        this.table.draw(false);
+      },
+    );
+    if (!didApply) {
+      return;
+    }
 
     for (const update of resolvedUpdates) {
       this.recordTargets.delete(update.previousRow);
@@ -247,12 +257,19 @@ export class DataTablesHost<TRow extends object>
     const removedRows = targets.map(
       (target) => this.recordCaptures.get(target)?.sourceRow,
     );
-    await this.drawOwnership.runWithDraw('remove-success', context.signal, () => {
-      this.table
-        .rows(rowIndexes as RowSelector<TRow>)
-        .remove()
-        .draw(false);
-    });
+    const didApply = await this.drawOwnership.runWithDraw(
+      'remove-success',
+      context.signal,
+      () => {
+        this.table
+          .rows(rowIndexes as RowSelector<TRow>)
+          .remove()
+          .draw(false);
+      },
+    );
+    if (!didApply) {
+      return;
+    }
     for (const [position, target] of targets.entries()) {
       const removedRow = removedRows[position];
       if (removedRow !== undefined) {
@@ -270,10 +287,17 @@ export class DataTablesHost<TRow extends object>
   ): Promise<number> {
     const previousRow = this.table.row(rowIndex).data();
     const recordTarget = this.recordTargets.get(previousRow);
-    await this.drawOwnership.runWithDraw('inline-edit-success', context.signal, () => {
-      this.table.row(rowIndex).data(row);
-      this.table.draw(false);
-    });
+    const didApply = await this.drawOwnership.runWithDraw(
+      'inline-edit-success',
+      context.signal,
+      () => {
+        this.table.row(rowIndex).data(row);
+        this.table.draw(false);
+      },
+    );
+    if (!didApply) {
+      return rowIndex;
+    }
     if (recordTarget !== undefined) {
       this.recordTargets.delete(previousRow);
       this.recordCaptures.set(

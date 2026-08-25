@@ -291,6 +291,7 @@ function createButtonDefinition(
     },
     enabled: false,
     init(this: ButtonController, table: Api<object>, buttonNode: ButtonNode): void {
+      cleanupByButton.get(this)?.();
       const tableElement = table.table().node();
       const initialTabIndexValue = buttonNode.attr('tabindex');
       const initialTabIndex =

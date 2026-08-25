@@ -41,13 +41,14 @@ export class DrawOwnership<TRow extends object> {
     reason: DrawOwnershipReason,
     signal: AbortSignal,
     draw: () => void,
-  ): Promise<void> {
+  ): Promise<boolean> {
     this.assertActive();
     const token = this.acquire(reason);
     if (signal.aborted) {
       this.release(token);
-      return;
+      return false;
     }
+    let didInvokeDraw = false;
     await new Promise<void>((resolve, reject) => {
       let isSettled = false;
       let isInvokingDraw = false;
@@ -85,6 +86,7 @@ export class DrawOwnership<TRow extends object> {
       }
       try {
         isInvokingDraw = true;
+        didInvokeDraw = true;
         draw();
         isInvokingDraw = false;
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- DataTables can dispatch the registered listener synchronously inside draw().
@@ -104,6 +106,7 @@ export class DrawOwnership<TRow extends object> {
     }).finally(() => {
       this.release(token);
     });
+    return didInvokeDraw;
   }
 
   /** Marks redraws performed by a consumer-owned asynchronous refresh. */

@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { resolveLogicalCellTarget } from '../../src/datatables/commit-row-update.js';
 import { DataTablesHost } from '../../src/datatables/data-tables-host.js';
 
 import { destroyTestTables, createTestTable } from './datatables-test-fixture.js';
@@ -52,6 +53,50 @@ describe('DataTablesHost', () => {
 
     expect(host.findRecordTarget(replacementRow)).toBeUndefined();
     host.destroy();
+  });
+
+  it('keeps record mappings unchanged when application is already cancelled', async () => {
+    const { api } = createTestTable('host-cancelled-update');
+    const host = new DataTablesHost(api);
+    const target = host.resolveRecordTarget('#row-a');
+    const original = api.row('#row-a').data();
+    const replacement = { ...original, name: 'Cancelled replacement' };
+    const abortController = new AbortController();
+    abortController.abort();
+
+    await host.applyUpdate(target, replacement, {
+      mode: 'dialog',
+      operation: 'edit',
+      signal: abortController.signal,
+    });
+
+    expect(api.row('#row-a').data()).toBe(original);
+    expect(host.findRecordTarget(original)).toBe(target);
+    expect(host.findRecordTarget(replacement)).toBeUndefined();
+    host.destroy();
+  });
+
+  it('resolves a committed cell by stable row id after row data is refreshed', () => {
+    const { api } = createTestTable('host-refreshed-focus');
+    const original = api.row('#row-a').data();
+    const rowIndex = api.row('#row-a').index();
+    api
+      .row('#row-a')
+      .data({ ...original })
+      .draw(false);
+
+    const cell = resolveLogicalCellTarget(
+      api,
+      {
+        columnIndex: 0,
+        row: original,
+        rowId: 'row-a',
+        rowIndex,
+      },
+      'The cell is unavailable.',
+    );
+
+    expect(cell).toBe(api.cell('#row-a', 0).node());
   });
 
   it('applies distinct replacement rows with one draw and refreshes their targets', async () => {
