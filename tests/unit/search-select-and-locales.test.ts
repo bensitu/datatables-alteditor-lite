@@ -237,6 +237,37 @@ describe('SearchSelect document events', () => {
     searchSelect.destroy();
     searchSelect.element.remove();
   });
+
+  it('closes when focus leaves through the clear button', () => {
+    const searchSelect = new SearchSelect({
+      allowClear: true,
+      allowManualValue: false,
+      debounceMs: 0,
+      fieldId: 'focus-boundary',
+      locale: 'en',
+      messages: searchSelectMessages,
+      onCommit: vi.fn(),
+      options: [{ label: 'First', value: 'first' }],
+      searchThreshold: 0,
+      sortOptions: false,
+    });
+    const outsideButton = document.createElement('button');
+    document.body.append(searchSelect.element, outsideButton);
+    searchSelect.setValue('first');
+    searchSelect.inputElement.focus();
+    const clearButton = searchSelect.element.querySelector<HTMLButtonElement>(
+      '.alteditor-lite-search-select__clear',
+    );
+    clearButton?.focus();
+    expect(searchSelect.inputElement.getAttribute('aria-expanded')).toBe('true');
+
+    outsideButton.focus();
+
+    expect(searchSelect.inputElement.getAttribute('aria-expanded')).toBe('false');
+    searchSelect.destroy();
+    searchSelect.element.remove();
+    outsideButton.remove();
+  });
 });
 
 describe('SearchSelect remote request ownership', () => {

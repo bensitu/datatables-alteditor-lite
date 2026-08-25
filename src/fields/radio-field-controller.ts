@@ -61,16 +61,28 @@ export function createRadioFieldController<
     }
   }
 
-  const preventReadOnlyMutation = (event: Event): void => {
+  const preventReadOnlyPointerMutation = (event: Event): void => {
     if (isReadOnly) {
+      event.preventDefault();
+    }
+  };
+  const preventReadOnlyKeyboardMutation = (event: KeyboardEvent): void => {
+    if (
+      isReadOnly &&
+      (event.key === ' ' ||
+        event.key === 'ArrowDown' ||
+        event.key === 'ArrowLeft' ||
+        event.key === 'ArrowRight' ||
+        event.key === 'ArrowUp')
+    ) {
       event.preventDefault();
     }
   };
 
   const removeOptionListeners = (): void => {
     for (const inputElement of inputElements) {
-      inputElement.removeEventListener('click', preventReadOnlyMutation);
-      inputElement.removeEventListener('keydown', preventReadOnlyMutation);
+      inputElement.removeEventListener('click', preventReadOnlyPointerMutation);
+      inputElement.removeEventListener('keydown', preventReadOnlyKeyboardMutation);
       inputElement.removeEventListener('change', onUserChange);
     }
   };
@@ -104,8 +116,8 @@ export function createRadioFieldController<
       inputElement.type = 'radio';
       inputElement.value = token;
       applyAllowedFieldAttributes(inputElement, config.attributes);
-      inputElement.addEventListener('click', preventReadOnlyMutation);
-      inputElement.addEventListener('keydown', preventReadOnlyMutation);
+      inputElement.addEventListener('click', preventReadOnlyPointerMutation);
+      inputElement.addEventListener('keydown', preventReadOnlyKeyboardMutation);
       inputElement.addEventListener('change', onUserChange);
 
       optionLabel.className = 'alteditor-lite-radio__option';

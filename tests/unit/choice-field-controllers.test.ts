@@ -235,6 +235,13 @@ describe('radio field controller', () => {
     });
     inputElement?.dispatchEvent(keydownEvent);
     expect(keydownEvent.defaultPrevented).toBe(true);
+    const tabEvent = new KeyboardEvent('keydown', {
+      bubbles: true,
+      cancelable: true,
+      key: 'Tab',
+    });
+    inputElement?.dispatchEvent(tabEvent);
+    expect(tabEvent.defaultPrevented).toBe(false);
 
     const emptyController = createRadio({
       label: 'Empty',
@@ -279,17 +286,21 @@ describe('select field controller', () => {
   });
 
   it('preserves a readonly value across interaction attempts', () => {
-    const controller = createSelect({
-      allowClear: true,
-      label: 'Role',
-      name: 'role',
-      options: [
-        { label: 'One', value: 1 },
-        { label: 'Two', value: 2 },
-      ],
-      readOnly: true,
-      type: 'select',
-    });
+    const userChange = vi.fn();
+    const controller = createSelect(
+      {
+        allowClear: true,
+        label: 'Role',
+        name: 'role',
+        options: [
+          { label: 'One', value: 1 },
+          { label: 'Two', value: 2 },
+        ],
+        readOnly: true,
+        type: 'select',
+      },
+      userChange,
+    );
     const selectElement = controller.element.querySelector('select');
     if (selectElement === null) {
       throw new Error('Expected a select element.');
@@ -303,12 +314,20 @@ describe('select field controller', () => {
     });
     selectElement.dispatchEvent(pointerEvent);
     selectElement.dispatchEvent(keyEvent);
+    const tabEvent = new KeyboardEvent('keydown', {
+      bubbles: true,
+      cancelable: true,
+      key: 'Tab',
+    });
+    selectElement.dispatchEvent(tabEvent);
     selectElement.value = 'option-1';
     selectElement.dispatchEvent(new Event('change', { bubbles: true }));
 
     expect(pointerEvent.defaultPrevented).toBe(true);
     expect(keyEvent.defaultPrevented).toBe(true);
+    expect(tabEvent.defaultPrevented).toBe(false);
     expect(controller.getValue()).toBe(1);
+    expect(userChange).not.toHaveBeenCalled();
   });
 
   it('rebuilds select options without dispatching a user change', () => {

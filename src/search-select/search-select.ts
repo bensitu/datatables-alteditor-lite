@@ -272,7 +272,7 @@ export class SearchSelect<TValue extends string | number> {
     );
 
     this.inputElement.addEventListener('focus', this.handleFocus);
-    this.inputElement.addEventListener('blur', this.handleBlur);
+    this.element.addEventListener('focusout', this.handleFocusOut);
     this.inputElement.addEventListener('input', this.handleInput);
     this.inputElement.addEventListener('keydown', this.handleKeyDown);
     this.inputElement.addEventListener('compositionstart', this.handleCompositionStart);
@@ -367,7 +367,15 @@ export class SearchSelect<TValue extends string | number> {
     }
     if (this.isRemote()) {
       this.assertRemoteOptions(options);
-      this.seedOptions = new ChoiceOptionStore(options).options();
+      const seedOptionStore = new ChoiceOptionStore(options);
+      this.seedOptions = seedOptionStore.options();
+      if (this.currentRemoteOptions.length === 0) {
+        this.tokenMap = seedOptionStore;
+        this.selectedToken =
+          this.selectedValue === undefined
+            ? undefined
+            : seedOptionStore.tokenForValue(this.selectedValue);
+      }
       const selectedValue = this.selectedValue;
       if (selectedValue !== undefined) {
         const selectedOption = this.findOption(options, selectedValue);
@@ -468,7 +476,7 @@ export class SearchSelect<TValue extends string | number> {
     this.cancelSearchRequest();
     this.cancelResolveRequest();
     this.inputElement.removeEventListener('focus', this.handleFocus);
-    this.inputElement.removeEventListener('blur', this.handleBlur);
+    this.element.removeEventListener('focusout', this.handleFocusOut);
     this.inputElement.removeEventListener('input', this.handleInput);
     this.inputElement.removeEventListener('keydown', this.handleKeyDown);
     this.inputElement.removeEventListener(
@@ -489,7 +497,7 @@ export class SearchSelect<TValue extends string | number> {
     this.listboxElement.replaceChildren();
   }
 
-  private readonly handleBlur = (event: FocusEvent): void => {
+  private readonly handleFocusOut = (event: FocusEvent): void => {
     if (
       event.relatedTarget instanceof Node &&
       this.element.contains(event.relatedTarget)

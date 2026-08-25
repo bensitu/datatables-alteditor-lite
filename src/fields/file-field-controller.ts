@@ -84,13 +84,18 @@ function createTypedFileController<TFormValues extends object, TValue>(
     inputElement.accept = config.accept;
   }
 
-  const preventReadOnlyInteraction = (event: Event): void => {
+  const preventReadOnlyPointerInteraction = (event: Event): void => {
     if (isReadOnly) {
       event.preventDefault();
     }
   };
-  inputElement.addEventListener('click', preventReadOnlyInteraction);
-  inputElement.addEventListener('keydown', preventReadOnlyInteraction);
+  const preventReadOnlyKeyboardInteraction = (event: KeyboardEvent): void => {
+    if (isReadOnly && (event.key === 'Enter' || event.key === ' ')) {
+      event.preventDefault();
+    }
+  };
+  inputElement.addEventListener('click', preventReadOnlyPointerInteraction);
+  inputElement.addEventListener('keydown', preventReadOnlyKeyboardInteraction);
 
   const validateSelection = (): FieldValidationResult => {
     if (!inputElement.checkValidity()) {
@@ -135,8 +140,8 @@ function createTypedFileController<TFormValues extends object, TValue>(
     validateNative: validateSelection,
     destroy: () => {
       lifecycleAbortController.abort();
-      inputElement.removeEventListener('click', preventReadOnlyInteraction);
-      inputElement.removeEventListener('keydown', preventReadOnlyInteraction);
+      inputElement.removeEventListener('click', preventReadOnlyPointerInteraction);
+      inputElement.removeEventListener('keydown', preventReadOnlyKeyboardInteraction);
     },
   };
 

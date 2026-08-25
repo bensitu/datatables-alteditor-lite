@@ -259,9 +259,16 @@ describe('file field controller', () => {
     });
     inputElement.dispatchEvent(clickEvent);
     inputElement.dispatchEvent(keyEvent);
+    const tabEvent = new KeyboardEvent('keydown', {
+      bubbles: true,
+      cancelable: true,
+      key: 'Tab',
+    });
+    inputElement.dispatchEvent(tabEvent);
 
     expect(inputElement.getAttribute('aria-readonly')).toBe('true');
     expect(clickEvent.defaultPrevented).toBe(true);
     expect(keyEvent.defaultPrevented).toBe(true);
+    expect(tabEvent.defaultPrevented).toBe(false);
   });
 });

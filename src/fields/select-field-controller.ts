@@ -55,21 +55,27 @@ export function createSelectFieldController<
   };
   renderOptions();
 
-  const preventReadOnlyInteraction = (event: Event): void => {
+  const preventReadOnlyPointerInteraction = (event: Event): void => {
     if (isReadOnly) {
       event.preventDefault();
     }
   };
-  const preserveReadOnlyValue = (): void => {
+  const preventReadOnlyKeyboardInteraction = (event: KeyboardEvent): void => {
+    if (isReadOnly && event.key !== 'Tab') {
+      event.preventDefault();
+    }
+  };
+  const preserveReadOnlyValue = (event: Event): void => {
     if (isReadOnly) {
       selectElement.value = committedToken;
+      event.stopImmediatePropagation();
     } else {
       committedToken = selectElement.value;
     }
   };
 
-  selectElement.addEventListener('pointerdown', preventReadOnlyInteraction);
-  selectElement.addEventListener('keydown', preventReadOnlyInteraction);
+  selectElement.addEventListener('pointerdown', preventReadOnlyPointerInteraction);
+  selectElement.addEventListener('keydown', preventReadOnlyKeyboardInteraction);
   selectElement.addEventListener('change', preserveReadOnlyValue);
 
   const adapter: NativeControlAdapter<TValue | undefined> = {
@@ -106,8 +112,8 @@ export function createSelectFieldController<
     validateNative: () =>
       selectElement.checkValidity() ? { valid: true } : { valid: false },
     destroy: () => {
-      selectElement.removeEventListener('pointerdown', preventReadOnlyInteraction);
-      selectElement.removeEventListener('keydown', preventReadOnlyInteraction);
+      selectElement.removeEventListener('pointerdown', preventReadOnlyPointerInteraction);
+      selectElement.removeEventListener('keydown', preventReadOnlyKeyboardInteraction);
       selectElement.removeEventListener('change', preserveReadOnlyValue);
     },
   };
