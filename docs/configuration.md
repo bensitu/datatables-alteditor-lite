@@ -244,10 +244,10 @@ presentation reaches a stable state.
 
 ## Migrating from v0.5.x
 
-v0.6.0 standardizes the DataTables facade and Browser Global names. The previous
+v0.6.0 standardized the DataTables facade and Browser Global names. The previous
 names are not retained as runtime aliases.
 
-| v0.5.x Browser or ESM API                      | v0.6.0 API                           |
+| v0.5.x Browser or ESM API                      | v0.6.x API                           |
 | ---------------------------------------------- | ------------------------------------ |
 | `DataTablesEditor` from `/datatables`          | `AltEditorLite` from `/datatables`   |
 | `globalThis.DataTablesAltEditorLite`           | `globalThis.AltEditorLite`           |
@@ -259,11 +259,11 @@ names are not retained as runtime aliases.
 ## Migrating from v0.4.1
 
 v0.5.0 made Host ownership explicit and removed the former DataTables-specific
-shape from neutral APIs. v0.6.0 uses the same `AltEditorLite` constructor name
+shape from neutral APIs. v0.6.x uses the same `AltEditorLite` constructor name
 for the neutral root and the selector-friendly `/datatables` entry; the import
 path determines which constructor contract is used.
 
-| v0.4.1                                        | v0.6.0 current API                                                   |
+| v0.4.1                                        | v0.6.x API                                                           |
 | --------------------------------------------- | -------------------------------------------------------------------- |
 | `new AltEditorLite(table, options)`           | Use `/datatables` with a table, or the neutral root with a Host      |
 | `context.table`                               | Retain `DataTablesHost` and call `host.unwrap()` in integration code |

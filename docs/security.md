@@ -19,9 +19,15 @@ Language resource URLs, dialog templates, and native `pattern` attributes are
 trusted configuration. Applications should restrict language URLs with their own
 origin policy and CSP, and can set `redirect: 'error'` when redirects are not
 expected. Protocol-relative URLs and URLs containing embedded credentials are
-rejected. Dialog templates are cloned without sanitization, so externally sourced
-markup must be sanitized before configuration. Patterns should avoid expressions
-with excessive backtracking on long input.
+rejected, as are URLs containing raw control characters. Dialog templates are
+cloned without sanitization, so externally sourced markup must be sanitized before
+configuration. Patterns should avoid expressions with excessive backtracking on
+long input.
+
+File selectors and `accept` attributes do not establish trust. Servers must
+validate uploaded content, size, and media type. Data URLs returned by file fields
+must not be inserted into active HTML or executable frames without an
+application-owned content policy.
 
 These boundaries do not replace server controls. Servers must authenticate and
 authorize every operation, validate all values and files, enforce uniqueness, and

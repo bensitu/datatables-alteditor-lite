@@ -14,6 +14,29 @@ recreates an edited nested branch as plain objects; applications that require a
 class instance in that branch should return the reconstructed row from an Update
 callback. Visible fields require a non-empty label.
 
+Map incompatible service keys at the application boundary and keep editor field
+paths simple:
+
+```ts
+interface ApiUser {
+  readonly id: string;
+  readonly 'display name': string;
+}
+
+interface UserRow {
+  readonly id: string;
+  readonly profile: { readonly name: string };
+}
+
+const toEditorRow = (record: ApiUser): UserRow => ({
+  id: record.id,
+  profile: { name: record['display name'] },
+});
+```
+
+Use the same mapping after Create, Edit, or Refresh returns service data. This
+keeps transport naming separate from form paths without weakening path safety.
+
 Supported field types are:
 
 | Type                                                                      | Collected value                                                                 |
@@ -220,3 +243,6 @@ Budgets are checked before any data URL read.
 Browser validation and file filters are usability features; a server must
 independently validate content, size, and media type. Disabling or substantially
 raising a data URL budget can exhaust browser memory and should be deliberate.
+Treat returned data URLs as untrusted file content. Do not insert them into active
+HTML or executable frames; preview only application-approved media types under an
+appropriate Content Security Policy.
