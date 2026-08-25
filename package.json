@@ -1,6 +1,6 @@
 {
   "name": "datatables-alteditor-lite",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "AltEditorLite is a lightweight native record editor with DataTables and standalone hosts.",
   "author": "Ben Situ",
   "homepage": "https://bensitu.github.io/datatables-alteditor-lite/",
@@ -12,10 +12,15 @@
     "url": "git+https://github.com/bensitu/datatables-alteditor-lite.git"
   },
   "keywords": [
+    "alteditorlite",
     "datatables",
     "data-table",
+    "record-editor",
     "crud",
-    "editor",
+    "inline-editing",
+    "batch-editing",
+    "form-validation",
+    "standalone",
     "typescript"
   ],
   "type": "module",

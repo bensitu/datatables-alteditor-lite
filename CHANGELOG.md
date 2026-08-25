@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.1] - 2026-08-25
+
+### Changed
+
+- Reduced repeated row-id scans when resolving multi-record DataTables targets.
+- Reduced browser runtime assumptions by replacing newer collection, property,
+  string, and abort-signal helpers with equivalent internal implementations.
+- Clarified field-path mapping, file content handling, supported browser
+  capabilities, and the current v0.6 API in the user documentation.
+
+### Fixed
+
+- Preserved Tab navigation in read-only file and choice fields and prevented
+  read-only Select controls from publishing unchanged values.
+- Kept SearchSelect focus, remote seed options, and selected option state aligned.
+- Cancelled replaced file reads and validation work, and prevented stale inline
+  navigation or focus state from affecting later actions.
+- Kept DataTables target mappings consistent when a mutation was cancelled and
+  restored focus by stable row identity after canonical row replacement.
+- Released repeated Buttons and batch-field listeners and detached destroyed
+  batch-field elements.
+- Detached and recursively froze plain nested row snapshot data, and used the
+  active language for all form validation fallbacks.
+- Suspended hover discovery while inline activation is pending and limited
+  KeyTable keyboard listeners to their owning table.
+- Added safe instance identifiers for restricted global scopes and rejected raw
+  control characters in external language resource URLs.
+
 ## [0.6.0] - 2026-08-24
 
 ### Added
