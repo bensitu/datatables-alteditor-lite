@@ -197,7 +197,7 @@ export interface EditorOperations<TRow extends object, TFormValues extends objec
    * Persists collected Edit values and returns one complete replacement row.
    *
    * @param values - Enabled values collected from the Edit form.
-   * @param original - Shallow immutable snapshot captured before the dialog opened.
+   * @param original - Detached snapshot whose plain records and arrays are recursively frozen.
    * @param context - Owned operation context.
    */
   update?(
