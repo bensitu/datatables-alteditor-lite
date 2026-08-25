@@ -89,9 +89,6 @@ export class KeyTableInlineIntegration<TRow extends object, TFormValues extends 
       this.handleKeyFocus,
     );
     this.table.on('key-blur.altEditorLiteInlineKeyboard', this.handleKeyBlur);
-    if (this.shortcut !== false) {
-      this.tableElement.addEventListener('keydown', this.handleKeyDown, true);
-    }
   }
 
   public suspend(): void {
@@ -131,9 +128,7 @@ export class KeyTableInlineIntegration<TRow extends object, TFormValues extends 
     this.isAttached = false;
     this.restore();
     this.table.off('.altEditorLiteInlineKeyboard');
-    if (this.shortcut !== false) {
-      this.tableElement.removeEventListener('keydown', this.handleKeyDown, true);
-    }
+    this.detachKeyListener();
     this.focusedCell = undefined;
   }
 
@@ -144,13 +139,31 @@ export class KeyTableInlineIntegration<TRow extends object, TFormValues extends 
       cell instanceof HTMLTableCellElement && cell.closest('table') === this.tableElement
         ? cell
         : undefined;
+    if (this.focusedCell === undefined) {
+      this.detachKeyListener();
+    } else {
+      this.attachKeyListener();
+    }
     this.onFocusCell(this.focusedCell);
   };
 
   private readonly handleKeyBlur = (): void => {
+    this.detachKeyListener();
     this.focusedCell = undefined;
     this.onFocusCell(undefined);
   };
+
+  private attachKeyListener(): void {
+    if (this.shortcut !== false) {
+      document.addEventListener('keydown', this.handleKeyDown, true);
+    }
+  }
+
+  private detachKeyListener(): void {
+    if (this.shortcut !== false) {
+      document.removeEventListener('keydown', this.handleKeyDown, true);
+    }
+  }
 
   private readonly handleKeyDown = (event: KeyboardEvent): void => {
     const cell = this.focusedCell;

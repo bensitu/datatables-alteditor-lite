@@ -379,7 +379,7 @@ describe('optional KeyTable and ColReorder integration', () => {
 
     (api.cell('#row-a', 0) as unknown as CellFocusApi).focus();
     const cell = api.cell('#row-a', 0).node();
-    cell.dispatchEvent(
+    document.dispatchEvent(
       new KeyboardEvent('keydown', { bubbles: true, cancelable: true, key: 'Enter' }),
     );
     await vi.waitFor(() => {
