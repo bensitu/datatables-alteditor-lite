@@ -93,8 +93,13 @@ export class InlineEditController<TRow extends object, TFormValues extends objec
     rowSelector: RowSelector<TRow>,
     columnSelector: ColumnSelector,
   ): Promise<void> {
-    this.controllerPresentation.activationStrategy.hide?.();
-    return this.sessionController.open(rowSelector, columnSelector);
+    const activationStrategy = this.controllerPresentation.activationStrategy;
+    activationStrategy.suspend?.();
+    return this.sessionController.open(rowSelector, columnSelector).finally(() => {
+      if (!this.sessionController.isEditing()) {
+        activationStrategy.resume?.();
+      }
+    });
   }
 
   public submit(): Promise<void> {
@@ -157,9 +162,6 @@ export class InlineEditController<TRow extends object, TFormValues extends objec
   }
 
   private readonly activate = (target: Readonly<InlineActivationTarget>): void => {
-    this.controllerPresentation.activationStrategy.hide?.();
-    void this.sessionController
-      .open(target.rowIndex, target.columnIndex)
-      .catch(() => undefined);
+    void this.open(target.rowIndex, target.columnIndex).catch(() => undefined);
   };
 }

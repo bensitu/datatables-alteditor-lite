@@ -32,8 +32,7 @@ export class InlineOriginalContent {
       this.cell.isConnected &&
       this.cell.closest('table') === this.tableElement &&
       this.viewElement.isConnected &&
-      this.viewElement.parentElement === this.cell &&
-      this.cell.contains(this.viewElement);
+      this.viewElement.parentElement === this.cell;
     if (!canRestore) {
       this.discard();
       return false;

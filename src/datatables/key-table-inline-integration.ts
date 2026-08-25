@@ -89,7 +89,9 @@ export class KeyTableInlineIntegration<TRow extends object, TFormValues extends 
       this.handleKeyFocus,
     );
     this.table.on('key-blur.altEditorLiteInlineKeyboard', this.handleKeyBlur);
-    document.addEventListener('keydown', this.handleKeyDown, true);
+    if (this.shortcut !== false) {
+      this.tableElement.addEventListener('keydown', this.handleKeyDown, true);
+    }
   }
 
   public suspend(): void {
@@ -129,7 +131,9 @@ export class KeyTableInlineIntegration<TRow extends object, TFormValues extends 
     this.isAttached = false;
     this.restore();
     this.table.off('.altEditorLiteInlineKeyboard');
-    document.removeEventListener('keydown', this.handleKeyDown, true);
+    if (this.shortcut !== false) {
+      this.tableElement.removeEventListener('keydown', this.handleKeyDown, true);
+    }
     this.focusedCell = undefined;
   }
 

@@ -876,6 +876,33 @@ describe('AltEditorLite hover inline editing', () => {
     expect((await revealTrigger(otherCell)).isConnected).toBe(true);
   });
 
+  it('keeps hover discovery suspended while activation is pending', async () => {
+    const pending = createDeferred<boolean>();
+    const { api, editor, tableElement } = createInlineEditor({
+      editing: inlineEditing('hover'),
+      fields,
+      hooks: { beforeOpen: () => pending.promise },
+    });
+    const activeCell = api.cell('#row-a', 0).node();
+    const otherCell = api.cell('#row-b', 0).node();
+
+    (await revealTrigger(activeCell)).click();
+    await vi.waitFor(() => {
+      expect(editor.getInlineState().status).toBe('activating');
+    });
+    dispatchPointerEvent(otherCell, 'pointermove', 'mouse');
+    await new Promise((resolve) => globalThis.setTimeout(resolve, 20));
+    expect(
+      tableElement.querySelector('.alteditor-lite-inline-hover__trigger'),
+    ).toBeNull();
+
+    pending.resolve(false);
+    await vi.waitFor(() => {
+      expect(editor.getInlineState().status).toBe('idle');
+    });
+    expect((await revealTrigger(otherCell)).isConnected).toBe(true);
+  });
+
   it('cancels without persistence and refuses external operations until resolved', async () => {
     const update = vi.fn(
       (values: Readonly<Partial<InlineValues>>, original: Readonly<TestRow>) => ({

@@ -249,7 +249,7 @@ export class DialogEditingController<
         this.releaseInteraction();
         return;
       }
-      this.arguments_.host.read(recordTarget);
+      void this.arguments_.host.read(recordTarget);
       try {
         await this.openForm('edit', this.editOriginal);
       } catch (error: unknown) {
@@ -321,7 +321,7 @@ export class DialogEditingController<
         return;
       }
       for (const recordTarget of requestedTargets) {
-        this.arguments_.host.read(recordTarget);
+        void this.arguments_.host.read(recordTarget);
       }
       await this.openBatchForm(this.batchOriginals);
     } catch (error: unknown) {
@@ -367,7 +367,7 @@ export class DialogEditingController<
         return;
       }
       for (const recordTarget of requestedTargets) {
-        this.arguments_.host.read(recordTarget);
+        void this.arguments_.host.read(recordTarget);
       }
       this.arguments_.stateCoordinator.transitionTo({
         action: 'remove',
@@ -894,7 +894,9 @@ export class DialogEditingController<
     switch (state.action) {
       case 'create': {
         if (this.activeForm !== undefined) {
-          void this.createOperation.run(this.activeForm, this.createPresentation());
+          this.observeSubmission(
+            this.createOperation.run(this.activeForm, this.createPresentation()),
+          );
         }
         break;
       }
@@ -905,25 +907,29 @@ export class DialogEditingController<
           this.editOriginal !== undefined
         ) {
           const recordTarget = this.editTarget;
-          void this.editOperation.run(
-            this.activeForm,
-            recordTarget,
-            this.editOriginal,
-            this.createEditOperationTarget(recordTarget),
-            this.editPresentation(this.activeForm),
-            (nextOriginal) => {
-              this.editOriginal = createReadonlyRowView<TRow>(nextOriginal);
-            },
+          this.observeSubmission(
+            this.editOperation.run(
+              this.activeForm,
+              recordTarget,
+              this.editOriginal,
+              this.createEditOperationTarget(recordTarget),
+              this.editPresentation(this.activeForm),
+              (nextOriginal) => {
+                this.editOriginal = createReadonlyRowView<TRow>(nextOriginal);
+              },
+            ),
           );
         }
         break;
       }
       case 'remove': {
         if (this.removeTargets !== undefined && this.removeOriginals !== undefined) {
-          void this.removeOperation.run(
-            this.removeTargets,
-            this.removeOriginals,
-            this.removePresentation(),
+          this.observeSubmission(
+            this.removeOperation.run(
+              this.removeTargets,
+              this.removeOriginals,
+              this.removePresentation(),
+            ),
           );
         }
         break;
@@ -936,22 +942,33 @@ export class DialogEditingController<
           this.batchOperationTargets !== undefined
         ) {
           const form = this.activeBatchForm;
-          void this.batchEditOperation.run(
-            form,
-            this.batchTargets,
-            this.batchOriginals,
-            this.batchOperationTargets,
-            this.batchEditPresentation(form),
-            (nextOriginals) => {
-              this.batchOriginals = Object.freeze(
-                nextOriginals.map((row) => createReadonlyRowView<TRow>(row)),
-              );
-            },
+          this.observeSubmission(
+            this.batchEditOperation.run(
+              form,
+              this.batchTargets,
+              this.batchOriginals,
+              this.batchOperationTargets,
+              this.batchEditPresentation(form),
+              (nextOriginals) => {
+                this.batchOriginals = Object.freeze(
+                  nextOriginals.map((row) => createReadonlyRowView<TRow>(row)),
+                );
+              },
+            ),
           );
         }
         break;
       }
     }
+  }
+
+  private observeSubmission(request: Promise<void>): void {
+    void request.catch((error: unknown) => {
+      console.error(
+        'AltEditorLite could not complete dialog result handling.',
+        normalizeRejectedReason(error),
+      );
+    });
   }
 
   private createPresentation(): DialogCreatePresentation<TFormValues> {
