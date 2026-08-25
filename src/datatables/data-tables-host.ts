@@ -18,7 +18,10 @@ import { resolveLogicalCellTarget } from './commit-row-update.js';
 import { DrawOwnership } from './draw-ownership.js';
 import { dispatchEditorIntegrationUpdate } from './editor-integration-event.js';
 import { refreshDataTable } from './refresh-data-table.js';
-import { resolveUniqueRowIndexById } from './row-id-resolution.js';
+import {
+  createUniqueRowIndexById,
+  resolveUniqueRowIndexById,
+} from './row-id-resolution.js';
 import {
   captureEditTarget,
   captureEditTargetWithValidatedRowId,
@@ -196,8 +199,11 @@ export class DataTablesHost<TRow extends object>
     updates: readonly Readonly<HostBatchUpdate<TRow, DataTablesRecordTarget>>[],
     context: Readonly<HostApplyContext>,
   ): Promise<void> {
+    const rowIndexById = this.createRowIdIndexForTargets(
+      updates.map(({ target }) => target),
+    );
     const resolvedUpdates = updates.map((update) => {
-      const rowIndex = this.resolveRecordTargetCapture(update.target);
+      const rowIndex = this.resolveRecordTargetCapture(update.target, rowIndexById);
       return {
         previousRow: this.table.row(rowIndex).data(),
         row: update.row,
@@ -234,13 +240,22 @@ export class DataTablesHost<TRow extends object>
       return;
     }
 
+    const committedRowIndexById = createUniqueRowIndexById(this.table);
     for (const update of resolvedUpdates) {
+      const rowId = this.table.row(update.rowIndex).id();
+      const stableRowId =
+        typeof rowId === 'string' &&
+        rowId.length > 0 &&
+        committedRowIndexById.get(rowId) === update.rowIndex
+          ? rowId
+          : undefined;
       this.recordTargets.delete(update.previousRow);
       this.recordCaptures.set(
         update.target,
-        captureEditTarget(
+        captureEditTargetWithValidatedRowId(
           this.table,
           update.rowIndex,
+          stableRowId,
           'The edited record is no longer available.',
         ),
       );
@@ -253,7 +268,10 @@ export class DataTablesHost<TRow extends object>
     targets: readonly DataTablesRecordTarget[],
     context: Readonly<HostApplyContext>,
   ): Promise<void> {
-    const rowIndexes = targets.map((target) => this.resolveRecordTargetCapture(target));
+    const rowIndexById = this.createRowIdIndexForTargets(targets);
+    const rowIndexes = targets.map((target) =>
+      this.resolveRecordTargetCapture(target, rowIndexById),
+    );
     const removedRows = targets.map(
       (target) => this.recordCaptures.get(target)?.sourceRow,
     );
@@ -377,9 +395,9 @@ export class DataTablesHost<TRow extends object>
   public getSelectedTargets(
     unavailableMessage?: string,
   ): readonly DataTablesRecordTarget[] {
-    return this.selectIntegration
-      .selectedRowIndexes(unavailableMessage)
-      .map((rowIndex) => this.createRecordTarget(rowIndex));
+    return this.createRecordTargets(
+      this.selectIntegration.selectedRowIndexes(unavailableMessage),
+    );
   }
 
   /** Notifies registered DataTables UI integrations about editor state changes. */
@@ -426,7 +444,7 @@ export class DataTablesHost<TRow extends object>
     rowSelector: RowSelector<TRow>,
   ): readonly DataTablesRecordTarget[] {
     const rowIndexes = this.table.rows(rowSelector).indexes().toArray();
-    return [...new Set(rowIndexes)].map((rowIndex) => this.createRecordTarget(rowIndex));
+    return this.createRecordTargets([...new Set(rowIndexes)]);
   }
 
   /** Reports whether an opaque record target belongs to this Host wrapper. */
@@ -716,6 +734,22 @@ export class DataTablesHost<TRow extends object>
     );
   }
 
+  private createRecordTargets(
+    rowIndexes: readonly number[],
+  ): readonly DataTablesRecordTarget[] {
+    const rowIndexById = createUniqueRowIndexById(this.table);
+    return rowIndexes.map((rowIndex) => {
+      const rowId = this.table.row(rowIndex).id();
+      const stableRowId =
+        typeof rowId === 'string' &&
+        rowId.length > 0 &&
+        rowIndexById.get(rowId) === rowIndex
+          ? rowId
+          : undefined;
+      return this.createRecordTargetWithValidatedRowId(rowIndex, stableRowId);
+    });
+  }
+
   private createRecordTargetWithValidatedRowId(
     rowIndex: number,
     rowId: string | undefined,
@@ -743,7 +777,20 @@ export class DataTablesHost<TRow extends object>
     return target;
   }
 
-  private resolveRecordTargetCapture(target: DataTablesRecordTarget): number {
+  private createRowIdIndexForTargets(
+    targets: readonly DataTablesRecordTarget[],
+  ): ReadonlyMap<string, number> | undefined {
+    return targets.some(
+      (target) => this.recordCaptures.get(target)?.snapshot.rowId !== undefined,
+    )
+      ? createUniqueRowIndexById(this.table)
+      : undefined;
+  }
+
+  private resolveRecordTargetCapture(
+    target: DataTablesRecordTarget,
+    rowIndexById?: ReadonlyMap<string, number>,
+  ): number {
     const capture = this.recordCaptures.get(target);
     if (capture === undefined) {
       throw new EditorTargetUnavailableError(
@@ -755,6 +802,7 @@ export class DataTablesHost<TRow extends object>
       this.eventTarget,
       capture,
       'The selected record is no longer available.',
+      rowIndexById,
     );
   }
 }

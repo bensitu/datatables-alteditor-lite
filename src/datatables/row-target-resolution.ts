@@ -7,7 +7,10 @@ import {
   type EditTargetSnapshot,
   type RemoveTargetSnapshot,
 } from './editor-snapshot.js';
-import { resolveUniqueRowIndexById } from './row-id-resolution.js';
+import {
+  createUniqueRowIndexById,
+  resolveUniqueRowIndexById,
+} from './row-id-resolution.js';
 
 import type { Api } from 'datatables.net';
 
@@ -35,12 +38,17 @@ function resolveStableRowId<TRow extends object>(
   table: Api<TRow>,
   rowIndex: number,
   rowId: string | undefined,
+  rowIndexById?: ReadonlyMap<string, number>,
 ): string | undefined {
   if (typeof rowId !== 'string' || rowId.length === 0) {
     return undefined;
   }
 
-  return resolveUniqueRowIndexById(table, rowId) === rowIndex ? rowId : undefined;
+  const resolvedRowIndex =
+    rowIndexById === undefined
+      ? resolveUniqueRowIndexById(table, rowId)
+      : rowIndexById.get(rowId);
+  return resolvedRowIndex === rowIndex ? rowId : undefined;
 }
 
 function assertRowIndex(
@@ -125,6 +133,7 @@ export function captureRemoveTargets<TRow extends object>(
   const rowIds: (string | undefined)[] = [];
   const rowNodes: (HTMLTableRowElement | null)[] = [];
   const sourceRows: TRow[] = [];
+  const rowIndexById = createUniqueRowIndexById(table);
 
   for (const rowIndex of rowIndexes) {
     const rowApi = table.row(rowIndex);
@@ -134,7 +143,7 @@ export function captureRemoveTargets<TRow extends object>(
 
     const resolvedIndex = assertRowIndex(rowApi.index(), targetUnavailableMessage);
     resolvedIndexes.push(resolvedIndex);
-    rowIds.push(resolveStableRowId(table, resolvedIndex, rowApi.id()));
+    rowIds.push(resolveStableRowId(table, resolvedIndex, rowApi.id(), rowIndexById));
     rowNodes.push(rowApi.node());
     sourceRows.push(rowApi.data());
   }
@@ -167,13 +176,17 @@ function resolveSnapshotRowIndex<TRow extends object>(
   rowNode: HTMLTableRowElement | null,
   sourceRow: TRow,
   targetUnavailableMessage: string,
+  rowIndexById?: ReadonlyMap<string, number>,
 ): number {
   if (rowId !== undefined) {
-    const rowIndexById = resolveUniqueRowIndexById(table, rowId);
-    if (rowIndexById === undefined) {
+    const resolvedRowIndex =
+      rowIndexById === undefined
+        ? resolveUniqueRowIndexById(table, rowId)
+        : rowIndexById.get(rowId);
+    if (resolvedRowIndex === undefined) {
       throw new EditorTargetUnavailableError(targetUnavailableMessage);
     }
-    const rowById = table.row(rowIndexById);
+    const rowById = table.row(resolvedRowIndex);
     const resolvedIndex = rowById.index();
     if (
       rowById.any() &&
@@ -225,6 +238,7 @@ export function resolveEditTarget<TRow extends object>(
   tableElement: HTMLTableElement,
   capture: EditTargetCapture<TRow>,
   targetUnavailableMessage: string,
+  rowIndexById?: ReadonlyMap<string, number>,
 ): number {
   return resolveSnapshotRowIndex(
     table,
@@ -234,6 +248,7 @@ export function resolveEditTarget<TRow extends object>(
     capture.snapshot.rowNode,
     capture.sourceRow,
     targetUnavailableMessage,
+    rowIndexById,
   );
 }
 
@@ -263,6 +278,10 @@ export function resolveRemoveTargets<TRow extends object>(
     throw new EditorTargetUnavailableError(targetUnavailableMessage);
   }
 
+  const rowIndexById = capture.snapshot.rowIds.some((rowId) => rowId !== undefined)
+    ? createUniqueRowIndexById(table)
+    : undefined;
+
   const resolvedIndexes = capture.snapshot.rowIndexes.map((rowIndex, targetIndex) => {
     const sourceRow = capture.sourceRows[targetIndex];
     if (sourceRow === undefined) {
@@ -277,6 +296,7 @@ export function resolveRemoveTargets<TRow extends object>(
       capture.snapshot.rowNodes[targetIndex] ?? null,
       sourceRow,
       targetUnavailableMessage,
+      rowIndexById,
     );
   });
 
