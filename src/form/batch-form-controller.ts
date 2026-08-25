@@ -53,6 +53,8 @@ interface BatchFieldBinding<TFormValues extends object> {
   readonly config: Readonly<FieldConfig<TFormValues>>;
   readonly controller: ManagedFieldController<TFormValues>;
   readonly helperElement: HTMLParagraphElement;
+  readonly handleRestore: () => void;
+  readonly handleSetValue: () => void;
   readonly mountPoint: FieldMountPoint;
   readonly runtime: FieldRuntimeController<TFormValues>;
   readonly restoreButton: HTMLButtonElement;
@@ -515,7 +517,7 @@ export class BatchEditorFormController<TFormValues extends object> {
         dependencyController?.destroy();
       },
       ...bindings.map((binding) => () => {
-        binding.controller.destroy();
+        this.destroyBindingResources(binding);
       }),
       () => {
         this.layout.destroy();
@@ -589,6 +591,12 @@ export class BatchEditorFormController<TFormValues extends object> {
     const binding: BatchFieldBinding<TFormValues> = {
       config,
       controller,
+      handleRestore: () => {
+        this.restoreBinding(binding);
+      },
+      handleSetValue: () => {
+        this.activateOverrideEditor(binding);
+      },
       helperElement,
       isOverrideEditorActive: state.baseline.status === 'common',
       mountPoint,
@@ -612,12 +620,8 @@ export class BatchEditorFormController<TFormValues extends object> {
     runtime.setVisible(runtime.isVisible());
     this.populateCommonValue(binding);
     this.renderBinding(binding);
-    setValueButton.addEventListener('click', () => {
-      this.activateOverrideEditor(binding);
-    });
-    restoreButton.addEventListener('click', () => {
-      this.restoreBinding(binding);
-    });
+    setValueButton.addEventListener('click', binding.handleSetValue);
+    restoreButton.addEventListener('click', binding.handleRestore);
   }
 
   private populateCommonValue(binding: BatchFieldBinding<TFormValues>): void {
@@ -877,12 +881,12 @@ export class BatchEditorFormController<TFormValues extends object> {
     }
     const nativeResult = binding.controller.validateNative();
     if (!nativeResult.valid) {
-      binding.controller.showError(nativeResult.message ?? 'Enter a valid value.');
+      binding.controller.showError(nativeResult.message ?? this.invalidMessage);
       return nativeResult;
     }
     const customResult = await binding.controller.validateCustom(values, signal);
     if (!customResult.valid) {
-      binding.controller.showError(customResult.message ?? 'Enter a valid value.');
+      binding.controller.showError(customResult.message ?? this.invalidMessage);
     }
     return customResult;
   }
@@ -894,12 +898,19 @@ export class BatchEditorFormController<TFormValues extends object> {
     binding.revision += 1;
     this.activeChangeAbortControllers.get(binding.config.name)?.abort();
     this.activeChangeAbortControllers.delete(binding.config.name);
-    binding.controller.destroy();
     binding.mountPoint.setVisible(false);
     this.fieldControllerByName.delete(binding.config.name);
     this.dependencyFieldByName.delete(binding.config.name);
     this.dependencyController?.abortSource(binding.config.name);
     this.bindings = this.bindings.filter((candidate) => candidate !== binding);
+    this.destroyBindingResources(binding);
+  }
+
+  private destroyBindingResources(binding: BatchFieldBinding<TFormValues>): void {
+    binding.setValueButton.removeEventListener('click', binding.handleSetValue);
+    binding.restoreButton.removeEventListener('click', binding.handleRestore);
+    binding.controller.destroy();
+    binding.wrapper.remove();
   }
 
   private renderSubmissionError(): void {

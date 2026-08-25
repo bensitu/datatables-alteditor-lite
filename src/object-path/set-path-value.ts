@@ -9,6 +9,23 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return valuePrototype === Object.prototype || valuePrototype === null;
 }
 
+function describeValueType(value: unknown): string {
+  if (value === null) {
+    return 'null';
+  }
+  if (Array.isArray(value)) {
+    return 'array';
+  }
+  if (typeof value !== 'object') {
+    return typeof value;
+  }
+  const constructorValue = Reflect.get(value, 'constructor') as unknown;
+  if (typeof constructorValue !== 'function' || constructorValue.name.length === 0) {
+    return 'object';
+  }
+  return constructorValue.name;
+}
+
 /**
  * Writes a value through own properties while creating only plain objects.
  *
@@ -32,7 +49,9 @@ export function setPathValue(
 
     const nestedValues = currentValues[fieldPathSegment];
     if (!isPlainRecord(nestedValues)) {
-      throw new TypeError(`Cannot traverse non-plain object at "${fieldPathSegment}".`);
+      throw new TypeError(
+        `Cannot traverse non-plain object at "${fieldPathSegment}"; expected a plain object but found ${describeValueType(nestedValues)}.`,
+      );
     }
 
     currentValues = nestedValues;

@@ -16,7 +16,7 @@ interface SnapshotRow {
 }
 
 describe('editor snapshots', () => {
-  it('creates a frozen shallow Edit snapshot without retaining the row root', () => {
+  it('creates a recursively frozen Edit snapshot without retaining plain data', () => {
     const row: SnapshotRow = {
       id: 'row-a',
       nested: { value: 'original' },
@@ -31,9 +31,10 @@ describe('editor snapshots', () => {
       rowNode,
     });
     expect(snapshot.original).not.toBe(row);
-    expect(snapshot.original.nested).toBe(row.nested);
+    expect(snapshot.original.nested).not.toBe(row.nested);
     expect(Object.isFrozen(snapshot)).toBe(true);
     expect(Object.isFrozen(snapshot.original)).toBe(true);
+    expect(Object.isFrozen(snapshot.original.nested)).toBe(true);
   });
 
   it('creates aligned frozen Remove snapshots', () => {

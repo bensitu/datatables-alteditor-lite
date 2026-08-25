@@ -59,9 +59,11 @@ describe('validateEditorForm', () => {
         [disabledController, invalidController],
         collectValues,
         new AbortController().signal,
+        undefined,
+        'Use a valid value.',
       ),
     ).resolves.toEqual({
-      fieldErrors: { second: 'Enter a valid value.' },
+      fieldErrors: { second: 'Use a valid value.' },
       valid: false,
     });
     expect(collectValues).not.toHaveBeenCalled();
@@ -80,10 +82,11 @@ describe('validateEditorForm', () => {
         () => Promise.resolve({ first: 'one', second: 'two' }),
         new AbortController().signal,
         () => ({ first: 'Unique first.', second: 'Unique second.' }),
+        'Use a valid value.',
       ),
     ).resolves.toEqual({
       fieldErrors: {
-        first: 'Enter a valid value.',
+        first: 'Use a valid value.',
         second: 'Unique second.',
       },
       valid: false,
@@ -114,6 +117,8 @@ describe('validateEditorForm', () => {
         [failingController, peerController],
         () => Promise.resolve({ first: 'one', second: 'two' }),
         new AbortController().signal,
+        undefined,
+        'Use a valid value.',
       ),
     ).rejects.toBe(validatorFailure);
     expect(peerSignal?.aborted).toBe(false);

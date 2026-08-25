@@ -79,7 +79,9 @@ external deletion or row rebuild can invalidate a captured index even when anoth
 row now has similar data. Configure a stable `rowId` when Edit or Remove must
 tolerate unrelated external table changes; AltEditorLite never retargets by value.
 
-The `original` callback argument is a frozen shallow copy captured before opening.
+The `original` callback argument is a detached snapshot captured before opening.
+Plain nested records and arrays are recursively copied and frozen, so callback code
+cannot mutate the corresponding live row data through the snapshot.
 The default update implementation copies only configured and collected field
 paths. Edited nested branches become new plain objects, unrelated properties are
 preserved, and the original row is not mutated. An enabled field explicitly

@@ -1,6 +1,64 @@
-/** Creates a frozen shallow record view for public operation contexts. */
+function isPlainRecord(value: object): boolean {
+  const prototype = Object.getPrototypeOf(value) as unknown;
+  return prototype === Object.prototype || prototype === null;
+}
+
+function cloneReadonlyContainer(
+  value: unknown,
+  clones: WeakMap<object, unknown>,
+  cloneRecord = false,
+): unknown {
+  if (typeof value !== 'object' || value === null) {
+    return value;
+  }
+  const existingClone = clones.get(value);
+  if (existingClone !== undefined) {
+    return existingClone;
+  }
+  if (Array.isArray(value)) {
+    const clone: unknown[] = new Array(value.length);
+    clones.set(value, clone);
+    for (const key of Reflect.ownKeys(value)) {
+      const descriptor = Object.getOwnPropertyDescriptor(value, key);
+      if (descriptor?.enumerable !== true) {
+        continue;
+      }
+      Object.defineProperty(clone, key, {
+        configurable: true,
+        enumerable: true,
+        value: cloneReadonlyContainer(Reflect.get(value, key), clones),
+        writable: true,
+      });
+    }
+    return Object.freeze(clone);
+  }
+  if (!cloneRecord && !isPlainRecord(value)) {
+    return value;
+  }
+
+  const clonePrototype = (
+    cloneRecord ? Object.prototype : Object.getPrototypeOf(value)
+  ) as object | null;
+  const clone = Object.create(clonePrototype) as Record<PropertyKey, unknown>;
+  clones.set(value, clone);
+  for (const key of Reflect.ownKeys(value)) {
+    const descriptor = Object.getOwnPropertyDescriptor(value, key);
+    if (descriptor?.enumerable !== true) {
+      continue;
+    }
+    Object.defineProperty(clone, key, {
+      configurable: true,
+      enumerable: true,
+      value: cloneReadonlyContainer(Reflect.get(value, key), clones),
+      writable: true,
+    });
+  }
+  return Object.freeze(clone);
+}
+
+/** Creates a recursively detached plain-data view for public operation contexts. */
 export function createReadonlyRowView<TRow extends object>(
   row: Readonly<TRow>,
 ): Readonly<TRow> {
-  return Object.freeze({ ...row });
+  return cloneReadonlyContainer(row, new WeakMap(), true) as Readonly<TRow>;
 }

@@ -31,8 +31,8 @@ export async function validateEditorForm<TFormValues extends object>(
   controllers: readonly ManagedFieldController<TFormValues>[],
   collectValues: () => Promise<Readonly<EditorValues<TFormValues>>>,
   signal: AbortSignal,
-  validateUnique?: LocalUniqueValidator<TFormValues>,
-  invalidMessage = 'Enter a valid value.',
+  validateUnique: LocalUniqueValidator<TFormValues> | undefined,
+  invalidMessage: string,
 ): Promise<EditorFormValidationResult> {
   const result: ValidationExecutionResult<TFormValues> = await new FormValidationRunner({
     allowedFieldNames: new Set(controllers.map(({ name }) => name)),

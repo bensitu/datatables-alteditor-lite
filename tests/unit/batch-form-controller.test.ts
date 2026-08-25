@@ -60,6 +60,29 @@ function batchField(name: keyof BatchFormValues): HTMLElement {
 }
 
 describe('BatchEditorFormController', () => {
+  it('removes an individually destroyed field from the active form', () => {
+    const form = createForm([
+      {
+        attachment: null,
+        email: 'one@example.test',
+        office: 'Tokyo',
+        token: 'one',
+      },
+      {
+        attachment: null,
+        email: 'two@example.test',
+        office: 'Osaka',
+        token: 'two',
+      },
+    ]);
+    const officeWrapper = batchField('office');
+
+    form.getField('office')?.destroy();
+
+    expect(officeWrapper.isConnected).toBe(false);
+    expect(form.getField('office')).toBeNull();
+  });
+
   it('requires a value change before a mixed field becomes an override', async () => {
     const form = createForm([
       {
