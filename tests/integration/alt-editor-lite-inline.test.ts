@@ -768,7 +768,7 @@ describe('AltEditorLite hover inline editing', () => {
     await editor.cancelInlineEdit();
   });
 
-  it('leaves an unrelated click untouched and clears touch discovery', async () => {
+  it('contains a retargeted touch click without claiming a later click', async () => {
     const { api, tableElement } = createInlineEditor({
       editing: inlineEditing('hover'),
       fields,
@@ -780,21 +780,26 @@ describe('AltEditorLite hover inline editing', () => {
     }
 
     dispatchPointerEvent(cell, 'pointerup', 'touch');
-    const mismatchedClick = new MouseEvent('click', {
+    const retargetedClick = new MouseEvent('click', {
       bubbles: true,
       cancelable: true,
     });
-    header.dispatchEvent(mismatchedClick);
+    header.dispatchEvent(retargetedClick);
     await Promise.resolve();
 
-    expect(mismatchedClick.defaultPrevented).toBe(false);
+    expect(retargetedClick.defaultPrevented).toBe(true);
+    expect(cell.querySelector('.alteditor-lite-inline-hover__trigger')).not.toBeNull();
+
+    dispatchPointerEvent(tableElement, 'pointerleave', 'mouse');
     expect(cell.querySelector('.alteditor-lite-inline-hover__trigger')).toBeNull();
 
     dispatchPointerEvent(cell, 'pointerup', 'touch');
-    header.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    dispatchPointerEvent(header, 'pointerdown', 'mouse');
+    const laterClick = new MouseEvent('click', { bubbles: true, cancelable: true });
+    header.dispatchEvent(laterClick);
     await Promise.resolve();
-    expect(cell.querySelector('.alteditor-lite-inline-hover__trigger')).toBeNull();
-    dispatchPointerEvent(document.body, 'pointerdown', 'touch');
+
+    expect(laterClick.defaultPrevented).toBe(false);
     expect(cell.querySelector('.alteditor-lite-inline-hover__trigger')).toBeNull();
   });
 

@@ -144,25 +144,7 @@ export class InlineHoverActivation<
         }, TOUCH_CLICK_FALLBACK_DELAY_MS);
       }
     };
-    const handleClick = (event: MouseEvent): void => {
-      if (this.isSuspended) {
-        this.clearTouchFallback();
-        this.pendingTouchCell = undefined;
-        return;
-      }
-      const cell = this.pendingTouchCell;
-      if (cell === undefined) {
-        return;
-      }
-      if (
-        context.signal.aborted ||
-        !(event.target instanceof Node) ||
-        !cell.contains(event.target)
-      ) {
-        this.clearTouchFallback();
-        this.pendingTouchCell = undefined;
-        return;
-      }
+    const presentPendingTouchCell = (cell: HTMLTableCellElement): void => {
       this.clearTouchFallback();
       queueMicrotask(() => {
         if (
@@ -182,6 +164,27 @@ export class InlineHoverActivation<
         this.trigger.moveTo(cell);
       });
     };
+    const handleClick = (event: MouseEvent): void => {
+      if (this.isSuspended) {
+        this.clearTouchFallback();
+        this.pendingTouchCell = undefined;
+        return;
+      }
+      const cell = this.pendingTouchCell;
+      if (cell === undefined) {
+        return;
+      }
+      if (context.signal.aborted || !(event.target instanceof Node)) {
+        this.clearTouchFallback();
+        this.pendingTouchCell = undefined;
+        return;
+      }
+      if (!cell.contains(event.target)) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      presentPendingTouchCell(cell);
+    };
     const handlePointerLeave = (event: PointerEvent): void => {
       if (event.pointerType === 'touch') {
         return;
@@ -192,11 +195,11 @@ export class InlineHoverActivation<
       }
     };
     const handleDocumentPointerDown = (event: PointerEvent): void => {
+      this.clearTouchFallback();
+      this.pendingTouchCell = undefined;
       if (event.pointerType !== 'touch') {
         return;
       }
-      this.clearTouchFallback();
-      this.pendingTouchCell = undefined;
       if (event.target instanceof Node && !context.tableElement.contains(event.target)) {
         this.trigger.hide();
       }
