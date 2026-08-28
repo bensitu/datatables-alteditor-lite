@@ -3,6 +3,7 @@ import {
   type AltEditorLiteError,
 } from '../core/alt-editor-lite-error.js';
 import { dispatchEditorEvent } from '../core/editor-event.js';
+import { settleWithAbort } from '../core/settle-with-abort.js';
 import { hasHostBatchUpdateCapability } from '../host/editor-host.js';
 
 import type { AltEditorLiteOptions } from '../core/alt-editor-lite-options.js';
@@ -109,7 +110,19 @@ export class DialogBatchEditOperation<
           },
         );
         if (!editing.closeOnSuccess) {
-          updateOriginals(recordTargets.map((recordTarget) => host.read(recordTarget)));
+          const nextOriginals = await Promise.all(
+            recordTargets.map(
+              async (recordTarget) =>
+                await settleWithAbort(
+                  host.read(recordTarget, {
+                    signal: request.abortController.signal,
+                  }),
+                  request.abortController.signal,
+                ),
+            ),
+          );
+          request.abortController.signal.throwIfAborted();
+          updateOriginals(nextOriginals);
         }
       },
       dispatchSubmit: (transaction) => {
@@ -174,10 +187,14 @@ export class DialogBatchEditOperation<
       reportError: (error, context, publishEvent) => {
         errorReporter.report(error, context, publishEvent);
       },
-      revalidateTargets: () => {
-        for (const recordTarget of recordTargets) {
-          host.read(recordTarget);
-        }
+      revalidateTargets: async (signal) => {
+        await Promise.all(
+          recordTargets.map(
+            async (recordTarget) =>
+              await settleWithAbort(host.read(recordTarget, { signal }), signal),
+          ),
+        );
+        signal.throwIfAborted();
       },
       targets,
     });

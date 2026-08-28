@@ -7,6 +7,11 @@ import { freezeEditorValues } from '../core/freeze-editor-values.js';
 import { mergeAbortSignals } from '../core/merge-abort-signals.js';
 import { runCleanupSteps } from '../core/run-cleanup-steps.js';
 import { createFieldController } from '../fields/create-field-controller.js';
+import {
+  resolveBatchFieldRestriction,
+  type FieldBatchRestriction,
+} from '../fields/field-capabilities.js';
+import { resolveFieldValueComparator } from '../fields/field-value-comparator.js';
 import { getPathValue } from '../object-path/get-path-value.js';
 import { setPathValue } from '../object-path/set-path-value.js';
 
@@ -42,7 +47,7 @@ import type { ManagedFieldController } from '../fields/managed-field-controller.
 import type { FieldPath, FieldPathValue } from '../object-path/field-path.js';
 import type { FieldMountPoint, FormLayout } from './layout/form-layout.js';
 
-type BatchRestriction = 'file' | 'unique';
+type DisplayedBatchRestriction = Extract<FieldBatchRestriction, 'file' | 'unique'>;
 
 type BatchFieldConfig<TFormValues extends object> = Exclude<
   FieldConfig<TFormValues>,
@@ -58,7 +63,8 @@ interface BatchFieldBinding<TFormValues extends object> {
   readonly mountPoint: FieldMountPoint;
   readonly runtime: FieldRuntimeController<TFormValues>;
   readonly restoreButton: HTMLButtonElement;
-  readonly restriction: BatchRestriction | undefined;
+  readonly isEqual: (left: unknown, right: unknown) => boolean;
+  readonly restriction: DisplayedBatchRestriction | undefined;
   readonly setValueButton: HTMLButtonElement;
   readonly stateElement: HTMLParagraphElement;
   readonly statePanel: HTMLDivElement;
@@ -68,13 +74,11 @@ interface BatchFieldBinding<TFormValues extends object> {
   state: Readonly<BatchFieldState<unknown>>;
 }
 
-function resolveRestriction<TFormValues extends object>(
+function resolveDisplayedRestriction<TFormValues extends object>(
   config: Readonly<FieldConfig<TFormValues>>,
-): BatchRestriction | undefined {
-  if (config.type === 'file') {
-    return 'file';
-  }
-  return config.unique === true ? 'unique' : undefined;
+): DisplayedBatchRestriction | undefined {
+  const restriction = resolveBatchFieldRestriction(config);
+  return restriction === 'file' || restriction === 'unique' ? restriction : undefined;
 }
 
 function emptyControllerValue<TFormValues extends object>(
@@ -83,6 +87,8 @@ function emptyControllerValue<TFormValues extends object>(
   switch (config.type) {
     case 'checkbox':
       return false;
+    case 'custom':
+      return config.defaultValue;
     case 'number':
       return config.emptyValue === null ? null : undefined;
     case 'radio':
@@ -172,7 +178,12 @@ export class BatchEditorFormController<TFormValues extends object> {
 
     try {
       for (const [fieldIndex, config] of fields.entries()) {
-        if (config.editable === false || config.type === 'hidden') {
+        const restriction = resolveBatchFieldRestriction(config);
+        if (
+          restriction === 'disabled-by-config' ||
+          restriction === 'unsupported-by-field' ||
+          config.type === 'hidden'
+        ) {
           continue;
         }
         this.createBinding(config, originals, fieldIndex, instanceId, language);
@@ -450,6 +461,7 @@ export class BatchEditorFormController<TFormValues extends object> {
     for (const binding of this.bindings) {
       binding.state = createBatchFieldState(
         originals.map((original) => getPathValue(original, binding.config.name)),
+        binding.isEqual,
       );
       binding.isOverrideEditorActive = binding.state.baseline.status === 'common';
       this.populateCommonValue(binding);
@@ -570,6 +582,8 @@ export class BatchEditorFormController<TFormValues extends object> {
           this.queueUserValue(bindingReference.current);
         }
       },
+      undefined,
+      this.lifecycleAbortController.signal,
     );
     wrapper.append(statePanel, controller.element, restoreButton, helperElement);
     const mountPoint = this.layout.mountField(config.name, wrapper);
@@ -579,15 +593,17 @@ export class BatchEditorFormController<TFormValues extends object> {
       disabled: config.disabled ?? false,
       mountPoint,
       readOnly:
-        resolveRestriction(config) === 'unique' ||
+        resolveDisplayedRestriction(config) === 'unique' ||
         ('readOnly' in config ? (config.readOnly ?? false) : false),
       required: 'required' in config ? (config.required ?? false) : false,
       visible: config.visible !== false,
     });
+    const isEqual = resolveFieldValueComparator(config);
     const state = createBatchFieldState(
       originals.map((original) => getPathValue(original, config.name)),
+      isEqual,
     );
-    const restriction = resolveRestriction(config);
+    const restriction = resolveDisplayedRestriction(config);
     const binding: BatchFieldBinding<TFormValues> = {
       config,
       controller,
@@ -598,6 +614,7 @@ export class BatchEditorFormController<TFormValues extends object> {
         this.activateOverrideEditor(binding);
       },
       helperElement,
+      isEqual,
       isOverrideEditorActive: state.baseline.status === 'common',
       mountPoint,
       restoreButton,
@@ -695,7 +712,7 @@ export class BatchEditorFormController<TFormValues extends object> {
       return;
     }
     binding.controller.setValue(value);
-    binding.state = setBatchFieldValue(binding.state, value);
+    binding.state = setBatchFieldValue(binding.state, value, binding.isEqual);
     binding.isOverrideEditorActive = true;
     this.renderBinding(binding);
   }
@@ -708,7 +725,7 @@ export class BatchEditorFormController<TFormValues extends object> {
       if (this.isDestroyed || signal.aborted || binding.revision !== revision) {
         return;
       }
-      binding.state = setBatchFieldValue(binding.state, value);
+      binding.state = setBatchFieldValue(binding.state, value, binding.isEqual);
       binding.isOverrideEditorActive = true;
       binding.controller.clearError();
       this.renderBinding(binding);
@@ -828,7 +845,7 @@ export class BatchEditorFormController<TFormValues extends object> {
       );
     }
     binding.controller.setValue(value);
-    binding.state = setBatchFieldValue(binding.state, value);
+    binding.state = setBatchFieldValue(binding.state, value, binding.isEqual);
     binding.isOverrideEditorActive = true;
     this.renderBinding(binding);
   }
@@ -851,7 +868,7 @@ export class BatchEditorFormController<TFormValues extends object> {
       const value = await Promise.resolve(
         binding.controller.getValue(this.lifecycleAbortController.signal),
       );
-      if (!Object.is(value, binding.state.current.value)) {
+      if (!binding.isEqual(value, binding.state.current.value)) {
         if (binding.restriction !== undefined) {
           throw new EditorConfigurationError(
             binding.restriction === 'file'
@@ -859,7 +876,7 @@ export class BatchEditorFormController<TFormValues extends object> {
               : this.language.batchEdit.uniqueRestriction,
           );
         }
-        binding.state = setBatchFieldValue(binding.state, value);
+        binding.state = setBatchFieldValue(binding.state, value, binding.isEqual);
         binding.isOverrideEditorActive = true;
       }
     }

@@ -21,6 +21,7 @@ function assertSupportedFieldType<TFormValues extends object>(
 ): void {
   switch (config.type) {
     case 'checkbox':
+    case 'custom':
     case 'date':
     case 'datetime-local':
     case 'email':
@@ -81,6 +82,10 @@ function assertValidDefaultValue<TFormValues extends object>(
         config.multiple === true
           ? Array.isArray(defaultValue) && defaultValue.length === 0
           : defaultValue === null;
+      break;
+    }
+    case 'custom': {
+      isValid = true;
       break;
     }
     case 'date':
@@ -157,7 +162,50 @@ export function validateFieldConfigurations<TFormValues extends object>(
       );
     }
     configuredNames.add(config.name);
-    assertAllowedFieldAttributes(config.attributes, config.type);
+    if (config.type === 'custom') {
+      const definition: unknown = config.definition;
+      if (typeof definition !== 'object' || definition === null) {
+        throw new EditorConfigurationError(
+          `Custom field "${config.name}" requires a definition.`,
+        );
+      }
+      const definitionRecord = definition as Readonly<Record<string, unknown>>;
+      if (typeof definitionRecord['createController'] !== 'function') {
+        throw new EditorConfigurationError(
+          `Custom field "${config.name}" requires a createController method.`,
+        );
+      }
+      if (
+        definitionRecord['isEqual'] !== undefined &&
+        typeof definitionRecord['isEqual'] !== 'function'
+      ) {
+        throw new EditorConfigurationError(
+          `Custom field "${config.name}" isEqual property must be a function.`,
+        );
+      }
+      const capabilities = definitionRecord['capabilities'];
+      if (
+        capabilities !== undefined &&
+        (typeof capabilities !== 'object' ||
+          capabilities === null ||
+          Array.isArray(capabilities) ||
+          Object.entries(capabilities).some(
+            ([name, value]) =>
+              (name !== 'batch' && name !== 'inline') || typeof value !== 'boolean',
+          ))
+      ) {
+        throw new EditorConfigurationError(
+          `Custom field "${config.name}" capabilities are not valid.`,
+        );
+      }
+      if (hasOwn(config, 'attributes')) {
+        throw new EditorConfigurationError(
+          `Custom field "${config.name}" attributes must be configured by its adapter.`,
+        );
+      }
+    } else {
+      assertAllowedFieldAttributes(config.attributes, config.type);
+    }
     assertValidDefaultValue(config);
 
     if (config.type === 'hidden') {

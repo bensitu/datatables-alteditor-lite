@@ -1,4 +1,5 @@
 import { createCheckboxFieldController } from './checkbox-field-controller.js';
+import { createCustomFieldController } from './custom-field-controller.js';
 import { DIALOG_FIELD_PRESENTATION } from './field-controller-presentation.js';
 import { createFileFieldController } from './file-field-controller.js';
 import {
@@ -16,6 +17,8 @@ import type { FieldControllerPresentation } from './field-controller-presentatio
 import type { ManagedFieldController } from './managed-field-controller.js';
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 
+const NEVER_ABORTED_SIGNAL = new AbortController().signal;
+
 /**
  * Creates the controller corresponding to a field discriminant.
  *
@@ -31,9 +34,19 @@ export function createFieldController<TFormValues extends object>(
   language: Readonly<AltEditorLiteLanguage>,
   onUserChange: () => void,
   presentation: Readonly<FieldControllerPresentation> = DIALOG_FIELD_PRESENTATION,
+  lifecycleSignal: AbortSignal = NEVER_ABORTED_SIGNAL,
 ): ManagedFieldController<TFormValues> {
   let controller: ManagedFieldController<TFormValues>;
   switch (config.type) {
+    case 'custom':
+      controller = createCustomFieldController(
+        config,
+        fieldId,
+        language,
+        onUserChange,
+        lifecycleSignal,
+      );
+      break;
     case 'hidden':
     case 'text':
     case 'email':

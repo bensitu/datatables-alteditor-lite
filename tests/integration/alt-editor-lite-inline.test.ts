@@ -3,6 +3,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest
 import {
   AltEditorLite,
   AltEditorLiteError,
+  defineCustomField,
   EditorConfigurationError,
   EditorOperationBusyError,
   type FieldConfig,
@@ -165,6 +166,66 @@ function replaceInlineValue(value: string): HTMLInputElement {
 }
 
 describe('AltEditorLite programmatic inline editing', () => {
+  it('uses a consumer-defined control with the existing inline transaction', async () => {
+    const customText = defineCustomField<string>({
+      capabilities: { inline: true },
+      createController: (_options, context) => {
+        const control = document.createElement('input');
+        control.dataset['customInline'] = '';
+        const handleInput = (): void => {
+          context.onUserChange();
+        };
+        control.addEventListener('input', handleInput);
+        return {
+          control,
+          destroy: () => {
+            control.removeEventListener('input', handleInput);
+          },
+          focus: () => {
+            control.focus();
+          },
+          getValue: () => control.value,
+          setDisabled: (disabled) => {
+            control.disabled = disabled;
+          },
+          setReadOnly: (readOnly) => {
+            control.readOnly = readOnly;
+          },
+          setRequired: (required) => {
+            control.required = required;
+          },
+          setValue: (value) => {
+            control.value = value;
+          },
+        };
+      },
+    });
+    const { api, editor } = createInlineEditor({
+      editing: inlineEditing(),
+      fields: [
+        customText.field<InlineValues>({
+          inlineEdit: true,
+          label: 'Name',
+          name: 'name',
+        }),
+        fields[1],
+      ],
+    });
+
+    await editor.openInlineEdit('#row-a', 0);
+    const control = document.querySelector<HTMLInputElement>('[data-custom-inline]');
+    expect(control?.value).toBe('Alpha');
+    if (control === null) {
+      throw new Error('Expected the consumer-defined inline control.');
+    }
+    control.value = 'Custom inline';
+    control.dispatchEvent(new Event('input', { bubbles: true }));
+    await editor.submitInlineEdit();
+
+    expect(api.row('#row-a').data().name).toBe('Custom inline');
+    expect(editor.getInlineState()).toEqual({ status: 'idle' });
+  });
+
   it('enforces the configured Edit presentation and refresh ownership', async () => {
     const { api } = createTestTable('inline-disabled');
     const disabledEditor = new AltEditorLite<TestRow, InlineValues>(api, { fields });

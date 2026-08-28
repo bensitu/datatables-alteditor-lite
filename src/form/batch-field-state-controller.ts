@@ -1,10 +1,12 @@
 import { EditorConfigurationError } from '../core/alt-editor-lite-error.js';
 
 import type { BatchFieldBaseline, BatchFieldState } from '../core/batch-field-state.js';
+import type { FieldValueComparator } from '../fields/custom-field.js';
 
 /** Creates a common or mixed baseline from record-aligned field values. */
 export function createBatchFieldState<TValue>(
   values: readonly TValue[],
+  isEqual: FieldValueComparator<TValue> = Object.is,
 ): Readonly<BatchFieldState<TValue>> {
   const firstValue = values[0];
   if (values.length < 2) {
@@ -13,7 +15,7 @@ export function createBatchFieldState<TValue>(
     );
   }
   const baseline: BatchFieldBaseline<TValue> = values.every((value) =>
-    Object.is(value, firstValue),
+    isEqual(value, firstValue as TValue),
   )
     ? { status: 'common', value: firstValue as TValue }
     : { status: 'mixed' };
@@ -24,9 +26,10 @@ export function createBatchFieldState<TValue>(
 export function setBatchFieldValue<TValue>(
   state: Readonly<BatchFieldState<TValue>>,
   value: TValue,
+  isEqual: FieldValueComparator<TValue> = Object.is,
 ): Readonly<BatchFieldState<TValue>> {
   const current =
-    state.baseline.status === 'common' && Object.is(state.baseline.value, value)
+    state.baseline.status === 'common' && isEqual(state.baseline.value, value)
       ? state.baseline
       : ({ status: 'overridden', value } as const);
   return Object.freeze({ baseline: state.baseline, current });

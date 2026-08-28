@@ -3,11 +3,13 @@ import {
   EditorDestroyedError,
 } from '../core/alt-editor-lite-error.js';
 
+import type { MaybePromise } from '../fields/field-value.js';
 import type {
   EditorHost,
   HostApplyContext,
   HostBatchUpdate,
   HostRecordEntry,
+  HostReadContext,
   HostRefreshCapability,
 } from '../host/editor-host.js';
 
@@ -15,7 +17,10 @@ type HostResult<T> = T | PromiseLike<T>;
 
 /** Consumer callbacks used by a Standalone Host. */
 export interface StandaloneHostOptions<TRow extends object, TTarget> {
-  readonly read: (target: TTarget) => Readonly<TRow>;
+  readonly read: (
+    target: TTarget,
+    context?: Readonly<HostReadContext>,
+  ) => MaybePromise<Readonly<TRow>>;
   readonly applyCreate?: (
     row: TRow,
     context: Readonly<HostApplyContext>,
@@ -80,9 +85,12 @@ export class StandaloneHost<TRow extends object, TTarget>
           };
   }
 
-  public read(target: TTarget): Readonly<TRow> {
+  public read(
+    target: TTarget,
+    context?: Readonly<HostReadContext>,
+  ): MaybePromise<Readonly<TRow>> {
     this.assertActive();
-    return this.options.read(target);
+    return this.options.read(target, context);
   }
 
   public async applyCreate(

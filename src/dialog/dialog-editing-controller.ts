@@ -13,6 +13,8 @@ import {
 } from '../core/error-normalization.js';
 import { createReadonlyRowView } from '../core/readonly-row-view.js';
 import { runCleanupSteps } from '../core/run-cleanup-steps.js';
+import { settleWithAbort } from '../core/settle-with-abort.js';
+import { resolveFieldCapabilities } from '../fields/field-capabilities.js';
 import { BatchEditorFormController } from '../form/batch-form-controller.js';
 import { buildEditorForm } from '../form/build-editor-form.js';
 import { hasHostSelectionCapability } from '../host/editor-host.js';
@@ -40,6 +42,7 @@ import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js'
 import type {
   AltEditorLiteOptions,
   BeforeOpenContext,
+  EditorErrorHookContext,
 } from '../core/alt-editor-lite-options.js';
 import type { AltEditorLite } from '../core/alt-editor-lite.js';
 import type { BatchEditOperationRunner } from '../core/editing/batch-edit-operation-runner.js';
@@ -187,7 +190,8 @@ export class DialogEditingController<
 
   /** Opens a Create form when a row-construction owner is configured. */
   public async openCreate(): Promise<void> {
-    let didAcquireInteraction = false;
+    let interactionToken: InteractionToken | undefined;
+    let openAbortController: AbortController | undefined;
     try {
       this.arguments_.stateCoordinator.assertActive();
       if (!this.arguments_.capabilities.createDialog) {
@@ -197,24 +201,32 @@ export class DialogEditingController<
       }
       await this.arguments_.inlineController.prepareForExternalOperation();
       this.assertReady();
-      this.acquireInteraction();
-      didAcquireInteraction = true;
-      if (!(await this.runBeforeOpen('create'))) {
-        this.releaseInteraction();
+      interactionToken = this.acquireInteraction();
+      openAbortController = this.beginOpenRequest();
+      if (!(await this.runBeforeOpen('create', openAbortController.signal))) {
+        this.releaseInteraction(interactionToken);
         return;
       }
+      this.assertCurrentOpenRequest(openAbortController);
       await this.openForm('create');
     } catch (error: unknown) {
-      if (didAcquireInteraction) {
-        this.releaseInteraction();
+      if (interactionToken !== undefined) {
+        this.releaseInteraction(interactionToken);
+      }
+      if (openAbortController?.signal.aborted === true) {
+        this.arguments_.stateCoordinator.assertActive();
+        return;
       }
       throw normalizeRejectedReason(error);
+    } finally {
+      this.completeOpenRequest(openAbortController);
     }
   }
 
   /** Opens Dialog Edit for one explicit or selected row. */
   public async openEdit(target?: TTarget): Promise<void> {
-    let didAcquireInteraction = false;
+    let interactionToken: InteractionToken | undefined;
+    let openAbortController: AbortController | undefined;
     try {
       this.arguments_.stateCoordinator.assertActive();
       if (!this.arguments_.capabilities.editDialog) {
@@ -224,8 +236,8 @@ export class DialogEditingController<
       }
       await this.arguments_.inlineController.prepareForExternalOperation();
       this.assertReady();
-      this.acquireInteraction();
-      didAcquireInteraction = true;
+      interactionToken = this.acquireInteraction();
+      openAbortController = this.beginOpenRequest();
       const targets = this.resolveRequestedTargets(
         target === undefined ? undefined : [target],
       );
@@ -238,36 +250,68 @@ export class DialogEditingController<
         );
       }
 
-      this.editTarget = recordTarget;
-      this.editOriginal = createReadonlyRowView<TRow>(
-        this.arguments_.host.read(recordTarget),
-      );
       const operationTarget = this.createEditOperationTarget(recordTarget);
-      if (!(await this.runBeforeOpen('edit', this.editOriginal, operationTarget))) {
-        this.editTarget = undefined;
-        this.editOriginal = undefined;
-        this.releaseInteraction();
+      const originals = await this.readRecordsForOpen(
+        [recordTarget],
+        openAbortController,
+        {
+          committed: false,
+          mode: 'dialog',
+          operation: 'edit',
+          phase: 'open',
+          target: operationTarget,
+        },
+      );
+      const original = originals[0];
+      if (original === undefined) {
+        throw new EditorConfigurationError('Host read did not return the requested row.');
+      }
+      if (
+        !(await this.runBeforeOpen(
+          'edit',
+          original,
+          operationTarget,
+          openAbortController.signal,
+        ))
+      ) {
+        this.releaseInteraction(interactionToken);
         return;
       }
-      void this.arguments_.host.read(recordTarget);
+      await this.readRecordsForOpen([recordTarget], openAbortController, {
+        committed: false,
+        mode: 'dialog',
+        operation: 'edit',
+        phase: 'open',
+        target: operationTarget,
+      });
+      this.assertCurrentOpenRequest(openAbortController);
+      this.editTarget = recordTarget;
+      this.editOriginal = original;
       try {
-        await this.openForm('edit', this.editOriginal);
+        await this.openForm('edit', original);
       } catch (error: unknown) {
         this.editTarget = undefined;
         this.editOriginal = undefined;
         throw error;
       }
     } catch (error: unknown) {
-      if (didAcquireInteraction) {
-        this.releaseInteraction();
+      if (interactionToken !== undefined) {
+        this.releaseInteraction(interactionToken);
+      }
+      if (openAbortController?.signal.aborted === true) {
+        this.arguments_.stateCoordinator.assertActive();
+        return;
       }
       throw normalizeRejectedReason(error);
+    } finally {
+      this.completeOpenRequest(openAbortController);
     }
   }
 
   /** Opens Dialog Edit for two or more explicit or selected rows. */
   public async openBatchEdit(targets?: readonly TTarget[]): Promise<void> {
-    let didAcquireInteraction = false;
+    let interactionToken: InteractionToken | undefined;
+    let openAbortController: AbortController | undefined;
     try {
       this.arguments_.stateCoordinator.assertActive();
       if (targets !== undefined && targets.length < 2) {
@@ -284,8 +328,8 @@ export class DialogEditingController<
       }
       await this.arguments_.inlineController.prepareForExternalOperation();
       this.assertReady();
-      this.acquireInteraction();
-      didAcquireInteraction = true;
+      interactionToken = this.acquireInteraction();
+      openAbortController = this.beginOpenRequest();
       const requestedTargets = this.resolveRequestedTargets(targets);
       if (requestedTargets.length < 2) {
         throw new EditorSelectionCountError(
@@ -298,50 +342,70 @@ export class DialogEditingController<
         throw new EditorConfigurationError('Batch Edit targets must be distinct.');
       }
 
-      this.batchTargets = Object.freeze([...requestedTargets]);
-      this.batchOriginals = Object.freeze(
-        requestedTargets.map((recordTarget) =>
-          createReadonlyRowView<TRow>(this.arguments_.host.read(recordTarget)),
-        ),
-      );
-      this.batchOperationTargets = Object.freeze(
+      const operationTargets = Object.freeze(
         requestedTargets.map((recordTarget) =>
           this.createBatchEditOperationTarget(recordTarget),
         ),
       );
+      const originals = Object.freeze(
+        await this.readRecordsForOpen(requestedTargets, openAbortController, {
+          committed: false,
+          mode: 'dialog',
+          operation: 'batchEdit',
+          phase: 'open',
+          targets: operationTargets,
+        }),
+      );
       if (
         !(await this.runBeforeOpen(
           'batchEdit',
-          this.batchOriginals,
-          this.batchOperationTargets,
+          originals,
+          operationTargets,
+          openAbortController.signal,
         ))
       ) {
-        this.clearBatchTargets();
-        this.releaseInteraction();
+        this.releaseInteraction(interactionToken);
         return;
       }
-      for (const recordTarget of requestedTargets) {
-        void this.arguments_.host.read(recordTarget);
-      }
-      await this.openBatchForm(this.batchOriginals);
+      await this.readRecordsForOpen(requestedTargets, openAbortController, {
+        committed: false,
+        mode: 'dialog',
+        operation: 'batchEdit',
+        phase: 'open',
+        targets: operationTargets,
+      });
+      this.assertCurrentOpenRequest(openAbortController);
+      this.batchTargets = Object.freeze([...requestedTargets]);
+      this.batchOriginals = originals;
+      this.batchOperationTargets = operationTargets;
+      await this.openBatchForm(originals);
     } catch (error: unknown) {
-      this.clearBatchTargets();
-      if (didAcquireInteraction) {
-        this.releaseInteraction();
+      if (this.interactionToken === interactionToken) {
+        this.clearBatchTargets();
+      }
+      if (interactionToken !== undefined) {
+        this.releaseInteraction(interactionToken);
+      }
+      if (openAbortController?.signal.aborted === true) {
+        this.arguments_.stateCoordinator.assertActive();
+        return;
       }
       throw normalizeRejectedReason(error);
+    } finally {
+      this.completeOpenRequest(openAbortController);
     }
   }
 
   /** Opens mandatory Remove confirmation for explicit or selected rows. */
   public async openRemove(targets?: readonly TTarget[]): Promise<void> {
-    let didAcquireInteraction = false;
+    let interactionToken: InteractionToken | undefined;
+    let openAbortController: AbortController | undefined;
     try {
       this.arguments_.stateCoordinator.assertActive();
       await this.arguments_.inlineController.prepareForExternalOperation();
       this.assertReady();
-      this.acquireInteraction();
-      didAcquireInteraction = true;
+      interactionToken = this.acquireInteraction();
+      openAbortController = this.beginOpenRequest();
       const requestedTargets = this.resolveRequestedTargets(targets);
       if (requestedTargets.length === 0) {
         throw new EditorSelectionCountError(
@@ -351,24 +415,37 @@ export class DialogEditingController<
         );
       }
 
-      this.removeTargets = Object.freeze([...requestedTargets]);
-      this.removeOriginals = Object.freeze(
-        requestedTargets.map((recordTarget) =>
-          createReadonlyRowView<TRow>(this.arguments_.host.read(recordTarget)),
-        ),
-      );
       const operationTargets = requestedTargets.map((recordTarget) =>
         this.createEditOperationTarget(recordTarget),
       );
-      if (!(await this.runBeforeOpen('remove', this.removeOriginals, operationTargets))) {
-        this.removeTargets = undefined;
-        this.removeOriginals = undefined;
-        this.releaseInteraction();
+      const originals = Object.freeze(
+        await this.readRecordsForOpen(requestedTargets, openAbortController, {
+          committed: false,
+          mode: 'dialog',
+          operation: 'remove',
+          phase: 'open',
+        }),
+      );
+      if (
+        !(await this.runBeforeOpen(
+          'remove',
+          originals,
+          operationTargets,
+          openAbortController.signal,
+        ))
+      ) {
+        this.releaseInteraction(interactionToken);
         return;
       }
-      for (const recordTarget of requestedTargets) {
-        void this.arguments_.host.read(recordTarget);
-      }
+      await this.readRecordsForOpen(requestedTargets, openAbortController, {
+        committed: false,
+        mode: 'dialog',
+        operation: 'remove',
+        phase: 'open',
+      });
+      this.assertCurrentOpenRequest(openAbortController);
+      this.removeTargets = Object.freeze([...requestedTargets]);
+      this.removeOriginals = originals;
       this.arguments_.stateCoordinator.transitionTo({
         action: 'remove',
         status: 'opening',
@@ -405,30 +482,38 @@ export class DialogEditingController<
       });
       this.dispatchOpen('remove');
     } catch (error: unknown) {
-      this.removeTargets = undefined;
-      this.removeOriginals = undefined;
-      const state = this.arguments_.stateCoordinator.getState();
-      if (
-        (state.status === 'opening' || state.status === 'open') &&
-        state.action === 'remove'
-      ) {
-        try {
-          runCleanupSteps([
-            () => {
-              this.dialog.close();
-            },
-            () => {
-              this.arguments_.stateCoordinator.transitionTo({ status: 'ready' });
-            },
-          ]);
-        } catch {
-          // Preserve the failure that interrupted opening.
+      if (this.interactionToken === interactionToken) {
+        this.removeTargets = undefined;
+        this.removeOriginals = undefined;
+        const state = this.arguments_.stateCoordinator.getState();
+        if (
+          (state.status === 'opening' || state.status === 'open') &&
+          state.action === 'remove'
+        ) {
+          try {
+            runCleanupSteps([
+              () => {
+                this.dialog.close();
+              },
+              () => {
+                this.arguments_.stateCoordinator.transitionTo({ status: 'ready' });
+              },
+            ]);
+          } catch {
+            // Preserve the failure that interrupted opening.
+          }
         }
       }
-      if (didAcquireInteraction) {
-        this.releaseInteraction();
+      if (interactionToken !== undefined) {
+        this.releaseInteraction(interactionToken);
+      }
+      if (openAbortController?.signal.aborted === true) {
+        this.arguments_.stateCoordinator.assertActive();
+        return;
       }
       throw normalizeRejectedReason(error);
+    } finally {
+      this.completeOpenRequest(openAbortController);
     }
   }
 
@@ -495,53 +580,110 @@ export class DialogEditingController<
     }
   }
 
-  private acquireInteraction(): void {
-    this.interactionToken = this.arguments_.interactionCoordinator.acquire('dialog');
+  private acquireInteraction(): InteractionToken {
+    const token = this.arguments_.interactionCoordinator.acquire('dialog');
+    this.interactionToken = token;
     this.notifyIntegration();
+    return token;
   }
 
-  private releaseInteraction(): void {
-    if (this.interactionToken !== undefined) {
-      this.arguments_.interactionCoordinator.release(this.interactionToken);
+  private releaseInteraction(token = this.interactionToken): void {
+    if (token !== undefined && this.interactionToken === token) {
+      this.arguments_.interactionCoordinator.release(token);
       this.interactionToken = undefined;
       this.notifyIntegration();
     }
   }
 
-  private runBeforeOpen(operation: 'create'): Promise<boolean>;
+  private beginOpenRequest(): AbortController {
+    this.activeOpenAbortController?.abort();
+    const abortController = new AbortController();
+    this.activeOpenAbortController = abortController;
+    return abortController;
+  }
+
+  private completeOpenRequest(abortController: AbortController | undefined): void {
+    if (this.activeOpenAbortController === abortController) {
+      this.activeOpenAbortController = undefined;
+    }
+  }
+
+  private assertCurrentOpenRequest(abortController: AbortController): void {
+    if (
+      this.activeOpenAbortController !== abortController ||
+      abortController.signal.aborted
+    ) {
+      throw new DOMException('The open request was cancelled.', 'AbortError');
+    }
+  }
+
+  private async readRecordsForOpen(
+    targets: readonly TTarget[],
+    abortController: AbortController,
+    errorContext: EditorErrorHookContext,
+  ): Promise<readonly Readonly<TRow>[]> {
+    const { signal } = abortController;
+    const context = Object.freeze({ signal });
+    try {
+      const rows = await Promise.all(
+        targets.map(
+          async (target) =>
+            await settleWithAbort(this.arguments_.host.read(target, context), signal),
+        ),
+      );
+      this.assertCurrentOpenRequest(abortController);
+      return rows.map((row) => createReadonlyRowView<TRow>(row));
+    } catch (rawError: unknown) {
+      const error = normalizeOperationError(rawError, signal, this.arguments_.language);
+      if (!(error instanceof InternalOperationAbort)) {
+        this.arguments_.errorReporter.report(error, errorContext, true);
+      }
+      throw error;
+    }
+  }
+
+  private runBeforeOpen(operation: 'create', signal: AbortSignal): Promise<boolean>;
   private runBeforeOpen(
     operation: 'edit',
     row: Readonly<TRow>,
     target: Readonly<EditorOperationTarget>,
+    signal: AbortSignal,
   ): Promise<boolean>;
   private runBeforeOpen(
     operation: 'batchEdit' | 'remove',
     rows: readonly Readonly<TRow>[],
     targets: readonly Readonly<EditorOperationTarget>[],
+    signal: AbortSignal,
   ): Promise<boolean>;
   private async runBeforeOpen(
     operation: 'create' | 'edit' | 'batchEdit' | 'remove',
-    rowOrRows?: Readonly<TRow> | readonly Readonly<TRow>[],
+    rowOrRowsOrSignal?: Readonly<TRow> | readonly Readonly<TRow>[] | AbortSignal,
     targetOrTargets?:
-      Readonly<EditorOperationTarget> | readonly Readonly<EditorOperationTarget>[],
+      | Readonly<EditorOperationTarget>
+      | readonly Readonly<EditorOperationTarget>[]
+      | AbortSignal,
+    operationSignal?: AbortSignal,
   ): Promise<boolean> {
     const hook = this.arguments_.options.hooks?.beforeOpen;
     if (hook === undefined) {
       return true;
     }
 
-    const abortController = new AbortController();
-    this.activeOpenAbortController = abortController;
+    const signal: AbortSignal | undefined =
+      operation === 'create' ? (rowOrRowsOrSignal as AbortSignal) : operationSignal;
+    if (signal === undefined) {
+      throw new EditorConfigurationError('The open request requires a signal.');
+    }
     let context: BeforeOpenContext<TRow, TFormValues>;
     let errorContext: import('../core/alt-editor-lite-options.js').EditorErrorHookContext;
     if (operation === 'edit') {
-      const row = rowOrRows as Readonly<TRow>;
+      const row = rowOrRowsOrSignal as Readonly<TRow>;
       const target = targetOrTargets as Readonly<EditorOperationTarget>;
       context = Object.freeze({
         mode: 'dialog',
         operation,
         row,
-        signal: abortController.signal,
+        signal,
         target,
       });
       errorContext = {
@@ -552,13 +694,13 @@ export class DialogEditingController<
         target,
       };
     } else if (operation === 'batchEdit') {
-      const originals = rowOrRows as readonly Readonly<TRow>[];
+      const originals = rowOrRowsOrSignal as readonly Readonly<TRow>[];
       const targets = targetOrTargets as readonly Readonly<EditorOperationTarget>[];
       context = Object.freeze({
         mode: 'dialog',
         operation,
         originals,
-        signal: abortController.signal,
+        signal,
         targets,
       });
       errorContext = {
@@ -569,13 +711,13 @@ export class DialogEditingController<
         targets,
       };
     } else if (operation === 'remove') {
-      const rows = rowOrRows as readonly Readonly<TRow>[];
+      const rows = rowOrRowsOrSignal as readonly Readonly<TRow>[];
       const targets = targetOrTargets as readonly Readonly<EditorOperationTarget>[];
       context = Object.freeze({
         mode: 'dialog',
         operation,
         rows,
-        signal: abortController.signal,
+        signal,
         targets,
       });
       errorContext = {
@@ -588,7 +730,7 @@ export class DialogEditingController<
       context = Object.freeze({
         mode: 'dialog',
         operation,
-        signal: abortController.signal,
+        signal,
       });
       errorContext = {
         committed: false,
@@ -599,23 +741,15 @@ export class DialogEditingController<
     }
     try {
       const shouldOpen = await Promise.resolve(hook(context));
-      abortController.signal.throwIfAborted();
+      signal.throwIfAborted();
       return shouldOpen !== false;
     } catch (rawError: unknown) {
-      const error = normalizeOperationError(
-        rawError,
-        abortController.signal,
-        this.arguments_.language,
-      );
+      const error = normalizeOperationError(rawError, signal, this.arguments_.language);
       if (error instanceof InternalOperationAbort) {
         return false;
       }
       this.arguments_.errorReporter.report(error, errorContext, true);
       throw error;
-    } finally {
-      if (this.activeOpenAbortController === abortController) {
-        this.activeOpenAbortController = undefined;
-      }
     }
   }
 
@@ -1256,7 +1390,9 @@ export class DialogEditingController<
     return Object.freeze({
       fieldNames: Object.freeze(
         this.arguments_.options.fields
-          .filter((field) => field.editable !== false && field.disabled !== true)
+          .filter(
+            (field) => resolveFieldCapabilities(field).dialog && field.disabled !== true,
+          )
           .map((field) => field.name),
       ),
       key: target,
@@ -1271,10 +1407,8 @@ export class DialogEditingController<
         this.arguments_.options.fields
           .filter(
             (field) =>
-              field.editable !== false &&
+              resolveFieldCapabilities(field).batch &&
               field.disabled !== true &&
-              field.unique !== true &&
-              field.type !== 'file' &&
               field.type !== 'hidden',
           )
           .map((field) => field.name),

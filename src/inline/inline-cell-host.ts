@@ -77,6 +77,10 @@ export class InlineCellHost<TFormValues extends object> implements InlineEditVie
     this.element.classList.toggle('alteditor-lite-inline--busy', isBusy);
     this.element.setAttribute('aria-busy', String(isBusy));
 
+    if (this.field.type === 'custom') {
+      this.controller.setDisabled(isBusy);
+      return;
+    }
     if (
       this.field.type === 'search-select' ||
       this.primaryControl instanceof HTMLSelectElement ||

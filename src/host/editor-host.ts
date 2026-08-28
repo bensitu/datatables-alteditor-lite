@@ -1,4 +1,11 @@
 import type { EditorOperation, EditorOperationMode } from '../core/editor-operation.js';
+import type { MaybePromise } from '../fields/field-value.js';
+
+/** Immutable cancellation context supplied while a Host reads a record. */
+export interface HostReadContext {
+  /** Signal aborted when the owning editor work is cancelled or replaced. */
+  readonly signal: AbortSignal;
+}
 
 /** Immutable context supplied while a host applies a canonical result. */
 export interface HostApplyContext {
@@ -35,7 +42,10 @@ export interface EditorHost<TRow extends object, TTarget> {
   readonly ownershipKey: object;
 
   /** Reads the current record represented by an opaque host target. */
-  read(target: TTarget): Readonly<TRow>;
+  read(
+    target: TTarget,
+    context?: Readonly<HostReadContext>,
+  ): MaybePromise<Readonly<TRow>>;
 
   /** Applies a created record and resolves after presentation is stable. */
   applyCreate(

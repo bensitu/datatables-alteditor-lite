@@ -10,6 +10,7 @@ import {
   normalizeOperationError,
 } from '../core/error-normalization.js';
 import { runCleanupSteps } from '../core/run-cleanup-steps.js';
+import { resolveFieldValueComparator } from '../fields/field-value-comparator.js';
 
 import { InlineCommitCoordinator } from './inline-commit-coordinator.js';
 import { InlineEditPresentationAdapter } from './inline-edit-presentation-adapter.js';
@@ -393,7 +394,12 @@ export class InlineEditSessionController<
     if (session.lifecycleAbortController.signal.aborted || this.session !== session) {
       return;
     }
-    if (Object.is(candidate, session.normalizedOriginalValue)) {
+    if (
+      resolveFieldValueComparator(session.capture.field)(
+        candidate,
+        session.normalizedOriginalValue,
+      )
+    ) {
       this.cleanupSession('unchanged', true, true);
       return;
     }

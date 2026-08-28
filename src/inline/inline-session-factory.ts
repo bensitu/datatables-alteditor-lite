@@ -1,3 +1,4 @@
+import { mergeAbortSignals } from '../core/merge-abort-signals.js';
 import { createFieldController } from '../fields/create-field-controller.js';
 import { INLINE_FIELD_PRESENTATION } from '../fields/field-controller-presentation.js';
 
@@ -41,12 +42,14 @@ export class InlineSessionFactory<TFormValues extends object> {
     request: InlineSessionFactoryRequest<TRow, TFormValues>,
   ): Promise<InlineEditSession<TRow, TFormValues>> {
     const { capture, signal } = request;
+    const lifecycleAbortController = new AbortController();
     const controller = createFieldController(
       capture.field,
       `${this.arguments_.instanceId}-inline-${String(capture.summary.rowIndex)}-${String(capture.summary.columnIndex)}`,
       this.arguments_.language,
       this.arguments_.onUserChange,
       INLINE_FIELD_PRESENTATION,
+      mergeAbortSignals([signal, lifecycleAbortController.signal]),
     );
 
     try {
@@ -74,12 +77,13 @@ export class InlineSessionFactory<TFormValues extends object> {
         controller,
         host,
         interactionToken: request.interactionToken,
-        lifecycleAbortController: new AbortController(),
+        lifecycleAbortController,
         normalizedOriginalValue,
         originalActiveElement: request.originalActiveElement,
         sessionId: request.sessionId,
       };
     } catch (error: unknown) {
+      lifecycleAbortController.abort();
       controller.destroy();
       throw error;
     }

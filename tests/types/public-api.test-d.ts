@@ -3,10 +3,12 @@ import { expectAssignable, expectNotAssignable, expectType } from 'tsd';
 import {
   type AltEditorLite as TableEditor,
   DataTablesHost,
+  defineCustomField as defineDataTablesCustomField,
   type DataTablesRecordTarget,
 } from '../../src/datatables.js';
 import {
   AltEditorLite as CoreEditor,
+  defineCustomField,
   defineFormDependencies,
   EditorLanguageLoadError,
   isChoiceFieldController,
@@ -35,6 +37,9 @@ import {
   type EditorValues,
   type FieldConfig,
   type FieldController,
+  type CustomFieldAdapter,
+  type CustomFieldConfigOptions,
+  type CustomFieldControllerContext,
   type FieldPath,
   type FieldPathValue,
   type FieldStatePatchFor,
@@ -42,6 +47,7 @@ import {
   type InlineEditingOptions,
   type InlineEditState,
   type HostBatchUpdateCapability,
+  type HostReadContext,
   type RefreshOperationContext,
   type RemoveOperationContext,
   type FormDependencies,
@@ -57,7 +63,11 @@ import en from '../../src/locales/en.json' with { type: 'json' };
 import es from '../../src/locales/es.json' with { type: 'json' };
 import ja from '../../src/locales/ja.json' with { type: 'json' };
 import zhCn from '../../src/locales/zh-cn.json' with { type: 'json' };
-import { StandaloneHost, type StandaloneHostOptions } from '../../src/standalone.js';
+import {
+  defineCustomField as defineStandaloneCustomField,
+  StandaloneHost,
+  type StandaloneHostOptions,
+} from '../../src/standalone.js';
 
 import type { Api } from 'datatables.net';
 
@@ -76,6 +86,11 @@ interface FormValues {
   readonly rank: number | null;
   readonly role: number;
   readonly attachment: File | null;
+  readonly tags: readonly string[];
+}
+
+interface TagOptions {
+  readonly maximum: number;
 }
 
 declare const table: Api<Row>;
@@ -86,6 +101,12 @@ expectAssignable<StandaloneHostOptions<Row, string>>({
     expectType<'batchEdit' | 'create' | 'edit' | 'remove'>(context.operation);
   },
   read: () => ({ id: 'row', profile: { email: '' }, rank: 0 }),
+});
+expectAssignable<StandaloneHostOptions<Row, string>>({
+  read: async (_target, context) => {
+    expectType<Readonly<HostReadContext> | undefined>(context);
+    return await Promise.resolve({ id: 'row', profile: { email: '' }, rank: 0 });
+  },
 });
 expectAssignable<StandaloneHostOptions<Row, string>>({
   read: () => ({ id: 'row', profile: { email: '' }, rank: 0 }),
@@ -227,6 +248,57 @@ expectAssignable<FieldConfig<FormValues>>({
   name: 'contact.email',
   readOnly: true,
   type: 'email',
+});
+
+const tagsDefinition = defineCustomField<readonly string[], TagOptions>({
+  capabilities: { batch: true, inline: true },
+  createController: (options, context) => {
+    expectType<Readonly<TagOptions>>(options);
+    expectType<Readonly<CustomFieldControllerContext>>(context);
+    expectType<string>(context.language.locale);
+    expectType<AbortSignal>(context.signal);
+    const adapter: CustomFieldAdapter<readonly string[]> = {
+      control: document.createElement('div'),
+      destroy: () => undefined,
+      focus: () => undefined,
+      getValue: () => [],
+      setDisabled: () => undefined,
+      setReadOnly: () => undefined,
+      setRequired: () => undefined,
+      setValue: () => undefined,
+    };
+    return adapter;
+  },
+  isEqual: (left, right) =>
+    left.length === right.length && left.every((value, index) => value === right[index]),
+});
+const tagsField = tagsDefinition.field<FormValues>({
+  batchEditable: true,
+  defaultValue: [],
+  inlineEdit: true,
+  label: 'Tags',
+  name: 'tags',
+  options: { maximum: 4 },
+});
+expectAssignable<FieldConfig<FormValues>>(tagsField);
+expectType<readonly string[]>({} as FieldValue<typeof tagsField>);
+expectType<typeof defineCustomField>(defineDataTablesCustomField);
+expectType<typeof defineCustomField>(defineStandaloneCustomField);
+expectNotAssignable<CustomFieldConfigOptions<FormValues, readonly string[], TagOptions>>({
+  label: 'Tags',
+  name: 'tags',
+  options: { maximum: '4' },
+});
+expectNotAssignable<CustomFieldConfigOptions<FormValues, readonly string[], TagOptions>>({
+  defaultValue: [4],
+  label: 'Tags',
+  name: 'tags',
+  options: { maximum: 4 },
+});
+expectNotAssignable<CustomFieldConfigOptions<FormValues, readonly string[], TagOptions>>({
+  label: 'Tags',
+  name: 'missing',
+  options: { maximum: 4 },
 });
 expectNotAssignable<FieldConfig<FormValues>>({
   label: 'Email',

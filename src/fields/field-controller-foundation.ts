@@ -1,4 +1,5 @@
 import { applyAllowedFieldAttributes } from './field-attributes.js';
+import { createFieldControllerShell } from './field-controller-shell.js';
 
 import type {
   BaseFieldConfig,
@@ -43,14 +44,6 @@ export interface NativeControllerArguments<TFormValues extends object, TValue> {
   readonly labelPlacement?: 'before-control' | 'after-control';
 }
 
-function addConsumerClasses(element: HTMLElement, className: string): void {
-  for (const classToken of className.split(/\s+/u)) {
-    if (classToken.length > 0) {
-      element.classList.add(classToken);
-    }
-  }
-}
-
 /**
  * Creates lifecycle, error, callback, and DOM behavior around a native control.
  *
@@ -62,66 +55,24 @@ export function createNativeControlController<TFormValues extends object, TValue
 ): ManagedFieldController<TFormValues> {
   const { adapter, config, fieldId } = controllerArguments;
   const { control } = adapter;
-  const fieldElement = document.createElement('div');
-  const errorElement = document.createElement('div');
-  const errorId = `${fieldId}-error`;
-
-  fieldElement.className = 'alteditor-lite-field';
-  fieldElement.dataset['fieldName'] = config.name;
-  errorElement.className = 'alteditor-lite-field__error';
-  errorElement.id = errorId;
-  errorElement.hidden = true;
-  errorElement.setAttribute('aria-live', 'polite');
-
-  control.id = fieldId;
-  control.classList.add('alteditor-lite-field__control');
-  control.setAttribute('aria-describedby', errorId);
+  const shell = createFieldControllerShell({
+    config,
+    control,
+    fieldId,
+    ...(controllerArguments.controlContainer === undefined
+      ? {}
+      : { controlContainer: controllerArguments.controlContainer }),
+    ...(controllerArguments.labelPlacement === undefined
+      ? {}
+      : { labelPlacement: controllerArguments.labelPlacement }),
+  });
+  const fieldElement = shell.element;
   control.required = config.required ?? false;
   control.setAttribute('aria-required', String(control.required));
   control.disabled = config.disabled ?? false;
   let isReadOnly = config.readOnly ?? false;
   adapter.setReadOnly(isReadOnly);
   applyAllowedFieldAttributes(control, config.attributes);
-
-  const controlContainer = controllerArguments.controlContainer ?? control;
-  if (
-    config.label !== undefined &&
-    controllerArguments.labelPlacement === 'after-control'
-  ) {
-    const labelElement = document.createElement('label');
-    const labelTextElement = document.createElement('span');
-    labelElement.className = 'alteditor-lite-checkbox';
-    labelElement.htmlFor = fieldId;
-    labelTextElement.className = 'alteditor-lite-field__label';
-    labelTextElement.textContent = config.label;
-    labelElement.append(control, labelTextElement);
-    fieldElement.append(labelElement);
-  } else if (config.label !== undefined) {
-    const labelElement = document.createElement('label');
-    labelElement.className = 'alteditor-lite-field__label';
-    labelElement.htmlFor = fieldId;
-    labelElement.textContent = config.label;
-    fieldElement.append(labelElement);
-    fieldElement.append(controlContainer);
-  } else {
-    fieldElement.append(controlContainer);
-  }
-
-  if (config.description !== undefined) {
-    const descriptionElement = document.createElement('div');
-    const descriptionId = `${fieldId}-description`;
-    descriptionElement.className = 'alteditor-lite-field__description';
-    descriptionElement.id = descriptionId;
-    descriptionElement.textContent = config.description;
-    control.setAttribute('aria-describedby', `${descriptionId} ${errorId}`);
-    fieldElement.append(descriptionElement);
-  }
-
-  fieldElement.append(errorElement);
-
-  if (config.className !== undefined) {
-    addConsumerClasses(fieldElement, config.className);
-  }
 
   const changeEvent = controllerArguments.changeEvent ?? 'change';
   control.addEventListener(changeEvent, controllerArguments.onUserChange);
@@ -206,14 +157,10 @@ export function createNativeControlController<TFormValues extends object, TValue
       );
     },
     clearError: () => {
-      control.removeAttribute('aria-invalid');
-      errorElement.hidden = true;
-      errorElement.textContent = '';
+      shell.clearError();
     },
-    showError: (message: string) => {
-      control.setAttribute('aria-invalid', 'true');
-      errorElement.textContent = message;
-      errorElement.hidden = false;
+    showError: (message) => {
+      shell.showError(message);
     },
     destroy: () => {
       if (isDestroyed) {

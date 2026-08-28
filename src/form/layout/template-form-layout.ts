@@ -1,4 +1,5 @@
 import { EditorConfigurationError } from '../../core/alt-editor-lite-error.js';
+import { resolveFieldCapabilities } from '../../fields/field-capabilities.js';
 import { parseFieldPath } from '../../object-path/field-path.js';
 
 import {
@@ -62,7 +63,7 @@ export class TemplateFormLayout<TFormValues extends object> implements FormLayou
 
     const editableFields = new Map<string, Readonly<FieldConfig<TFormValues>>>(
       fields
-        .filter((field) => field.editable !== false)
+        .filter((field) => resolveFieldCapabilities(field).dialog)
         .map((field) => [field.name, field] as const),
     );
     for (const field of editableFields.values()) {

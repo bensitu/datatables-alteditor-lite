@@ -8,6 +8,7 @@ import { mergeAbortSignals } from '../core/merge-abort-signals.js';
 import { RequestSequence } from '../core/request-sequence.js';
 import { runCleanupSteps } from '../core/run-cleanup-steps.js';
 import { createFieldController } from '../fields/create-field-controller.js';
+import { resolveFieldCapabilities } from '../fields/field-capabilities.js';
 
 import {
   collectFormState,
@@ -174,7 +175,7 @@ export class EditorFormController<
 
     try {
       for (const [fieldIndex, config] of fields.entries()) {
-        if (config.editable === false) {
+        if (!resolveFieldCapabilities(config).dialog) {
           continue;
         }
 
@@ -185,6 +186,8 @@ export class EditorFormController<
           () => {
             this.notifyFieldChange(config.name);
           },
+          undefined,
+          this.lifecycleAbortController.signal,
         );
         this.controllers.push(controller);
         this.controllerByName.set(config.name, controller);

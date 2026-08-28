@@ -3,6 +3,7 @@ import {
   InternalOperationAbort,
   normalizeOperationError,
 } from '../core/error-normalization.js';
+import { settleWithAbort } from '../core/settle-with-abort.js';
 
 import type { AltEditorLiteError } from '../core/alt-editor-lite-error.js';
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
@@ -65,8 +66,19 @@ export class DialogRemoveOperation<
     let phase: EditorErrorHookContext['phase'] = 'submit';
 
     try {
-      for (const target of targets) {
-        this.arguments_.host.read(target);
+      await Promise.all(
+        targets.map(
+          async (target) =>
+            await settleWithAbort(
+              this.arguments_.host.read(target, {
+                signal: request.abortController.signal,
+              }),
+              request.abortController.signal,
+            ),
+        ),
+      );
+      if (!this.owns(request)) {
+        return;
       }
       dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:submit'>(
         this.arguments_.eventTarget,

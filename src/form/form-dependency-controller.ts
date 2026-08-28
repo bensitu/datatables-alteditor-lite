@@ -187,6 +187,10 @@ function assertCompatibleValue<TFormValues extends object>(
       isValid = typeof value === 'boolean';
       break;
     }
+    case 'custom': {
+      isValid = true;
+      break;
+    }
     case 'number': {
       isValid =
         (typeof value === 'number' && Number.isFinite(value)) ||

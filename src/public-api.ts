@@ -122,6 +122,17 @@ export type {
   TimeFieldConfig,
   VisibleFieldConfig,
 } from './fields/field-config.js';
+export {
+  defineCustomField,
+  type CustomFieldAdapter,
+  type CustomFieldCapabilities,
+  type CustomFieldConfig,
+  type CustomFieldConfigOptions,
+  type CustomFieldControllerContext,
+  type CustomFieldDefinition,
+  type CustomFieldDefinitionOptions,
+  type FieldValueComparator,
+} from './fields/custom-field.js';
 export type {
   SearchSelectLoadContext,
   SearchSelectOptionLoader,
@@ -159,6 +170,7 @@ export type {
   HostBatchUpdateCapability,
   HostPresentationCapability,
   HostRecordEntry,
+  HostReadContext,
   HostRefreshCapability,
   HostRowCollectionCapability,
   HostSelectionCapability,

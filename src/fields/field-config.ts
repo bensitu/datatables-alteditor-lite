@@ -1,3 +1,4 @@
+import type { CustomFieldConfig } from './custom-field.js';
 import type { FieldValidationResult } from './field-controller.js';
 import type { MaybePromise } from './field-value.js';
 import type {
@@ -69,6 +70,8 @@ export interface BaseFieldConfig<TFormValues extends object, TValue = unknown> {
   readonly unique?: boolean;
   /** Allows this field to participate in single-cell inline editing. */
   readonly inlineEdit?: boolean;
+  /** Allows this field to participate in common-value multi-record editing. */
+  readonly batchEditable?: boolean;
 }
 
 /**
@@ -343,4 +346,5 @@ export type FieldConfig<TFormValues extends object> =
   | SearchSelectFieldConfig<TFormValues, string | number>
   | SearchSelectFieldConfig<TFormValues, number>
   | FileFieldConfig<TFormValues>
-  | HiddenFieldConfig<TFormValues>;
+  | HiddenFieldConfig<TFormValues>
+  | CustomFieldConfig<TFormValues>;

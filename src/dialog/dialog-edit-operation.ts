@@ -1,4 +1,5 @@
 import { dispatchEditorEvent } from '../core/editor-event.js';
+import { settleWithAbort } from '../core/settle-with-abort.js';
 
 import type { AltEditorLiteError } from '../core/alt-editor-lite-error.js';
 import type { AltEditorLiteOptions } from '../core/alt-editor-lite-options.js';
@@ -92,7 +93,12 @@ export class DialogEditOperation<
           signal: request.abortController.signal,
         });
         if (!editing.closeOnSuccess) {
-          updateOriginal(host.read(recordTarget));
+          const nextOriginal = await settleWithAbort(
+            host.read(recordTarget, { signal: request.abortController.signal }),
+            request.abortController.signal,
+          );
+          request.abortController.signal.throwIfAborted();
+          updateOriginal(nextOriginal);
         }
         return Object.freeze({ row });
       },
@@ -179,8 +185,9 @@ export class DialogEditOperation<
       reportError: (error, context, publishEvent) => {
         errorReporter.report(error, context, publishEvent);
       },
-      revalidateTarget: () => {
-        host.read(recordTarget);
+      revalidateTarget: async (signal) => {
+        await settleWithAbort(host.read(recordTarget, { signal }), signal);
+        signal.throwIfAborted();
       },
       target,
     });

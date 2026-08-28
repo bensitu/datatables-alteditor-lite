@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { EditorConfigurationError } from '../../src/core/alt-editor-lite-error.js';
+import { defineCustomField } from '../../src/fields/custom-field.js';
 import {
   applyAllowedFieldAttributes,
   assertAllowedFieldAttributes,
@@ -16,6 +17,7 @@ interface ConfigurationValues {
   readonly notes: string;
   readonly secret: string;
   readonly title: string;
+  readonly tags: readonly string[];
 }
 
 function expectInvalidField(config: unknown): void {
@@ -79,6 +81,33 @@ describe('field runtime configuration', () => {
         { label: 'Title', name: 'title', type: 'unsupported' } as never,
       ]);
     }).toThrow('Unsupported field type "unsupported".');
+  });
+
+  it('validates custom definitions and keeps control attributes adapter-owned', () => {
+    const definition = defineCustomField<readonly string[]>({
+      capabilities: { batch: true },
+      createController: () => {
+        throw new Error('Not rendered by this test.');
+      },
+    });
+    expect(() => {
+      validateFieldConfigurations([
+        definition.field<ConfigurationValues>({ label: 'Tags', name: 'tags' }),
+      ]);
+    }).not.toThrow();
+    expectInvalidField({
+      definition: { capabilities: { batch: 'yes' }, createController: () => ({}) },
+      label: 'Tags',
+      name: 'tags',
+      type: 'custom',
+    });
+    expectInvalidField({
+      attributes: { placeholder: 'Tags' },
+      definition: { createController: () => ({}) },
+      label: 'Tags',
+      name: 'tags',
+      type: 'custom',
+    });
   });
 
   it('rejects empty choice lists for native select and radio fields', () => {

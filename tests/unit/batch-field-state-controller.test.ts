@@ -41,4 +41,22 @@ describe('batch field state', () => {
       mixed.baseline,
     );
   });
+
+  it('uses caller-provided equality for structural values', () => {
+    const isEqual = (left: readonly string[], right: readonly string[]): boolean =>
+      left.length === right.length &&
+      left.every((value, index) => value === right[index]);
+    const matchingState = createBatchFieldState([['one'], ['one']], isEqual);
+    const mixed = createBatchFieldState([['one'], ['two']], isEqual);
+
+    expect(matchingState.baseline).toEqual({ status: 'common', value: ['one'] });
+    expect(mixed.baseline).toEqual({ status: 'mixed' });
+    expect(setBatchFieldValue(matchingState, ['one'], isEqual).current).toBe(
+      matchingState.baseline,
+    );
+    expect(setBatchFieldValue(matchingState, ['two'], isEqual).current).toEqual({
+      status: 'overridden',
+      value: ['two'],
+    });
+  });
 });

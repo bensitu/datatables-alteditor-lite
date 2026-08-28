@@ -26,6 +26,7 @@ import type {
   BatchEditTransaction,
 } from './batch-edit-transaction.js';
 import type { OperationOwner, OwnedOperationRequest } from './operation-owner.js';
+import type { MaybePromise } from '../../fields/field-value.js';
 
 /** Terminal result returned to the batch dialog presentation. */
 export type BatchEditOperationResult<TRow extends object> =
@@ -46,7 +47,7 @@ export interface BatchEditOperationRunArguments<
   readonly recordTargets: readonly TTarget[];
   readonly targets: readonly Readonly<EditorOperationTarget>[];
   readonly presentation: BatchEditPresentationAdapter<TRow, TFormValues>;
-  readonly revalidateTargets: () => void;
+  readonly revalidateTargets: (signal: AbortSignal) => MaybePromise<void>;
   readonly commit: (
     rows: readonly TRow[],
     request: OwnedOperationRequest<'batchEdit'>,
@@ -128,7 +129,12 @@ export class BatchEditOperationRunner<TRow extends object, TFormValues extends o
         return { status: 'unchanged' };
       }
 
-      runArguments.revalidateTargets();
+      await Promise.resolve(
+        runArguments.revalidateTargets(request.abortController.signal),
+      );
+      if (!this.operationOwner.owns(request)) {
+        return { status: 'aborted' };
+      }
       phase = 'submit';
       if (runArguments.beforeSubmit !== undefined) {
         const shouldContinue = await runArguments.beforeSubmit(
@@ -152,7 +158,12 @@ export class BatchEditOperationRunner<TRow extends object, TFormValues extends o
       if (!this.operationOwner.owns(request)) {
         return { status: 'aborted' };
       }
-      runArguments.revalidateTargets();
+      await Promise.resolve(
+        runArguments.revalidateTargets(request.abortController.signal),
+      );
+      if (!this.operationOwner.owns(request)) {
+        return { status: 'aborted' };
+      }
 
       runArguments.presentation.setBusy(true);
       phase = 'persistence';
@@ -160,7 +171,12 @@ export class BatchEditOperationRunner<TRow extends object, TFormValues extends o
       if (!this.operationOwner.owns(request)) {
         return { status: 'aborted' };
       }
-      runArguments.revalidateTargets();
+      await Promise.resolve(
+        runArguments.revalidateTargets(request.abortController.signal),
+      );
+      if (!this.operationOwner.owns(request)) {
+        return { status: 'aborted' };
+      }
 
       phase = 'commit';
       await runArguments.commit(rows, request);

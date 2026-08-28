@@ -156,8 +156,9 @@ export class InlineCommitCoordinator<TRow extends object, TFormValues extends ob
       original: session.capture.rowCapture.snapshot.original,
       presentation,
       reportError: this.arguments_.reportError,
-      revalidateTarget: () =>
-        host.resolveInlineTarget(session.capture, mappings, targetUnavailableMessage),
+      revalidateTarget: () => {
+        host.resolveInlineTarget(session.capture, mappings, targetUnavailableMessage);
+      },
       target,
     });
 

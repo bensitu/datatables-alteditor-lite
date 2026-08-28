@@ -22,6 +22,7 @@ import type { EditorOperationTarget } from '../editor-operation.js';
 import type { EditPresentationAdapter } from './edit-presentation-adapter.js';
 import type { EditCommitResult, EditTransaction } from './edit-transaction.js';
 import type { OperationOwner, OwnedOperationRequest } from './operation-owner.js';
+import type { MaybePromise } from '../../fields/field-value.js';
 
 /** Terminal result returned to dialog and inline presentation callers. */
 export type EditOperationResult<TRow extends object> =
@@ -40,7 +41,7 @@ export interface EditOperationRunArguments<
   readonly original: Readonly<TRow>;
   readonly target: Readonly<EditorOperationTarget>;
   readonly presentation: EditPresentationAdapter<TRow, TFormValues>;
-  readonly revalidateTarget: () => void;
+  readonly revalidateTarget: (signal: AbortSignal) => MaybePromise<void>;
   readonly commit: (
     row: TRow,
     request: OwnedOperationRequest<'edit'>,
@@ -110,7 +111,12 @@ export class EditOperationRunner<TRow extends object, TFormValues extends object
         target: runArguments.target,
         values: freezeEditorValues(validation.values),
       });
-      runArguments.revalidateTarget();
+      await Promise.resolve(
+        runArguments.revalidateTarget(request.abortController.signal),
+      );
+      if (!this.operationOwner.owns(request)) {
+        return { status: 'aborted' };
+      }
 
       phase = 'submit';
       if (runArguments.beforeSubmit !== undefined) {
@@ -132,7 +138,12 @@ export class EditOperationRunner<TRow extends object, TFormValues extends object
       if (!this.operationOwner.owns(request)) {
         return { status: 'aborted' };
       }
-      runArguments.revalidateTarget();
+      await Promise.resolve(
+        runArguments.revalidateTarget(request.abortController.signal),
+      );
+      if (!this.operationOwner.owns(request)) {
+        return { status: 'aborted' };
+      }
 
       runArguments.presentation.setBusy(true);
       phase = 'persistence';
@@ -140,7 +151,12 @@ export class EditOperationRunner<TRow extends object, TFormValues extends object
       if (!this.operationOwner.owns(request)) {
         return { status: 'aborted' };
       }
-      runArguments.revalidateTarget();
+      await Promise.resolve(
+        runArguments.revalidateTarget(request.abortController.signal),
+      );
+      if (!this.operationOwner.owns(request)) {
+        return { status: 'aborted' };
+      }
 
       phase = 'commit';
       const result = await runArguments.commit(row, request);
