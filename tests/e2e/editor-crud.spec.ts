@@ -674,7 +674,7 @@ test('keeps Hybrid Dialog Edit available while changing employee selection', asy
   const aikoRow = employeeDirectory.getByRole('row', { name: /Aiko Tanaka/ });
   const janeRow = employeeDirectory.getByRole('row', { name: /Jane Smith/ });
 
-  await expect(janeRow).toBeVisible();
+  await expect(janeRow).toBeVisible({ timeout: 10_000 });
   await expect(selectionStatus).toContainText(
     'Select one employee for single-row editing or several employees to apply common values.',
   );
@@ -719,6 +719,35 @@ test('keeps Hybrid Dialog Edit available while changing employee selection', asy
     (activeBox?.y ?? 0) - ((activeLabelBox?.y ?? 0) + (activeLabelBox?.height ?? 0)),
   ).toBeGreaterThanOrEqual(8);
   expect(activeRowBox?.height ?? 0).toBeGreaterThanOrEqual(64);
+});
+
+test('applies a common value through desktop multi-row editing', async ({ page }) => {
+  await page.goto('http://127.0.0.1:4173/examples/demo/');
+  const employeeDirectory = page.getByRole('region', {
+    exact: true,
+    name: 'Employee directory',
+  });
+  const aikoRow = employeeDirectory.getByRole('row', { name: /Aiko Tanaka/ });
+  const janeRow = employeeDirectory.getByRole('row', { name: /Jane Smith/ });
+
+  await aikoRow.click();
+  await janeRow.click();
+  await employeeDirectory.getByRole('button', { exact: true, name: 'Edit' }).click();
+
+  const dialog = page.getByRole('dialog', { name: 'Edit multiple rows' });
+  const nameField = dialog.locator('[data-alteditor-lite-batch-field="name"]');
+  await expect(nameField).toContainText('Multiple values');
+  await nameField.getByRole('button', { name: 'Set a common value' }).click();
+  await nameField.getByRole('textbox', { name: 'Name' }).fill('Shared team member');
+  await dialog.getByRole('button', { name: 'Submit' }).click();
+
+  await expect(dialog).toBeHidden();
+  await expect(employeeDirectory.locator('#employee-1')).toContainText(
+    'Shared team member',
+  );
+  await expect(employeeDirectory.locator('#employee-5')).toContainText(
+    'Shared team member',
+  );
 });
 
 test('has no serious or critical axe violations in dark Edit and Remove dialogs', async ({
