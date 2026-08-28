@@ -44,6 +44,7 @@ async function createCrudFixture(page: Page): Promise<void> {
         <main>
           <button id="edit-explicit" type="button">Edit Alpha</button>
           <button id="remove-explicit" type="button">Remove Beta</button>
+          <button id="refresh-explicit" type="button">Refresh records</button>
           <table id="editor-table">
             <thead>
               <tr><th>Name</th><th>Rank</th></tr>
@@ -61,6 +62,7 @@ async function createCrudFixture(page: Page): Promise<void> {
     content: `
       globalThis.updateCalls = 0;
       globalThis.removeCalls = 0;
+      globalThis.refreshCalls = 0;
       globalThis.holdNextUpdate = false;
       globalThis.releaseRemove = undefined;
       globalThis.releaseUpdate = undefined;
@@ -131,6 +133,13 @@ async function createCrudFixture(page: Page): Promise<void> {
                 globalThis.releaseRemove = resolve;
               });
               globalThis.releaseRemove = undefined;
+            },
+            refresh: () => {
+              globalThis.refreshCalls += 1;
+              globalThis.tableApi
+                .row('#row-a')
+                .data({ id: 'row-a', name: 'Refreshed Alpha', rank: 4 })
+                .draw(false);
             }
           }
         }
@@ -140,6 +149,9 @@ async function createCrudFixture(page: Page): Promise<void> {
       });
       document.querySelector('#remove-explicit').addEventListener('click', () => {
         void globalThis.editor.openRemoveDialog('#row-b');
+      });
+      document.querySelector('#refresh-explicit').addEventListener('click', () => {
+        void globalThis.editor.refresh();
       });
     `,
   });
@@ -410,6 +422,19 @@ test('edits an explicit snapshot with keyboard only after redraw', async ({ page
   await expect(editButton).toBeFocused();
   await expect(page.locator('#row-a')).toContainText('Keyboard Alpha');
   await expect(page.evaluate(() => 'jQuery' in globalThis)).resolves.toBe(false);
+});
+
+test('refreshes visible records from an application control', async ({ page }) => {
+  await createCrudFixture(page);
+
+  await page.getByRole('button', { name: 'Refresh records' }).click();
+
+  await expect(page.locator('#row-a')).toContainText('Refreshed Alpha');
+  await expect(
+    page.evaluate(
+      () => (globalThis as typeof globalThis & { refreshCalls?: number }).refreshCalls,
+    ),
+  ).resolves.toBe(1);
 });
 
 test('uses a custom dynamic form and corrects cross-field validation', async ({
