@@ -257,6 +257,11 @@ must add the new `custom` case.
   must handle `type: 'custom'`.
 - Custom fields are Dialog-capable by default and must explicitly opt into
   multi-record or Inline Edit. Existing built-in field defaults are unchanged.
+- Custom field controllers receive `presentation` and may identify an
+  `ariaTarget` within their widget. Adapter `validate(signal)` owns
+  widget-specific constraints, including the meaning of an empty required value.
+- A custom field's `isEqual` comparator is used for multi-record value state,
+  unchanged Inline values, and local uniqueness checks.
 - `batchEditable: false` can omit any otherwise eligible field from
   multi-record editing. File, unique, hidden, and non-editable restrictions are
   unchanged.

@@ -9,9 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Added typed consumer-defined fields with editor-owned form structure,
-  lifecycle context, validation, cleanup, and explicit multi-record and Inline
-  capabilities.
+- Added typed consumer-defined fields with editor-owned form structure, resolved
+  language, presentation context, cancellation, validation, cleanup, and
+  explicit multi-record and Inline capabilities.
 - Added field-specific equality for structured custom values and
   `batchEditable` control for multi-record forms.
 - Added asynchronous Host reads with cancellation context while preserving
@@ -25,15 +25,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ignored late results after cancellation or destruction.
 - Passed operation cancellation to custom-field validation and applied custom
   equality to local uniqueness checks.
-- Documented the current-page editing boundary for DataTables server-side
-  processing.
+- Defined and verified the current-page editing boundary for DataTables
+  server-side processing.
 - Added zero-dependency compressed distribution size checking to local and
-  continuous integration verification.
+  continuous integration verification, including direct pushes to `develop`.
 
 ### Fixed
 
-- Rebased a retained Edit form from the latest canonical Host record after a
-  successful update.
+- Reloaded a retained Edit form and its dependent field state from the latest
+  canonical Host record after a successful update.
 - Released returned custom-field adapters when controller initialization fails
   and kept widget state semantics under adapter ownership.
 

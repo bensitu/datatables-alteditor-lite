@@ -27,8 +27,8 @@ native browser controls. It has no jQuery or UI-framework runtime dependency.
   explicit actions, validation, and optional KeyTable activation
 - Dialog and Inline Edit can be enabled together on one editor
 - Multi-record Dialog Edit with common-value overrides and individual-value restore
-- Typed consumer-defined fields with shared Dialog, multi-record, and Inline
-  behavior
+- Typed consumer-defined fields with Dialog support and explicit multi-record
+  and Inline capabilities
 - Declarative dependent field state and shared cross-field validation
 - Create, Edit, Remove, and Ajax-aware or local Refresh operations
 - Non-optimistic asynchronous persistence and asynchronous Host reads with

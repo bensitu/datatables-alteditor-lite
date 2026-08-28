@@ -256,9 +256,10 @@ Standalone dispatches from its configured or generated `EventTarget`.
 
 `FieldConfig<TFormValues>` is the union of all supported field configurations.
 Shared properties include `name`, `defaultValue`, `editable`, `visible`,
-`disabled`, `inlineEdit`, `batchEditable`, `className`, `attributes`, `onChange`,
-`validate`, and `unique`. Visible controls also support `label`, `description`,
-`required`, and `readOnly`.
+`disabled`, `inlineEdit`, `batchEditable`, `className`, `onChange`, `validate`,
+and `unique`. Built-in fields also accept allowlisted native `attributes`;
+custom fields configure their widget subtree inside `createController()` instead.
+Visible controls support `label`, `description`, `required`, and `readOnly`.
 
 `defineCustomField<TValue, TOptions>()` returns a `CustomFieldDefinition` with a
 typed `field<TFormValues>()` builder. Public custom-field contracts include
