@@ -176,6 +176,7 @@ describe('AltEditorLite custom fields', () => {
     expect(control?.value).toBe('initial');
     expect(control?.closest('[data-alteditor-lite-field="tags"]')).not.toBeNull();
     expect(observer.contexts[0]?.language.locale).toBe('ja-JP');
+    expect(observer.contexts[0]?.presentation).toBe('dialog');
     editor.getField('tags')?.focus();
     expect(document.activeElement).toBe(control);
 
@@ -277,6 +278,7 @@ describe('AltEditorLite custom fields', () => {
     await editor.openBatchEditDialog(['record-a', 'record-b']);
     const control = document.querySelector<HTMLInputElement>('[data-tags-control]');
     expect(control?.value).toBe('shared');
+    expect(observer.contexts[0]?.presentation).toBe('batch');
     expect(
       document.querySelector<HTMLElement>(
         '[data-alteditor-lite-batch-field="tags"] .alteditor-lite-batch-field__state',

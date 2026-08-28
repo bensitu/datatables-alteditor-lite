@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { EditorConfigurationError } from '../../src/core/alt-editor-lite-error.js';
 import { ENGLISH_LANGUAGE } from '../../src/core/alt-editor-lite-language.js';
 import { createFieldController } from '../../src/fields/create-field-controller.js';
 import { defineCustomField } from '../../src/fields/custom-field.js';
@@ -26,38 +27,46 @@ describe('custom field controller', () => {
     let currentValue: readonly string[] = [];
     let isRequired = false;
     let receivedLocale: string | undefined;
+    let receivedPresentation: string | undefined;
     let receivedSignal: AbortSignal | undefined;
+    let validationSignal: AbortSignal | undefined;
     let triggerUserChange: (() => void) | undefined;
     const definition = defineCustomField<readonly string[], { readonly limit: number }>({
       createController: (options, context) => {
         const control = document.createElement('div');
-        control.tabIndex = 0;
+        const input = document.createElement('input');
+        control.append(input);
         receivedLocale = context.language.locale;
+        receivedPresentation = context.presentation;
         receivedSignal = context.signal;
         triggerUserChange = context.onUserChange;
         return {
+          ariaTarget: input,
           control,
           destroy,
           focus: () => {
-            control.focus();
+            input.focus();
           },
           getValue: () => currentValue,
           setDisabled: (disabled) => {
-            control.dataset['disabled'] = String(disabled);
+            input.setAttribute('aria-disabled', String(disabled));
           },
           setReadOnly: (readOnly) => {
-            control.dataset['readOnly'] = String(readOnly);
+            input.setAttribute('aria-readonly', String(readOnly));
           },
           setRequired: (required) => {
             isRequired = required;
+            input.setAttribute('aria-required', String(required));
           },
           setValue: (value) => {
             currentValue = value;
           },
-          validate: () =>
-            isRequired && currentValue.length === 0
+          validate: (signal) => {
+            validationSignal = signal;
+            return isRequired && currentValue.length === 0
               ? { message: `Choose up to ${String(options.limit)} tags.`, valid: false }
-              : { valid: true },
+              : { valid: true };
+          },
         };
       },
     });
@@ -83,25 +92,39 @@ describe('custom field controller', () => {
     const control = controller.element.querySelector<HTMLElement>(
       '.alteditor-lite-field__control',
     );
+    const ariaTarget = control?.querySelector('input');
     const label = controller.element.querySelector<HTMLLabelElement>('label');
     const error = controller.element.querySelector<HTMLElement>(
       '.alteditor-lite-field__error',
     );
 
     expect(receivedLocale).toBe('en');
+    expect(receivedPresentation).toBe('dialog');
     expect(receivedSignal).toBe(lifecycleAbortController.signal);
     expect(controller.element.classList.contains('consumer-field')).toBe(true);
     expect(label?.htmlFor).toBe('custom-tags');
-    expect(control?.getAttribute('aria-labelledby')).toBe('custom-tags-label');
-    expect(control?.getAttribute('aria-describedby')?.split(' ')).toEqual(
+    expect(ariaTarget?.getAttribute('aria-labelledby')).toBe('custom-tags-label');
+    expect(ariaTarget?.getAttribute('aria-describedby')?.split(' ')).toEqual(
       expect.arrayContaining(['custom-tags-description', 'custom-tags-error']),
     );
-    expect(control?.getAttribute('aria-required')).toBe('true');
+    expect(ariaTarget?.getAttribute('aria-required')).toBe('true');
+    expect(control?.hasAttribute('aria-required')).toBe(false);
 
-    expect(
-      await controller.validateCustom({ tags: [] }, new AbortController().signal),
-    ).toEqual({ message: 'Choose up to 3 tags.', valid: false });
+    const firstValidationSignal = new AbortController().signal;
+    expect(await controller.validateCustom({ tags: [] }, firstValidationSignal)).toEqual({
+      message: 'Choose up to 3 tags.',
+      valid: false,
+    });
+    expect(validationSignal).toBe(firstValidationSignal);
     expect(configuredValidation).not.toHaveBeenCalled();
+
+    controller.setValue(['allowed']);
+    expect(
+      await controller.validateCustom(
+        { tags: ['allowed'] },
+        new AbortController().signal,
+      ),
+    ).toEqual({ valid: true });
 
     controller.setValue(['blocked']);
     expect(await Promise.resolve(controller.getValue())).toEqual(['blocked']);
@@ -111,17 +134,20 @@ describe('custom field controller', () => {
         new AbortController().signal,
       ),
     ).toEqual({ message: 'Remove the blocked tag.', valid: false });
-    expect(configuredValidation).toHaveBeenCalledOnce();
+    expect(configuredValidation).toHaveBeenCalledTimes(2);
 
     controller.setDisabled(true);
     controller.setReadOnly(true);
-    expect(control?.getAttribute('aria-disabled')).toBe('true');
-    expect(control?.getAttribute('aria-readonly')).toBe('true');
+    expect(ariaTarget?.getAttribute('aria-disabled')).toBe('true');
+    expect(ariaTarget?.getAttribute('aria-readonly')).toBe('true');
+    expect(control?.hasAttribute('aria-disabled')).toBe(false);
+    controller.focus();
+    expect(document.activeElement).toBe(ariaTarget);
     controller.showError('Review this value.');
-    expect(control?.getAttribute('aria-invalid')).toBe('true');
+    expect(ariaTarget?.getAttribute('aria-invalid')).toBe('true');
     expect(error?.textContent).toBe('Review this value.');
     controller.clearError();
-    expect(control?.hasAttribute('aria-invalid')).toBe(false);
+    expect(ariaTarget?.hasAttribute('aria-invalid')).toBe(false);
 
     await controller.runOnChange({ tags: ['blocked'] }, new AbortController().signal);
     expect(configuredChange).toHaveBeenCalledOnce();
@@ -133,5 +159,63 @@ describe('custom field controller', () => {
     controller.destroy();
     expect(destroy).toHaveBeenCalledOnce();
     expect(controller.element.isConnected).toBe(false);
+  });
+
+  it('settles adapter validation promptly when the operation is cancelled', async () => {
+    let validationSignal: AbortSignal | undefined;
+    const definition = defineCustomField<readonly string[]>({
+      createController: () => {
+        const control = document.createElement('input');
+        return {
+          control,
+          destroy: () => undefined,
+          focus: () => undefined,
+          getValue: () => [],
+          setDisabled: () => undefined,
+          setReadOnly: () => undefined,
+          setRequired: () => undefined,
+          setValue: () => undefined,
+          validate: (signal) => {
+            validationSignal = signal;
+            return new Promise(() => undefined);
+          },
+        };
+      },
+    });
+    const controller = createFieldController(
+      definition.field<Values>({ label: 'Tags', name: 'tags' }),
+      'cancelled-custom-tags',
+      ENGLISH_LANGUAGE,
+      () => undefined,
+    );
+    const abortController = new AbortController();
+    const validation = controller.validateCustom({}, abortController.signal);
+
+    abortController.abort();
+
+    await expect(validation).rejects.toMatchObject({ name: 'AbortError' });
+    expect(validationSignal).toBe(abortController.signal);
+    controller.destroy();
+  });
+
+  it('destroys a returned adapter when its runtime contract is invalid', () => {
+    const destroy = vi.fn();
+    const definition = defineCustomField<readonly string[]>({
+      createController: () =>
+        ({
+          control: document.createElement('input'),
+          destroy,
+        }) as never,
+    });
+
+    expect(() =>
+      createFieldController(
+        definition.field<Values>({ label: 'Tags', name: 'tags' }),
+        'invalid-custom-tags',
+        ENGLISH_LANGUAGE,
+        () => undefined,
+      ),
+    ).toThrow(EditorConfigurationError);
+    expect(destroy).toHaveBeenCalledOnce();
   });
 });

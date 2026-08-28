@@ -167,9 +167,11 @@ function replaceInlineValue(value: string): HTMLInputElement {
 
 describe('AltEditorLite programmatic inline editing', () => {
   it('uses a consumer-defined control with the existing inline transaction', async () => {
+    let presentation: string | undefined;
     const customText = defineCustomField<string>({
       capabilities: { inline: true },
       createController: (_options, context) => {
+        presentation = context.presentation;
         const control = document.createElement('input');
         control.dataset['customInline'] = '';
         const handleInput = (): void => {
@@ -213,6 +215,7 @@ describe('AltEditorLite programmatic inline editing', () => {
     });
 
     await editor.openInlineEdit('#row-a', 0);
+    expect(presentation).toBe('inline');
     const control = document.querySelector<HTMLInputElement>('[data-custom-inline]');
     expect(control?.value).toBe('Alpha');
     if (control === null) {

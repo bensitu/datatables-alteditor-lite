@@ -1,3 +1,4 @@
+import { resolveFieldValueComparator } from '../fields/field-value-comparator.js';
 import { parseFieldPath } from '../object-path/field-path.js';
 import { lookupPathSegments } from '../object-path/get-path-value.js';
 
@@ -7,6 +8,7 @@ import type { FieldConfig } from '../fields/field-config.js';
 import type { HostRowCollectionCapability } from '../host/editor-host.js';
 
 interface UniqueFieldLookup {
+  readonly isEqual: (left: unknown, right: unknown) => boolean;
   readonly name: string;
   readonly pathSegments: readonly string[];
 }
@@ -33,6 +35,7 @@ export class LocalUniquenessValidator<
       fieldConfigurations
         .filter((field) => field.unique === true)
         .map((field) => ({
+          isEqual: resolveFieldValueComparator(field),
           name: field.name,
           pathSegments: parseFieldPath(field.name),
         })),
@@ -67,7 +70,7 @@ export class LocalUniquenessValidator<
       for (const [candidate, value] of candidates) {
         if (
           fieldErrors[candidate.name] === undefined &&
-          Object.is(lookupPathSegments(row, candidate.pathSegments).value, value)
+          candidate.isEqual(lookupPathSegments(row, candidate.pathSegments).value, value)
         ) {
           fieldErrors[candidate.name] = this.language.validation.unique;
         }

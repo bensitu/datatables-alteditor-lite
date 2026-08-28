@@ -131,6 +131,7 @@ export {
   type CustomFieldControllerContext,
   type CustomFieldDefinition,
   type CustomFieldDefinitionOptions,
+  type CustomFieldPresentation,
   type FieldValueComparator,
 } from './fields/custom-field.js';
 export type {

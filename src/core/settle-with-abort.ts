@@ -27,7 +27,7 @@ export function settleWithAbort<TValue>(
       isSettled = true;
       release();
       reject(
-        error instanceof Error
+        error instanceof Error || error instanceof DOMException
           ? error
           : new Error('The request failed.', { cause: error }),
       );

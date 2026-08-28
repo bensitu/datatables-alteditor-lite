@@ -9,6 +9,7 @@ export interface FieldControllerShellArguments {
   readonly config: Readonly<FieldShellConfig>;
   readonly fieldId: string;
   readonly control: HTMLElement;
+  readonly ariaTarget?: HTMLElement;
   readonly controlContainer?: HTMLElement;
   readonly labelPlacement?: 'before-control' | 'after-control';
   readonly useAriaLabelReference?: boolean;
@@ -47,6 +48,7 @@ export function createFieldControllerShell(
   shellArguments: Readonly<FieldControllerShellArguments>,
 ): FieldControllerShell {
   const { config, control, fieldId } = shellArguments;
+  const ariaTarget = shellArguments.ariaTarget ?? control;
   const fieldElement = document.createElement('div');
   const errorElement = document.createElement('div');
   const errorId = `${fieldId}-error`;
@@ -58,9 +60,9 @@ export function createFieldControllerShell(
   errorElement.hidden = true;
   errorElement.setAttribute('aria-live', 'polite');
 
-  control.id = fieldId;
+  ariaTarget.id = fieldId;
   control.classList.add('alteditor-lite-field__control');
-  addAriaReference(control, 'aria-describedby', errorId);
+  addAriaReference(ariaTarget, 'aria-describedby', errorId);
 
   const controlContainer = shellArguments.controlContainer ?? control;
   if (config.label !== undefined && shellArguments.labelPlacement === 'after-control') {
@@ -79,7 +81,7 @@ export function createFieldControllerShell(
     labelElement.textContent = config.label;
     if (shellArguments.useAriaLabelReference === true) {
       labelElement.id = `${fieldId}-label`;
-      addAriaReference(control, 'aria-labelledby', labelElement.id);
+      addAriaReference(ariaTarget, 'aria-labelledby', labelElement.id);
     }
     fieldElement.append(labelElement, controlContainer);
   } else {
@@ -92,7 +94,7 @@ export function createFieldControllerShell(
     descriptionElement.className = 'alteditor-lite-field__description';
     descriptionElement.id = descriptionId;
     descriptionElement.textContent = config.description;
-    addAriaReference(control, 'aria-describedby', descriptionId);
+    addAriaReference(ariaTarget, 'aria-describedby', descriptionId);
     fieldElement.append(descriptionElement);
   }
 
@@ -104,12 +106,12 @@ export function createFieldControllerShell(
   return {
     element: fieldElement,
     clearError: () => {
-      control.removeAttribute('aria-invalid');
+      ariaTarget.removeAttribute('aria-invalid');
       errorElement.hidden = true;
       errorElement.textContent = '';
     },
     showError: (message) => {
-      control.setAttribute('aria-invalid', 'true');
+      ariaTarget.setAttribute('aria-invalid', 'true');
       errorElement.textContent = message;
       errorElement.hidden = false;
     },

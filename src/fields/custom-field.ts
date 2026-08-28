@@ -18,10 +18,15 @@ export interface CustomFieldCapabilities {
   readonly inline?: boolean;
 }
 
+/** Editing surface that owns a custom field controller instance. */
+export type CustomFieldPresentation = 'dialog' | 'batch' | 'inline';
+
 /** Stable editor services supplied while a custom field control is created. */
 export interface CustomFieldControllerContext {
   /** Complete resolved language, including the canonical locale. */
   readonly language: Readonly<AltEditorLiteLanguage>;
+  /** Editing surface that created this controller. */
+  readonly presentation: CustomFieldPresentation;
   /** Signal aborted when the rendered field is cancelled or destroyed. */
   readonly signal: AbortSignal;
   /** Notification that the user changed the widget value. */
@@ -32,13 +37,15 @@ export interface CustomFieldControllerContext {
 export interface CustomFieldAdapter<TValue> {
   /** Widget root mounted between the field label and error message. */
   readonly control: HTMLElement;
+  /** Focusable control element that receives editor-owned accessibility relations. */
+  readonly ariaTarget?: HTMLElement;
   getValue(): MaybePromise<TValue>;
   setValue(value: TValue): void;
   setDisabled(disabled: boolean): void;
   setReadOnly(readOnly: boolean): void;
   setRequired(required: boolean): void;
   focus(): void;
-  validate?(): MaybePromise<FieldValidationResult>;
+  validate?(signal: AbortSignal): MaybePromise<FieldValidationResult>;
   destroy(): void;
 }
 

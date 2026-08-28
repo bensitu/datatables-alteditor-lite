@@ -44,6 +44,7 @@ export function createFieldController<TFormValues extends object>(
         fieldId,
         language,
         onUserChange,
+        presentation.kind,
         lifecycleSignal,
       );
       break;

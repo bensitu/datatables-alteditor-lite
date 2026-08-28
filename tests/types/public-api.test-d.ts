@@ -40,6 +40,7 @@ import {
   type CustomFieldAdapter,
   type CustomFieldConfigOptions,
   type CustomFieldControllerContext,
+  type CustomFieldPresentation,
   type FieldPath,
   type FieldPathValue,
   type FieldStatePatchFor,
@@ -256,6 +257,7 @@ const tagsDefinition = defineCustomField<readonly string[], TagOptions>({
     expectType<Readonly<TagOptions>>(options);
     expectType<Readonly<CustomFieldControllerContext>>(context);
     expectType<string>(context.language.locale);
+    expectType<CustomFieldPresentation>(context.presentation);
     expectType<AbortSignal>(context.signal);
     const adapter: CustomFieldAdapter<readonly string[]> = {
       control: document.createElement('div'),
@@ -266,6 +268,10 @@ const tagsDefinition = defineCustomField<readonly string[], TagOptions>({
       setReadOnly: () => undefined,
       setRequired: () => undefined,
       setValue: () => undefined,
+      validate: (signal) => {
+        expectType<AbortSignal>(signal);
+        return { valid: true };
+      },
     };
     return adapter;
   },

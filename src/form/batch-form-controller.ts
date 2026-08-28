@@ -11,6 +11,7 @@ import {
   resolveBatchFieldRestriction,
   type FieldBatchRestriction,
 } from '../fields/field-capabilities.js';
+import { BATCH_FIELD_PRESENTATION } from '../fields/field-controller-presentation.js';
 import { resolveFieldValueComparator } from '../fields/field-value-comparator.js';
 import { getPathValue } from '../object-path/get-path-value.js';
 import { setPathValue } from '../object-path/set-path-value.js';
@@ -582,7 +583,7 @@ export class BatchEditorFormController<TFormValues extends object> {
           this.queueUserValue(bindingReference.current);
         }
       },
-      undefined,
+      BATCH_FIELD_PRESENTATION,
       this.lifecycleAbortController.signal,
     );
     wrapper.append(statePanel, controller.element, restoreButton, helperElement);
