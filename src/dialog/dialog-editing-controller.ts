@@ -1040,16 +1040,20 @@ export class DialogEditingController<
           this.editTarget !== undefined &&
           this.editOriginal !== undefined
         ) {
+          const form = this.activeForm;
           const recordTarget = this.editTarget;
           this.observeSubmission(
             this.editOperation.run(
-              this.activeForm,
+              form,
               recordTarget,
               this.editOriginal,
               this.createEditOperationTarget(recordTarget),
-              this.editPresentation(this.activeForm),
-              (nextOriginal) => {
-                this.editOriginal = createReadonlyRowView<TRow>(nextOriginal);
+              this.editPresentation(form),
+              async (nextOriginal) => {
+                const snapshot = createReadonlyRowView<TRow>(nextOriginal);
+                this.editOriginal = snapshot;
+                form.populateFromSource(snapshot);
+                await form.initializeDependencies();
               },
             ),
           );

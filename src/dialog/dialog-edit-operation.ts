@@ -53,7 +53,7 @@ export class DialogEditOperation<
     original: Readonly<TRow>,
     target: Readonly<EditorOperationTarget>,
     presentation: DialogEditPresentation,
-    updateOriginal: (original: Readonly<TRow>) => void,
+    updateOriginal: (original: Readonly<TRow>) => Promise<void>,
   ): Promise<void> {
     const {
       editing,
@@ -98,7 +98,7 @@ export class DialogEditOperation<
             request.abortController.signal,
           );
           request.abortController.signal.throwIfAborted();
-          updateOriginal(nextOriginal);
+          await updateOriginal(nextOriginal);
         }
         return Object.freeze({ row });
       },

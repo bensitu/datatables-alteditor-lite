@@ -44,6 +44,24 @@ function createServerSideTable(tableId: string, rows: TestRow[]) {
   });
 }
 
+function replaceRow(rows: TestRow[], replacement: TestRow): void {
+  const index = rows.findIndex(({ id }) => id === replacement.id);
+  if (index < 0) {
+    throw new Error('Expected a loaded server-side row.');
+  }
+  rows[index] = replacement;
+}
+
+function confirmRemove(): void {
+  const button = document.querySelector<HTMLButtonElement>(
+    '.alteditor-lite-dialog__button--destructive',
+  );
+  if (button === null) {
+    throw new Error('Expected an open Remove confirmation.');
+  }
+  button.click();
+}
+
 describe('DataTables server-side materialized rows', () => {
   let editor: AltEditorLite<TestRow, Values> | undefined;
   let restoreDialogElement: () => void;
@@ -71,8 +89,7 @@ describe('DataTables server-side materialized rows', () => {
     const { api } = createServerSideTable('server-side-edit', rows);
     const update = vi.fn((values: Readonly<Partial<Values>>, original: TestRow) => {
       const replacement = { ...original, name: values.name ?? original.name };
-      const index = rows.findIndex(({ id }) => id === original.id);
-      rows[index] = replacement;
+      replaceRow(rows, replacement);
       return replacement;
     });
     const currentEditor = new AltEditorLite<TestRow, Values>(api, {
@@ -103,6 +120,141 @@ describe('DataTables server-side materialized rows', () => {
     expect(api.row('#row-a').data().name).toBe('Updated Alpha');
 
     await currentEditor.refresh();
+    expect(api.rows().count()).toBe(2);
+  });
+
+  it('edits a currently materialized row inline with replacement mode', async () => {
+    const rows: TestRow[] = [
+      { id: 'row-a', name: 'Alpha', rank: 1 },
+      { id: 'row-b', name: 'Beta', rank: 2 },
+      { id: 'row-c', name: 'Gamma', rank: 3 },
+    ];
+    const { api } = createServerSideTable('server-side-inline', rows);
+    const update = vi.fn((values: Readonly<Partial<Values>>, original: TestRow) => {
+      const replacement = { ...original, name: values.name ?? original.name };
+      replaceRow(rows, replacement);
+      return replacement;
+    });
+    const currentEditor = new AltEditorLite<TestRow, Values>(api, {
+      editing: {
+        inline: { enabled: true, updateMode: 'replace-row' },
+      },
+      fields: [
+        { inlineEdit: true, label: 'Name', name: 'name', type: 'text' },
+        { label: 'Rank', name: 'rank', type: 'number' },
+      ],
+      operations: { update },
+    });
+    editor = currentEditor;
+
+    await currentEditor.openInlineEdit('#row-a', 0);
+    const input = document.querySelector<HTMLInputElement>(
+      '.alteditor-lite-inline input',
+    );
+    if (input === null) {
+      throw new Error('Expected a materialized inline editor.');
+    }
+    input.value = 'Inline Alpha';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    await currentEditor.submitInlineEdit();
+
+    expect(update).toHaveBeenCalledOnce();
+    expect(rows[0]?.name).toBe('Inline Alpha');
+    expect(api.row('#row-a').data().name).toBe('Inline Alpha');
+  });
+
+  it('updates currently materialized rows through one multi-record operation', async () => {
+    const rows: TestRow[] = [
+      { id: 'row-a', name: 'Alpha', rank: 1 },
+      { id: 'row-b', name: 'Beta', rank: 2 },
+      { id: 'row-c', name: 'Gamma', rank: 3 },
+    ];
+    const { api } = createServerSideTable('server-side-batch', rows);
+    const updateMany = vi.fn(
+      (changes: Readonly<Partial<Values>>, originals: readonly TestRow[]) => {
+        const replacements = originals.map((original) => ({
+          ...original,
+          name: changes.name ?? original.name,
+        }));
+        for (const replacement of replacements) {
+          replaceRow(rows, replacement);
+        }
+        return replacements;
+      },
+    );
+    const currentEditor = new AltEditorLite<TestRow, Values>(api, {
+      fields: [
+        { label: 'Name', name: 'name', type: 'text' },
+        { label: 'Rank', name: 'rank', type: 'number' },
+      ],
+      operations: { updateMany },
+    });
+    editor = currentEditor;
+
+    await currentEditor.openBatchEditDialog(['#row-a', '#row-b']);
+    const batchField = document.querySelector<HTMLElement>(
+      '[data-alteditor-lite-batch-field="name"]',
+    );
+    batchField
+      ?.querySelector<HTMLButtonElement>(
+        '.alteditor-lite-batch-field__state .alteditor-lite-batch-field__action',
+      )
+      ?.click();
+    const input = batchField?.querySelector<HTMLInputElement>('input');
+    if (input === null || input === undefined) {
+      throw new Error('Expected a materialized multi-record editor.');
+    }
+    input.value = 'Shared server name';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    document
+      .querySelector<HTMLFormElement>('.alteditor-lite-batch-form')
+      ?.requestSubmit();
+
+    await vi.waitFor(() => {
+      expect(currentEditor.getState().status).toBe('ready');
+    });
+    expect(updateMany).toHaveBeenCalledOnce();
+    expect(rows.slice(0, 2).map(({ name }) => name)).toEqual([
+      'Shared server name',
+      'Shared server name',
+    ]);
+    expect(api.row('#row-a').data().name).toBe('Shared server name');
+    expect(api.row('#row-b').data().name).toBe('Shared server name');
+  });
+
+  it('removes a currently materialized row and reloads the current page', async () => {
+    const rows: TestRow[] = [
+      { id: 'row-a', name: 'Alpha', rank: 1 },
+      { id: 'row-b', name: 'Beta', rank: 2 },
+      { id: 'row-c', name: 'Gamma', rank: 3 },
+    ];
+    const { api } = createServerSideTable('server-side-remove', rows);
+    const remove = vi.fn((removedRows: readonly TestRow[]) => {
+      const removedIds = new Set(removedRows.map(({ id }) => id));
+      for (let index = rows.length - 1; index >= 0; index -= 1) {
+        if (removedIds.has(rows[index]?.id ?? '')) {
+          rows.splice(index, 1);
+        }
+      }
+    });
+    const currentEditor = new AltEditorLite<TestRow, Values>(api, {
+      fields: [
+        { label: 'Name', name: 'name', type: 'text' },
+        { label: 'Rank', name: 'rank', type: 'number' },
+      ],
+      operations: { remove },
+    });
+    editor = currentEditor;
+
+    await currentEditor.openRemoveDialog('#row-a');
+    confirmRemove();
+
+    await vi.waitFor(() => {
+      expect(currentEditor.getState().status).toBe('ready');
+    });
+    expect(remove).toHaveBeenCalledOnce();
+    expect(rows.map(({ id }) => id)).toEqual(['row-b', 'row-c']);
+    expect(api.row('#row-a').any()).toBe(false);
     expect(api.rows().count()).toBe(2);
   });
 

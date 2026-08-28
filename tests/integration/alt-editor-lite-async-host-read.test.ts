@@ -48,6 +48,169 @@ describe('AltEditorLite asynchronous Host reads', () => {
     expect(readSignals.every((signal) => !signal.aborted)).toBe(true);
   });
 
+  it('revalidates and reloads canonical values when Edit remains open', async () => {
+    let record: StandaloneRecord = { id: 'record-a', name: 'Alpha' };
+    const reads: { readonly signal: AbortSignal | undefined; readonly target: string }[] =
+      [];
+    const update = vi.fn((values: Readonly<Partial<StandaloneRecord>>) => ({
+      id: 'record-a',
+      name: `${values.name ?? ''} from service`,
+    }));
+    const fixture = createStandaloneTestFixture(
+      {
+        editing: { dialog: { closeOnSuccess: false, enabled: true } },
+        operations: { update },
+      },
+      {
+        applyUpdate: (target, row) => {
+          record = row;
+          return target;
+        },
+        read: async (target, context) => {
+          reads.push({ signal: context?.signal, target });
+          await Promise.resolve();
+          return record;
+        },
+      },
+    );
+
+    await fixture.editor.openEditDialog('record-a');
+    fixture.editor.getField('name')?.setValue('Updated Alpha');
+    document.querySelector<HTMLFormElement>('.alteditor-lite-form')?.requestSubmit();
+
+    await vi.waitFor(() => {
+      expect(fixture.editor.getState().status).toBe('open');
+      expect(
+        document.querySelector<HTMLInputElement>('.alteditor-lite-form input')?.value,
+      ).toBe('Updated Alpha from service');
+    });
+    expect(update).toHaveBeenCalledOnce();
+    expect(reads).toHaveLength(6);
+    expect(reads.every(({ signal }) => signal instanceof AbortSignal)).toBe(true);
+    expect(reads.map(({ target }) => target)).toEqual([
+      'record-a',
+      'record-a',
+      'record-a',
+      'record-a',
+      'record-a',
+      'record-a',
+    ]);
+  });
+
+  it('uses asynchronous reads for multi-record opening and submission checks', async () => {
+    const records = new Map<string, StandaloneRecord>([
+      ['record-a', { id: 'record-a', name: 'Alpha' }],
+      ['record-b', { id: 'record-b', name: 'Beta' }],
+    ]);
+    const reads: string[] = [];
+    const updateMany = vi.fn(
+      (
+        changes: Readonly<Partial<{ readonly name: string }>>,
+        originals: readonly StandaloneRecord[],
+      ) =>
+        originals.map((original) => ({
+          ...original,
+          name: changes.name ?? original.name,
+        })),
+    );
+    const fixture = createStandaloneTestFixture(
+      { operations: { updateMany } },
+      {
+        applyUpdates: (updates) => {
+          for (const { row, target } of updates) {
+            records.set(target, row);
+          }
+        },
+        read: async (target) => {
+          reads.push(target);
+          await Promise.resolve();
+          const row = records.get(target);
+          if (row === undefined) {
+            throw new Error('The requested record is unavailable.');
+          }
+          return row;
+        },
+      },
+    );
+
+    await fixture.editor.openBatchEditDialog(['record-a', 'record-b']);
+    const batchField = document.querySelector<HTMLElement>(
+      '[data-alteditor-lite-batch-field="name"]',
+    );
+    batchField
+      ?.querySelector<HTMLButtonElement>(
+        '.alteditor-lite-batch-field__state .alteditor-lite-batch-field__action',
+      )
+      ?.click();
+    const input = batchField?.querySelector<HTMLInputElement>('input');
+    if (input === null || input === undefined) {
+      throw new Error('Expected a multi-record editor.');
+    }
+    input.value = 'Shared async name';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    document
+      .querySelector<HTMLFormElement>('.alteditor-lite-batch-form')
+      ?.requestSubmit();
+
+    await vi.waitFor(() => {
+      expect(fixture.editor.getState().status).toBe('ready');
+    });
+    expect(updateMany).toHaveBeenCalledOnce();
+    expect([...records.values()].map(({ name }) => name)).toEqual([
+      'Shared async name',
+      'Shared async name',
+    ]);
+    expect(reads).toEqual([
+      'record-a',
+      'record-b',
+      'record-a',
+      'record-b',
+      'record-a',
+      'record-b',
+      'record-a',
+      'record-b',
+      'record-a',
+      'record-b',
+    ]);
+  });
+
+  it('uses asynchronous reads for Remove opening and submission checks', async () => {
+    const reads: string[] = [];
+    const records = new Map<string, StandaloneRecord>([
+      ['record-a', { id: 'record-a', name: 'Alpha' }],
+    ]);
+    const fixture = createStandaloneTestFixture(
+      {},
+      {
+        applyRemove: (targets) => {
+          for (const target of targets) {
+            records.delete(target);
+          }
+        },
+        read: async (target) => {
+          reads.push(target);
+          await Promise.resolve();
+          const row = records.get(target);
+          if (row === undefined) {
+            throw new Error('The requested record is unavailable.');
+          }
+          return row;
+        },
+      },
+    );
+
+    await fixture.editor.openRemoveDialog(['record-a']);
+    document
+      .querySelector<HTMLButtonElement>('.alteditor-lite-dialog__button--destructive')
+      ?.click();
+
+    await vi.waitFor(() => {
+      expect(fixture.editor.getState().status).toBe('ready');
+    });
+    expect(records.has('record-a')).toBe(false);
+    expect(reads).toEqual(['record-a', 'record-a', 'record-a']);
+  });
+
   it('reports a rejected read without mounting a partial dialog', async () => {
     const onError = vi.fn();
     const fixture = createStandaloneTestFixture(
