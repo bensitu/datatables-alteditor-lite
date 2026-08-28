@@ -66,6 +66,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+      - run: npm run check:size
       - run: npm run verify:package
       - run: npm run test:types
       - uses: actions/upload-artifact@v7

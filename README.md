@@ -426,6 +426,14 @@ consumer-owned records without a table or grid.
 
 See [SECURITY.md](SECURITY.md) for private vulnerability reporting.
 
+## Development
+
+Run `npm run check` for the complete local verification suite. The compressed
+distribution check runs after the build and compares the main JavaScript,
+Standalone JavaScript, and shared CSS outputs with the documented limits in
+`scripts/check-bundle-size.mjs`. To run it separately, use
+`npm run build && npm run check:size`.
+
 ## Project status and attribution
 
 The public API follows semantic versioning. This project is independent and is

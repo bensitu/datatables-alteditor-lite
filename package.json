@@ -85,13 +85,14 @@
     "test:e2e": "playwright test",
     "test:types": "tsd",
     "verify:package": "node scripts/verify-package-boundaries.mjs",
+    "check:size": "node scripts/check-bundle-size.mjs",
     "build:js": "rolldown -c",
     "build:css": "node scripts/build-css.mjs",
     "build:locales": "node scripts/build-locales.mjs",
     "build:pages": "npm run build && node scripts/build-pages.mjs",
     "build:types": "tsc -p tsconfig.build.json --emitDeclarationOnly",
     "build": "npm run clean && npm run typecheck && npm run build:js && npm run build:css && npm run build:locales && npm run build:types",
-    "check": "npm run format:check && npm run lint && npm run lint:styles && npm run test:coverage && npm run build && npm run verify:package && npm run test:types && npm run test:e2e"
+    "check": "npm run format:check && npm run lint && npm run lint:styles && npm run test:coverage && npm run build && npm run check:size && npm run verify:package && npm run test:types && npm run test:e2e"
   },
   "peerDependencies": {
     "datatables.net": ">=3.0.0 <4",

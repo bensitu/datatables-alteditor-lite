@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ignored late results after cancellation or destruction.
 - Documented the current-page editing boundary for DataTables server-side
   processing.
+- Added zero-dependency compressed distribution size checking to local and
+  continuous integration verification.
 
 ## [0.6.1] - 2026-08-25
 
