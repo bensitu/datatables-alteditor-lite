@@ -4,9 +4,9 @@ import {
   createBatchFieldState,
   restoreBatchFieldValue,
   setBatchFieldValue,
-} from '../../src/form/batch-field-state-controller.js';
+} from '../../src/form/batch-field-state-updates.js';
 
-describe('batch field state', () => {
+describe('batch field state updates', () => {
   it('preserves a common baseline until its value changes', () => {
     const baseline = createBatchFieldState(['Tokyo', 'Tokyo']);
     const overridden = setBatchFieldValue(baseline, 'Osaka');

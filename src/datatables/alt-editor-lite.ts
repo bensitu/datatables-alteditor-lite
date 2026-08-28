@@ -1,12 +1,12 @@
 import { EditorConfigurationError } from '../core/alt-editor-lite-error.js';
 import { AltEditorLite as CoreAltEditorLite } from '../core/alt-editor-lite.js';
 
-import { DataTablesHost } from './data-tables-host.js';
+import { DataTablesHost } from './datatables-host.js';
 
 import type {
   DataTablesInlineTarget,
   DataTablesRecordTarget,
-} from './data-tables-host.js';
+} from './datatables-host.js';
 import type { AltEditorLiteOptions } from '../core/alt-editor-lite-options.js';
 import type { DeepPartial } from '../core/editor-values.js';
 import type { InlineEditState } from '../inline/inline-edit-state.js';

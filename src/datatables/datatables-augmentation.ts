@@ -1,4 +1,4 @@
-import type { DataTablesRecordTarget } from './data-tables-host.js';
+import type { DataTablesRecordTarget } from './datatables-host.js';
 import type { AltEditorLite } from '../core/alt-editor-lite.js';
 import type { DeepPartial } from '../core/editor-values.js';
 import type { Api } from 'datatables.net';

@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AltEditorLiteError } from '../../src/core/alt-editor-lite-error.js';
 import { ENGLISH_LANGUAGE } from '../../src/core/alt-editor-lite-language.js';
 import { isChoiceFieldController } from '../../src/fields/field-controller.js';
-import { BatchEditorFormController } from '../../src/form/batch-form-controller.js';
+import { BatchEditorFormController } from '../../src/form/batch-editor-form-controller.js';
 
 import type { FieldChangeContext, FieldConfig } from '../../src/fields/field-config.js';
 import type { FormDependencies } from '../../src/form/form-dependency.js';

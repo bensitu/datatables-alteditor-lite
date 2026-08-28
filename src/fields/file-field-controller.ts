@@ -2,16 +2,16 @@ import { EditorConfigurationError } from '../core/alt-editor-lite-error.js';
 import { mergeAbortSignals } from '../core/merge-abort-signals.js';
 
 import {
-  createNativeControlController,
-  type NativeControlAdapter,
-} from './field-controller-foundation.js';
-import {
   DEFAULT_DATA_URL_MAX_FILE_BYTES,
   DEFAULT_DATA_URL_MAX_FILE_COUNT,
   type FileBudget,
   type FileBudgetMessages,
   validateFileBudget,
 } from './file-budget.js';
+import {
+  createNativeControlController,
+  type NativeControlAdapter,
+} from './native-control-controller.js';
 import { readFileAsDataUrl, readFilesAsDataUrls } from './read-file-data-url.js';
 
 import type {

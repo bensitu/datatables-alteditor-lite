@@ -3,7 +3,7 @@ import { EditorTargetUnavailableError } from '../core/alt-editor-lite-error.js';
 import { isColumnVisiblyAvailable } from './column-visibility.js';
 import { resolveUniqueRowIndexById } from './row-id-resolution.js';
 
-import type { DataTablesHost } from './data-tables-host.js';
+import type { DataTablesHost } from './datatables-host.js';
 import type { EditCommitResult } from '../core/editing/edit-transaction.js';
 import type { OwnedOperationRequest } from '../core/editing/operation-owner.js';
 import type { Api } from 'datatables.net';

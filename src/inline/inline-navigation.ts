@@ -1,7 +1,7 @@
 import { isColumnVisiblyAvailable } from '../datatables/column-visibility.js';
 import { resolveUniqueRowIndexById } from '../datatables/row-id-resolution.js';
 
-import { isInlineFieldEligible } from './inline-field-capability.js';
+import { isInlineFieldEligible } from './inline-field-eligibility.js';
 
 import type { InlineColumnMapping } from './inline-column-mapping.js';
 import type { InlineTargetSummary } from './inline-edit-state.js';

@@ -1,7 +1,7 @@
 import { EditorConfigurationError } from '../core/alt-editor-lite-error.js';
 import { parseFieldPath } from '../object-path/field-path.js';
 
-import { isInlineFieldEligible } from './inline-field-capability.js';
+import { isInlineFieldEligible } from './inline-field-eligibility.js';
 
 import type { AltEditorLiteOptions } from '../core/alt-editor-lite-options.js';
 import type { ResolvedEditingOptions } from '../core/resolve-editing-options.js';

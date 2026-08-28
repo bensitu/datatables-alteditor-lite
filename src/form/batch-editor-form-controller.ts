@@ -20,7 +20,7 @@ import {
   createBatchFieldState,
   restoreBatchFieldValue,
   setBatchFieldValue,
-} from './batch-field-state-controller.js';
+} from './batch-field-state-updates.js';
 import { buildBatchEffectiveValues } from './build-batch-effective-values.js';
 import { FieldRuntimeController } from './field-runtime-controller.js';
 import {

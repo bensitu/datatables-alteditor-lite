@@ -15,7 +15,7 @@ import { createReadonlyRowView } from '../core/readonly-row-view.js';
 import { runCleanupSteps } from '../core/run-cleanup-steps.js';
 import { settleWithAbort } from '../core/settle-with-abort.js';
 import { resolveFieldCapabilities } from '../fields/field-capabilities.js';
-import { BatchEditorFormController } from '../form/batch-form-controller.js';
+import { BatchEditorFormController } from '../form/batch-editor-form-controller.js';
 import { buildEditorForm } from '../form/build-editor-form.js';
 import { hasHostSelectionCapability } from '../host/editor-host.js';
 

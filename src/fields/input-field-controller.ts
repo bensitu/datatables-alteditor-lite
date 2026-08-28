@@ -3,7 +3,7 @@ import { EditorConfigurationError } from '../core/alt-editor-lite-error.js';
 import {
   createNativeControlController,
   type NativeControlAdapter,
-} from './field-controller-foundation.js';
+} from './native-control-controller.js';
 import { normalizeNumberValue } from './number-value.js';
 
 import type {

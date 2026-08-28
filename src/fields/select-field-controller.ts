@@ -4,7 +4,7 @@ import { ChoiceOptionStore } from './choice-option-store.js';
 import {
   createNativeControlController,
   type NativeControlAdapter,
-} from './field-controller-foundation.js';
+} from './native-control-controller.js';
 
 import type { SelectFieldConfig, SelectOption } from './field-config.js';
 import type { ManagedFieldController } from './managed-field-controller.js';

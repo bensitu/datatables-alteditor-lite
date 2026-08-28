@@ -51,7 +51,7 @@ import type { OperationOwner } from '../core/editing/operation-owner.js';
 import type { EditorValues } from '../core/editor-values.js';
 import type { ResolvedInlineEditingOptions } from '../core/resolve-editing-options.js';
 import type { LogicalCellTarget } from '../datatables/commit-row-update.js';
-import type { DataTablesHost } from '../datatables/data-tables-host.js';
+import type { DataTablesHost } from '../datatables/datatables-host.js';
 import type { FieldConfig } from '../fields/field-config.js';
 import type { Api, ColumnSelector, RowSelector } from 'datatables.net';
 

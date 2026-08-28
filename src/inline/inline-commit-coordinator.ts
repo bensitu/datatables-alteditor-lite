@@ -24,7 +24,7 @@ import type {
 import type { EditPresentationAdapter } from '../core/editing/edit-presentation-adapter.js';
 import type { OperationOwner } from '../core/editing/operation-owner.js';
 import type { ResolvedInlineEditingOptions } from '../core/resolve-editing-options.js';
-import type { DataTablesHost } from '../datatables/data-tables-host.js';
+import type { DataTablesHost } from '../datatables/datatables-host.js';
 import type { Api } from 'datatables.net';
 
 export interface InlineCommitCoordinatorArguments<

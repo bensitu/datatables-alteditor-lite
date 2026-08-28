@@ -12,7 +12,7 @@ import type { AltEditorLiteError } from '../core/alt-editor-lite-error.js';
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type { ResolvedInlineEditingOptions } from '../core/resolve-editing-options.js';
 import type { LogicalCellTarget } from '../datatables/commit-row-update.js';
-import type { DataTablesHost } from '../datatables/data-tables-host.js';
+import type { DataTablesHost } from '../datatables/datatables-host.js';
 
 export interface InlineFocusCoordinatorArguments<
   TRow extends object,

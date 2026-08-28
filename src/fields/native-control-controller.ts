@@ -27,7 +27,7 @@ export interface NativeControlAdapter<TValue> {
 /**
  * Arguments shared by native control controller construction.
  */
-export interface NativeControllerArguments<TFormValues extends object, TValue> {
+export interface NativeControlControllerArguments<TFormValues extends object, TValue> {
   readonly config: BaseFieldConfig<TFormValues, TValue> & {
     readonly label?: string;
     readonly description?: string;
@@ -51,7 +51,7 @@ export interface NativeControllerArguments<TFormValues extends object, TValue> {
  * @returns An internal type-erased controller.
  */
 export function createNativeControlController<TFormValues extends object, TValue>(
-  controllerArguments: NativeControllerArguments<TFormValues, TValue>,
+  controllerArguments: NativeControlControllerArguments<TFormValues, TValue>,
 ): ManagedFieldController<TFormValues> {
   const { adapter, config, fieldId } = controllerArguments;
   const { control } = adapter;

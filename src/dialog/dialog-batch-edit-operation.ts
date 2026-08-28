@@ -12,7 +12,7 @@ import type { BatchEditOperationRunner } from '../core/editing/batch-edit-operat
 import type { EditorErrorReporter } from '../core/editor-error-reporter.js';
 import type { EditorOperationTarget } from '../core/editor-operation.js';
 import type { ResolvedDialogEditingOptions } from '../core/resolve-editing-options.js';
-import type { BatchEditorFormController } from '../form/batch-form-controller.js';
+import type { BatchEditorFormController } from '../form/batch-editor-form-controller.js';
 import type { EditorHost } from '../host/editor-host.js';
 
 /** Dialog presentation callbacks used by the batch edit operation. */

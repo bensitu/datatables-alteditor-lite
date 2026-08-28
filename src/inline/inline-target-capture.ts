@@ -9,7 +9,7 @@ import {
 } from '../datatables/row-target-resolution.js';
 import { getPathValue } from '../object-path/get-path-value.js';
 
-import { isInlineFieldEligible } from './inline-field-capability.js';
+import { isInlineFieldEligible } from './inline-field-eligibility.js';
 
 import type { InlineColumnMapping } from './inline-column-mapping.js';
 import type { InlineTargetSummary } from './inline-edit-state.js';

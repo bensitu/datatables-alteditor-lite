@@ -1,6 +1,6 @@
 import { hasOwn } from '../core/has-own.js';
 
-import { isInlineFieldEligible } from './inline-field-capability.js';
+import { isInlineFieldEligible } from './inline-field-eligibility.js';
 
 import type { ResolvedInlineEditingOptions } from '../core/resolve-editing-options.js';
 import type { FieldConfig } from '../fields/field-config.js';

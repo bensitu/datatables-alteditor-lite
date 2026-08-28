@@ -3,7 +3,7 @@ import { SearchSelect } from '../search-select/search-select.js';
 import {
   createNativeControlController,
   type NativeControlAdapter,
-} from './field-controller-foundation.js';
+} from './native-control-controller.js';
 
 import type {
   SearchSelectFieldConfig,
