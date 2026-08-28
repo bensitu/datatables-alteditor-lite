@@ -26,6 +26,7 @@ Confirm the applicable statements and explain any intentional exception.
 
 - [ ] Relevant automated checks pass.
 - [ ] New or changed behavior has a durable regression test where appropriate.
+- [ ] Compressed bundle limits pass when distributable code or styles change.
 - [ ] Package boundaries pass when entry points, bundles, or dependencies change.
 - [ ] Public documentation is updated when behavior or configuration changes.
 

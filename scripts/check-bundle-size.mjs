@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises';
+import { appendFile, readFile } from 'node:fs/promises';
 import { gzipSync } from 'node:zlib';
 
 // These gzip measurements come from the v0.6.1 build at commit a945eb4.
@@ -25,6 +25,7 @@ const distributables = [
 ];
 
 const failures = [];
+const results = [];
 console.log('Compressed distributable sizes (bytes):');
 
 for (const distributable of distributables) {
@@ -41,6 +42,13 @@ for (const distributable of distributables) {
   const currentBytes = gzipSync(source, { level: 9 }).byteLength;
   const maximumBytes = distributable.baselineBytes + distributable.allowanceBytes;
   const remainingBytes = maximumBytes - currentBytes;
+  results.push({
+    baselineBytes: distributable.baselineBytes,
+    currentBytes,
+    maximumBytes,
+    path: distributable.path,
+    remainingBytes,
+  });
   console.log(
     [
       distributable.path,
@@ -56,6 +64,22 @@ for (const distributable of distributables) {
       `${distributable.path} exceeds its maximum by ${String(-remainingBytes)} bytes.`,
     );
   }
+}
+
+const summaryPath = process.env['GITHUB_STEP_SUMMARY'];
+if (summaryPath !== undefined && summaryPath.length > 0) {
+  const summary = [
+    '## Compressed bundle sizes',
+    '',
+    '| Artifact | Baseline | Current | Maximum | Remaining | Status |',
+    '| --- | ---: | ---: | ---: | ---: | --- |',
+    ...results.map(
+      (result) =>
+        `| \`${result.path}\` | ${String(result.baselineBytes)} | ${String(result.currentBytes)} | ${String(result.maximumBytes)} | ${String(result.remainingBytes)} | ${result.remainingBytes < 0 ? 'Exceeded' : 'Within limit'} |`,
+    ),
+    '',
+  ].join('\n');
+  await appendFile(summaryPath, summary, 'utf8');
 }
 
 if (failures.length > 0) {
