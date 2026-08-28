@@ -61,7 +61,10 @@ interface EditorHost<TRow extends object, TTarget> {
   readonly eventTarget: EventTarget;
   readonly ownershipKey: object;
 
-  read(target: TTarget): Readonly<TRow>;
+  read(
+    target: TTarget,
+    context?: Readonly<HostReadContext>,
+  ): MaybePromise<Readonly<TRow>>;
   applyCreate(
     row: TRow,
     context: Readonly<HostApplyContext>,
@@ -92,6 +95,8 @@ Optional contracts add selection (`HostSelectionCapability`), refresh
 one operation. Inline presentation is supplied through a specialized Host
 integration rather than required by every Host.
 
+`HostReadContext` contains the cancellation signal for record capture or target
+revalidation. Synchronous one-argument implementations remain compatible.
 `HostApplyContext` contains an owned `signal`, the `create`, `edit`, `batchEdit`,
 or `remove` operation, and the initiating `dialog`, `inline`, or `api` mode.
 
@@ -153,11 +158,12 @@ const host = new StandaloneHost<TRow, TTarget>({
 const editor = new AltEditorLite<TRow, TFormValues, TTarget>(host, options);
 ```
 
-`read` is required. The apply callbacks are required only for operations the
-application invokes, and each callback may return a value or a promise-like
-value. `refresh` defines consumer-owned refresh work; without it, `refresh()`
-completes without changing records. `eventTarget` defaults to a new private
-`EventTarget`, while `ownershipKey` defaults to the Host instance.
+`read` is required and may return a record or a promise-like record. It receives
+an optional `HostReadContext`. The apply callbacks are required only for
+operations the application invokes, and each callback may return a value or a
+promise-like value. `refresh` defines consumer-owned refresh work; without it,
+`refresh()` completes without changing records. `eventTarget` defaults to a new
+private `EventTarget`, while `ownershipKey` defaults to the Host instance.
 
 `applyUpdates` enables multi-record editing and receives ordered `{ target, row }`
 replacements after persistence succeeds. Without it, Standalone construction and
@@ -248,9 +254,17 @@ Standalone dispatches from its configured or generated `EventTarget`.
 
 `FieldConfig<TFormValues>` is the union of all supported field configurations.
 Shared properties include `name`, `defaultValue`, `editable`, `visible`,
-`disabled`, `inlineEdit`, `className`, `attributes`, `onChange`, `validate`, and
-`unique`. Visible controls also support `label`, `description`, `required`, and
-`readOnly`.
+`disabled`, `inlineEdit`, `batchEditable`, `className`, `attributes`, `onChange`,
+`validate`, and `unique`. Visible controls also support `label`, `description`,
+`required`, and `readOnly`.
+
+`defineCustomField<TValue, TOptions>()` returns a `CustomFieldDefinition` with a
+typed `field<TFormValues>()` builder. Public custom-field contracts include
+`CustomFieldAdapter`, `CustomFieldCapabilities`, `CustomFieldConfig`,
+`CustomFieldConfigOptions`, `CustomFieldControllerContext`,
+`CustomFieldDefinitionOptions`, and `FieldValueComparator`. Custom controls are
+available in Dialog forms; multi-record and Inline participation require the
+corresponding explicit capability. See [Fields](fields.md#custom-fields).
 
 `FieldController<TValue>` provides `element`, asynchronous `getValue()`,
 `setValue`, visibility, disabled, read-only, and required state methods, focus,

@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Added typed consumer-defined fields with editor-owned form structure,
+  lifecycle context, validation, cleanup, and explicit multi-record and Inline
+  capabilities.
+- Added field-specific equality for structured custom values and
+  `batchEditable` control for multi-record forms.
+- Added asynchronous Host reads with cancellation context while preserving
+  synchronous Host compatibility.
+
+### Changed
+
+- Revalidated dialog targets through asynchronous reads before persistence and
+  ignored late results after cancellation or destruction.
+- Documented the current-page editing boundary for DataTables server-side
+  processing.
+
 ## [0.6.1] - 2026-08-25
 
 ### Changed

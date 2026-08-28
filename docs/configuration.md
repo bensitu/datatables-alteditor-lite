@@ -242,6 +242,25 @@ table state are synchronized through public APIs. ColumnControl SearchList
 options are refreshed and Responsive recalculates its layout after the editor
 presentation reaches a stable state.
 
+## Migrating from v0.6.x
+
+v0.7.0 adds custom fields and asynchronous Host reads without changing existing
+field configuration or synchronous Host behavior.
+
+Existing v0.6.1 consumers do not require mandatory source changes.
+
+- `EditorHost.read` and `StandaloneHostOptions.read` may now return a
+  promise-like record and receive an optional `HostReadContext`. Existing
+  synchronous one-argument callbacks remain assignable and behave as before.
+- `FieldConfig<TFormValues>` now includes typed configurations created by
+  `defineCustomField()`. Application code with an exhaustive field-type switch
+  must handle `type: 'custom'`.
+- Custom fields are Dialog-capable by default and must explicitly opt into
+  multi-record or Inline Edit. Existing built-in field defaults are unchanged.
+- `batchEditable: false` can omit any otherwise eligible field from
+  multi-record editing. File, unique, hidden, and non-editable restrictions are
+  unchanged.
+
 ## Migrating from v0.5.x
 
 v0.6.0 standardized the DataTables facade and Browser Global names. The previous

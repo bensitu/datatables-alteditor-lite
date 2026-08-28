@@ -123,10 +123,10 @@ For self-hosting, copy the required `dist/` files and use equivalent local URLs:
 <script src="/vendor/alt-editor-lite.min.js"></script>
 ```
 
-`Editor`, `AltEditorLite`, `DataTablesHost`, `StandaloneHost`, the language
-loader, and the language registry are available through
-`globalThis.AltEditorLite`. This main bundle requires DataTables to
-load first and registers `table.altEditorLite()` as a retrieval-only method.
+`Editor`, `AltEditorLite`, `DataTablesHost`, `StandaloneHost`,
+`defineCustomField`, the language loader, and the language registry are available
+through `globalThis.AltEditorLite`. This main bundle requires DataTables to load
+first and registers `table.altEditorLite()` as a retrieval-only method.
 `AltEditorLite.Editor` is the DataTables constructor, while
 `AltEditorLite.AltEditorLite` is the neutral Host-based constructor.
 

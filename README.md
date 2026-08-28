@@ -27,13 +27,16 @@ native browser controls. It has no jQuery or UI-framework runtime dependency.
   explicit actions, validation, and optional KeyTable activation
 - Dialog and Inline Edit can be enabled together on one editor
 - Multi-record Dialog Edit with common-value overrides and individual-value restore
+- Typed consumer-defined fields with shared Dialog, multi-record, and Inline
+  behavior
 - Declarative dependent field state and shared cross-field validation
 - Create, Edit, Remove, and Ajax-aware or local Refresh operations
-- Non-optimistic asynchronous persistence with `AbortSignal`
+- Non-optimistic asynchronous persistence and asynchronous Host reads with
+  `AbortSignal`
 - Stable Edit and Remove target snapshots that fail closed when row identity
   changes
 - Text, email, password, number, date, time, datetime-local, textarea, checkbox,
-  radio, select, local or remote SearchSelect, file, and hidden fields
+  radio, select, local or remote SearchSelect, file, hidden, and custom fields
 - Typed option identity, safe nested field paths, custom validation, and optional
   local uniqueness checks
 - Optional Buttons, Select, KeyTable, and ColReorder integration, plus

@@ -48,6 +48,7 @@ Supported field types are:
 | `search-select`                                                           | exact configured `string \| number`, manual string when enabled, or `undefined` |
 | `file`                                                                    | `File \| null`, data URL or `null`, or the configured multiple-value array      |
 | `hidden`                                                                  | `string`                                                                        |
+| `custom`                                                                  | The value type declared by its `defineCustomField<TValue>()` definition         |
 
 Disabled fields are omitted from collection. Fields configured with `readOnly:
 true` remain collectible.
@@ -118,6 +119,97 @@ clear it. SearchSelect updates its local options or remote seed/cache with the
 same exact value identity. Changing options does not replace a remote source.
 See [Dynamic forms](forms.md) for declarative option and state changes.
 
+## Custom fields
+
+`defineCustomField<TValue, TOptions>()` creates a typed, consumer-owned control
+definition. The returned `field<TFormValues>()` builder checks the field path,
+default value, options, change callback, and validation callback against the
+declared value type.
+
+```ts
+import { defineCustomField } from 'datatables-alteditor-lite';
+
+interface UserValues {
+  readonly tags: readonly string[];
+}
+
+const tags = defineCustomField<readonly string[], { readonly maximum: number }>({
+  capabilities: { batch: true, inline: true },
+  createController(options, context) {
+    const control = document.createElement('input');
+    const readTags = () =>
+      control.value
+        .split(',')
+        .map((value) => value.trim())
+        .filter(Boolean);
+    const handleInput = () => context.onUserChange();
+    control.addEventListener('input', handleInput);
+
+    return {
+      control,
+      destroy: () => control.removeEventListener('input', handleInput),
+      focus: () => control.focus(),
+      getValue: readTags,
+      setDisabled: (disabled) => {
+        control.disabled = disabled;
+      },
+      setReadOnly: (readOnly) => {
+        control.readOnly = readOnly;
+      },
+      setRequired: (required) => {
+        control.required = required;
+      },
+      setValue: (value) => {
+        control.value = value.join(', ');
+      },
+      validate: () =>
+        readTags().length <= options.maximum
+          ? { valid: true }
+          : { message: `Choose at most ${options.maximum} tags.`, valid: false },
+    };
+  },
+  isEqual: (left, right) =>
+    left.length === right.length && left.every((value, index) => value === right[index]),
+});
+
+const fields = [
+  tags.field<UserValues>({
+    batchEditable: true,
+    inlineEdit: true,
+    label: 'Tags',
+    name: 'tags',
+    options: { maximum: 5 },
+  }),
+];
+```
+
+The editor owns the surrounding label, description, error region, layout,
+visibility, and ARIA references. The definition owns the control subtree and
+must implement value access, state setters, focus, and idempotent cleanup.
+Configure widget-specific attributes when creating the control; the general
+field `attributes` property is intentionally unavailable for custom fields.
+
+`CustomFieldControllerContext` supplies the resolved language, a lifecycle
+`AbortSignal`, and `onUserChange()`. Call `onUserChange()` for logical user
+changes so dependencies and configured change callbacks receive current values.
+The optional adapter validation runs before the field's configured `validate`
+callback. Cross-field validation and dependency handling then use the same
+workflow as built-in fields.
+
+Custom fields participate in Dialog forms by default. Multi-record and Inline
+Edit support is disabled unless the definition explicitly declares
+`capabilities.batch` or `capabilities.inline`. `batchEditable: false` disables
+multi-record participation for any field and takes precedence over a custom
+capability. File and unique fields retain their existing multi-record
+restrictions.
+
+Built-in fields compare values with `Object.is`. A custom definition can supply
+`isEqual` for structured values; that comparator determines common
+multi-record values and whether an Inline candidate is unchanged. Keep its
+semantics stable and aligned with the values returned by the adapter. See the
+[consumer tags example](../examples/custom-fields/README.md) for a complete
+configuration.
+
 ## Multi-record field behavior
 
 Multi-record Dialog Edit distinguishes a common baseline, a differing baseline,
@@ -130,6 +222,8 @@ several records would violate the field contract. File fields remain visible
 with an explanation and cannot be overridden. Programmatic field updates and
 dependency value patches cannot bypass either restriction. Hidden fields do not
 show common or differing state and retain each record's original value.
+Fields configured with `batchEditable: false` are omitted from the multi-record
+form and retain each record's original value.
 
 ## Local uniqueness
 

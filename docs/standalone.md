@@ -61,9 +61,30 @@ const host = new StandaloneHost<UserRecord, string>({
 });
 ```
 
-`read(target)` returns the current canonical record or throws when the target is
-unavailable. AltEditorLite calls it while capturing and revalidating an Edit or
-Remove target.
+`read(target, context?)` returns the current canonical record synchronously or as
+a promise, and throws or rejects when the target is unavailable. Existing
+one-argument synchronous callbacks remain valid. AltEditorLite calls the method
+while capturing and revalidating an Edit or Remove target.
+
+```ts
+const host = new StandaloneHost<UserRecord, string>({
+  read: async (target, context) => {
+    const record = await loadUser(target, context?.signal);
+    if (record === undefined) {
+      throw new Error('Record unavailable.');
+    }
+    return record;
+  },
+  // Apply callbacks are omitted here.
+});
+```
+
+The optional `HostReadContext` contains the signal owned by the current editor
+work. Forward it to application requests when possible. Cancelling an opening
+request or destroying the editor stops the editor from waiting, and a late
+result cannot mount or update a later dialog even when the data source does not
+observe the signal. A read failure is reported through the normal error hook and
+does not leave a partial form mounted.
 
 `applyCreate`, `applyUpdate`, and `applyRemove` receive canonical operation
 results after persistence succeeds. Each callback may return synchronously or

@@ -392,6 +392,15 @@ API. Their target shape uses an optional `key` and `fieldNames`. Applications
 that require DataTables-native work keep the `DataTablesHost` in scope and call
 `unwrap()` explicitly.
 
+With DataTables server-side processing, editing is limited to rows materialized
+on the current page. Configure a stable `rowId`; the editor captures the current
+row identity and revalidates it before persistence and application. A server
+draw that replaces the captured row causes the pending edit to fail as an
+unavailable target, so stale client values are not applied to the replacement.
+Successful edits retain the configured refresh ownership. Server-owned data
+normally uses `editing.inline.updateMode: 'refresh'` for Inline Edit and an
+operation callback that persists before the refresh.
+
 ## DataTables extension boundaries
 
 - Buttons and Select are supported through their existing optional integrations.
