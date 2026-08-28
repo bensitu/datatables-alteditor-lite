@@ -13,6 +13,21 @@ of interrupting alerts when several constraints fail together. The modal exposes
 temporary fallback focusability after focus leaves. Remove always has a
 destructive confirmation step.
 
+## Custom controls
+
+For a simple custom control, return the native control as `control`. The editor
+assigns its label, description, and error relations to that element. For a
+composite widget, return the widget root as `control` and its focusable semantic
+element as `ariaTarget`. The target must be the root or one of its descendants.
+The editor assigns the target ID, `aria-labelledby`, `aria-describedby`, and
+`aria-invalid`; the adapter must not remove those relations.
+
+The adapter owns the widget's disabled, read-only, and required implementation
+through `setDisabled`, `setReadOnly`, and `setRequired`. Apply the appropriate
+native property or ARIA state to the semantic element, and ensure `focus()` moves
+focus to it. Required custom values also need adapter validation because the
+editor cannot infer an empty representation for an arbitrary value type.
+
 ## SearchSelect keyboard behavior
 
 | Key                   | Behavior                                                            |

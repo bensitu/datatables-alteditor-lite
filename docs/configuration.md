@@ -244,10 +244,10 @@ presentation reaches a stable state.
 
 ## Migrating from v0.6.x
 
-v0.7.0 adds custom fields and asynchronous Host reads without changing existing
-field configuration or synchronous Host behavior.
-
-Existing v0.6.1 consumers do not require mandatory source changes.
+v0.7.0 adds custom fields and asynchronous Host reads while preserving existing
+field configuration and synchronous Host behavior. Most v0.6.1 configurations
+need no migration. TypeScript code that exhaustively handles every field type
+must add the new `custom` case.
 
 - `EditorHost.read` and `StandaloneHostOptions.read` may now return a
   promise-like record and receive an optional `HostReadContext`. Existing

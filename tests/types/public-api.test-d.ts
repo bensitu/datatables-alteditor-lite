@@ -4,6 +4,7 @@ import {
   type AltEditorLite as TableEditor,
   DataTablesHost,
   defineCustomField as defineDataTablesCustomField,
+  type CustomFieldPresentation as DataTablesCustomFieldPresentation,
   type DataTablesRecordTarget,
 } from '../../src/datatables.js';
 import {
@@ -67,6 +68,7 @@ import zhCn from '../../src/locales/zh-cn.json' with { type: 'json' };
 import {
   defineCustomField as defineStandaloneCustomField,
   StandaloneHost,
+  type CustomFieldPresentation as StandaloneCustomFieldPresentation,
   type StandaloneHostOptions,
 } from '../../src/standalone.js';
 
@@ -258,6 +260,7 @@ const tagsDefinition = defineCustomField<readonly string[], TagOptions>({
     expectType<Readonly<CustomFieldControllerContext>>(context);
     expectType<string>(context.language.locale);
     expectType<CustomFieldPresentation>(context.presentation);
+    expectType<'dialog' | 'batch' | 'inline'>(context.presentation);
     expectType<AbortSignal>(context.signal);
     const adapter: CustomFieldAdapter<readonly string[]> = {
       control: document.createElement('div'),
@@ -290,6 +293,8 @@ expectAssignable<FieldConfig<FormValues>>(tagsField);
 expectType<readonly string[]>({} as FieldValue<typeof tagsField>);
 expectType<typeof defineCustomField>(defineDataTablesCustomField);
 expectType<typeof defineCustomField>(defineStandaloneCustomField);
+expectType<CustomFieldPresentation>({} as DataTablesCustomFieldPresentation);
+expectType<CustomFieldPresentation>({} as StandaloneCustomFieldPresentation);
 expectNotAssignable<CustomFieldConfigOptions<FormValues, readonly string[], TagOptions>>({
   label: 'Tags',
   name: 'tags',

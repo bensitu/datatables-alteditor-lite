@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.7.0] - 2026-08-29
 
 ### Added
 
@@ -16,15 +16,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `batchEditable` control for multi-record forms.
 - Added asynchronous Host reads with cancellation context while preserving
   synchronous Host compatibility.
+- Added custom-field presentation context and an explicit accessibility target
+  for composite widgets.
 
 ### Changed
 
 - Revalidated dialog targets through asynchronous reads before persistence and
   ignored late results after cancellation or destruction.
+- Passed operation cancellation to custom-field validation and applied custom
+  equality to local uniqueness checks.
 - Documented the current-page editing boundary for DataTables server-side
   processing.
 - Added zero-dependency compressed distribution size checking to local and
   continuous integration verification.
+
+### Fixed
+
+- Rebased a retained Edit form from the latest canonical Host record after a
+  successful update.
+- Released returned custom-field adapters when controller initialization fails
+  and kept widget state semantics under adapter ownership.
 
 ## [0.6.1] - 2026-08-25
 

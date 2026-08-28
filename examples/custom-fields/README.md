@@ -31,6 +31,7 @@ const tagsDefinition = defineCustomField<readonly string[], TagsOptions>({
   capabilities: { batch: true },
   createController(options, context) {
     const control = document.createElement('input');
+    let isRequired = false;
     control.type = 'text';
     control.placeholder = 'news, featured';
 
@@ -60,18 +61,25 @@ const tagsDefinition = defineCustomField<readonly string[], TagsOptions>({
         control.readOnly = readOnly;
       },
       setRequired: (required) => {
+        isRequired = required;
         control.required = required;
       },
       setValue: (value) => {
         control.value = value.join(', ');
       },
-      validate: () =>
-        readTags().length <= options.maximum
+      validate: (signal) => {
+        signal.throwIfAborted();
+        const value = readTags();
+        if (isRequired && value.length === 0) {
+          return { message: context.language.validation.required, valid: false };
+        }
+        return value.length <= options.maximum
           ? { valid: true }
           : {
               message: `Choose no more than ${String(options.maximum)} tags.`,
               valid: false,
-            },
+            };
+      },
     };
   },
   isEqual: (left, right) =>
@@ -109,13 +117,14 @@ const editor = new AltEditorLite<Article, ArticleValues, string>(host, {
       label: 'Tags',
       name: 'tags',
       options: { maximum: 5 },
+      required: true,
     }),
   ],
 });
 ```
 
-Set `capabilities.inline: true` and `inlineEdit: true` when the same adapter is
-appropriate for a DataTables cell. Forward `context.signal` to asynchronous
-widget work and stop publishing changes after it is aborted. If the widget uses
-additional listeners, popups, or third-party instances, release all of them in
-`destroy()`.
+`context.presentation` identifies `dialog`, `batch`, or `inline`. Set
+`capabilities.inline: true` and `inlineEdit: true` when the same adapter is
+appropriate for a DataTables cell. Forward `context.signal` and the signal passed
+to `validate()` to asynchronous widget work. If the widget uses additional
+listeners, popups, or third-party instances, release all of them in `destroy()`.

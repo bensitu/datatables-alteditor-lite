@@ -161,14 +161,17 @@ describe('custom field controller', () => {
     expect(controller.element.isConnected).toBe(false);
   });
 
-  it('settles adapter validation promptly when the operation is cancelled', async () => {
+  it('settles adapter validation promptly when its owning work is cancelled', async () => {
     let validationSignal: AbortSignal | undefined;
+    let resolveValidation: ((result: { readonly valid: boolean }) => void) | undefined;
+    const destroy = vi.fn();
+    const lifecycleAbortController = new AbortController();
     const definition = defineCustomField<readonly string[]>({
       createController: () => {
         const control = document.createElement('input');
         return {
           control,
-          destroy: () => undefined,
+          destroy,
           focus: () => undefined,
           getValue: () => [],
           setDisabled: () => undefined,
@@ -177,7 +180,9 @@ describe('custom field controller', () => {
           setValue: () => undefined,
           validate: (signal) => {
             validationSignal = signal;
-            return new Promise(() => undefined);
+            return new Promise((resolve) => {
+              resolveValidation = resolve;
+            });
           },
         };
       },
@@ -187,15 +192,21 @@ describe('custom field controller', () => {
       'cancelled-custom-tags',
       ENGLISH_LANGUAGE,
       () => undefined,
+      undefined,
+      lifecycleAbortController.signal,
     );
-    const abortController = new AbortController();
-    const validation = controller.validateCustom({}, abortController.signal);
+    document.body.append(controller.element);
+    const validation = controller.validateCustom({}, lifecycleAbortController.signal);
 
-    abortController.abort();
+    lifecycleAbortController.abort();
+    controller.destroy();
 
     await expect(validation).rejects.toMatchObject({ name: 'AbortError' });
-    expect(validationSignal).toBe(abortController.signal);
-    controller.destroy();
+    resolveValidation?.({ valid: false });
+    await Promise.resolve();
+    expect(validationSignal).toBe(lifecycleAbortController.signal);
+    expect(destroy).toHaveBeenCalledOnce();
+    expect(controller.element.isConnected).toBe(false);
   });
 
   it('destroys a returned adapter when its runtime contract is invalid', () => {

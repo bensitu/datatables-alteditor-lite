@@ -96,7 +96,9 @@ one operation. Inline presentation is supplied through a specialized Host
 integration rather than required by every Host.
 
 `HostReadContext` contains the cancellation signal for record capture or target
-revalidation. Synchronous one-argument implementations remain compatible.
+revalidation. Synchronous one-argument implementations remain compatible. Read
+implementations should be side-effect free because a target can be checked more
+than once during one operation.
 `HostApplyContext` contains an owned `signal`, the `create`, `edit`, `batchEdit`,
 or `remove` operation, and the initiating `dialog`, `inline`, or `api` mode.
 
@@ -262,9 +264,10 @@ Shared properties include `name`, `defaultValue`, `editable`, `visible`,
 typed `field<TFormValues>()` builder. Public custom-field contracts include
 `CustomFieldAdapter`, `CustomFieldCapabilities`, `CustomFieldConfig`,
 `CustomFieldConfigOptions`, `CustomFieldControllerContext`,
-`CustomFieldDefinitionOptions`, and `FieldValueComparator`. Custom controls are
-available in Dialog forms; multi-record and Inline participation require the
-corresponding explicit capability. See [Fields](fields.md#custom-fields).
+`CustomFieldDefinitionOptions`, `CustomFieldPresentation`, and
+`FieldValueComparator`. Custom controls are available in Dialog forms;
+multi-record and Inline participation require the corresponding explicit
+capability. See [Fields](fields.md#custom-fields).
 
 `FieldController<TValue>` provides `element`, asynchronous `getValue()`,
 `setValue`, visibility, disabled, read-only, and required state methods, focus,

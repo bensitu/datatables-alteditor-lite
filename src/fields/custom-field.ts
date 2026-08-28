@@ -45,6 +45,7 @@ export interface CustomFieldAdapter<TValue> {
   setReadOnly(readOnly: boolean): void;
   setRequired(required: boolean): void;
   focus(): void;
+  /** Validates widget semantics, including required emptiness when applicable. */
   validate?(signal: AbortSignal): MaybePromise<FieldValidationResult>;
   destroy(): void;
 }

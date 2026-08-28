@@ -137,6 +137,7 @@ const tags = defineCustomField<readonly string[], { readonly maximum: number }>(
   capabilities: { batch: true, inline: true },
   createController(options, context) {
     const control = document.createElement('input');
+    let isRequired = false;
     const readTags = () =>
       control.value
         .split(',')
@@ -157,15 +158,22 @@ const tags = defineCustomField<readonly string[], { readonly maximum: number }>(
         control.readOnly = readOnly;
       },
       setRequired: (required) => {
+        isRequired = required;
         control.required = required;
       },
       setValue: (value) => {
         control.value = value.join(', ');
       },
-      validate: () =>
-        readTags().length <= options.maximum
+      validate: (signal) => {
+        signal.throwIfAborted();
+        const value = readTags();
+        if (isRequired && value.length === 0) {
+          return { message: context.language.validation.required, valid: false };
+        }
+        return value.length <= options.maximum
           ? { valid: true }
-          : { message: `Choose at most ${options.maximum} tags.`, valid: false },
+          : { message: `Choose at most ${options.maximum} tags.`, valid: false };
+      },
     };
   },
   isEqual: (left, right) =>
@@ -179,22 +187,33 @@ const fields = [
     label: 'Tags',
     name: 'tags',
     options: { maximum: 5 },
+    required: true,
   }),
 ];
 ```
 
 The editor owns the surrounding label, description, error region, layout,
-visibility, and ARIA references. The definition owns the control subtree and
-must implement value access, state setters, focus, and idempotent cleanup.
+visibility, and the `aria-labelledby`, `aria-describedby`, and `aria-invalid`
+relations. The definition owns the control subtree and must implement value
+access, state setters, focus, and idempotent cleanup. For a composite widget,
+return its focusable control as `ariaTarget`; it must be the widget root or a
+descendant. The widget root remains the mounted `control`.
 Configure widget-specific attributes when creating the control; the general
 field `attributes` property is intentionally unavailable for custom fields.
 
-`CustomFieldControllerContext` supplies the resolved language, a lifecycle
-`AbortSignal`, and `onUserChange()`. Call `onUserChange()` for logical user
-changes so dependencies and configured change callbacks receive current values.
-The optional adapter validation runs before the field's configured `validate`
-callback. Cross-field validation and dependency handling then use the same
-workflow as built-in fields.
+`CustomFieldControllerContext` supplies the resolved language, the owning
+`presentation` (`dialog`, `batch`, or `inline`), a lifecycle `AbortSignal`, and
+`onUserChange()`. Call `onUserChange()` for logical user changes so dependencies
+and configured change callbacks receive current values.
+
+The adapter state setters own the widget's actual disabled, read-only, and
+required properties or ARIA states. `setRequired(true)` communicates state; it
+does not define what an empty custom value means. When a custom field is
+required, its adapter must implement `validate(signal)` and reject the
+widget-specific empty representation. The operation signal is supplied to cancel
+asynchronous widget validation. Adapter validation runs before the field's
+configured `validate` callback, followed by local uniqueness and form-level
+validation. A failed earlier check prevents later checks from running.
 
 Custom fields participate in Dialog forms by default. Multi-record and Inline
 Edit support is disabled unless the definition explicitly declares
@@ -205,10 +224,10 @@ restrictions.
 
 Built-in fields compare values with `Object.is`. A custom definition can supply
 `isEqual` for structured values; that comparator determines common
-multi-record values and whether an Inline candidate is unchanged. Keep its
-semantics stable and aligned with the values returned by the adapter. See the
-[consumer tags example](../examples/custom-fields/README.md) for a complete
-configuration.
+multi-record values, whether an Inline candidate is unchanged, and local
+uniqueness. Keep its semantics stable and aligned with the values returned by
+the adapter. See the [consumer tags example](../examples/custom-fields/README.md)
+for a complete configuration.
 
 ## Multi-record field behavior
 
@@ -239,9 +258,11 @@ currently exposed by the Host:
 }
 ```
 
-Edit excludes its captured source row, so keeping the current value is valid. The
-comparison preserves JavaScript value identity semantics: numeric `1` and string
-`'1'` are different. `DataTablesHost` enumerates currently loaded rows;
+Edit excludes its captured source row, so keeping the current value is valid.
+Built-in fields preserve JavaScript value identity semantics: numeric `1` and
+string `'1'` are different. Custom fields use their definition's `isEqual`
+comparator when present, allowing separately allocated structured values to be
+treated as duplicates. `DataTablesHost` enumerates currently loaded rows;
 `StandaloneHost` uses its configured `records` provider. This is a fast local
 usability check, not a persistence guarantee. Server-side, paged, filtered,
 unloaded, or concurrently changing data can contain values the browser cannot

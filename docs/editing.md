@@ -392,14 +392,19 @@ API. Their target shape uses an optional `key` and `fieldNames`. Applications
 that require DataTables-native work keep the `DataTablesHost` in scope and call
 `unwrap()` explicitly.
 
-With DataTables server-side processing, editing is limited to rows materialized
-on the current page. Configure a stable `rowId`; the editor captures the current
-row identity and revalidates it before persistence and application. A server
-draw that replaces the captured row causes the pending edit to fail as an
-unavailable target, so stale client values are not applied to the replacement.
-Successful edits retain the configured refresh ownership. Server-owned data
-normally uses `editing.inline.updateMode: 'refresh'` for Inline Edit and an
-operation callback that persists before the refresh.
+With DataTables server-side processing, Dialog Edit, Inline Edit, multi-record
+Edit, and Remove are limited to rows materialized on the current page. Configure
+a stable `rowId`; the editor captures each current row identity and revalidates
+it before persistence and application. A server draw that replaces a captured
+row causes the pending operation to fail as an unavailable target, so stale
+client values are not applied to the replacement. Unloaded pages are not a
+client-side record source and cannot be targeted by these operations.
+
+Persistence callbacks must update the server-owned source before the Host draw
+or refresh retrieves it. Server-owned data normally uses
+`editing.inline.updateMode: 'refresh'` for Inline Edit and an operation callback
+that persists before the refresh. The explicit `refresh()` method reloads the
+current server-side page through the normal DataTables Ajax path.
 
 ## DataTables extension boundaries
 

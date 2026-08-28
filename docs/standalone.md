@@ -64,7 +64,9 @@ const host = new StandaloneHost<UserRecord, string>({
 `read(target, context?)` returns the current canonical record synchronously or as
 a promise, and throws or rejects when the target is unavailable. Existing
 one-argument synchronous callbacks remain valid. AltEditorLite calls the method
-while capturing and revalidating an Edit or Remove target.
+while capturing and revalidating single Edit, multi-record Edit, and Remove
+targets. A successful Edit with `editing.dialog.closeOnSuccess: false` reads the
+canonical record again and updates the retained form.
 
 ```ts
 const host = new StandaloneHost<UserRecord, string>({
@@ -84,7 +86,9 @@ work. Forward it to application requests when possible. Cancelling an opening
 request or destroying the editor stops the editor from waiting, and a late
 result cannot mount or update a later dialog even when the data source does not
 observe the signal. A read failure is reported through the normal error hook and
-does not leave a partial form mounted.
+does not leave a partial form mounted. The editor may read a target more than
+once as identity is checked around callbacks and persistence, so implementations
+should be side-effect free and return the latest canonical record on every call.
 
 `applyCreate`, `applyUpdate`, and `applyRemove` receive canonical operation
 results after persistence succeeds. Each callback may return synchronously or
