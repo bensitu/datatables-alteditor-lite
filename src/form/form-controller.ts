@@ -294,54 +294,59 @@ export class EditorFormController<
     this.activeFormValidationAbortController?.abort();
     const validationAbortController = new AbortController();
     this.activeFormValidationAbortController = validationAbortController;
-    const signal = mergeAbortSignals([
+    const mergedSignal = mergeAbortSignals([
       validationAbortController.signal,
       this.lifecycleAbortController.signal,
     ]);
+    const { signal } = mergedSignal;
     const requestSequence = this.validationSequence.next();
-    await this.waitForCurrentFieldWork();
-    if (!this.validationSequence.isCurrent(requestSequence) || signal.aborted) {
-      return { fieldErrors: {}, valid: false };
-    }
-    this.clearErrors();
-
-    const dependencyErrors =
-      this.dependencyController?.errors() ?? new Map<string, AltEditorLiteError>();
-    if (dependencyErrors.size > 0) {
-      const fieldErrors: Record<string, string> = {};
-      for (const [sourcePath, error] of dependencyErrors) {
-        fieldErrors[sourcePath] = error.message;
-        this.controllerByName.get(sourcePath)?.showError(error.message);
-      }
-      this.renderSubmissionError();
-      return { fieldErrors, valid: false };
-    }
-
-    let validationResult: EditorFormValidationResult;
     try {
-      validationResult = await validateEditorForm(
-        this.controllers,
-        async () => await collectFormValues(this.controllers, signal),
-        signal,
-        this.validateUnique,
-        this.invalidMessage,
-      );
-    } catch (error: unknown) {
+      await this.waitForCurrentFieldWork();
+      if (!this.validationSequence.isCurrent(requestSequence) || signal.aborted) {
+        return { fieldErrors: {}, valid: false };
+      }
+      this.clearErrors();
+
+      const dependencyErrors =
+        this.dependencyController?.errors() ?? new Map<string, AltEditorLiteError>();
+      if (dependencyErrors.size > 0) {
+        const fieldErrors: Record<string, string> = {};
+        for (const [sourcePath, error] of dependencyErrors) {
+          fieldErrors[sourcePath] = error.message;
+          this.controllerByName.get(sourcePath)?.showError(error.message);
+        }
+        this.renderSubmissionError();
+        return { fieldErrors, valid: false };
+      }
+
+      let validationResult: EditorFormValidationResult;
+      try {
+        validationResult = await validateEditorForm(
+          this.controllers,
+          async () => await collectFormValues(this.controllers, signal),
+          signal,
+          this.validateUnique,
+          this.invalidMessage,
+        );
+      } catch (error: unknown) {
+        if (!this.validationSequence.isCurrent(requestSequence)) {
+          return { fieldErrors: {}, valid: false };
+        }
+        throw error;
+      }
+
       if (!this.validationSequence.isCurrent(requestSequence)) {
         return { fieldErrors: {}, valid: false };
       }
-      throw error;
-    }
 
-    if (!this.validationSequence.isCurrent(requestSequence)) {
-      return { fieldErrors: {}, valid: false };
-    }
+      for (const [fieldName, message] of Object.entries(validationResult.fieldErrors)) {
+        this.controllerByName.get(fieldName)?.showError(message);
+      }
 
-    for (const [fieldName, message] of Object.entries(validationResult.fieldErrors)) {
-      this.controllerByName.get(fieldName)?.showError(message);
+      return validationResult;
+    } finally {
+      mergedSignal.dispose();
     }
-
-    return validationResult;
   }
 
   /** Runs one operation-owned validation and returns its exact collected values. */
@@ -354,82 +359,87 @@ export class EditorFormController<
     this.activeFormValidationAbortController?.abort();
     const validationAbortController = new AbortController();
     this.activeFormValidationAbortController = validationAbortController;
-    const signal = mergeAbortSignals([
+    const mergedSignal = mergeAbortSignals([
       validationAbortController.signal,
       this.lifecycleAbortController.signal,
       operationSignal,
     ]);
+    const { signal } = mergedSignal;
     const requestSequence = this.validationSequence.next();
 
-    await this.waitForCurrentFieldWork();
-    signal.throwIfAborted();
-    if (!this.validationSequence.isCurrent(requestSequence)) {
-      throw new DOMException('The validation request was replaced.', 'AbortError');
-    }
-    this.clearErrors();
-
-    const dependencyErrors =
-      this.dependencyController?.errors() ?? new Map<string, AltEditorLiteError>();
-    if (dependencyErrors.size > 0) {
-      const fieldErrors: Record<string, string> = {};
-      for (const [sourcePath, error] of dependencyErrors) {
-        fieldErrors[sourcePath] = error.message;
-        this.controllerByName.get(sourcePath)?.showError(error.message);
+    try {
+      await this.waitForCurrentFieldWork();
+      signal.throwIfAborted();
+      if (!this.validationSequence.isCurrent(requestSequence)) {
+        throw new DOMException('The validation request was replaced.', 'AbortError');
       }
-      this.renderSubmissionError();
-      return {
-        error: new AltEditorLiteError({
-          code: 'VALIDATION',
-          fieldErrors,
-          message: this.invalidMessage,
-          retryable: true,
-        }),
-        valid: false,
-      };
-    }
+      this.clearErrors();
 
-    let collectedForm: CollectedFormState<TFormValues> | undefined;
-    const result: ValidationExecutionResult<TFormValues> =
-      await new FormValidationRunner<TFormValues>({
-        allowedFieldNames: this.configuredFieldNames,
-        collectValues: async (currentSignal) => {
-          collectedForm = await collectFormState(this.controllers, currentSignal);
-          return collectedForm.values;
-        },
-        controllers: this.controllers,
-        invalidMessage: this.invalidMessage,
-        ...(this.validateUnique === undefined
-          ? {}
-          : { validateUnique: this.validateUnique }),
-        ...(validateForm === undefined
-          ? {}
-          : {
-              validateForm: async (values, currentSignal) =>
-                await Promise.resolve(
-                  validateForm(
-                    values,
-                    Object.freeze({ ...context, signal: currentSignal }),
+      const dependencyErrors =
+        this.dependencyController?.errors() ?? new Map<string, AltEditorLiteError>();
+      if (dependencyErrors.size > 0) {
+        const fieldErrors: Record<string, string> = {};
+        for (const [sourcePath, error] of dependencyErrors) {
+          fieldErrors[sourcePath] = error.message;
+          this.controllerByName.get(sourcePath)?.showError(error.message);
+        }
+        this.renderSubmissionError();
+        return {
+          error: new AltEditorLiteError({
+            code: 'VALIDATION',
+            fieldErrors,
+            message: this.invalidMessage,
+            retryable: true,
+          }),
+          valid: false,
+        };
+      }
+
+      let collectedForm: CollectedFormState<TFormValues> | undefined;
+      const result: ValidationExecutionResult<TFormValues> =
+        await new FormValidationRunner<TFormValues>({
+          allowedFieldNames: this.configuredFieldNames,
+          collectValues: async (currentSignal) => {
+            collectedForm = await collectFormState(this.controllers, currentSignal);
+            return collectedForm.values;
+          },
+          controllers: this.controllers,
+          invalidMessage: this.invalidMessage,
+          ...(this.validateUnique === undefined
+            ? {}
+            : { validateUnique: this.validateUnique }),
+          ...(validateForm === undefined
+            ? {}
+            : {
+                validateForm: async (values, currentSignal) =>
+                  await Promise.resolve(
+                    validateForm(
+                      values,
+                      Object.freeze({ ...context, signal: currentSignal }),
+                    ),
                   ),
-                ),
-            }),
-      }).run(signal);
+              }),
+        }).run(signal);
 
-    signal.throwIfAborted();
-    if (!this.validationSequence.isCurrent(requestSequence)) {
-      throw new DOMException('The validation request was replaced.', 'AbortError');
+      signal.throwIfAborted();
+      if (!this.validationSequence.isCurrent(requestSequence)) {
+        throw new DOMException('The validation request was replaced.', 'AbortError');
+      }
+      if (!result.valid) {
+        this.showValidationError(result.error, result.message);
+        return { error: result.error, valid: false };
+      }
+      if (collectedForm === undefined) {
+        throw new Error('Validation completed without collecting form values.');
+      }
+      return {
+        fieldValues: collectedForm.fieldValues,
+        valid: true,
+        values: result.values,
+      };
+    } finally {
+      mergedSignal.dispose();
     }
-    if (!result.valid) {
-      this.showValidationError(result.error, result.message);
-      return { error: result.error, valid: false };
-    }
-    if (collectedForm === undefined) {
-      throw new Error('Validation completed without collecting form values.');
-    }
-    return {
-      fieldValues: collectedForm.fieldValues,
-      valid: true,
-      values: result.values,
-    };
   }
 
   /** Retrieves one public field facade. */
@@ -637,10 +647,11 @@ export class EditorFormController<
     this.activeChangeAbortControllers.get(fieldName)?.abort();
     const changeAbortController = new AbortController();
     this.activeChangeAbortControllers.set(fieldName, changeAbortController);
-    const signal = mergeAbortSignals([
+    const mergedSignal = mergeAbortSignals([
       changeAbortController.signal,
       this.lifecycleAbortController.signal,
     ]);
+    const { signal } = mergedSignal;
     try {
       const dependencyValues = freezeEditorValues<TFormValues>(
         await collectFormValues(this.controllers, signal),
@@ -685,6 +696,7 @@ export class EditorFormController<
         }
       }
     } finally {
+      mergedSignal.dispose();
       if (this.activeChangeAbortControllers.get(fieldName) === changeAbortController) {
         this.activeChangeAbortControllers.delete(fieldName);
       }
@@ -753,10 +765,11 @@ export class EditorFormController<
       return nativeResult;
     }
 
-    const signal = mergeAbortSignals([
+    const mergedSignal = mergeAbortSignals([
       validationAbortController.signal,
       this.lifecycleAbortController.signal,
     ]);
+    const { signal } = mergedSignal;
     try {
       const values = await collectFormValues(this.controllers, signal);
       const customResult = await controller.validateCustom(values, signal);
@@ -788,6 +801,7 @@ export class EditorFormController<
             cause: error,
           });
     } finally {
+      mergedSignal.dispose();
       if (
         this.activeFieldValidationAbortControllers.get(controller.name) ===
         validationAbortController

@@ -60,61 +60,66 @@ export class InlineValidationController<TRow extends object, TFormValues extends
     signal: AbortSignal,
   ): Promise<Readonly<EditValidationResult<TFormValues>>> {
     const validateForm = this.arguments_.validateForm;
-    const currentSignal = mergeAbortSignals([
+    const mergedSignal = mergeAbortSignals([
       signal,
       session.lifecycleAbortController.signal,
     ]);
-    const validation = await new FormValidationRunner<TFormValues>({
-      allowedFieldNames: this.fieldNames,
-      beforeFormValidation: async (validationSignal) => {
-        await session.pendingChange;
-        validationSignal.throwIfAborted();
-        if (
-          session.pendingChangeError?.revision === session.changeRevision &&
-          this.arguments_.isCurrentSession(session)
-        ) {
-          return session.pendingChangeError.error;
-        }
-        return undefined;
-      },
-      collectValues: () =>
-        buildInlineValues(
-          this.arguments_.fields,
-          session.capture.rowCapture.sourceRow,
-          session.capture.field.name,
-          session.candidate,
-        ),
-      controllers: [session.controller],
-      invalidMessage: this.arguments_.language.validation.invalid,
-      validateUnique: (values) =>
-        this.arguments_.validateUnique(values, session.capture.rowCapture.sourceRow),
-      ...(validateForm === undefined
-        ? {}
-        : {
-            validateForm: async (values, validationSignal) =>
-              await Promise.resolve(
-                validateForm(
-                  values,
-                  Object.freeze({
-                    mode: 'inline',
-                    operation: 'edit',
-                    signal: validationSignal,
-                  }),
+    const { signal: currentSignal } = mergedSignal;
+    try {
+      const validation = await new FormValidationRunner<TFormValues>({
+        allowedFieldNames: this.fieldNames,
+        beforeFormValidation: async (validationSignal) => {
+          await session.pendingChange;
+          validationSignal.throwIfAborted();
+          if (
+            session.pendingChangeError?.revision === session.changeRevision &&
+            this.arguments_.isCurrentSession(session)
+          ) {
+            return session.pendingChangeError.error;
+          }
+          return undefined;
+        },
+        collectValues: () =>
+          buildInlineValues(
+            this.arguments_.fields,
+            session.capture.rowCapture.sourceRow,
+            session.capture.field.name,
+            session.candidate,
+          ),
+        controllers: [session.controller],
+        invalidMessage: this.arguments_.language.validation.invalid,
+        validateUnique: (values) =>
+          this.arguments_.validateUnique(values, session.capture.rowCapture.sourceRow),
+        ...(validateForm === undefined
+          ? {}
+          : {
+              validateForm: async (values, validationSignal) =>
+                await Promise.resolve(
+                  validateForm(
+                    values,
+                    Object.freeze({
+                      mode: 'inline',
+                      operation: 'edit',
+                      signal: validationSignal,
+                    }),
+                  ),
                 ),
-              ),
-          }),
-    }).run(currentSignal);
-    currentSignal.throwIfAborted();
-    if (!validation.valid) {
-      return await this.validationFailure(session, validation.error);
-    }
+            }),
+      }).run(currentSignal);
+      currentSignal.throwIfAborted();
+      if (!validation.valid) {
+        return await this.validationFailure(session, validation.error);
+      }
 
-    return {
-      changedFields: [session.capture.field.name] as FieldPath<TFormValues>[],
-      collectedFieldValues: new Map([[session.capture.field.name, session.candidate]]),
-      valid: true,
-      values: validation.values,
-    };
+      return {
+        changedFields: [session.capture.field.name] as FieldPath<TFormValues>[],
+        collectedFieldValues: new Map([[session.capture.field.name, session.candidate]]),
+        valid: true,
+        values: validation.values,
+      };
+    } finally {
+      mergedSignal.dispose();
+    }
   }
 
   /** Runs the active field callback and retains only its current failure. */

@@ -4,11 +4,15 @@ import { EditorConfigurationError } from '../../src/core/alt-editor-lite-error.j
 import { ENGLISH_LANGUAGE } from '../../src/core/alt-editor-lite-language.js';
 import { isChoiceFieldController } from '../../src/fields/field-controller.js';
 import { buildEditorForm } from '../../src/form/build-editor-form.js';
+import { FormDependencyController } from '../../src/form/form-dependency-controller.js';
 import { defineFormDependencies } from '../../src/form/form-dependency.js';
 import { validateFormDependencies } from '../../src/form/validate-form-dependencies.js';
 
 import type { FieldChangeContext, FieldConfig } from '../../src/fields/field-config.js';
+import type { ManagedFieldController } from '../../src/fields/managed-field-controller.js';
+import type { FieldRuntimeController } from '../../src/form/field-runtime-controller.js';
 import type { EditorFormController } from '../../src/form/form-controller.js';
+import type { DependencyFieldBinding } from '../../src/form/form-dependency-controller.js';
 
 interface DependencyValues {
   readonly category: string;
@@ -252,6 +256,79 @@ describe('form dependencies', () => {
     first.resolve({ details: { value: 'stale' } });
     await Promise.resolve();
     await expect(form.getField('details')?.getValue()).resolves.toBe('latest');
+  });
+
+  it('applies dependency updates in request order and stops stale patch work', async () => {
+    const firstApplication = createDeferred<undefined>();
+    const applications: string[] = [];
+    const setVisible = vi.fn();
+    const detailsConfig = {
+      defaultValue: '',
+      label: 'Details',
+      name: 'details',
+      type: 'text',
+    } as const satisfies FieldConfig<DependencyValues>;
+    const binding: DependencyFieldBinding<DependencyValues> = {
+      config: detailsConfig,
+      controller: {} as ManagedFieldController<DependencyValues>,
+      runtime: { setVisible } as unknown as FieldRuntimeController<DependencyValues>,
+    };
+    const lifecycleAbortController = new AbortController();
+    const resolver = vi.fn((value: string) => ({
+      details: { value, visible: value === 'second' },
+    }));
+    const controller = new FormDependencyController<DependencyValues>({
+      applyValue: async (_targetPath, _binding, value) => {
+        applications.push(`${String(value)}:start`);
+        if (value === 'first') {
+          await firstApplication.promise;
+        }
+        applications.push(`${String(value)}:end`);
+      },
+      dependencies: defineFormDependencies<DependencyValues>()({
+        country: resolver,
+      }),
+      fields: new Map<string, DependencyFieldBinding<DependencyValues>>([
+        ['details', binding],
+      ]),
+      lifecycleSignal: lifecycleAbortController.signal,
+      normalizeError: (error) => {
+        throw error;
+      },
+      onErrorChange: vi.fn(),
+    });
+    const parentSignal = new AbortController().signal;
+    const firstRequest = controller.handleUserChange(
+      'country',
+      { category: '', country: 'first', details: '', region: undefined },
+      parentSignal,
+    );
+    await vi.waitFor(() => {
+      expect(applications).toEqual(['first:start']);
+    });
+
+    const secondRequest = controller.handleUserChange(
+      'country',
+      { category: '', country: 'second', details: '', region: undefined },
+      parentSignal,
+    );
+    await vi.waitFor(() => {
+      expect(resolver).toHaveBeenCalledTimes(2);
+    });
+    expect(applications).toEqual(['first:start']);
+
+    firstApplication.resolve(undefined);
+    await Promise.all([firstRequest, secondRequest]);
+
+    expect(applications).toEqual([
+      'first:start',
+      'first:end',
+      'second:start',
+      'second:end',
+    ]);
+    expect(setVisible).toHaveBeenCalledOnce();
+    expect(setVisible).toHaveBeenCalledWith(true);
+    controller.destroy();
   });
 
   it('rejects conflicting initial assignments before changing field state', async () => {

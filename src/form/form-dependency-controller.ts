@@ -253,6 +253,8 @@ export class FormDependencyController<TFormValues extends object> {
 
   private readonly latestErrorBySource = new Map<string, AltEditorLiteError>();
 
+  private patchApplicationTail: Promise<void> = Promise.resolve();
+
   private isDestroyed = false;
 
   public constructor(
@@ -323,8 +325,12 @@ export class FormDependencyController<TFormValues extends object> {
       if (!this.isCurrent(sourcePath, resolution.revision)) {
         return;
       }
-      await this.applyPatches(patches);
-      this.clearError(sourcePath);
+      await this.queuePatches(patches, () =>
+        this.isCurrent(sourcePath, resolution.revision),
+      );
+      if (this.isCurrent(sourcePath, resolution.revision)) {
+        this.clearError(sourcePath);
+      }
     } catch (error: unknown) {
       if (this.isCurrent(sourcePath, resolution.revision)) {
         this.recordError(sourcePath, this.arguments_.normalizeError(error));
@@ -332,11 +338,16 @@ export class FormDependencyController<TFormValues extends object> {
     }
   }
 
-  /** Waits only for currently owned resolver requests. */
+  /** Waits for currently owned resolver requests and patch application. */
   public async waitForCurrent(): Promise<void> {
     while (this.pendingBySource.size > 0) {
       await Promise.allSettled([...this.pendingBySource.values()]);
     }
+    let currentTail: Promise<void>;
+    do {
+      currentTail = this.patchApplicationTail;
+      await currentTail;
+    } while (currentTail !== this.patchApplicationTail);
   }
 
   public errors(): ReadonlyMap<string, AltEditorLiteError> {
@@ -383,7 +394,7 @@ export class FormDependencyController<TFormValues extends object> {
     const abortController = new AbortController();
     const request = { abortController, revision };
     this.activeRequestBySource.set(sourcePath, request);
-    const signal = mergeAbortSignals([
+    const mergedSignal = mergeAbortSignals([
       abortController.signal,
       this.arguments_.lifecycleSignal,
       ...(parentSignal === undefined ? [] : [parentSignal]),
@@ -393,7 +404,7 @@ export class FormDependencyController<TFormValues extends object> {
       sourcePath,
       resolver,
       values,
-      signal,
+      mergedSignal.signal,
       revision,
     );
     const completionPromise = resolutionPromise
@@ -402,6 +413,7 @@ export class FormDependencyController<TFormValues extends object> {
         () => undefined,
       )
       .finally(() => {
+        mergedSignal.dispose();
         if (this.activeRequestBySource.get(sourcePath) === request) {
           this.activeRequestBySource.delete(sourcePath);
         }
@@ -624,8 +636,12 @@ export class FormDependencyController<TFormValues extends object> {
 
   private async applyPatches(
     patches: readonly ValidatedFieldPatch<TFormValues>[],
+    isCurrent: () => boolean = () => true,
   ): Promise<void> {
     for (const patch of patches) {
+      if (!isCurrent()) {
+        return;
+      }
       const { controller, runtime } = patch.binding;
       if (patch.hasOptions) {
         controller.setOptions?.(patch.options ?? []);
@@ -636,6 +652,9 @@ export class FormDependencyController<TFormValues extends object> {
         } else {
           await this.arguments_.applyValue(patch.targetPath, patch.binding, patch.value);
         }
+      }
+      if (!isCurrent()) {
+        return;
       }
       if (patch.hasVisible) {
         runtime.setVisible(patch.visible ?? false);
@@ -655,7 +674,24 @@ export class FormDependencyController<TFormValues extends object> {
         hasValue: patch.hasValue,
         targetPath: patch.targetPath,
       });
+      if (!isCurrent()) {
+        return;
+      }
     }
+  }
+
+  private async queuePatches(
+    patches: readonly ValidatedFieldPatch<TFormValues>[],
+    isCurrent: () => boolean,
+  ): Promise<void> {
+    const application = this.patchApplicationTail.then(async () => {
+      await this.applyPatches(patches, isCurrent);
+    });
+    this.patchApplicationTail = application.then(
+      () => undefined,
+      () => undefined,
+    );
+    await application;
   }
 
   private recordError(sourcePath: string, error: AltEditorLiteError): void {

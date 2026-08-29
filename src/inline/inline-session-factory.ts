@@ -49,7 +49,7 @@ export class InlineSessionFactory<TFormValues extends object> {
       this.arguments_.language,
       this.arguments_.onUserChange,
       INLINE_FIELD_PRESENTATION,
-      mergeAbortSignals([signal, lifecycleAbortController.signal]),
+      mergeAbortSignals([signal, lifecycleAbortController.signal]).signal,
     );
 
     try {

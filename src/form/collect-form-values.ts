@@ -32,6 +32,7 @@ export async function collectFormState<TFormValues extends object>(
         value: await Promise.resolve(controller.getValue(signal)),
       })),
   );
+  signal.throwIfAborted();
   const collectedValues: Record<string, unknown> = {};
   const fieldValues = new Map<string, unknown>();
 

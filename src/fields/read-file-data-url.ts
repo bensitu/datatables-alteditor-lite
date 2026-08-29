@@ -1,3 +1,5 @@
+import { mergeAbortSignals } from '../core/merge-abort-signals.js';
+
 /**
  * Reads a File as a data URL while honoring an AbortSignal.
  *
@@ -90,14 +92,15 @@ export async function readFilesAsDataUrls(
   signal: AbortSignal,
 ): Promise<readonly string[]> {
   const batchAbortController = new AbortController();
-  const batchSignal = mergeAbortSignals([signal, batchAbortController.signal]);
+  const mergedSignal = mergeAbortSignals([signal, batchAbortController.signal]);
   try {
     return await Promise.all(
-      files.map(async (file) => await readFileAsDataUrl(file, batchSignal)),
+      files.map(async (file) => await readFileAsDataUrl(file, mergedSignal.signal)),
     );
   } catch (error: unknown) {
     batchAbortController.abort();
     throw error;
+  } finally {
+    mergedSignal.dispose();
   }
 }
-import { mergeAbortSignals } from '../core/merge-abort-signals.js';

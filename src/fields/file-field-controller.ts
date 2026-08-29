@@ -122,12 +122,24 @@ function createTypedFileController<TFormValues extends object, TValue>(
       activeReadAbortController = new AbortController();
       const selection = selectedFiles(inputElement);
       validateFileBudget(selection, fileBudget, budgetMessages);
-      const readSignal = mergeAbortSignals([
+      const mergedSignal = mergeAbortSignals([
         lifecycleAbortController.signal,
         activeReadAbortController.signal,
         ...(signal === undefined ? [] : [signal]),
       ]);
-      return readValue(selection, readSignal);
+      try {
+        const value = readValue(selection, mergedSignal.signal);
+        if (value instanceof Promise) {
+          return value.finally(() => {
+            mergedSignal.dispose();
+          });
+        }
+        mergedSignal.dispose();
+        return value;
+      } catch (error: unknown) {
+        mergedSignal.dispose();
+        throw error;
+      }
     },
     writeValue: (value: unknown) => {
       if (!isEmptyFileValue(value)) {

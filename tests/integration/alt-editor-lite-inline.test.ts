@@ -1045,6 +1045,53 @@ describe('AltEditorLite hover inline editing', () => {
     });
   });
 
+  it('restores hover actions when input replaces pending validation', async () => {
+    const validation = createDeferred<{ readonly valid: true }>();
+    const update = vi.fn();
+    const { api } = createTestTable('inline-hover-validation-change');
+    const editor = new AltEditorLite<TestRow, InlineValues>(api, {
+      editing: inlineEditing('hover'),
+      fields: [
+        {
+          inlineEdit: true,
+          label: 'Name',
+          name: 'name',
+          type: 'text',
+          validate: () => validation.promise,
+        },
+      ],
+      operations: { update },
+    });
+    editors.add(editor);
+    const cell = api.cell('#row-a', 0).node();
+    (await revealTrigger(cell)).click();
+    await vi.waitFor(() => {
+      expect(editor.getInlineState().status).toBe('editing');
+    });
+    replaceInlineValue('Pending Alpha');
+    const submitButton = cell.querySelector<HTMLButtonElement>(
+      '[data-alteditor-lite-inline-action="submit"]',
+    );
+    const cancelButton = cell.querySelector<HTMLButtonElement>(
+      '[data-alteditor-lite-inline-action="cancel"]',
+    );
+    submitButton?.click();
+    await vi.waitFor(() => {
+      expect(editor.getInlineState().status).toBe('validating');
+      expect(submitButton?.disabled).toBe(true);
+      expect(cancelButton?.disabled).toBe(true);
+    });
+
+    replaceInlineValue('Revised Alpha');
+
+    expect(editor.getInlineState().status).toBe('editing');
+    expect(submitButton?.disabled).toBe(false);
+    expect(cancelButton?.disabled).toBe(false);
+    validation.resolve({ valid: true });
+    await Promise.resolve();
+    expect(update).not.toHaveBeenCalled();
+  });
+
   it('selects remote options through the shared transaction and aborts on cancel', async () => {
     let searchSignal: AbortSignal | undefined;
     const pendingSearch =

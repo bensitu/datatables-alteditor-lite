@@ -686,6 +686,7 @@ export class InlineEditSessionController<
     }
     if (this.state.status === 'validating') {
       this.arguments_.operationOwner.abort('inline');
+      session.host.setActionBusy?.(false);
       this.focusCoordinator.operationReturnedToEditing();
       this.transitionTo({
         dirty: true,

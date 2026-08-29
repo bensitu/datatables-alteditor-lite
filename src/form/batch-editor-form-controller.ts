@@ -348,111 +348,116 @@ export class BatchEditorFormController<TFormValues extends object> {
   ): Promise<Readonly<BatchEditValidationResult<TFormValues>>> {
     this.assertActive();
     await this.waitForChanges();
-    const signal = mergeAbortSignals([
+    const mergedSignal = mergeAbortSignals([
       operationSignal,
       this.lifecycleAbortController.signal,
     ]);
-    signal.throwIfAborted();
-    this.clearErrors();
-    const dependencyErrors =
-      this.dependencyController?.errors() ?? new Map<string, AltEditorLiteError>();
-    if (dependencyErrors.size > 0) {
-      const fieldErrors: Record<string, string> = {};
-      for (const [sourcePath, error] of dependencyErrors) {
-        fieldErrors[sourcePath] = error.message;
+    const { signal } = mergedSignal;
+    try {
+      signal.throwIfAborted();
+      this.clearErrors();
+      const dependencyErrors =
+        this.dependencyController?.errors() ?? new Map<string, AltEditorLiteError>();
+      if (dependencyErrors.size > 0) {
+        const fieldErrors: Record<string, string> = {};
+        for (const [sourcePath, error] of dependencyErrors) {
+          fieldErrors[sourcePath] = error.message;
+        }
+        const error = new AltEditorLiteError({
+          code: 'VALIDATION',
+          fieldErrors,
+          message: this.invalidMessage,
+          retryable: true,
+        });
+        this.showSubmissionError(error);
+        return { error, valid: false };
       }
-      const error = new AltEditorLiteError({
-        code: 'VALIDATION',
-        fieldErrors,
-        message: this.invalidMessage,
-        retryable: true,
-      });
-      this.showSubmissionError(error);
-      return { error, valid: false };
-    }
-    const collected = await this.collectChanges();
-    const fieldMessages = new Map<string, Set<string>>();
-    const addFieldMessage = (fieldName: string, message: string): void => {
-      let messages = fieldMessages.get(fieldName);
-      if (messages === undefined) {
-        messages = new Set<string>();
-        fieldMessages.set(fieldName, messages);
+      const collected = await this.collectChanges();
+      const fieldMessages = new Map<string, Set<string>>();
+      const addFieldMessage = (fieldName: string, message: string): void => {
+        let messages = fieldMessages.get(fieldName);
+        if (messages === undefined) {
+          messages = new Set<string>();
+          fieldMessages.set(fieldName, messages);
+        }
+        messages.add(message);
+      };
+      const logicalValues = this.collectLogicalValues();
+      for (const binding of this.bindings) {
+        if (binding.state.current.status !== 'overridden') {
+          continue;
+        }
+        const validation = await this.validateBinding(binding, signal, logicalValues);
+        if (!validation.valid) {
+          addFieldMessage(binding.config.name, validation.message ?? this.invalidMessage);
+        }
       }
-      messages.add(message);
-    };
-    const logicalValues = this.collectLogicalValues();
-    for (const binding of this.bindings) {
-      if (binding.state.current.status !== 'overridden') {
-        continue;
-      }
-      const validation = await this.validateBinding(binding, signal, logicalValues);
-      if (!validation.valid) {
-        addFieldMessage(binding.config.name, validation.message ?? this.invalidMessage);
-      }
-    }
-    signal.throwIfAborted();
-    const generalMessages = new Set<string>();
-    const formValidator = this.validateForm;
-    if (formValidator !== undefined) {
-      for (const original of this.originals) {
-        const effectiveValues = buildBatchEffectiveValues(
-          original,
-          collected.changes,
-          collected.changedFields,
-          this.fields,
-        );
-        const result = await new FormValidationRunner<TFormValues>({
-          allowedFieldNames: this.configuredFieldNames,
-          collectValues: () => effectiveValues,
-          controllers: [],
-          invalidMessage: this.batchValidationMessage,
-          validateForm: async (values, currentSignal) =>
-            await Promise.resolve(
-              formValidator(
-                values,
-                Object.freeze({
-                  mode: 'dialog',
-                  operation: 'batchEdit',
-                  signal: currentSignal,
-                }),
+      signal.throwIfAborted();
+      const generalMessages = new Set<string>();
+      const formValidator = this.validateForm;
+      if (formValidator !== undefined) {
+        for (const original of this.originals) {
+          const effectiveValues = buildBatchEffectiveValues(
+            original,
+            collected.changes,
+            collected.changedFields,
+            this.fields,
+          );
+          const result = await new FormValidationRunner<TFormValues>({
+            allowedFieldNames: this.configuredFieldNames,
+            collectValues: () => effectiveValues,
+            controllers: [],
+            invalidMessage: this.batchValidationMessage,
+            validateForm: async (values, currentSignal) =>
+              await Promise.resolve(
+                formValidator(
+                  values,
+                  Object.freeze({
+                    mode: 'dialog',
+                    operation: 'batchEdit',
+                    signal: currentSignal,
+                  }),
+                ),
               ),
-            ),
-        }).run(signal);
-        if (!result.valid) {
-          for (const [fieldName, message] of Object.entries(
-            result.error.fieldErrors ?? {},
-          )) {
-            addFieldMessage(fieldName, message);
-          }
-          if (result.message !== undefined) {
-            generalMessages.add(result.message);
+          }).run(signal);
+          if (!result.valid) {
+            for (const [fieldName, message] of Object.entries(
+              result.error.fieldErrors ?? {},
+            )) {
+              addFieldMessage(fieldName, message);
+            }
+            if (result.message !== undefined) {
+              generalMessages.add(result.message);
+            }
           }
         }
       }
-    }
-    signal.throwIfAborted();
-    const fieldErrors = Object.fromEntries(
-      [...fieldMessages].map(([fieldName, messages]) => [
-        fieldName,
-        [...messages].join(' '),
-      ]),
-    );
-    if (fieldMessages.size > 0 || generalMessages.size > 0) {
-      const firstFieldMessage = Object.values(fieldErrors)[0];
-      const error = new AltEditorLiteError({
-        code: 'VALIDATION',
-        ...(fieldMessages.size === 0 ? {} : { fieldErrors }),
-        message:
-          [...generalMessages][0] ?? firstFieldMessage ?? this.batchValidationMessage,
-        retryable: true,
-      });
-      for (const message of generalMessages) {
-        this.submissionMessages.add(message);
+      signal.throwIfAborted();
+      const fieldErrors = Object.fromEntries(
+        [...fieldMessages].map(([fieldName, messages]) => [
+          fieldName,
+          [...messages].join(' '),
+        ]),
+      );
+      if (fieldMessages.size > 0 || generalMessages.size > 0) {
+        const firstFieldMessage = Object.values(fieldErrors)[0];
+        const error = new AltEditorLiteError({
+          code: 'VALIDATION',
+          ...(fieldMessages.size === 0 ? {} : { fieldErrors }),
+          message:
+            [...generalMessages][0] ?? firstFieldMessage ?? this.batchValidationMessage,
+          retryable: true,
+        });
+        for (const message of generalMessages) {
+          this.submissionMessages.add(message);
+        }
+        this.showSubmissionError(error);
+        return { error, valid: false };
       }
-      this.showSubmissionError(error);
-      return { error, valid: false };
+      return { ...collected, valid: true };
+    } finally {
+      mergedSignal.dispose();
     }
-    return { ...collected, valid: true };
   }
 
   /** Rebuilds baselines from newly committed canonical rows. */
@@ -752,10 +757,11 @@ export class BatchEditorFormController<TFormValues extends object> {
     this.activeChangeAbortControllers.get(binding.config.name)?.abort();
     const abortController = new AbortController();
     this.activeChangeAbortControllers.set(binding.config.name, abortController);
-    const signal = mergeAbortSignals([
+    const mergedSignal = mergeAbortSignals([
       abortController.signal,
       this.lifecycleAbortController.signal,
     ]);
+    const { signal } = mergedSignal;
     const task: Promise<void> = run(signal)
       .catch((error: unknown) => {
         if (this.isDestroyed || signal.aborted || binding.revision !== revision) {
@@ -787,6 +793,7 @@ export class BatchEditorFormController<TFormValues extends object> {
         this.renderSubmissionError();
       })
       .finally(() => {
+        mergedSignal.dispose();
         this.pendingChangeTasks.delete(task);
         if (
           this.activeChangeAbortControllers.get(binding.config.name) === abortController

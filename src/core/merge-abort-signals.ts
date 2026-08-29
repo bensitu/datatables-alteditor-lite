@@ -1,8 +1,14 @@
+/** A merged signal with explicit listener cleanup for normal completion. */
+export interface MergedAbortSignal {
+  readonly signal: AbortSignal;
+  dispose(): void;
+}
+
 /** Returns a signal that aborts when any supplied signal aborts. */
-export function mergeAbortSignals(signals: readonly AbortSignal[]): AbortSignal {
+export function mergeAbortSignals(signals: readonly AbortSignal[]): MergedAbortSignal {
   const abortController = new AbortController();
   const listenerBySignal = new Map<AbortSignal, () => void>();
-  const cleanup = (): void => {
+  const dispose = (): void => {
     for (const [signal, listener] of listenerBySignal) {
       signal.removeEventListener('abort', listener);
     }
@@ -12,11 +18,11 @@ export function mergeAbortSignals(signals: readonly AbortSignal[]): AbortSignal 
     if (abortController.signal.aborted) {
       return;
     }
-    cleanup();
+    dispose();
     abortController.abort(signal.reason);
   };
 
-  for (const signal of signals) {
+  for (const signal of new Set(signals)) {
     if (signal.aborted) {
       abortFrom(signal);
       break;
@@ -28,5 +34,5 @@ export function mergeAbortSignals(signals: readonly AbortSignal[]): AbortSignal 
     signal.addEventListener('abort', listener, { once: true });
   }
 
-  return abortController.signal;
+  return { dispose, signal: abortController.signal };
 }

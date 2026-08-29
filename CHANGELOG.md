@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the target returned by the Host.
 - Reported committed Create and Remove presentation failures without suppressing
   their success observers.
+- Released merged cancellation listeners when transient work completes and
+  avoided duplicate listeners for repeated source signals.
+- Applied asynchronous dependency updates in request order and stopped obsolete
+  patch work after newer input.
+- Restored Inline hover actions when changed input replaces pending validation.
 
 ## [0.7.0] - 2026-08-29
 
