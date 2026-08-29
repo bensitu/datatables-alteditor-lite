@@ -62,6 +62,37 @@ Applications that insert iframe content or focusable controls inside Shadow DOM
 must provide containment within that embedded focus context and return focus to
 the dialog when leaving it.
 
+## Stylesheet customization
+
+Override the following inherited variables on `:root` for an application-wide
+theme, or on `.alteditor-lite-dialog` and `.alteditor-lite-inline` for one
+presentation type. Custom colors must retain sufficient contrast in light, dark,
+and forced-color environments.
+
+| Variable                                    | Default or purpose                          |
+| ------------------------------------------- | ------------------------------------------- |
+| `--alteditor-lite-surface-color`            | `Canvas`                                    |
+| `--alteditor-lite-text-color`               | `CanvasText`                                |
+| `--alteditor-lite-border-color`             | Adaptive system-text border                 |
+| `--alteditor-lite-focus-color`              | `Highlight`                                 |
+| `--alteditor-lite-primary-color`            | Primary action color                        |
+| `--alteditor-lite-primary-text-color`       | Text on primary actions                     |
+| `--alteditor-lite-error-color`              | Error and destructive-action color          |
+| `--alteditor-lite-error-text-color`         | Text on destructive actions                 |
+| `--alteditor-lite-overlay-color`            | `rgb(0 0 0 / 45%)`                          |
+| `--alteditor-lite-option-active-color`      | `Highlight`                                 |
+| `--alteditor-lite-option-active-text-color` | `HighlightText`                             |
+| `--alteditor-lite-popup-shadow`             | SearchSelect popup shadow                   |
+| `--alteditor-lite-dialog-width`             | `42rem`                                     |
+| `--alteditor-lite-dialog-max-height`        | Available viewport height minus outer space |
+| `--alteditor-lite-spacing`                  | `1rem`                                      |
+| `--alteditor-lite-border-radius`            | `0.5rem`                                    |
+| `--alteditor-lite-search-select-max-height` | `16rem`                                     |
+
+The stylesheet supplies dark-scheme defaults for the primary, error, and popup
+colors. `--alteditor-lite-search-select-available-height` is maintained by the
+component while its listbox is open and must not be set by application styles.
+
 ## Inline focus and controls
 
 Inline Edit mounts one native control in the owned cell. Its label remains
