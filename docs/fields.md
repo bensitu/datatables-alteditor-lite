@@ -308,6 +308,11 @@ remains keyboard accessible, opens with Enter, Space, or ArrowDown, and exposes
 the active option through combobox/listbox ARIA without accepting filter text.
 Remote SearchSelect requires search and rejects this setting.
 
+An open listbox uses the visible intersection of the viewport and its nearest
+clipping scroll container. When the available height is limited, the listbox
+scrolls its own options and keeps keyboard navigation visible without moving the
+surrounding page or table scroll area.
+
 Remote fields group both callbacks under `remote`. `remote.loadOptions` owns query
 results; `remote.resolveOption` independently hydrates the label for an existing
 value. Each callback receives an `AbortSignal`:

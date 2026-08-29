@@ -423,8 +423,11 @@ current server-side page through the normal DataTables Ajax path.
   operation, Responsive recalculation runs only after Inline cleanup completes.
 - ColumnControl dynamic SearchList options are refreshed after successful CRUD
   operations through its public API. Inline cleanup completes before the refresh.
-- Scroller redraw and node recycling cause safe cancellation. Applications should
-  verify their row-height and server data configuration in supported browsers.
+- Scroller redraw and node recycling cause safe cancellation. Inline SearchSelect
+  navigation scrolls its own listbox without moving the Scroller viewport. After
+  a recycled row is materialized, it can be edited through its current stable
+  row identity. Applications should verify their row-height and server data
+  configuration in supported browsers.
 - FixedColumns clone cells are not supported; activation is limited to cells
   uniquely resolved inside the owned main table.
 - Column reorder events cancel the current session. The completed

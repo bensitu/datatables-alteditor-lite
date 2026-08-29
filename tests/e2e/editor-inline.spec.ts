@@ -20,6 +20,10 @@ const colReorderScriptPath = resolve(
   repositoryRoot,
   'node_modules/datatables.net-colreorder/js/dataTables.colReorder.js',
 );
+const scrollerScriptPath = resolve(
+  repositoryRoot,
+  'node_modules/datatables.net-scroller/js/dataTables.scroller.js',
+);
 
 interface RenderedControlsRuntime {
   readonly editor?: {
@@ -31,6 +35,21 @@ interface RenderedControlsRuntime {
   readonly tableApi?: {
     row(row: string): {
       data(): { readonly schedule: string; readonly status: string };
+    };
+  };
+}
+
+interface ScrollerRuntime {
+  readonly editor: {
+    openInlineEdit(row: string, column: string): Promise<void>;
+    submitInlineEdit(): Promise<void>;
+  };
+  readonly tableApi: {
+    row(row: string): {
+      data(): { readonly office: string };
+    };
+    readonly scroller: {
+      toPosition(index: number, animate?: boolean): void;
     };
   };
 }
@@ -119,9 +138,25 @@ async function createInlineFixture(
 
 async function createSearchSelectInlineFixture(
   page: Page,
-  options: { readonly useVerticalScroll?: boolean } = {},
+  options: {
+    readonly useScroller?: boolean;
+    readonly useVerticalScroll?: boolean;
+  } = {},
 ): Promise<void> {
-  const shouldUseVerticalScroll = options.useVerticalScroll ?? false;
+  const shouldUseScroller = options.useScroller ?? false;
+  const shouldUseVerticalScroll =
+    (options.useVerticalScroll ?? false) || shouldUseScroller;
+  const rows = shouldUseScroller
+    ? Array.from({ length: 120 }, (_, index) => ({
+        id: `scroller-row-${String(index)}`,
+        office: 'beijing',
+      }))
+    : shouldUseVerticalScroll
+      ? Array.from({ length: 8 }, (_, index) => ({
+          id: `row-${String.fromCharCode(97 + index)}`,
+          office: 'beijing',
+        }))
+      : [{ id: 'row-a', office: 'beijing' }];
   await page.setContent(`
     <!doctype html>
     <html lang="en">
@@ -143,20 +178,22 @@ async function createSearchSelectInlineFixture(
     });
   }
   await page.addScriptTag({ path: dataTablesScriptPath });
+  if (shouldUseScroller) {
+    await page.addScriptTag({ path: scrollerScriptPath });
+  }
   await page.addScriptTag({ path: browserBundlePath });
   await page.addScriptTag({
     content: `
       globalThis.tableApi = new DataTable('#search-select-inline-table', {
         columns: [{ data: 'office', name: 'office' }],
-        data: ${JSON.stringify(
-          shouldUseVerticalScroll
-            ? Array.from({ length: 8 }, (_, index) => ({
-                id: `row-${String.fromCharCode(97 + index)}`,
-                office: 'beijing',
-              }))
-            : [{ id: 'row-a', office: 'beijing' }],
-        )},
-        ${shouldUseVerticalScroll ? "paging: false, scrollY: '8rem'," : ''}
+        data: ${JSON.stringify(rows)},
+        ${
+          shouldUseScroller
+            ? "deferRender: true, pageLength: 25, scrollY: '8rem', scroller: { rowHeight: 48 },"
+            : shouldUseVerticalScroll
+              ? "paging: false, scrollY: '8rem',"
+              : ''
+        }
         rowId: 'id'
       });
       globalThis.editor = new AltEditorLite.Editor(
@@ -175,7 +212,12 @@ async function createSearchSelectInlineFixture(
               options: [
                 { label: 'Tokyo', value: 'tokyo' },
                 { label: 'Beijing', value: 'beijing' },
-                { label: 'London', value: 'london' }
+                { label: 'London', value: 'london' },
+                { label: 'Berlin', value: 'berlin' },
+                { label: 'Sydney', value: 'sydney' },
+                { label: 'Singapore', value: 'singapore' },
+                { label: 'Dubai', value: 'dubai' },
+                { label: 'Closed', value: 'closed' }
               ],
               search: { enabled: false },
               type: 'search-select'
@@ -626,6 +668,91 @@ test('places a SearchSelect popup inside a vertical table scroll area', async ({
   expect(finalOptionLayout.finalOptionBottom).toBeLessThanOrEqual(
     finalOptionLayout.visibleBottom + 1,
   );
+});
+
+test('supports SearchSelect inline editing while Scroller reuses rows', async ({
+  page,
+}) => {
+  await createSearchSelectInlineFixture(page, { useScroller: true });
+  await expect(page.locator('.dt-container.dts')).toBeVisible();
+
+  await page.evaluate(async () => {
+    const runtime = globalThis as typeof globalThis & ScrollerRuntime;
+    await runtime.editor.openInlineEdit('#scroller-row-0', 'office:name');
+  });
+
+  const scrollBody = page.locator('.dt-scroll-body');
+  const combobox = page.getByRole('combobox', { name: 'Office' });
+  await combobox.focus();
+  const listbox = page.getByRole('listbox');
+  await expect(listbox).toBeVisible();
+  const tableScrollTop = await scrollBody.evaluate((element) => element.scrollTop);
+
+  await page.keyboard.press('End');
+  const optionLayout = await listbox.evaluate((element) => {
+    const finalOption = element.lastElementChild;
+    if (!(finalOption instanceof HTMLElement)) {
+      throw new Error('Expected a final SearchSelect option.');
+    }
+    const listboxRect = element.getBoundingClientRect();
+    const optionRect = finalOption.getBoundingClientRect();
+    return {
+      finalOptionBottom: optionRect.bottom,
+      visibleBottom: listboxRect.top + element.clientTop + element.clientHeight,
+    };
+  });
+
+  expect(optionLayout.finalOptionBottom).toBeLessThanOrEqual(
+    optionLayout.visibleBottom + 1,
+  );
+  expect(await scrollBody.evaluate((element) => element.scrollTop)).toBe(tableScrollTop);
+
+  await page.evaluate(() => {
+    const runtime = globalThis as typeof globalThis & ScrollerRuntime;
+    runtime.tableApi.scroller.toPosition(80, false);
+  });
+
+  await expect(page.locator('.alteditor-lite-inline')).toHaveCount(0);
+  await expect(page.locator('#scroller-row-80')).toBeVisible();
+  expect(
+    await page.evaluate(() => {
+      const runtime = globalThis as typeof globalThis & ScrollerRuntime;
+      return runtime.tableApi.row('#scroller-row-0').data().office;
+    }),
+  ).toBe('beijing');
+
+  await page.evaluate(async () => {
+    const runtime = globalThis as typeof globalThis & ScrollerRuntime;
+    await runtime.editor.openInlineEdit('#scroller-row-80', 'office:name');
+  });
+  await combobox.focus();
+  await page.keyboard.press('End');
+  await page.keyboard.press('Enter');
+  await expect(combobox).toHaveAttribute('aria-expanded', 'false');
+  await page.evaluate(async () => {
+    const runtime = globalThis as typeof globalThis & ScrollerRuntime;
+    await runtime.editor.submitInlineEdit();
+  });
+
+  await expect(page.locator('.alteditor-lite-inline')).toHaveCount(0);
+  expect(
+    await page.evaluate(() => {
+      const runtime = globalThis as typeof globalThis & ScrollerRuntime;
+      return runtime.tableApi.row('#scroller-row-80').data().office;
+    }),
+  ).toBe('closed');
+
+  await page.evaluate(() => {
+    const runtime = globalThis as typeof globalThis & ScrollerRuntime;
+    runtime.tableApi.scroller.toPosition(0, false);
+  });
+  await expect(page.locator('#scroller-row-0')).toBeVisible();
+  expect(
+    await page.evaluate(() => {
+      const runtime = globalThis as typeof globalThis & ScrollerRuntime;
+      return runtime.tableApi.row('#scroller-row-0').data().office;
+    }),
+  ).toBe('beijing');
 });
 
 test('activates a KeyTable-focused cell and remaps after ColReorder', async ({
