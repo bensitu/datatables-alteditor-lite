@@ -738,7 +738,9 @@ test('applies a common value through desktop multi-row editing', async ({ page }
   const nameField = dialog.locator('[data-alteditor-lite-batch-field="name"]');
   await expect(nameField).toContainText('Multiple values');
   await nameField.getByRole('button', { name: 'Set a common value' }).click();
-  await nameField.getByRole('textbox', { name: 'Name' }).fill('Shared team member');
+  await dialog
+    .getByRole('textbox', { exact: true, name: 'Name' })
+    .fill('Shared team member');
   await dialog.getByRole('button', { name: 'Submit' }).click();
 
   await expect(dialog).toBeHidden();
