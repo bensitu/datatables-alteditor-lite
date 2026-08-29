@@ -3,9 +3,14 @@ import {
   type AltEditorLiteError,
 } from '../core/alt-editor-lite-error.js';
 import { dispatchEditorEvent } from '../core/editor-event.js';
+import {
+  InternalOperationAbort,
+  normalizeOperationError,
+} from '../core/error-normalization.js';
 import { settleWithAbort } from '../core/settle-with-abort.js';
 import { hasHostBatchUpdateCapability } from '../host/editor-host.js';
 
+import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type { AltEditorLiteOptions } from '../core/alt-editor-lite-options.js';
 import type { AltEditorLite } from '../core/alt-editor-lite.js';
 import type { BatchEditOperationRunner } from '../core/editing/batch-edit-operation-runner.js';
@@ -35,6 +40,7 @@ export interface DialogBatchEditOperationArguments<
   readonly eventTarget: EventTarget;
   readonly options: Readonly<AltEditorLiteOptions<TRow, TFormValues>>;
   readonly editing: Readonly<ResolvedDialogEditingOptions>;
+  readonly language: Readonly<AltEditorLiteLanguage>;
   readonly host: EditorHost<TRow, TTarget>;
   readonly batchEditOperationRunner: BatchEditOperationRunner<TRow, TFormValues>;
   readonly errorReporter: EditorErrorReporter<TRow, TFormValues>;
@@ -73,6 +79,7 @@ export class DialogBatchEditOperation<
       host,
       options,
     } = this.arguments_;
+    let committedSignal: AbortSignal | undefined;
 
     await batchEditOperationRunner.run({
       ...(options.hooks?.afterSuccess === undefined
@@ -93,6 +100,7 @@ export class DialogBatchEditOperation<
             },
           }),
       commit: async (rows, request) => {
+        committedSignal = request.abortController.signal;
         if (!hasHostBatchUpdateCapability<TRow, TTarget>(host)) {
           throw new EditorConfigurationError(
             'The configured Host cannot apply batch updates.',
@@ -109,21 +117,6 @@ export class DialogBatchEditOperation<
             signal: request.abortController.signal,
           },
         );
-        if (!editing.closeOnSuccess) {
-          const nextOriginals = await Promise.all(
-            recordTargets.map(
-              async (recordTarget) =>
-                await settleWithAbort(
-                  host.read(recordTarget, {
-                    signal: request.abortController.signal,
-                  }),
-                  request.abortController.signal,
-                ),
-            ),
-          );
-          request.abortController.signal.throwIfAborted();
-          updateOriginals(nextOriginals);
-        }
       },
       dispatchSubmit: (transaction) => {
         dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:submit'>(
@@ -159,6 +152,51 @@ export class DialogBatchEditOperation<
       originals,
       presentation: {
         completeSuccess: async (result) => {
+          if (!editing.closeOnSuccess && committedSignal !== undefined) {
+            const signal = committedSignal;
+            try {
+              const nextOriginals = await Promise.all(
+                recordTargets.map(
+                  async (recordTarget) =>
+                    await settleWithAbort(host.read(recordTarget, { signal }), signal),
+                ),
+              );
+              signal.throwIfAborted();
+              updateOriginals(nextOriginals);
+            } catch (rawError: unknown) {
+              let operationError = normalizeOperationError(
+                rawError,
+                signal,
+                this.arguments_.language,
+              );
+              if (operationError instanceof InternalOperationAbort) {
+                return;
+              }
+              try {
+                updateOriginals(result.rows);
+              } catch (fallbackError: unknown) {
+                operationError = normalizeOperationError(
+                  fallbackError,
+                  signal,
+                  this.arguments_.language,
+                );
+                if (operationError instanceof InternalOperationAbort) {
+                  return;
+                }
+              }
+              errorReporter.report(
+                operationError,
+                {
+                  committed: true,
+                  mode: 'dialog',
+                  operation: 'batchEdit',
+                  phase: 'commit',
+                  targets,
+                },
+                false,
+              );
+            }
+          }
           await presentation.completeSuccess(result.rows);
           this.arguments_.onPresentationComplete();
         },

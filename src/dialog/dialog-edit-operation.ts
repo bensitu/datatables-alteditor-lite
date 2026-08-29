@@ -1,7 +1,12 @@
 import { dispatchEditorEvent } from '../core/editor-event.js';
+import {
+  InternalOperationAbort,
+  normalizeOperationError,
+} from '../core/error-normalization.js';
 import { settleWithAbort } from '../core/settle-with-abort.js';
 
 import type { AltEditorLiteError } from '../core/alt-editor-lite-error.js';
+import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type { AltEditorLiteOptions } from '../core/alt-editor-lite-options.js';
 import type { AltEditorLite } from '../core/alt-editor-lite.js';
 import type { EditOperationRunner } from '../core/editing/edit-operation-runner.js';
@@ -30,6 +35,7 @@ export interface DialogEditOperationArguments<
   readonly eventTarget: EventTarget;
   readonly options: Readonly<AltEditorLiteOptions<TRow, TFormValues>>;
   readonly editing: Readonly<ResolvedDialogEditingOptions>;
+  readonly language: Readonly<AltEditorLiteLanguage>;
   readonly host: EditorHost<TRow, TTarget>;
   readonly editOperationRunner: EditOperationRunner<TRow, TFormValues>;
   readonly errorReporter: EditorErrorReporter<TRow, TFormValues>;
@@ -53,7 +59,8 @@ export class DialogEditOperation<
     original: Readonly<TRow>,
     target: Readonly<EditorOperationTarget>,
     presentation: DialogEditPresentation,
-    updateOriginal: (original: Readonly<TRow>) => Promise<void>,
+    updateCommittedTarget: (target: TTarget) => void,
+    updateRetainedForm: (original: Readonly<TRow>) => Promise<void>,
   ): Promise<void> {
     const {
       editing,
@@ -64,6 +71,9 @@ export class DialogEditOperation<
       options,
       eventTarget,
     } = this.arguments_;
+    let committedTarget = recordTarget;
+    let committedRow: Readonly<TRow> | undefined;
+    let committedSignal: AbortSignal | undefined;
 
     await editOperationRunner.run({
       ...(options.hooks?.afterSuccess === undefined
@@ -87,18 +97,16 @@ export class DialogEditOperation<
             },
           }),
       commit: async (row, request) => {
-        await host.applyUpdate(recordTarget, row, {
+        committedSignal = request.abortController.signal;
+        const nextTarget = await host.applyUpdate(recordTarget, row, {
           mode: 'dialog',
           operation: 'edit',
           signal: request.abortController.signal,
         });
+        committedTarget = nextTarget ?? recordTarget;
+        committedRow = row;
         if (!editing.closeOnSuccess) {
-          const nextOriginal = await settleWithAbort(
-            host.read(recordTarget, { signal: request.abortController.signal }),
-            request.abortController.signal,
-          );
-          request.abortController.signal.throwIfAborted();
-          await updateOriginal(nextOriginal);
+          updateCommittedTarget(committedTarget);
         }
         return Object.freeze({ row });
       },
@@ -136,10 +144,56 @@ export class DialogEditOperation<
       mode: 'dialog',
       original,
       presentation: {
-        completeSuccess: () => {
+        completeSuccess: async () => {
+          if (
+            !editing.closeOnSuccess &&
+            committedRow !== undefined &&
+            committedSignal !== undefined
+          ) {
+            const signal = committedSignal;
+            try {
+              const nextOriginal = await settleWithAbort(
+                host.read(committedTarget, { signal }),
+                signal,
+              );
+              signal.throwIfAborted();
+              await updateRetainedForm(nextOriginal);
+            } catch (rawError: unknown) {
+              let operationError = normalizeOperationError(
+                rawError,
+                signal,
+                this.arguments_.language,
+              );
+              if (operationError instanceof InternalOperationAbort) {
+                return;
+              }
+              try {
+                await updateRetainedForm(committedRow);
+              } catch (fallbackError: unknown) {
+                operationError = normalizeOperationError(
+                  fallbackError,
+                  signal,
+                  this.arguments_.language,
+                );
+                if (operationError instanceof InternalOperationAbort) {
+                  return;
+                }
+              }
+              errorReporter.report(
+                operationError,
+                {
+                  committed: true,
+                  mode: 'dialog',
+                  operation: 'edit',
+                  phase: 'commit',
+                  target,
+                },
+                false,
+              );
+            }
+          }
           presentation.completeSuccess();
           this.arguments_.onPresentationComplete();
-          return Promise.resolve();
         },
         restoreAfterOperationFailure: () => {
           presentation.restoreAfterOperationFailure();

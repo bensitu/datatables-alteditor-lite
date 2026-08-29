@@ -97,6 +97,163 @@ describe('AltEditorLite asynchronous Host reads', () => {
     ]);
   });
 
+  it('keeps a committed Edit active when its canonical reload fails', async () => {
+    let record: StandaloneRecord = { id: 'record-a', name: 'Alpha' };
+    let shouldFailNextCommittedRead = true;
+    let didApplyUpdate = false;
+    const appliedTargets: string[] = [];
+    const afterSuccess = vi.fn();
+    const onError = vi.fn();
+    const successListener = vi.fn();
+    const update = vi.fn(
+      (
+        values: Readonly<Partial<StandaloneRecord>>,
+        original: Readonly<StandaloneRecord>,
+      ) => ({
+        ...original,
+        name: `${values.name ?? ''} from service`,
+      }),
+    );
+    const fixture = createStandaloneTestFixture(
+      {
+        editing: { dialog: { closeOnSuccess: false, enabled: true } },
+        hooks: { afterSuccess, onError },
+        operations: { update },
+      },
+      {
+        applyUpdate: (target, row) => {
+          appliedTargets.push(target);
+          record = row;
+          didApplyUpdate = true;
+          return appliedTargets.length === 1 ? 'record-b' : target;
+        },
+        read: async () => {
+          await Promise.resolve();
+          if (didApplyUpdate && shouldFailNextCommittedRead) {
+            didApplyUpdate = false;
+            shouldFailNextCommittedRead = false;
+            throw new Error('Canonical reload unavailable.');
+          }
+          return record;
+        },
+      },
+    );
+    fixture.host.eventTarget.addEventListener('alteditor-lite:success', successListener);
+
+    await fixture.editor.openEditDialog('record-a');
+    fixture.editor.getField('name')?.setValue('First update');
+    document.querySelector<HTMLFormElement>('.alteditor-lite-form')?.requestSubmit();
+
+    await vi.waitFor(() => {
+      expect(afterSuccess).toHaveBeenCalledOnce();
+    });
+    expect(successListener).toHaveBeenCalledOnce();
+    expect(onError).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ committed: true, operation: 'edit', phase: 'commit' }),
+    );
+    expect(fixture.editor.getState()).toMatchObject({ action: 'edit', status: 'open' });
+
+    fixture.editor.getField('name')?.setValue('Second update');
+    document.querySelector<HTMLFormElement>('.alteditor-lite-form')?.requestSubmit();
+
+    await vi.waitFor(() => {
+      expect(afterSuccess).toHaveBeenCalledTimes(2);
+    });
+    expect(appliedTargets).toEqual(['record-a', 'record-b']);
+    expect(update.mock.calls[1]?.[1]).toMatchObject({
+      id: 'record-a',
+      name: 'First update from service',
+    });
+  });
+
+  it('keeps committed multi-record changes when a retained reload fails', async () => {
+    const records = new Map<string, StandaloneRecord>([
+      ['record-a', { id: 'record-a', name: 'Alpha' }],
+      ['record-b', { id: 'record-b', name: 'Beta' }],
+    ]);
+    let didApplyUpdate = false;
+    let shouldFailNextCommittedRead = true;
+    const afterSuccess = vi.fn();
+    const onError = vi.fn();
+    const successListener = vi.fn();
+    const fixture = createStandaloneTestFixture(
+      {
+        editing: { dialog: { closeOnSuccess: false, enabled: true } },
+        hooks: { afterSuccess, onError },
+        operations: {
+          updateMany: (changes, originals) =>
+            originals.map((original) => ({
+              ...original,
+              name: changes.name ?? original.name,
+            })),
+        },
+      },
+      {
+        applyUpdates: (updates) => {
+          for (const { row, target } of updates) {
+            records.set(target, row);
+          }
+          didApplyUpdate = true;
+        },
+        read: async (target) => {
+          await Promise.resolve();
+          if (didApplyUpdate && shouldFailNextCommittedRead) {
+            didApplyUpdate = false;
+            shouldFailNextCommittedRead = false;
+            throw new Error('Canonical reload unavailable.');
+          }
+          const row = records.get(target);
+          if (row === undefined) {
+            throw new Error('Record unavailable.');
+          }
+          return row;
+        },
+      },
+    );
+    fixture.host.eventTarget.addEventListener('alteditor-lite:success', successListener);
+
+    await fixture.editor.openBatchEditDialog(['record-a', 'record-b']);
+    const batchField = document.querySelector<HTMLElement>(
+      '[data-alteditor-lite-batch-field="name"]',
+    );
+    batchField
+      ?.querySelector<HTMLButtonElement>(
+        '.alteditor-lite-batch-field__state .alteditor-lite-batch-field__action',
+      )
+      ?.click();
+    const input = batchField?.querySelector<HTMLInputElement>('input');
+    if (input === null || input === undefined) {
+      throw new Error('Expected a multi-record editor.');
+    }
+    input.value = 'Shared update';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    document
+      .querySelector<HTMLFormElement>('.alteditor-lite-batch-form')
+      ?.requestSubmit();
+
+    await vi.waitFor(() => {
+      expect(afterSuccess).toHaveBeenCalledOnce();
+    });
+    expect(successListener).toHaveBeenCalledOnce();
+    expect(onError).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        committed: true,
+        operation: 'batchEdit',
+        phase: 'commit',
+      }),
+    );
+    expect(fixture.editor.getState()).toMatchObject({
+      action: 'batchEdit',
+      status: 'open',
+    });
+    expect([...records.values()].map(({ name }) => name)).toEqual([
+      'Shared update',
+      'Shared update',
+    ]);
+  });
+
   it('uses asynchronous reads for multi-record opening and submission checks', async () => {
     const records = new Map<string, StandaloneRecord>([
       ['record-a', { id: 'record-a', name: 'Alpha' }],

@@ -131,8 +131,12 @@ export class DialogRemoveOperation<
       }
 
       this.arguments_.operationOwner.complete(request);
-      presentation.completeSuccess();
-      this.arguments_.onPresentationComplete();
+      try {
+        presentation.completeSuccess();
+        this.arguments_.onPresentationComplete();
+      } catch (rawError: unknown) {
+        this.reportCommittedFailure(rawError, request);
+      }
       await this.arguments_.errorReporter.runAfterSuccess({
         mode: 'dialog',
         operation: 'remove',
@@ -178,6 +182,30 @@ export class DialogRemoveOperation<
         phase,
       },
       true,
+    );
+  }
+
+  private reportCommittedFailure(
+    rawError: unknown,
+    request: OwnedOperationRequest<'remove'>,
+  ): void {
+    const operationError = normalizeOperationError(
+      rawError,
+      request.abortController.signal,
+      this.arguments_.language,
+    );
+    if (operationError instanceof InternalOperationAbort) {
+      return;
+    }
+    this.arguments_.errorReporter.report(
+      operationError,
+      {
+        committed: true,
+        mode: 'dialog',
+        operation: 'remove',
+        phase: 'commit',
+      },
+      false,
     );
   }
 }

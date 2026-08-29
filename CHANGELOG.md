@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Preserved successful single- and multi-record updates when a retained form
+  could not reload its canonical record, and continued retained Edit work with
+  the target returned by the Host.
+- Reported committed Create and Remove presentation failures without suppressing
+  their success observers.
+
 ## [0.7.0] - 2026-08-29
 
 ### Added

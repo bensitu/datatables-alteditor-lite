@@ -172,6 +172,7 @@ export class DialogEditingController<
       errorReporter: arguments_.errorReporter,
       eventTarget: arguments_.host.eventTarget,
       host: arguments_.host,
+      language: arguments_.language,
       onPresentationComplete: arguments_.onPresentationComplete,
       options: arguments_.options,
     });
@@ -182,6 +183,7 @@ export class DialogEditingController<
       errorReporter: arguments_.errorReporter,
       eventTarget: arguments_.host.eventTarget,
       host: arguments_.host,
+      language: arguments_.language,
       onPresentationComplete: arguments_.onPresentationComplete,
       options: arguments_.options,
     });
@@ -1049,6 +1051,9 @@ export class DialogEditingController<
               this.editOriginal,
               this.createEditOperationTarget(recordTarget),
               this.editPresentation(form),
+              (nextTarget) => {
+                this.editTarget = nextTarget;
+              },
               async (nextOriginal) => {
                 const snapshot = createReadonlyRowView<TRow>(nextOriginal);
                 this.editOriginal = snapshot;

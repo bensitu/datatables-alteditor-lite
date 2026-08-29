@@ -68,6 +68,13 @@ while capturing and revalidating single Edit, multi-record Edit, and Remove
 targets. A successful Edit with `editing.dialog.closeOnSuccess: false` reads the
 canonical record again and updates the retained form.
 
+When `applyUpdate` returns a target, that target identifies the committed record
+for the retained form, its canonical reload, and later submissions. If the
+canonical reload fails after the update was applied, success observers still run
+and the retained form uses the applied row as its next baseline. `hooks.onError`
+receives the reload failure with `committed: true`; applications can use that
+notification to offer an explicit refresh when required.
+
 ```ts
 const host = new StandaloneHost<UserRecord, string>({
   read: async (target, context) => {
