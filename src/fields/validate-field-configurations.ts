@@ -1,10 +1,10 @@
 import { EditorConfigurationError } from '../core/alt-editor-lite-error.js';
 import { hasOwn } from '../core/has-own.js';
 import { parseFieldPath } from '../object-path/field-path.js';
-import { SEARCH_SELECT_MAX_OPTION_COUNT } from '../search-select/search-select.js';
 
 import { ChoiceOptionStore } from './choice-option-store.js';
 import { assertAllowedFieldAttributes } from './field-attributes.js';
+import { SEARCH_SELECT_MAX_OPTION_COUNT } from './search-select-constants.js';
 import { throwUnsupportedFieldType } from './unsupported-field-type.js';
 
 import type { FieldConfig } from './field-config.js';

@@ -1,10 +1,11 @@
 import { EditorConfigurationError } from '../core/alt-editor-lite-error.js';
 import { hasOwn } from '../core/has-own.js';
 import { mergeAbortSignals } from '../core/merge-abort-signals.js';
+import { settleWithAbort } from '../core/settle-with-abort.js';
 import { ChoiceOptionStore } from '../fields/choice-option-store.js';
+import { SEARCH_SELECT_MAX_OPTION_COUNT } from '../fields/search-select-constants.js';
 import { parseFieldPath } from '../object-path/field-path.js';
 import { getPathValue } from '../object-path/get-path-value.js';
-import { SEARCH_SELECT_MAX_OPTION_COUNT } from '../search-select/search-select.js';
 
 import type { FieldRuntimeController } from './field-runtime-controller.js';
 import type {
@@ -106,58 +107,13 @@ function isAbortError(error: unknown): boolean {
   }
 }
 
-function settleOnAbort<TValue>(
+function settleDependencyResult<TValue>(
   value: PromiseLike<TValue> | TValue,
   signal: AbortSignal,
 ): Promise<TValue> {
-  if (signal.aborted) {
-    return Promise.reject(new DOMException('The request was aborted.', 'AbortError'));
-  }
-  return new Promise<TValue>((resolve, reject) => {
-    const settlement: {
-      handleAbort: (() => void) | undefined;
-      reject: ((reason?: unknown) => void) | undefined;
-      resolve: ((result: TValue) => void) | undefined;
-      signal: AbortSignal | undefined;
-    } = { handleAbort: undefined, reject, resolve, signal };
-    const release = (): void => {
-      const currentSignal = settlement.signal;
-      const currentHandleAbort = settlement.handleAbort;
-      settlement.handleAbort = undefined;
-      settlement.reject = undefined;
-      settlement.resolve = undefined;
-      settlement.signal = undefined;
-      if (currentHandleAbort !== undefined) {
-        currentSignal?.removeEventListener('abort', currentHandleAbort);
-      }
-    };
-    const resolveValue = (result: TValue): void => {
-      const currentResolve = settlement.resolve;
-      if (currentResolve === undefined) {
-        return;
-      }
-      release();
-      currentResolve(result);
-    };
-    const rejectValue = (error: unknown): void => {
-      const currentReject = settlement.reject;
-      if (currentReject === undefined) {
-        return;
-      }
-      release();
-      currentReject(error);
-    };
-    const handleAbort = (): void => {
-      rejectValue(new DOMException('The request was aborted.', 'AbortError'));
-    };
-    settlement.handleAbort = handleAbort;
-    signal.addEventListener('abort', handleAbort, { once: true });
-    void Promise.resolve(value).then(resolveValue, (error: unknown) => {
-      rejectValue(
-        error instanceof Error ? error : new Error('Resolver failed.', { cause: error }),
-      );
-    });
-  });
+  return settleWithAbort(value, signal, (error) =>
+    error instanceof Error ? error : new Error('Resolver failed.', { cause: error }),
+  );
 }
 
 function isObjectRecord(value: unknown): value is Readonly<Record<string, unknown>> {
@@ -433,7 +389,7 @@ export class FormDependencyController<TFormValues extends object> {
     revision: number,
   ): Promise<DependencyResolution<TFormValues>> {
     try {
-      const result = await settleOnAbort(
+      const result = await settleDependencyResult(
         resolver(
           getPathValue(values, sourcePath) as never,
           Object.freeze({ signal, values }),

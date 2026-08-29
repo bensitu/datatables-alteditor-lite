@@ -1,7 +1,16 @@
+type SettlementError = DOMException | Error;
+
+function normalizeRejection(error: unknown): SettlementError {
+  return error instanceof Error || error instanceof DOMException
+    ? error
+    : new Error('The request failed.', { cause: error });
+}
+
 /** Settles a direct or promise-like value, rejecting promptly when cancelled. */
 export function settleWithAbort<TValue>(
   value: TValue | PromiseLike<TValue>,
   signal: AbortSignal,
+  normalizeError: (error: unknown) => SettlementError = normalizeRejection,
 ): Promise<TValue> {
   if (signal.aborted) {
     return Promise.reject(new DOMException('The request was aborted.', 'AbortError'));
@@ -26,17 +35,16 @@ export function settleWithAbort<TValue>(
       }
       isSettled = true;
       release();
-      reject(
-        error instanceof Error || error instanceof DOMException
-          ? error
-          : new Error('The request failed.', { cause: error }),
-      );
+      // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors -- DOMException is a supported cancellation reason
+      reject(error);
     };
     const handleAbort = (): void => {
       rejectValue(new DOMException('The request was aborted.', 'AbortError'));
     };
 
     signal.addEventListener('abort', handleAbort, { once: true });
-    void Promise.resolve(value).then(resolveValue, rejectValue);
+    void Promise.resolve(value).then(resolveValue, (error: unknown) => {
+      rejectValue(normalizeError(error));
+    });
   });
 }

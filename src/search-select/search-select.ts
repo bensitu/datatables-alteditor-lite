@@ -1,5 +1,6 @@
 import { EditorConfigurationError } from '../core/alt-editor-lite-error.js';
 import { ChoiceOptionStore } from '../fields/choice-option-store.js';
+import { SEARCH_SELECT_MAX_OPTION_COUNT } from '../fields/search-select-constants.js';
 
 import { filterSearchOptions } from './filter-search-options.js';
 import {
@@ -25,9 +26,6 @@ import type {
   SearchSelectOptionLoader,
   SearchSelectOptionResolver,
 } from '../fields/search-select-data-source.js';
-
-/** Maximum supported local option count without virtualization. */
-export const SEARCH_SELECT_MAX_OPTION_COUNT = 5000;
 
 /** Localized text consumed by a SearchSelect instance. */
 export interface SearchSelectMessages {
