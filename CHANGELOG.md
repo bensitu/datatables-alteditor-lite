@@ -5,12 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.7.1] - 2026-08-30
 
 ### Changed
 
 - Organized shared field styles before Inline overrides, consolidated identical
   source rules, and documented supported stylesheet customization variables.
+- Expanded browser compatibility coverage for Inline SearchSelect with Scroller
+  row reuse in Chromium, Firefox, and WebKit.
 
 ### Fixed
 
@@ -19,8 +21,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   placement and limiting popup height to the available space. Constrained
   popups retain their scroll position and reveal the active option without
   moving an ancestor scroll area.
-- Verified Inline SearchSelect behavior with Scroller row reuse in Chromium,
-  Firefox, and WebKit.
 - Populated dialog Edit forms and Remove submissions with refreshed Host
   snapshots read after `beforeOpen` completes.
 - Preserved successful single- and multi-record updates when a retained form
