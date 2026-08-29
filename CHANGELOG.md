@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.2] - 2026-08-30
+
+### Changed
+
+- Consolidated Host record reads and cancellation handling across dialog
+  opening, target verification, and retained-form reloads.
+- Separated dialog resource ownership and open-request coordination while
+  preserving close behavior and event semantics.
+- Separated multi-record field presentation and per-field state coordination
+  from form-level dependency and validation responsibilities.
+- Separated SearchSelect remote search and value-resolution requests from DOM
+  presentation and strengthened cancellation of superseded results.
+- Centralized asynchronous cancellation settlement and moved the SearchSelect
+  option limit to a shared field module.
+- Expanded maintained coverage for asynchronous Host reads, dialog cleanup,
+  remote SearchSelect behavior, and custom fields across retained dialogs,
+  multi-record editing, and Inline Edit.
+
 ## [0.7.1] - 2026-08-30
 
 ### Changed
