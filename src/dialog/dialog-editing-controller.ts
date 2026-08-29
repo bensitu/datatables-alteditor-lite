@@ -13,11 +13,11 @@ import {
 } from '../core/error-normalization.js';
 import { createReadonlyRowView } from '../core/readonly-row-view.js';
 import { runCleanupSteps } from '../core/run-cleanup-steps.js';
-import { settleWithAbort } from '../core/settle-with-abort.js';
 import { resolveFieldCapabilities } from '../fields/field-capabilities.js';
 import { BatchEditorFormController } from '../form/batch-editor-form-controller.js';
 import { buildEditorForm } from '../form/build-editor-form.js';
 import { hasHostSelectionCapability } from '../host/editor-host.js';
+import { readHostRecords } from '../host/host-record-reader.js';
 
 import { createRemoveConfirmation } from './create-remove-confirmation.js';
 import {
@@ -637,14 +637,8 @@ export class DialogEditingController<
     errorContext: EditorErrorHookContext,
   ): Promise<readonly Readonly<TRow>[]> {
     const { signal } = abortController;
-    const context = Object.freeze({ signal });
     try {
-      const rows = await Promise.all(
-        targets.map(
-          async (target) =>
-            await settleWithAbort(this.arguments_.host.read(target, context), signal),
-        ),
-      );
+      const rows = await readHostRecords(this.arguments_.host, targets, signal);
       this.assertCurrentOpenRequest(abortController);
       return rows.map((row) => createReadonlyRowView<TRow>(row));
     } catch (rawError: unknown) {

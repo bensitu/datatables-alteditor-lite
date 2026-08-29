@@ -7,8 +7,8 @@ import {
   InternalOperationAbort,
   normalizeOperationError,
 } from '../core/error-normalization.js';
-import { settleWithAbort } from '../core/settle-with-abort.js';
 import { hasHostBatchUpdateCapability } from '../host/editor-host.js';
+import { readHostRecords } from '../host/host-record-reader.js';
 
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type { AltEditorLiteOptions } from '../core/alt-editor-lite-options.js';
@@ -155,13 +155,7 @@ export class DialogBatchEditOperation<
           if (!editing.closeOnSuccess && committedSignal !== undefined) {
             const signal = committedSignal;
             try {
-              const nextOriginals = await Promise.all(
-                recordTargets.map(
-                  async (recordTarget) =>
-                    await settleWithAbort(host.read(recordTarget, { signal }), signal),
-                ),
-              );
-              signal.throwIfAborted();
+              const nextOriginals = await readHostRecords(host, recordTargets, signal);
               updateOriginals(nextOriginals);
             } catch (rawError: unknown) {
               let operationError = normalizeOperationError(
@@ -226,13 +220,7 @@ export class DialogBatchEditOperation<
         errorReporter.report(error, context, publishEvent);
       },
       revalidateTargets: async (signal) => {
-        await Promise.all(
-          recordTargets.map(
-            async (recordTarget) =>
-              await settleWithAbort(host.read(recordTarget, { signal }), signal),
-          ),
-        );
-        signal.throwIfAborted();
+        await readHostRecords(host, recordTargets, signal);
       },
       targets,
     });

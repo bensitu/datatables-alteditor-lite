@@ -3,7 +3,7 @@ import {
   InternalOperationAbort,
   normalizeOperationError,
 } from '../core/error-normalization.js';
-import { settleWithAbort } from '../core/settle-with-abort.js';
+import { readHostRecords } from '../host/host-record-reader.js';
 
 import type { AltEditorLiteError } from '../core/alt-editor-lite-error.js';
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
@@ -66,16 +66,10 @@ export class DialogRemoveOperation<
     let phase: EditorErrorHookContext['phase'] = 'submit';
 
     try {
-      await Promise.all(
-        targets.map(
-          async (target) =>
-            await settleWithAbort(
-              this.arguments_.host.read(target, {
-                signal: request.abortController.signal,
-              }),
-              request.abortController.signal,
-            ),
-        ),
+      await readHostRecords(
+        this.arguments_.host,
+        targets,
+        request.abortController.signal,
       );
       if (!this.owns(request)) {
         return;

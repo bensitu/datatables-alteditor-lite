@@ -3,7 +3,7 @@ import {
   InternalOperationAbort,
   normalizeOperationError,
 } from '../core/error-normalization.js';
-import { settleWithAbort } from '../core/settle-with-abort.js';
+import { readHostRecord } from '../host/host-record-reader.js';
 
 import type { AltEditorLiteError } from '../core/alt-editor-lite-error.js';
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
@@ -152,11 +152,7 @@ export class DialogEditOperation<
           ) {
             const signal = committedSignal;
             try {
-              const nextOriginal = await settleWithAbort(
-                host.read(committedTarget, { signal }),
-                signal,
-              );
-              signal.throwIfAborted();
+              const nextOriginal = await readHostRecord(host, committedTarget, signal);
               await updateRetainedForm(nextOriginal);
             } catch (rawError: unknown) {
               let operationError = normalizeOperationError(
@@ -240,8 +236,7 @@ export class DialogEditOperation<
         errorReporter.report(error, context, publishEvent);
       },
       revalidateTarget: async (signal) => {
-        await settleWithAbort(host.read(recordTarget, { signal }), signal);
-        signal.throwIfAborted();
+        await readHostRecord(host, recordTarget, signal);
       },
       target,
     });
