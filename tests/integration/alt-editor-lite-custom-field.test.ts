@@ -27,6 +27,25 @@ interface TagsOptions {
 interface TagsObserver {
   readonly destroy: () => void;
   readonly contexts: CustomFieldControllerContext[];
+  readonly validate?: () => void;
+}
+
+interface Deferred<TValue> {
+  readonly promise: Promise<TValue>;
+  resolve(value: TValue): void;
+}
+
+function createDeferred<TValue>(): Deferred<TValue> {
+  let resolvePromise: ((value: TValue) => void) | undefined;
+  const promise = new Promise<TValue>((resolve) => {
+    resolvePromise = resolve;
+  });
+  return {
+    promise,
+    resolve: (value) => {
+      resolvePromise?.(value);
+    },
+  };
 }
 
 function createTagsDefinition(observer: TagsObserver) {
@@ -68,13 +87,15 @@ function createTagsDefinition(observer: TagsObserver) {
         setValue: (value) => {
           control.value = value.join(', ');
         },
-        validate: () =>
-          readValue().length > options.maximum
+        validate: () => {
+          observer.validate?.();
+          return readValue().length > options.maximum
             ? {
                 message: `Choose no more than ${String(options.maximum)} tags.`,
                 valid: false,
               }
-            : { valid: true },
+            : { valid: true };
+        },
       };
     },
     isEqual: (left, right) =>
@@ -242,6 +263,74 @@ describe('AltEditorLite custom fields', () => {
     expect(observer.contexts[1]?.signal.aborted).toBe(true);
   });
 
+  it('repopulates a retained Edit from the committed structured value', async () => {
+    const records = new Map<string, RecordRow>([
+      ['record-a', { id: 'record-a', summary: 'Alpha', tags: ['original'] }],
+    ]);
+    const observer: TagsObserver = { contexts: [], destroy: vi.fn() };
+    const update = vi.fn(
+      (
+        values: Readonly<Partial<RecordValues>>,
+        original: Readonly<RecordRow>,
+      ): RecordRow => ({
+        ...original,
+        tags: [...(values.tags ?? original.tags), 'from-service'],
+      }),
+    );
+    const host = new StandaloneHost<RecordRow, string>({
+      applyUpdate: (target, row) => {
+        records.set(target, row);
+        return target;
+      },
+      read: (target) => {
+        const row = records.get(target);
+        if (row === undefined) {
+          throw new Error('Record unavailable.');
+        }
+        return row;
+      },
+    });
+    editor = new AltEditorLite(host, {
+      editing: { dialog: { closeOnSuccess: false, enabled: true } },
+      fields: [
+        createTagsDefinition(observer).field<RecordValues>({
+          label: 'Tags',
+          name: 'tags',
+          options: { maximum: 4 },
+        }),
+      ],
+      operations: { update },
+    });
+
+    await editor.openEditDialog('record-a');
+    const control = document.querySelector<HTMLInputElement>('[data-tags-control]');
+    const form = document.querySelector<HTMLFormElement>('.alteditor-lite-form');
+    if (control === null || form === null) {
+      throw new Error('Expected the retained custom field form.');
+    }
+    control.value = 'client';
+    control.dispatchEvent(new Event('input', { bubbles: true }));
+    form.requestSubmit();
+
+    await vi.waitFor(() => {
+      expect(editor?.getState().status).toBe('open');
+      expect(control.value).toBe('client, from-service');
+    });
+    control.value = 'second';
+    control.dispatchEvent(new Event('input', { bubbles: true }));
+    form.requestSubmit();
+    await vi.waitFor(() => {
+      expect(update).toHaveBeenCalledTimes(2);
+      expect(control.value).toBe('second, from-service');
+    });
+
+    expect(update.mock.calls[1]?.[1].tags).toEqual(['client', 'from-service']);
+    expect(observer.contexts).toHaveLength(1);
+    await editor.closeDialog();
+    expect(observer.destroy).toHaveBeenCalledOnce();
+    expect(observer.contexts[0]?.signal.aborted).toBe(true);
+  });
+
   it('uses structural equality and the existing multi-record transaction', async () => {
     const records = new Map<string, RecordRow>([
       ['record-a', { id: 'record-a', summary: 'A', tags: ['shared'] }],
@@ -301,5 +390,181 @@ describe('AltEditorLite custom fields', () => {
       ['updated'],
     ]);
     expect(applyUpdates).toHaveBeenCalledOnce();
+  });
+
+  it('preserves mixed values through restore and retained multi-record updates', async () => {
+    const records = new Map<string, RecordRow>([
+      ['record-a', { id: 'record-a', summary: 'A', tags: ['alpha'] }],
+      ['record-b', { id: 'record-b', summary: 'B', tags: ['beta'] }],
+    ]);
+    const validate = vi.fn();
+    const observer: TagsObserver = {
+      contexts: [],
+      destroy: vi.fn(),
+      validate,
+    };
+    const updateMany = vi.fn(
+      (
+        changes: Readonly<Partial<RecordValues>>,
+        originals: readonly Readonly<RecordRow>[],
+      ): readonly RecordRow[] =>
+        originals.map((original) => ({
+          ...original,
+          tags:
+            changes.tags === undefined ? original.tags : [...changes.tags, original.id],
+        })),
+    );
+    const host = new StandaloneHost<RecordRow, string>({
+      applyUpdates: (updates) => {
+        for (const { row, target } of updates) {
+          records.set(target, row);
+        }
+      },
+      read: (target) => {
+        const row = records.get(target);
+        if (row === undefined) {
+          throw new Error('Record unavailable.');
+        }
+        return row;
+      },
+    });
+    editor = new AltEditorLite(host, {
+      editing: { dialog: { closeOnSuccess: false, enabled: true } },
+      fields: [
+        createTagsDefinition(observer).field<RecordValues>({
+          label: 'Tags',
+          name: 'tags',
+          options: { maximum: 4 },
+        }),
+      ],
+      operations: { updateMany },
+    });
+
+    await editor.openBatchEditDialog(['record-a', 'record-b']);
+    let field = document.querySelector<HTMLElement>(
+      '[data-alteditor-lite-batch-field="tags"]',
+    );
+    let control = field?.querySelector<HTMLInputElement>('[data-tags-control]');
+    let form = document.querySelector<HTMLFormElement>('.alteditor-lite-batch-form');
+    if (field === null || control === null || control === undefined || form === null) {
+      throw new Error('Expected the retained multi-record custom field form.');
+    }
+    expect(field.textContent).toContain('Multiple values');
+    expect(control.closest<HTMLElement>('.alteditor-lite-field')?.hidden).toBe(true);
+
+    form.requestSubmit();
+    await vi.waitFor(() => {
+      expect(editor?.getState().status).toBe('ready');
+    });
+    expect(updateMany).not.toHaveBeenCalled();
+    expect(validate).not.toHaveBeenCalled();
+    expect(observer.destroy).toHaveBeenCalledOnce();
+    expect(observer.contexts[0]?.signal.aborted).toBe(true);
+
+    await editor.openBatchEditDialog(['record-a', 'record-b']);
+    field = document.querySelector<HTMLElement>(
+      '[data-alteditor-lite-batch-field="tags"]',
+    );
+    control = field?.querySelector<HTMLInputElement>('[data-tags-control]');
+    form = document.querySelector<HTMLFormElement>('.alteditor-lite-batch-form');
+    const setValueButton = field?.querySelector<HTMLButtonElement>(
+      '.alteditor-lite-batch-field__state .alteditor-lite-batch-field__action',
+    );
+    const restoreButton = field?.querySelector<HTMLButtonElement>(
+      ':scope > .alteditor-lite-batch-field__action',
+    );
+    if (field === null || control === null || control === undefined || form === null) {
+      throw new Error('Expected the reopened multi-record custom field form.');
+    }
+
+    setValueButton?.click();
+    control.value = 'temporary';
+    control.dispatchEvent(new Event('input', { bubbles: true }));
+    restoreButton?.click();
+    expect(field.textContent).toContain('Multiple values');
+    expect(control.closest<HTMLElement>('.alteditor-lite-field')?.hidden).toBe(true);
+
+    setValueButton?.click();
+    control.value = 'shared';
+    control.dispatchEvent(new Event('input', { bubbles: true }));
+    form.requestSubmit();
+    await vi.waitFor(() => {
+      expect(updateMany).toHaveBeenCalledOnce();
+      expect(field.textContent).toContain('Multiple values');
+      expect(control.closest<HTMLElement>('.alteditor-lite-field')?.hidden).toBe(true);
+    });
+
+    expect(updateMany.mock.calls[0]?.[0]).toEqual({ tags: ['shared'] });
+    expect([...records.values()].map(({ tags }) => tags)).toEqual([
+      ['shared', 'record-a'],
+      ['shared', 'record-b'],
+    ]);
+    expect(validate).toHaveBeenCalledOnce();
+    expect(observer.contexts).toHaveLength(2);
+    await editor.closeDialog();
+    expect(observer.destroy).toHaveBeenCalledTimes(2);
+    expect(observer.contexts[1]?.signal.aborted).toBe(true);
+  });
+
+  it('does not submit a late asynchronous value after the dialog closes', async () => {
+    const pendingValue = createDeferred<readonly string[]>();
+    const getValue = vi.fn(() => pendingValue.promise);
+    const createRow = vi.fn((values: Readonly<Partial<RecordValues>>): RecordRow => ({
+      id: 'created',
+      summary: '',
+      tags: values.tags ?? [],
+    }));
+    const applyCreate = vi.fn();
+    let context: CustomFieldControllerContext | undefined;
+    const definition = defineCustomField<readonly string[]>({
+      createController: (_options, controllerContext) => {
+        context = controllerContext;
+        const control = document.createElement('input');
+        return {
+          control,
+          destroy: vi.fn(),
+          focus: () => {
+            control.focus();
+          },
+          getValue,
+          setDisabled: (disabled) => {
+            control.disabled = disabled;
+          },
+          setReadOnly: (readOnly) => {
+            control.readOnly = readOnly;
+          },
+          setRequired: (required) => {
+            control.required = required;
+          },
+          setValue: () => undefined,
+        };
+      },
+    });
+    const host = new StandaloneHost<RecordRow, string>({
+      applyCreate,
+      read: () => {
+        throw new Error('No records are available.');
+      },
+    });
+    editor = new AltEditorLite(host, {
+      clientSide: { createRow },
+      fields: [definition.field<RecordValues>({ label: 'Tags', name: 'tags' })],
+    });
+
+    await editor.openCreateDialog();
+    document.querySelector<HTMLFormElement>('.alteditor-lite-form')?.requestSubmit();
+    await vi.waitFor(() => {
+      expect(getValue).toHaveBeenCalledOnce();
+    });
+
+    await editor.closeDialog();
+    expect(context?.signal.aborted).toBe(true);
+    pendingValue.resolve(['late']);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(createRow).not.toHaveBeenCalled();
+    expect(applyCreate).not.toHaveBeenCalled();
+    expect(editor.getState().status).toBe('ready');
   });
 });
