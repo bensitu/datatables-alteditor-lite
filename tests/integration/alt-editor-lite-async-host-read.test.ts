@@ -45,6 +45,11 @@ describe('AltEditorLite asynchronous Host reads', () => {
         },
       },
     );
+    const openListener = vi.fn(() => {
+      expect(fixture.editor.getState()).toEqual({ action: 'edit', status: 'open' });
+      expect(fixture.editor.getField('name')).not.toBeNull();
+    });
+    fixture.host.eventTarget.addEventListener('alteditor-lite:open', openListener);
 
     await fixture.editor.openEditDialog('record-a');
 
@@ -53,6 +58,7 @@ describe('AltEditorLite asynchronous Host reads', () => {
     ).toBe('Latest Async Alpha');
     expect(readSignals).toHaveLength(2);
     expect(readSignals.every((signal) => !signal.aborted)).toBe(true);
+    expect(openListener).toHaveBeenCalledOnce();
   });
 
   it('revalidates and reloads canonical values when Edit remains open', async () => {
@@ -422,6 +428,7 @@ describe('AltEditorLite asynchronous Host reads', () => {
       document.querySelector<HTMLDialogElement>('.alteditor-lite-dialog')?.open,
     ).toBe(false);
     expect(document.querySelector('.alteditor-lite-form')).toBeNull();
+    expect(fixture.editor.getField('name')).toBeNull();
     expect(onError).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ mode: 'dialog', operation: 'edit' }),
