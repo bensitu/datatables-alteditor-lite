@@ -428,6 +428,35 @@ describe('AltEditorLite asynchronous Host reads', () => {
     );
   });
 
+  it('invokes every requested Host read when one batch target throws synchronously', async () => {
+    const reads: string[] = [];
+    const fixture = createStandaloneTestFixture(
+      {
+        operations: {
+          updateMany: () => [],
+        },
+      },
+      {
+        applyUpdates: () => undefined,
+        read: (target) => {
+          reads.push(target);
+          if (target === 'record-a') {
+            throw new Error('Record A is unavailable.');
+          }
+          return { id: target, name: 'Beta' };
+        },
+      },
+    );
+
+    await expect(
+      fixture.editor.openBatchEditDialog(['record-a', 'record-b']),
+    ).rejects.toThrow();
+
+    expect(reads).toEqual(['record-a', 'record-b']);
+    expect(fixture.editor.getState()).toEqual({ status: 'ready' });
+    expect(document.querySelector('.alteditor-lite-batch-form')).toBeNull();
+  });
+
   it('ignores a cancelled read after a later target opens', async () => {
     let firstSignal: AbortSignal | undefined;
     let resolveFirst: ((row: StandaloneRecord) => void) | undefined;

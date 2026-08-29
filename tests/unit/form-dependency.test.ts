@@ -258,6 +258,90 @@ describe('form dependencies', () => {
     await expect(form.getField('details')?.getValue()).resolves.toBe('latest');
   });
 
+  it('preserves synchronous and non-Error resolver failure details', async () => {
+    const synchronousFailure = new Error('Synchronous resolver failure.');
+    const normalizedFailures: unknown[] = [];
+    const reportedFailures: unknown[] = [];
+    let requestCount = 0;
+    const controller = new FormDependencyController<DependencyValues>({
+      dependencies: defineFormDependencies<DependencyValues>()({
+        country: () => {
+          requestCount += 1;
+          if (requestCount === 1) {
+            throw synchronousFailure;
+          }
+          // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors -- verifies consumer-provided rejection handling
+          return Promise.reject('remote reason');
+        },
+      }),
+      fields: new Map(),
+      lifecycleSignal: new AbortController().signal,
+      normalizeError: (error) => {
+        normalizedFailures.push(error);
+        return new EditorConfigurationError('Resolver unavailable.', { cause: error });
+      },
+      onErrorChange: (_sourcePath, error) => {
+        if (error !== undefined) {
+          reportedFailures.push(error);
+        }
+      },
+    });
+    const values = {
+      category: '',
+      country: 'JP',
+      details: '',
+      region: undefined,
+    };
+
+    await controller.handleUserChange('country', values, new AbortController().signal);
+    await controller.handleUserChange('country', values, new AbortController().signal);
+
+    expect(normalizedFailures[0]).toBe(synchronousFailure);
+    expect(normalizedFailures[1]).toMatchObject({
+      cause: 'remote reason',
+      message: 'Resolver failed.',
+    });
+    expect(reportedFailures).toHaveLength(2);
+    controller.destroy();
+  });
+
+  it('does not report a dependency request cancelled by its parent', async () => {
+    const pending = createDeferred<Readonly<Record<string, never>>>();
+    let resolverSignal: AbortSignal | undefined;
+    const normalizeError = vi.fn(() => new EditorConfigurationError('Unexpected.'));
+    const onErrorChange = vi.fn();
+    const controller = new FormDependencyController<DependencyValues>({
+      dependencies: defineFormDependencies<DependencyValues>()({
+        country: (_value, { signal }) => {
+          resolverSignal = signal;
+          return pending.promise;
+        },
+      }),
+      fields: new Map(),
+      lifecycleSignal: new AbortController().signal,
+      normalizeError,
+      onErrorChange,
+    });
+    const parent = new AbortController();
+    const request = controller.handleUserChange(
+      'country',
+      { category: '', country: 'JP', details: '', region: undefined },
+      parent.signal,
+    );
+    await vi.waitFor(() => {
+      expect(resolverSignal).toBeDefined();
+    });
+
+    parent.abort();
+    await request;
+
+    expect(resolverSignal?.aborted).toBe(true);
+    expect(normalizeError).not.toHaveBeenCalled();
+    expect(onErrorChange).not.toHaveBeenCalled();
+    pending.resolve({});
+    controller.destroy();
+  });
+
   it('applies dependency updates in request order and stops stale patch work', async () => {
     const firstApplication = createDeferred<undefined>();
     const applications: string[] = [];
