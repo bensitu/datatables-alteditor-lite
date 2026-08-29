@@ -753,7 +753,15 @@ textarea.alteditor-lite-field__control {
   }
 
   .alteditor-lite-search-select__listbox {
-    max-height: min(12rem, 40vh);
+    max-height: min(
+      var(--alteditor-lite-search-select-max-height),
+      var(
+        --alteditor-lite-search-select-available-height,
+        var(--alteditor-lite-search-select-max-height)
+      ),
+      12rem,
+      40vh
+    );
   }
 
   @supports (height: 100dvh) {
@@ -762,7 +770,15 @@ textarea.alteditor-lite-field__control {
     }
 
     .alteditor-lite-search-select__listbox {
-      max-height: min(12rem, 40dvh);
+      max-height: min(
+        var(--alteditor-lite-search-select-max-height),
+        var(
+          --alteditor-lite-search-select-available-height,
+          var(--alteditor-lite-search-select-max-height)
+        ),
+        12rem,
+        40dvh
+      );
     }
   }
 }

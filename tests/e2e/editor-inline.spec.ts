@@ -554,6 +554,7 @@ test('keeps a keyboard-only choice popup above the editing cell border', async (
 test('places a SearchSelect popup inside a vertical table scroll area', async ({
   page,
 }) => {
+  await page.setViewportSize({ height: 667, width: 375 });
   await createSearchSelectInlineFixture(page, { useVerticalScroll: true });
   const scrollBody = page.locator('.dt-scroll-body');
   await expect(scrollBody).toBeVisible();
