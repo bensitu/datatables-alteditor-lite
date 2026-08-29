@@ -12,7 +12,11 @@ import {
   resolveSearchSelectActiveIndex,
   type SearchSelectNavigationKey,
 } from './search-select-keyboard.js';
-import { revealSearchSelectOption } from './search-select-positioning.js';
+import {
+  positionSearchSelectListbox,
+  resetSearchSelectListboxPosition,
+  revealSearchSelectOption,
+} from './search-select-positioning.js';
 
 import type { SearchOptionEntry } from './filter-search-options.js';
 import type { SelectOption } from '../fields/field-config.js';
@@ -129,6 +133,8 @@ export class SearchSelect<TValue extends string | number> {
   private isDestroyed = false;
 
   private isOpen = false;
+
+  private isPositionTrackingActive = false;
 
   private readOnlyState = false;
 
@@ -475,6 +481,7 @@ export class SearchSelect<TValue extends string | number> {
     this.cancelScheduledRender();
     this.cancelSearchRequest();
     this.cancelResolveRequest();
+    this.stopPositionTracking();
     this.inputElement.removeEventListener('focus', this.handleFocus);
     this.element.removeEventListener('focusout', this.handleFocusOut);
     this.inputElement.removeEventListener('input', this.handleInput);
@@ -658,6 +665,12 @@ export class SearchSelect<TValue extends string | number> {
     this.selectToken(token);
   };
 
+  private readonly handlePositionChange = (): void => {
+    if (this.isOpen) {
+      this.updateListboxPosition();
+    }
+  };
+
   private cancelScheduledRender(): void {
     if (this.debounceTimerId !== undefined) {
       globalThis.clearTimeout(this.debounceTimerId);
@@ -689,6 +702,8 @@ export class SearchSelect<TValue extends string | number> {
   private close(): void {
     this.cancelSearchRequest();
     this.isOpen = false;
+    this.stopPositionTracking();
+    resetSearchSelectListboxPosition(this.listboxElement);
     this.listboxElement.hidden = true;
     this.inputElement.placeholder = this.messages.placeholder;
     this.activeToken = undefined;
@@ -737,6 +752,7 @@ export class SearchSelect<TValue extends string | number> {
     this.isOpen = true;
     this.listboxElement.hidden = false;
     this.inputElement.placeholder = this.messages.searchPlaceholder;
+    this.startPositionTracking();
     this.renderOptions(
       this.isSearchEnabled && this.getValue() === undefined
         ? this.inputElement.value
@@ -799,6 +815,7 @@ export class SearchSelect<TValue extends string | number> {
       optionFragment.append(noResultsElement);
       this.listboxElement.replaceChildren(optionFragment);
       this.resultStatusElement.textContent = this.messages.noResults;
+      this.updateListboxPosition();
       this.setActiveToken(undefined);
       return;
     }
@@ -817,6 +834,7 @@ export class SearchSelect<TValue extends string | number> {
     const retainedActiveEntry = this.filteredEntries.find(
       ({ option, token }) => token === this.activeToken && option.disabled !== true,
     );
+    this.updateListboxPosition();
     this.setActiveToken(
       retainedActiveEntry?.token ?? selectedEntry?.token ?? firstEnabledEntry?.token,
     );
@@ -827,6 +845,8 @@ export class SearchSelect<TValue extends string | number> {
     this.isOpen = true;
     this.listboxElement.hidden = false;
     this.inputElement.placeholder = this.messages.searchPlaceholder;
+    this.startPositionTracking();
+    this.updateListboxPosition();
 
     if (this.debounceMs === 0) {
       this.renderOptions(this.isSearchEnabled ? this.inputElement.value : '');
@@ -876,6 +896,34 @@ export class SearchSelect<TValue extends string | number> {
       token === undefined ? undefined : this.optionElementByToken.get(token);
     updateSearchSelectAria(this.inputElement, this.isOpen, activeOptionElement?.id);
     revealSearchSelectOption(activeOptionElement);
+  }
+
+  private startPositionTracking(): void {
+    if (this.isPositionTrackingActive) {
+      return;
+    }
+
+    this.isPositionTrackingActive = true;
+    document.addEventListener('scroll', this.handlePositionChange, true);
+    window.addEventListener('resize', this.handlePositionChange);
+    window.visualViewport?.addEventListener('resize', this.handlePositionChange);
+    window.visualViewport?.addEventListener('scroll', this.handlePositionChange);
+  }
+
+  private stopPositionTracking(): void {
+    if (!this.isPositionTrackingActive) {
+      return;
+    }
+
+    this.isPositionTrackingActive = false;
+    document.removeEventListener('scroll', this.handlePositionChange, true);
+    window.removeEventListener('resize', this.handlePositionChange);
+    window.visualViewport?.removeEventListener('resize', this.handlePositionChange);
+    window.visualViewport?.removeEventListener('scroll', this.handlePositionChange);
+  }
+
+  private updateListboxPosition(): void {
+    positionSearchSelectListbox(this.inputElement, this.listboxElement);
   }
 
   private updateClearButton(): void {
@@ -1046,6 +1094,7 @@ export class SearchSelect<TValue extends string | number> {
     feedback.textContent = message;
     this.listboxElement.replaceChildren(feedback);
     this.resultStatusElement.textContent = message;
+    this.updateListboxPosition();
     this.setActiveToken(undefined);
   }
 

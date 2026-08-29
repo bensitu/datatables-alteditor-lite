@@ -554,7 +554,13 @@ textarea.alteditor-lite-field__control {
   inset-block-start: calc(100% + 0.25rem);
   inset-inline: 0;
   box-sizing: border-box;
-  max-height: var(--alteditor-lite-search-select-max-height);
+  max-height: min(
+    var(--alteditor-lite-search-select-max-height),
+    var(
+      --alteditor-lite-search-select-available-height,
+      var(--alteditor-lite-search-select-max-height)
+    )
+  );
   overflow: auto;
   overscroll-behavior: contain;
   color: var(--alteditor-lite-text-color);
@@ -562,6 +568,10 @@ textarea.alteditor-lite-field__control {
   border: 1px solid var(--alteditor-lite-border-color);
   border-radius: calc(var(--alteditor-lite-border-radius) / 1.5);
   box-shadow: var(--alteditor-lite-popup-shadow);
+}
+
+.alteditor-lite-search-select__listbox--above {
+  inset-block: auto calc(100% + 0.25rem);
 }
 
 .alteditor-lite-search-select__listbox[hidden] {

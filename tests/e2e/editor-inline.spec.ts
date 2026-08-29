@@ -117,7 +117,11 @@ async function createInlineFixture(
   });
 }
 
-async function createSearchSelectInlineFixture(page: Page): Promise<void> {
+async function createSearchSelectInlineFixture(
+  page: Page,
+  options: { readonly useVerticalScroll?: boolean } = {},
+): Promise<void> {
+  const shouldUseVerticalScroll = options.useVerticalScroll ?? false;
   await page.setContent(`
     <!doctype html>
     <html lang="en">
@@ -133,13 +137,26 @@ async function createSearchSelectInlineFixture(page: Page): Promise<void> {
     </html>
   `);
   await page.addStyleTag({ path: stylesheetPath });
+  if (shouldUseVerticalScroll) {
+    await page.addStyleTag({
+      content: '#search-select-inline-table td { height: 3rem; }',
+    });
+  }
   await page.addScriptTag({ path: dataTablesScriptPath });
   await page.addScriptTag({ path: browserBundlePath });
   await page.addScriptTag({
     content: `
       globalThis.tableApi = new DataTable('#search-select-inline-table', {
         columns: [{ data: 'office', name: 'office' }],
-        data: [{ id: 'row-a', office: 'beijing' }],
+        data: ${JSON.stringify(
+          shouldUseVerticalScroll
+            ? Array.from({ length: 8 }, (_, index) => ({
+                id: `row-${String.fromCharCode(97 + index)}`,
+                office: 'beijing',
+              }))
+            : [{ id: 'row-a', office: 'beijing' }],
+        )},
+        ${shouldUseVerticalScroll ? "paging: false, scrollY: '8rem'," : ''}
         rowId: 'id'
       });
       globalThis.editor = new AltEditorLite.Editor(
@@ -532,6 +549,45 @@ test('keeps a keyboard-only choice popup above the editing cell border', async (
   await page.keyboard.press('Escape');
   await expect(page.locator('.alteditor-lite-inline')).toHaveCount(0);
   await expect(cell).toContainText('beijing');
+});
+
+test('places a SearchSelect popup inside a vertical table scroll area', async ({
+  page,
+}) => {
+  await createSearchSelectInlineFixture(page, { useVerticalScroll: true });
+  const scrollBody = page.locator('.dt-scroll-body');
+  await expect(scrollBody).toBeVisible();
+  await scrollBody.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+  });
+
+  const cell = page.locator('#row-h td').first();
+  await cell.hover();
+  await cell.getByRole('button', { name: 'Edit cell' }).click();
+  await page.getByRole('combobox', { name: 'Office' }).focus();
+
+  const listbox = page.getByRole('listbox');
+  await expect(listbox).toBeVisible();
+  await expect(listbox).toHaveClass(/alteditor-lite-search-select__listbox--above/);
+  const layout = await listbox.evaluate((element) => {
+    const scrollContainer = element.closest('.dt-scroll-body');
+    if (!(scrollContainer instanceof HTMLElement)) {
+      throw new Error('Expected the listbox inside the table scroll area.');
+    }
+
+    const listboxRect = element.getBoundingClientRect();
+    const containerRect = scrollContainer.getBoundingClientRect();
+    const visibleTop = containerRect.top + scrollContainer.clientTop;
+    return {
+      listboxBottom: listboxRect.bottom,
+      listboxTop: listboxRect.top,
+      visibleBottom: visibleTop + scrollContainer.clientHeight,
+      visibleTop,
+    };
+  });
+
+  expect(layout.listboxTop).toBeGreaterThanOrEqual(layout.visibleTop - 1);
+  expect(layout.listboxBottom).toBeLessThanOrEqual(layout.visibleBottom + 1);
 });
 
 test('activates a KeyTable-focused cell and remaps after ColReorder', async ({
