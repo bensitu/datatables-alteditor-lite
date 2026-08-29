@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Kept SearchSelect popups within visible viewport and scrolling-container
+  bounds by selecting the more suitable vertical placement and limiting popup
+  height to the available space.
+- Populated dialog Edit forms and Remove submissions with refreshed Host
+  snapshots read after `beforeOpen` completes.
 - Preserved successful single- and multi-record updates when a retained form
   could not reload its canonical record, and continued retained Edit work with
   the target returned by the Host.
