@@ -17,7 +17,7 @@
   --alteditor-lite-search-select-max-height: 16rem;
 }
 
-@supports (color: color-mix(in srgb, black, white)) {
+@supports (color: color-mix(in srgb, CanvasText 25%, transparent)) {
   :root {
     --alteditor-lite-border-color: color-mix(in srgb, CanvasText 25%, transparent);
   }
@@ -125,11 +125,7 @@
   opacity: 0.6;
 }
 
-.alteditor-lite-form {
-  display: grid;
-  gap: var(--alteditor-lite-spacing);
-}
-
+.alteditor-lite-form,
 .alteditor-lite-form__layout {
   display: grid;
   gap: var(--alteditor-lite-spacing);
@@ -285,6 +281,148 @@ input[type='file'].alteditor-lite-field__control:disabled::file-selector-button 
 .alteditor-lite-field__control[aria-invalid='true'] {
   border-color: var(--alteditor-lite-error-color);
   box-shadow: 0 0 0 1px var(--alteditor-lite-error-color);
+}
+
+textarea.alteditor-lite-field__control {
+  min-height: 6rem;
+  resize: vertical;
+}
+
+.alteditor-lite-field__description {
+  font-size: 0.875rem;
+  opacity: 0.75;
+}
+
+.alteditor-lite-radio__option {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  min-height: 2rem;
+  cursor: pointer;
+}
+
+.alteditor-lite-radio__option > input {
+  flex: 0 0 auto;
+  width: 1.125rem;
+  height: 1.125rem;
+  margin: 0;
+  accent-color: var(--alteditor-lite-primary-color);
+}
+
+.alteditor-lite-radio__option:has(> input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.alteditor-lite-search-select {
+  position: relative;
+  display: grid;
+  min-width: 0;
+}
+
+.alteditor-lite-search-select > .alteditor-lite-field__control {
+  padding-inline-end: 2.75rem;
+}
+
+.alteditor-lite-search-select__clear {
+  position: absolute;
+  inset-block-start: 0.375rem;
+  inset-inline-end: 0.375rem;
+  display: grid;
+  width: 1.75rem;
+  min-width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: calc(var(--alteditor-lite-border-radius) / 2);
+  place-items: center;
+}
+
+.alteditor-lite-search-select__clear[hidden] {
+  display: none;
+}
+
+.alteditor-lite-search-select__clear:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.alteditor-lite-search-select__listbox {
+  position: absolute;
+  z-index: 1;
+  inset-block-start: calc(100% + 0.25rem);
+  inset-inline: 0;
+  box-sizing: border-box;
+  max-height: min(
+    var(--alteditor-lite-search-select-max-height),
+    var(
+      --alteditor-lite-search-select-available-height,
+      var(--alteditor-lite-search-select-max-height)
+    )
+  );
+  overflow: auto;
+  overscroll-behavior: contain;
+  color: var(--alteditor-lite-text-color);
+  background: var(--alteditor-lite-surface-color);
+  border: 1px solid var(--alteditor-lite-border-color);
+  border-radius: calc(var(--alteditor-lite-border-radius) / 1.5);
+  box-shadow: var(--alteditor-lite-popup-shadow);
+}
+
+.alteditor-lite-search-select__listbox--above {
+  inset-block: auto calc(100% + 0.25rem);
+}
+
+.alteditor-lite-search-select__listbox[hidden] {
+  display: none;
+}
+
+.alteditor-lite-search-select__option,
+.alteditor-lite-search-select__no-results,
+.alteditor-lite-search-select__feedback {
+  min-height: 2.25rem;
+  padding: 0.5rem 0.625rem;
+  overflow-wrap: anywhere;
+}
+
+.alteditor-lite-search-select__option {
+  cursor: pointer;
+}
+
+.alteditor-lite-search-select__option:hover,
+.alteditor-lite-search-select__option--active {
+  color: var(--alteditor-lite-option-active-text-color);
+  background: var(--alteditor-lite-option-active-color);
+}
+
+.alteditor-lite-search-select__option[aria-disabled='true'] {
+  color: inherit;
+  cursor: not-allowed;
+  background: transparent;
+  opacity: 0.5;
+}
+
+.alteditor-lite-search-select__no-results {
+  opacity: 0.75;
+}
+
+.alteditor-lite-search-select__feedback {
+  opacity: 0.8;
+}
+
+.alteditor-lite-search-select__feedback--error,
+.alteditor-lite-search-select--error > .alteditor-lite-field__control {
+  color: var(--alteditor-lite-error-color);
+}
+
+.alteditor-lite-search-select[aria-busy='true'] {
+  cursor: progress;
 }
 
 table[class~='dataTable'] tbody td.alteditor-lite-cell--editing {
@@ -474,152 +612,6 @@ table[class~='dataTable']
   }
 }
 
-textarea.alteditor-lite-field__control {
-  min-height: 6rem;
-  resize: vertical;
-}
-
-/* The base description style also applies inside the more specific inline host. */
-/* stylelint-disable-next-line no-descending-specificity */
-.alteditor-lite-field__description {
-  font-size: 0.875rem;
-  opacity: 0.75;
-}
-
-.alteditor-lite-radio__option {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  min-height: 2rem;
-  cursor: pointer;
-}
-
-.alteditor-lite-radio__option > input {
-  flex: 0 0 auto;
-  width: 1.125rem;
-  height: 1.125rem;
-  margin: 0;
-  accent-color: var(--alteditor-lite-primary-color);
-}
-
-.alteditor-lite-radio__option:has(> input:disabled) {
-  cursor: not-allowed;
-  opacity: 0.65;
-}
-
-/* The base SearchSelect layout also applies inside the more specific inline host. */
-/* stylelint-disable-next-line no-descending-specificity */
-.alteditor-lite-search-select {
-  position: relative;
-  display: grid;
-  min-width: 0;
-}
-
-.alteditor-lite-search-select > .alteditor-lite-field__control {
-  padding-inline-end: 2.75rem;
-}
-
-.alteditor-lite-search-select__clear {
-  position: absolute;
-  inset-block-start: 0.375rem;
-  inset-inline-end: 0.375rem;
-  display: grid;
-  width: 1.75rem;
-  min-width: 1.75rem;
-  height: 1.75rem;
-  padding: 0;
-  color: inherit;
-  font: inherit;
-  font-size: 1.25rem;
-  line-height: 1;
-  cursor: pointer;
-  background: transparent;
-  border: 0;
-  border-radius: calc(var(--alteditor-lite-border-radius) / 2);
-  place-items: center;
-}
-
-.alteditor-lite-search-select__clear[hidden] {
-  display: none;
-}
-
-.alteditor-lite-search-select__clear:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
-.alteditor-lite-search-select__listbox {
-  position: absolute;
-  z-index: 1;
-  inset-block-start: calc(100% + 0.25rem);
-  inset-inline: 0;
-  box-sizing: border-box;
-  max-height: min(
-    var(--alteditor-lite-search-select-max-height),
-    var(
-      --alteditor-lite-search-select-available-height,
-      var(--alteditor-lite-search-select-max-height)
-    )
-  );
-  overflow: auto;
-  overscroll-behavior: contain;
-  color: var(--alteditor-lite-text-color);
-  background: var(--alteditor-lite-surface-color);
-  border: 1px solid var(--alteditor-lite-border-color);
-  border-radius: calc(var(--alteditor-lite-border-radius) / 1.5);
-  box-shadow: var(--alteditor-lite-popup-shadow);
-}
-
-.alteditor-lite-search-select__listbox--above {
-  inset-block: auto calc(100% + 0.25rem);
-}
-
-.alteditor-lite-search-select__listbox[hidden] {
-  display: none;
-}
-
-.alteditor-lite-search-select__option,
-.alteditor-lite-search-select__no-results,
-.alteditor-lite-search-select__feedback {
-  min-height: 2.25rem;
-  padding: 0.5rem 0.625rem;
-  overflow-wrap: anywhere;
-}
-
-.alteditor-lite-search-select__option {
-  cursor: pointer;
-}
-
-.alteditor-lite-search-select__option:hover,
-.alteditor-lite-search-select__option--active {
-  color: var(--alteditor-lite-option-active-text-color);
-  background: var(--alteditor-lite-option-active-color);
-}
-
-.alteditor-lite-search-select__option[aria-disabled='true'] {
-  color: inherit;
-  cursor: not-allowed;
-  background: transparent;
-  opacity: 0.5;
-}
-
-.alteditor-lite-search-select__no-results {
-  opacity: 0.75;
-}
-
-.alteditor-lite-search-select__feedback {
-  opacity: 0.8;
-}
-
-.alteditor-lite-search-select__feedback--error,
-.alteditor-lite-search-select--error > .alteditor-lite-field__control {
-  color: var(--alteditor-lite-error-color);
-}
-
-.alteditor-lite-search-select[aria-busy='true'] {
-  cursor: progress;
-}
-
 .alteditor-lite-visually-hidden {
   position: absolute;
   width: 1px;
@@ -636,11 +628,7 @@ textarea.alteditor-lite-field__control {
 .alteditor-lite-batch-field__action:focus-visible,
 .alteditor-lite-field__control:focus-visible,
 .alteditor-lite-radio input:focus-visible,
-.alteditor-lite-search-select__clear:focus-visible {
-  outline: 3px solid var(--alteditor-lite-focus-color);
-  outline-offset: 2px;
-}
-
+.alteditor-lite-search-select__clear:focus-visible,
 .alteditor-lite-inline-hover__trigger:focus-visible,
 .alteditor-lite-inline__action:focus-visible {
   outline: 3px solid var(--alteditor-lite-focus-color);
