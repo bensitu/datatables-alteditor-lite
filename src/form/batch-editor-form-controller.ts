@@ -6,23 +6,11 @@ import {
 import { freezeEditorValues } from '../core/freeze-editor-values.js';
 import { mergeAbortSignals } from '../core/merge-abort-signals.js';
 import { runCleanupSteps } from '../core/run-cleanup-steps.js';
-import { createFieldController } from '../fields/create-field-controller.js';
-import {
-  resolveBatchFieldRestriction,
-  type FieldBatchRestriction,
-} from '../fields/field-capabilities.js';
-import { BATCH_FIELD_PRESENTATION } from '../fields/field-controller-presentation.js';
-import { resolveFieldValueComparator } from '../fields/field-value-comparator.js';
-import { getPathValue } from '../object-path/get-path-value.js';
+import { resolveBatchFieldRestriction } from '../fields/field-capabilities.js';
 import { setPathValue } from '../object-path/set-path-value.js';
 
-import {
-  createBatchFieldState,
-  restoreBatchFieldValue,
-  setBatchFieldValue,
-} from './batch-field-state-updates.js';
+import { BatchFieldBinding, type BatchFieldConfig } from './batch-field-binding.js';
 import { buildBatchEffectiveValues } from './build-batch-effective-values.js';
-import { FieldRuntimeController } from './field-runtime-controller.js';
 import {
   FormDependencyController,
   type DependencyFieldBinding,
@@ -35,88 +23,22 @@ import { TemplateFormLayout } from './layout/template-form-layout.js';
 import type { FormDependencies } from './form-dependency.js';
 import type { FormValidator } from './form-validation.js';
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
-import type { BatchFieldState } from '../core/batch-field-state.js';
 import type { BatchEditValidationResult } from '../core/editing/batch-edit-transaction.js';
 import type { DialogTemplateSource } from '../core/editing-options.js';
 import type { BatchChanges, EditorValues } from '../core/editor-values.js';
-import type { FieldConfig, SelectOption } from '../fields/field-config.js';
+import type { FieldConfig } from '../fields/field-config.js';
 import type {
   FieldController,
   FieldValidationResult,
 } from '../fields/field-controller.js';
-import type { ManagedFieldController } from '../fields/managed-field-controller.js';
 import type { FieldPath, FieldPathValue } from '../object-path/field-path.js';
-import type { FieldMountPoint, FormLayout } from './layout/form-layout.js';
-
-type DisplayedBatchRestriction = Extract<FieldBatchRestriction, 'file' | 'unique'>;
-
-type BatchFieldConfig<TFormValues extends object> = Exclude<
-  FieldConfig<TFormValues>,
-  { readonly type: 'hidden' }
->;
-
-interface BatchFieldBinding<TFormValues extends object> {
-  readonly config: Readonly<FieldConfig<TFormValues>>;
-  readonly controller: ManagedFieldController<TFormValues>;
-  readonly helperElement: HTMLParagraphElement;
-  readonly handleRestore: () => void;
-  readonly handleSetValue: () => void;
-  readonly mountPoint: FieldMountPoint;
-  readonly runtime: FieldRuntimeController<TFormValues>;
-  readonly restoreButton: HTMLButtonElement;
-  readonly isEqual: (left: unknown, right: unknown) => boolean;
-  readonly restriction: DisplayedBatchRestriction | undefined;
-  readonly setValueButton: HTMLButtonElement;
-  readonly stateElement: HTMLParagraphElement;
-  readonly statePanel: HTMLDivElement;
-  readonly wrapper: HTMLDivElement;
-  isOverrideEditorActive: boolean;
-  revision: number;
-  state: Readonly<BatchFieldState<unknown>>;
-}
-
-function resolveDisplayedRestriction<TFormValues extends object>(
-  config: Readonly<FieldConfig<TFormValues>>,
-): DisplayedBatchRestriction | undefined {
-  const restriction = resolveBatchFieldRestriction(config);
-  return restriction === 'file' || restriction === 'unique' ? restriction : undefined;
-}
-
-function emptyControllerValue<TFormValues extends object>(
-  config: Readonly<FieldConfig<TFormValues>>,
-): unknown {
-  switch (config.type) {
-    case 'checkbox':
-      return false;
-    case 'custom':
-      return config.defaultValue;
-    case 'number':
-      return config.emptyValue === null ? null : undefined;
-    case 'radio':
-    case 'search-select':
-    case 'select':
-      return undefined;
-    case 'file':
-      return config.multiple === true ? [] : null;
-    case 'date':
-    case 'datetime-local':
-    case 'email':
-    case 'hidden':
-    case 'password':
-    case 'text':
-    case 'textarea':
-    case 'time':
-      return '';
-  }
-}
+import type { FormLayout } from './layout/form-layout.js';
 
 /** DOM-backed logical form for applying common values to multiple records. */
 export class BatchEditorFormController<TFormValues extends object> {
   public readonly element: HTMLFormElement;
 
   private readonly bindingByName = new Map<string, BatchFieldBinding<TFormValues>>();
-
-  private readonly fieldControllerByName = new Map<string, FieldController<unknown>>();
 
   private readonly dependencyFieldByName = new Map<
     string,
@@ -236,66 +158,11 @@ export class BatchEditorFormController<TFormValues extends object> {
     name: TPath,
   ): FieldController<FieldPathValue<TFormValues, TPath>> | null {
     this.assertActive();
-    const existingController = this.fieldControllerByName.get(name);
-    if (existingController !== undefined) {
-      return existingController as FieldController<FieldPathValue<TFormValues, TPath>>;
-    }
     const binding = this.bindingByName.get(name);
     if (binding === undefined) {
       return null;
     }
-
-    const { controller, runtime } = binding;
-    const getOptions = controller.getOptions;
-    const setOptions = controller.setOptions;
-    const publicController: FieldController<unknown> = {
-      clearError: () => {
-        controller.clearError();
-      },
-      destroy: () => {
-        this.destroyBinding(binding);
-      },
-      element: controller.element,
-      focus: () => {
-        controller.focus();
-      },
-      getValue: async () => await Promise.resolve(controller.getValue()),
-      ...(getOptions === undefined || setOptions === undefined
-        ? {}
-        : {
-            getOptions: () => getOptions(),
-            setOptions: (options: readonly SelectOption[]) => {
-              setOptions(options);
-            },
-          }),
-      isDisabled: () => runtime.isDisabled(),
-      isReadOnly: () => runtime.isReadOnly(),
-      isRequired: () => runtime.isRequired(),
-      isVisible: () => runtime.isVisible(),
-      setDisabled: (isDisabled) => {
-        runtime.setDisabled(isDisabled);
-        this.renderBinding(binding);
-      },
-      setReadOnly: (isReadOnly) => {
-        runtime.setReadOnly(binding.restriction === 'unique' || isReadOnly);
-      },
-      setRequired: (isRequired) => {
-        runtime.setRequired(isRequired);
-      },
-      setValue: (value) => {
-        this.setProgrammaticValue(binding, value);
-      },
-      setVisible: (isVisible) => {
-        runtime.setVisible(isVisible);
-      },
-      showError: (message) => {
-        controller.showError(message);
-      },
-      validate: async () =>
-        await this.validateBinding(binding, this.lifecycleAbortController.signal),
-    };
-    this.fieldControllerByName.set(name, publicController);
-    return publicController as FieldController<FieldPathValue<TFormValues, TPath>>;
+    return binding.field as FieldController<FieldPathValue<TFormValues, TPath>>;
   }
 
   /** Resolves dependencies for fields with an initial common value. */
@@ -465,13 +332,7 @@ export class BatchEditorFormController<TFormValues extends object> {
     this.assertActive();
     this.originals = Object.freeze([...originals]);
     for (const binding of this.bindings) {
-      binding.state = createBatchFieldState(
-        originals.map((original) => getPathValue(original, binding.config.name)),
-        binding.isEqual,
-      );
-      binding.isOverrideEditorActive = binding.state.baseline.status === 'common';
-      this.populateCommonValue(binding);
-      this.renderBinding(binding);
+      binding.rebase(originals);
     }
     this.clearErrors();
   }
@@ -528,14 +389,13 @@ export class BatchEditorFormController<TFormValues extends object> {
     const bindings = this.bindings;
     this.bindings = [];
     this.bindingByName.clear();
-    this.fieldControllerByName.clear();
     this.dependencyFieldByName.clear();
     runCleanupSteps([
       () => {
         dependencyController?.destroy();
       },
       ...bindings.map((binding) => () => {
-        this.destroyBindingResources(binding);
+        binding.destroy();
       }),
       () => {
         this.layout.destroy();
@@ -553,188 +413,43 @@ export class BatchEditorFormController<TFormValues extends object> {
     instanceId: string,
     language: Readonly<AltEditorLiteLanguage>,
   ): void {
-    const wrapper = document.createElement('div');
-    wrapper.className = 'alteditor-lite-batch-field';
-    wrapper.dataset['alteditorLiteBatchField'] = config.name;
-    const statePanel = document.createElement('div');
-    statePanel.className = 'alteditor-lite-batch-field__state';
-    const stateElement = document.createElement('p');
-    stateElement.className = 'alteditor-lite-batch-field__state-text';
-    stateElement.setAttribute('role', 'status');
-    const fieldLabel = document.createElement('span');
-    fieldLabel.className = 'alteditor-lite-batch-field__label';
-    fieldLabel.textContent = config.label;
-    const setValueButton = document.createElement('button');
-    setValueButton.className = 'alteditor-lite-batch-field__action';
-    setValueButton.type = 'button';
-    setValueButton.textContent = this.language.batchEdit.setCommonValue;
-    const restoreButton = document.createElement('button');
-    restoreButton.className = 'alteditor-lite-batch-field__action';
-    restoreButton.type = 'button';
-    restoreButton.textContent = this.language.batchEdit.restoreIndividualValues;
-    const helperElement = document.createElement('p');
-    helperElement.className = 'alteditor-lite-field__description';
-    statePanel.append(fieldLabel, stateElement, setValueButton);
-
-    const bindingReference: {
-      current: BatchFieldBinding<TFormValues> | undefined;
-    } = { current: undefined };
-    const controller = createFieldController(
+    const binding = new BatchFieldBinding({
       config,
-      `${instanceId}-batch-field-${String(fieldIndex)}`,
+      fieldId: `${instanceId}-batch-field-${String(fieldIndex)}`,
       language,
-      () => {
-        if (bindingReference.current !== undefined) {
-          this.queueUserValue(bindingReference.current);
-        }
+      lifecycleSignal: this.lifecycleAbortController.signal,
+      mount: (element) => this.layout.mountField(config.name, element),
+      onDestroyRequest: (currentBinding) => {
+        this.destroyBinding(currentBinding);
       },
-      BATCH_FIELD_PRESENTATION,
-      this.lifecycleAbortController.signal,
-    );
-    wrapper.append(statePanel, controller.element, restoreButton, helperElement);
-    const mountPoint = this.layout.mountField(config.name, wrapper);
-    const runtime = new FieldRuntimeController({
-      config,
-      controller,
-      disabled: config.disabled ?? false,
-      mountPoint,
-      readOnly:
-        resolveDisplayedRestriction(config) === 'unique' ||
-        ('readOnly' in config ? (config.readOnly ?? false) : false),
-      required: 'required' in config ? (config.required ?? false) : false,
-      visible: config.visible !== false,
+      onRestore: (currentBinding) => {
+        this.queueKnownUserValue(currentBinding);
+      },
+      onUserValue: (currentBinding) => {
+        this.queueUserValue(currentBinding);
+      },
+      originals,
+      validate: async (currentBinding) =>
+        await this.validateBinding(currentBinding, this.lifecycleAbortController.signal),
     });
-    const isEqual = resolveFieldValueComparator(config);
-    const state = createBatchFieldState(
-      originals.map((original) => getPathValue(original, config.name)),
-      isEqual,
-    );
-    const restriction = resolveDisplayedRestriction(config);
-    const binding: BatchFieldBinding<TFormValues> = {
-      config,
-      controller,
-      handleRestore: () => {
-        this.restoreBinding(binding);
-      },
-      handleSetValue: () => {
-        this.activateOverrideEditor(binding);
-      },
-      helperElement,
-      isEqual,
-      isOverrideEditorActive: state.baseline.status === 'common',
-      mountPoint,
-      restoreButton,
-      restriction,
-      revision: 0,
-      runtime,
-      setValueButton,
-      state,
-      stateElement,
-      statePanel,
-      wrapper,
-    };
-    bindingReference.current = binding;
     this.bindings.push(binding);
     this.bindingByName.set(config.name, binding);
-    this.dependencyFieldByName.set(config.name, { config, controller, runtime });
-    runtime.setDisabled(runtime.isDisabled());
-    runtime.setReadOnly(runtime.isReadOnly());
-    runtime.setRequired(runtime.isRequired());
-    runtime.setVisible(runtime.isVisible());
-    this.populateCommonValue(binding);
-    this.renderBinding(binding);
-    setValueButton.addEventListener('click', binding.handleSetValue);
-    restoreButton.addEventListener('click', binding.handleRestore);
-  }
-
-  private populateCommonValue(binding: BatchFieldBinding<TFormValues>): void {
-    if (binding.state.baseline.status !== 'common' || binding.restriction === 'file') {
-      return;
-    }
-    binding.controller.setValue(
-      binding.state.baseline.value ?? emptyControllerValue(binding.config),
-    );
-  }
-
-  private renderBinding(binding: BatchFieldBinding<TFormValues>): void {
-    const { current } = binding.state;
-    const isMixed = current.status === 'mixed';
-    binding.stateElement.textContent = isMixed
-      ? this.language.batchEdit.multipleValues
-      : this.language.batchEdit.commonValue;
-    binding.statePanel.hidden = !isMixed && binding.restriction !== 'file';
-    binding.setValueButton.hidden =
-      binding.restriction !== undefined || binding.isOverrideEditorActive;
-    binding.setValueButton.disabled = binding.runtime.isDisabled();
-    binding.controller.element.hidden =
-      binding.restriction === 'file' || (isMixed && !binding.isOverrideEditorActive);
-    binding.restoreButton.hidden = current.status !== 'overridden';
-    binding.helperElement.textContent =
-      binding.restriction === 'file'
-        ? this.language.batchEdit.fileRestriction
-        : binding.restriction === 'unique'
-          ? this.language.batchEdit.uniqueRestriction
-          : '';
-    binding.helperElement.hidden = binding.restriction === undefined;
-  }
-
-  private activateOverrideEditor(binding: BatchFieldBinding<TFormValues>): void {
-    if (binding.restriction !== undefined || binding.controller.isDisabled()) {
-      return;
-    }
-    binding.isOverrideEditorActive = true;
-    this.renderBinding(binding);
-    binding.controller.focus();
-  }
-
-  private restoreBinding(binding: BatchFieldBinding<TFormValues>): void {
-    binding.revision += 1;
-    binding.state = restoreBatchFieldValue(binding.state);
-    binding.isOverrideEditorActive = binding.state.baseline.status === 'common';
-    this.populateCommonValue(binding);
-    binding.controller.clearError();
-    this.renderBinding(binding);
-    this.queueKnownUserValue(binding);
-    if (binding.state.baseline.status === 'mixed') {
-      binding.setValueButton.focus();
-    } else {
-      binding.controller.focus();
-    }
-  }
-
-  private setProgrammaticValue(
-    binding: BatchFieldBinding<TFormValues>,
-    value: unknown,
-  ): void {
-    if (binding.restriction !== undefined) {
-      binding.controller.showError(
-        binding.restriction === 'file'
-          ? this.language.batchEdit.fileRestriction
-          : this.language.batchEdit.uniqueRestriction,
-      );
-      return;
-    }
-    if (binding.controller.isDisabled()) {
-      return;
-    }
-    binding.controller.setValue(value);
-    binding.state = setBatchFieldValue(binding.state, value, binding.isEqual);
-    binding.isOverrideEditorActive = true;
-    this.renderBinding(binding);
+    this.dependencyFieldByName.set(config.name, {
+      config,
+      controller: binding.controller,
+      runtime: binding.runtime,
+    });
   }
 
   private queueUserValue(binding: BatchFieldBinding<TFormValues>): void {
     binding.revision += 1;
-    const revision = binding.revision;
+    const { revision } = binding;
     this.startUserChange(binding, revision, async (signal) => {
       const value = await Promise.resolve(binding.controller.getValue(signal));
       if (this.isDestroyed || signal.aborted || binding.revision !== revision) {
         return;
       }
-      binding.state = setBatchFieldValue(binding.state, value, binding.isEqual);
-      binding.isOverrideEditorActive = true;
-      binding.controller.clearError();
-      this.renderBinding(binding);
+      binding.applyUserValue(value);
       await this.runLogicalChange(binding, signal);
     });
   }
@@ -845,17 +560,7 @@ export class BatchEditorFormController<TFormValues extends object> {
         `Dependency target field "${fieldName}" is unavailable.`,
       );
     }
-    if (binding.restriction !== undefined) {
-      throw new EditorConfigurationError(
-        binding.restriction === 'file'
-          ? this.language.batchEdit.fileRestriction
-          : this.language.batchEdit.uniqueRestriction,
-      );
-    }
-    binding.controller.setValue(value);
-    binding.state = setBatchFieldValue(binding.state, value, binding.isEqual);
-    binding.isOverrideEditorActive = true;
-    this.renderBinding(binding);
+    binding.applyDependencyValue(value);
   }
 
   private async afterDependencyPatch(
@@ -877,18 +582,10 @@ export class BatchEditorFormController<TFormValues extends object> {
         binding.controller.getValue(this.lifecycleAbortController.signal),
       );
       if (!binding.isEqual(value, binding.state.current.value)) {
-        if (binding.restriction !== undefined) {
-          throw new EditorConfigurationError(
-            binding.restriction === 'file'
-              ? this.language.batchEdit.fileRestriction
-              : this.language.batchEdit.uniqueRestriction,
-          );
-        }
-        binding.state = setBatchFieldValue(binding.state, value, binding.isEqual);
-        binding.isOverrideEditorActive = true;
+        binding.applyDependencyValue(value);
       }
     }
-    this.renderBinding(binding);
+    binding.render();
   }
 
   private async validateBinding(
@@ -896,11 +593,9 @@ export class BatchEditorFormController<TFormValues extends object> {
     signal: AbortSignal,
     values: Readonly<EditorValues<TFormValues>> = {} as EditorValues<TFormValues>,
   ): Promise<FieldValidationResult> {
-    if (binding.restriction !== undefined) {
-      const message =
-        binding.restriction === 'file'
-          ? this.language.batchEdit.fileRestriction
-          : this.language.batchEdit.uniqueRestriction;
+    const { restrictionText } = binding;
+    if (restrictionText !== undefined) {
+      const message = restrictionText;
       binding.controller.showError(message);
       return { message, valid: false } as const;
     }
@@ -920,22 +615,12 @@ export class BatchEditorFormController<TFormValues extends object> {
     if (!this.bindingByName.delete(binding.config.name)) {
       return;
     }
-    binding.revision += 1;
     this.activeChangeAbortControllers.get(binding.config.name)?.abort();
     this.activeChangeAbortControllers.delete(binding.config.name);
-    binding.mountPoint.setVisible(false);
-    this.fieldControllerByName.delete(binding.config.name);
     this.dependencyFieldByName.delete(binding.config.name);
     this.dependencyController?.abortSource(binding.config.name);
     this.bindings = this.bindings.filter((candidate) => candidate !== binding);
-    this.destroyBindingResources(binding);
-  }
-
-  private destroyBindingResources(binding: BatchFieldBinding<TFormValues>): void {
-    binding.setValueButton.removeEventListener('click', binding.handleSetValue);
-    binding.restoreButton.removeEventListener('click', binding.handleRestore);
-    binding.controller.destroy();
-    binding.wrapper.remove();
+    binding.destroy();
   }
 
   private renderSubmissionError(): void {

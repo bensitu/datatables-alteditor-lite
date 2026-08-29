@@ -14,12 +14,12 @@ export async function readHostRecord<TRow extends object, TTarget>(
 }
 
 /** Reads Host records concurrently while retaining target order. */
-export async function readHostRecords<TRow extends object, TTarget>(
+export function readHostRecords<TRow extends object, TTarget>(
   host: EditorHost<TRow, TTarget>,
   targets: readonly TTarget[],
   signal: AbortSignal,
 ): Promise<readonly Readonly<TRow>[]> {
-  return await Promise.all(
+  return Promise.all(
     targets.map(async (target) => await readHostRecord(host, target, signal)),
   );
 }
