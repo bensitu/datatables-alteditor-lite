@@ -279,18 +279,26 @@ export class DialogEditingController<
         this.releaseInteraction(interactionToken);
         return;
       }
-      await this.readRecordsForOpen([recordTarget], openAbortController, {
-        committed: false,
-        mode: 'dialog',
-        operation: 'edit',
-        phase: 'open',
-        target: operationTarget,
-      });
+      const currentOriginals = await this.readRecordsForOpen(
+        [recordTarget],
+        openAbortController,
+        {
+          committed: false,
+          mode: 'dialog',
+          operation: 'edit',
+          phase: 'open',
+          target: operationTarget,
+        },
+      );
+      const currentOriginal = currentOriginals[0];
+      if (currentOriginal === undefined) {
+        throw new EditorConfigurationError('Host read did not return the requested row.');
+      }
       this.assertCurrentOpenRequest(openAbortController);
       this.editTarget = recordTarget;
-      this.editOriginal = original;
+      this.editOriginal = currentOriginal;
       try {
-        await this.openForm('edit', original);
+        await this.openForm('edit', currentOriginal);
       } catch (error: unknown) {
         this.editTarget = undefined;
         this.editOriginal = undefined;
@@ -369,18 +377,20 @@ export class DialogEditingController<
         this.releaseInteraction(interactionToken);
         return;
       }
-      await this.readRecordsForOpen(requestedTargets, openAbortController, {
-        committed: false,
-        mode: 'dialog',
-        operation: 'batchEdit',
-        phase: 'open',
-        targets: operationTargets,
-      });
+      const currentOriginals = Object.freeze(
+        await this.readRecordsForOpen(requestedTargets, openAbortController, {
+          committed: false,
+          mode: 'dialog',
+          operation: 'batchEdit',
+          phase: 'open',
+          targets: operationTargets,
+        }),
+      );
       this.assertCurrentOpenRequest(openAbortController);
       this.batchTargets = Object.freeze([...requestedTargets]);
-      this.batchOriginals = originals;
+      this.batchOriginals = currentOriginals;
       this.batchOperationTargets = operationTargets;
-      await this.openBatchForm(originals);
+      await this.openBatchForm(currentOriginals);
     } catch (error: unknown) {
       if (this.interactionToken === interactionToken) {
         this.clearBatchTargets();
@@ -439,15 +449,17 @@ export class DialogEditingController<
         this.releaseInteraction(interactionToken);
         return;
       }
-      await this.readRecordsForOpen(requestedTargets, openAbortController, {
-        committed: false,
-        mode: 'dialog',
-        operation: 'remove',
-        phase: 'open',
-      });
+      const currentOriginals = Object.freeze(
+        await this.readRecordsForOpen(requestedTargets, openAbortController, {
+          committed: false,
+          mode: 'dialog',
+          operation: 'remove',
+          phase: 'open',
+        }),
+      );
       this.assertCurrentOpenRequest(openAbortController);
       this.removeTargets = Object.freeze([...requestedTargets]);
-      this.removeOriginals = originals;
+      this.removeOriginals = currentOriginals;
       this.arguments_.stateCoordinator.transitionTo({
         action: 'remove',
         status: 'opening',

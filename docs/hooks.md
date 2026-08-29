@@ -43,7 +43,12 @@ optional single-record properties.
 
 ## beforeOpen
 
-`beforeOpen(context)` runs before a dialog or inline control is added to the DOM. Return `false` to decline opening without publishing open or close. An asynchronous hook is cancellable through `context.signal`; the target is revalidated after it resolves.
+`beforeOpen(context)` runs before a dialog or inline control is added to the DOM.
+Return `false` to decline opening without publishing open or close. An asynchronous
+hook is cancellable through `context.signal`. For record operations, the hook
+receives detached snapshots captured immediately before invocation. After the
+hook resolves, the affected targets are read again; the refreshed snapshots
+populate Edit forms and provide the rows used by Remove submission.
 
 ## beforeSubmit
 

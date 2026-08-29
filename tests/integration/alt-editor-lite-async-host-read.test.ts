@@ -24,17 +24,24 @@ describe('AltEditorLite asynchronous Host reads', () => {
     destroyStandaloneTestFixtures();
   });
 
-  it('opens an Edit dialog after an asynchronous record resolves', async () => {
+  it('opens an Edit dialog from the latest asynchronous record snapshot', async () => {
     const readSignals: AbortSignal[] = [];
+    let record: StandaloneRecord = { id: 'record-a', name: 'Async Alpha' };
     const fixture = createStandaloneTestFixture(
-      {},
+      {
+        hooks: {
+          beforeOpen: () => {
+            record = { id: 'record-a', name: 'Latest Async Alpha' };
+          },
+        },
+      },
       {
         read: async (_target, context) => {
           if (context !== undefined) {
             readSignals.push(context.signal);
           }
           await Promise.resolve();
-          return { id: 'record-a', name: 'Async Alpha' };
+          return record;
         },
       },
     );
@@ -43,7 +50,7 @@ describe('AltEditorLite asynchronous Host reads', () => {
 
     expect(
       document.querySelector<HTMLInputElement>('.alteditor-lite-form input')?.value,
-    ).toBe('Async Alpha');
+    ).toBe('Latest Async Alpha');
     expect(readSignals).toHaveLength(2);
     expect(readSignals.every((signal) => !signal.aborted)).toBe(true);
   });
@@ -271,7 +278,17 @@ describe('AltEditorLite asynchronous Host reads', () => {
         })),
     );
     const fixture = createStandaloneTestFixture(
-      { operations: { updateMany } },
+      {
+        hooks: {
+          beforeOpen: (context) => {
+            if (context.operation === 'batchEdit') {
+              records.set('record-a', { id: 'record-a', name: 'Latest Alpha' });
+              records.set('record-b', { id: 'record-b', name: 'Latest Beta' });
+            }
+          },
+        },
+        operations: { updateMany },
+      },
       {
         applyUpdates: (updates) => {
           for (const { row, target } of updates) {
@@ -313,6 +330,10 @@ describe('AltEditorLite asynchronous Host reads', () => {
       expect(fixture.editor.getState().status).toBe('ready');
     });
     expect(updateMany).toHaveBeenCalledOnce();
+    expect(updateMany.mock.calls[0]?.[1].map(({ name }) => name)).toEqual([
+      'Latest Alpha',
+      'Latest Beta',
+    ]);
     expect([...records.values()].map(({ name }) => name)).toEqual([
       'Shared async name',
       'Shared async name',
@@ -333,11 +354,24 @@ describe('AltEditorLite asynchronous Host reads', () => {
 
   it('uses asynchronous reads for Remove opening and submission checks', async () => {
     const reads: string[] = [];
+    const remove = vi.fn();
     const records = new Map<string, StandaloneRecord>([
       ['record-a', { id: 'record-a', name: 'Alpha' }],
     ]);
     const fixture = createStandaloneTestFixture(
-      {},
+      {
+        hooks: {
+          beforeOpen: (context) => {
+            if (context.operation === 'remove') {
+              records.set('record-a', {
+                id: 'record-a',
+                name: 'Latest Alpha',
+              });
+            }
+          },
+        },
+        operations: { remove },
+      },
       {
         applyRemove: (targets) => {
           for (const target of targets) {
@@ -365,6 +399,7 @@ describe('AltEditorLite asynchronous Host reads', () => {
       expect(fixture.editor.getState().status).toBe('ready');
     });
     expect(records.has('record-a')).toBe(false);
+    expect(remove.mock.calls[0]?.[0]).toEqual([{ id: 'record-a', name: 'Latest Alpha' }]);
     expect(reads).toEqual(['record-a', 'record-a', 'record-a']);
   });
 
