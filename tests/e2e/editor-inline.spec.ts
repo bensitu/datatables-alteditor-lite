@@ -589,6 +589,43 @@ test('places a SearchSelect popup inside a vertical table scroll area', async ({
 
   expect(layout.listboxTop).toBeGreaterThanOrEqual(layout.visibleTop - 1);
   expect(layout.listboxBottom).toBeLessThanOrEqual(layout.visibleBottom + 1);
+
+  await listbox.evaluate(async (element) => {
+    await new Promise<void>((resolve) => {
+      element.addEventListener(
+        'scroll',
+        () => {
+          requestAnimationFrame(() => {
+            resolve();
+          });
+        },
+        { once: true },
+      );
+      element.scrollTop = element.scrollHeight;
+    });
+  });
+  const finalOptionLayout = await listbox.evaluate((element) => {
+    const finalOption = element.lastElementChild;
+    if (!(finalOption instanceof HTMLElement)) {
+      throw new Error('Expected a final SearchSelect option.');
+    }
+
+    const listboxRect = element.getBoundingClientRect();
+    const optionRect = finalOption.getBoundingClientRect();
+    return {
+      finalOptionBottom: optionRect.bottom,
+      maximumScrollTop: element.scrollHeight - element.clientHeight,
+      scrollTop: element.scrollTop,
+      visibleBottom: listboxRect.top + element.clientTop + element.clientHeight,
+    };
+  });
+
+  expect(finalOptionLayout.scrollTop).toBeGreaterThanOrEqual(
+    finalOptionLayout.maximumScrollTop - 1,
+  );
+  expect(finalOptionLayout.finalOptionBottom).toBeLessThanOrEqual(
+    finalOptionLayout.visibleBottom + 1,
+  );
 });
 
 test('activates a KeyTable-focused cell and remaps after ColReorder', async ({

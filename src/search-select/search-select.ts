@@ -665,10 +665,16 @@ export class SearchSelect<TValue extends string | number> {
     this.selectToken(token);
   };
 
-  private readonly handlePositionChange = (): void => {
-    if (this.isOpen) {
-      this.updateListboxPosition();
+  private readonly handlePositionChange = (event: Event): void => {
+    if (!this.isOpen || event.target === this.listboxElement) {
+      return;
     }
+
+    this.updateListboxPosition();
+    revealSearchSelectOption(
+      this.listboxElement,
+      this.optionElementByToken.get(this.activeToken ?? ''),
+    );
   };
 
   private cancelScheduledRender(): void {
@@ -895,7 +901,7 @@ export class SearchSelect<TValue extends string | number> {
     const activeOptionElement =
       token === undefined ? undefined : this.optionElementByToken.get(token);
     updateSearchSelectAria(this.inputElement, this.isOpen, activeOptionElement?.id);
-    revealSearchSelectOption(activeOptionElement);
+    revealSearchSelectOption(this.listboxElement, activeOptionElement);
   }
 
   private startPositionTracking(): void {

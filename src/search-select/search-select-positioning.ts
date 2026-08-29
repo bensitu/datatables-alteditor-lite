@@ -52,6 +52,7 @@ export function positionSearchSelectListbox(
   anchorElement: HTMLElement,
   listboxElement: HTMLElement,
 ): void {
+  const scrollTop = listboxElement.scrollTop;
   resetSearchSelectListboxPosition(listboxElement);
 
   const bounds = getVerticalBounds(anchorElement);
@@ -76,15 +77,30 @@ export function positionSearchSelectListbox(
     AVAILABLE_HEIGHT_PROPERTY,
     `${String(Math.floor(availableHeight))}px`,
   );
+  listboxElement.scrollTop = scrollTop;
 }
 
 /**
- * Keeps the active option visible inside the in-dialog listbox.
+ * Keeps the active option visible inside its listbox.
  *
  * @param optionElement - Active option, when one exists.
  */
-export function revealSearchSelectOption(optionElement: HTMLElement | undefined): void {
-  if (optionElement !== undefined && typeof optionElement.scrollIntoView === 'function') {
-    optionElement.scrollIntoView({ block: 'nearest' });
+export function revealSearchSelectOption(
+  listboxElement: HTMLElement,
+  optionElement: HTMLElement | undefined,
+): void {
+  if (optionElement === undefined) {
+    return;
+  }
+
+  const optionTop = optionElement.offsetTop;
+  const optionBottom = optionTop + optionElement.offsetHeight;
+  const visibleTop = listboxElement.scrollTop;
+  const visibleBottom = visibleTop + listboxElement.clientHeight;
+
+  if (optionTop < visibleTop) {
+    listboxElement.scrollTop = optionTop;
+  } else if (optionBottom > visibleBottom) {
+    listboxElement.scrollTop = optionBottom - listboxElement.clientHeight;
   }
 }
