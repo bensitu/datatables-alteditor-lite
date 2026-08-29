@@ -267,6 +267,9 @@ treated as duplicates. `DataTablesHost` enumerates currently loaded rows;
 usability check, not a persistence guarantee. Server-side, paged, filtered,
 unloaded, or concurrently changing data can contain values the browser cannot
 see, so the persistence layer must enforce the final uniqueness constraint.
+Local uniqueness scans the records currently exposed by the Host each time the
+field is validated. For large loaded collections where validation latency is
+significant, rely on persistence validation and omit the local check.
 
 ## SearchSelect
 

@@ -127,6 +127,11 @@ and the table event target. `DataTablesHost.unwrap()` returns the original
 DataTables API for deliberately integration-specific application code; it is
 never injected into neutral callbacks or events.
 
+`DataTablesHost.findRecordTarget(row)` returns an opaque target only when `row`
+is the exact live object for a currently loaded DataTables record. It returns
+`undefined` for detached, replaced, or unloaded row objects. Use the returned
+target with Host operations instead of retaining DataTables row indexes.
+
 The integration exports `DataTablesInlineEditState`, `InlineTargetSummary`,
 `EditTargetSnapshot`, and `RemoveTargetSnapshot` for DataTables-specific
 inspection. The neutral root exports only the host-neutral `InlineEditState`.

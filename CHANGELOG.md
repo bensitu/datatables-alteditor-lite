@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Applied asynchronous dependency updates in request order and stopped obsolete
   patch work after newer input.
 - Restored Inline hover actions when changed input replaces pending validation.
+- Documented live DataTables target lookup and the scaling behavior of local
+  uniqueness checks.
 
 ## [0.7.0] - 2026-08-29
 
