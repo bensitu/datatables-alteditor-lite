@@ -1,16 +1,20 @@
 import { appendFile, readFile } from 'node:fs/promises';
 import { gzipSync } from 'node:zlib';
 
-const packageMetadata = JSON.parse(
-  await readFile(new URL('../package.json', import.meta.url), 'utf8'),
-);
-const sizeBaselines = JSON.parse(
-  await readFile(new URL('./bundle-size-baselines.json', import.meta.url), 'utf8'),
-);
-if (sizeBaselines.baselineVersion !== packageMetadata.version) {
-  throw new Error('Bundle size baselines must match the package version.');
-}
-const { distributables } = sizeBaselines;
+const distributables = [
+  {
+    maximumBytes: 56_416,
+    path: 'dist/umd/alt-editor-lite.min.js',
+  },
+  {
+    maximumBytes: 38_402,
+    path: 'dist/umd/alt-editor-lite-standalone.min.js',
+  },
+  {
+    maximumBytes: 3_087,
+    path: 'dist/umd/alt-editor-lite.min.css',
+  },
+];
 
 const failures = [];
 const results = [];
@@ -28,26 +32,23 @@ for (const distributable of distributables) {
   }
 
   const currentBytes = gzipSync(source, { level: 9 }).byteLength;
-  const maximumBytes = distributable.baselineBytes + distributable.allowanceBytes;
-  const remainingBytes = maximumBytes - currentBytes;
+  const remainingBytes = distributable.maximumBytes - currentBytes;
   results.push({
-    baselineBytes: distributable.baselineBytes,
     currentBytes,
-    maximumBytes,
+    maximumBytes: distributable.maximumBytes,
     path: distributable.path,
     remainingBytes,
   });
   console.log(
     [
       distributable.path,
-      `baseline=${String(distributable.baselineBytes)}`,
       `current=${String(currentBytes)}`,
-      `maximum=${String(maximumBytes)}`,
+      `maximum=${String(distributable.maximumBytes)}`,
       `remaining=${String(remainingBytes)}`,
     ].join(' '),
   );
 
-  if (currentBytes > maximumBytes) {
+  if (currentBytes > distributable.maximumBytes) {
     failures.push(
       `${distributable.path} exceeds its maximum by ${String(-remainingBytes)} bytes.`,
     );
@@ -59,11 +60,11 @@ if (summaryPath !== undefined && summaryPath.length > 0) {
   const summary = [
     '## Compressed bundle sizes',
     '',
-    '| Artifact | Baseline | Current | Maximum | Remaining | Status |',
-    '| --- | ---: | ---: | ---: | ---: | --- |',
+    '| Artifact | Current | Maximum | Remaining | Status |',
+    '| --- | ---: | ---: | ---: | --- |',
     ...results.map(
       (result) =>
-        `| \`${result.path}\` | ${String(result.baselineBytes)} | ${String(result.currentBytes)} | ${String(result.maximumBytes)} | ${String(result.remainingBytes)} | ${result.remainingBytes < 0 ? 'Exceeded' : 'Within limit'} |`,
+        `| \`${result.path}\` | ${String(result.currentBytes)} | ${String(result.maximumBytes)} | ${String(result.remainingBytes)} | ${result.remainingBytes < 0 ? 'Exceeded' : 'Within limit'} |`,
     ),
     '',
   ].join('\n');

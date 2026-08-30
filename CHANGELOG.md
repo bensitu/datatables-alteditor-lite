@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.7.2] - 2026-08-30
+## [0.7.2] - 2026-08-31
 
 ### Changed
 
@@ -22,8 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Expanded maintained coverage for asynchronous Host reads, dialog cleanup,
   remote SearchSelect behavior, and custom fields across retained dialogs,
   multi-record editing, and Inline Edit.
-- Limited parallel Host record reads and moved compressed distribution baselines
-  into versioned configuration used by local and develop-branch CI checks.
+- Limited parallel Host record reads and maintained compressed distribution
+  limits in local and develop-branch CI checks.
 
 ### Fixed
 
