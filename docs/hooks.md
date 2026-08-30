@@ -69,4 +69,11 @@ result. It is reported to `onError` with `committed: true` and
 
 ## onError
 
-`onError(error, context)` receives normalized errors with operation, mode, phase, commit state, and optional target. It is synchronous and intended for application reporting. If it throws, AltEditorLite catches the failure, preserves the original error, and does not call `onError` recursively.
+`onError(error, context)` receives normalized errors with operation, mode, phase,
+commit state, and optional target. `committed` becomes `true` when configured
+persistence completes or Host application begins; it does not imply that
+presentation completion or success observers ran. Applications should reconcile
+current state instead of repeating the complete persistence operation after
+such an error. The callback is synchronous and intended for application
+reporting. If it throws, AltEditorLite catches the failure, preserves the
+original error, and does not call `onError` recursively.

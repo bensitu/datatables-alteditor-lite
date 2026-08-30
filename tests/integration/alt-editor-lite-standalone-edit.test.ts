@@ -94,7 +94,7 @@ describe('AltEditorLite Standalone Edit', () => {
     expect(lifecycle).toEqual(['persist', 'apply', 'success', 'afterSuccess']);
   });
 
-  it('reports a Host application failure and remains available for retry', async () => {
+  it('reports a Host application failure after persistence completes', async () => {
     let shouldFail = true;
     const onError = vi.fn();
     const success = vi.fn();
@@ -135,7 +135,7 @@ describe('AltEditorLite Standalone Edit', () => {
     expect(success).not.toHaveBeenCalled();
     expect(onError).toHaveBeenCalledWith(
       expect.objectContaining({ code: 'STATE_WRITE_FAILED' }),
-      expect.objectContaining({ committed: false, phase: 'commit' }),
+      expect.objectContaining({ committed: true, phase: 'commit' }),
     );
 
     submitDialog();

@@ -72,6 +72,7 @@ export class DialogCreateOperation<
     presentation.startSubmission();
     const request = this.arguments_.operationOwner.begin('create', 'dialog');
     let phase: EditorErrorHookContext['phase'] = 'validation';
+    let hasPersistenceCompleted = false;
 
     try {
       const validationResult = await form.validateForSubmission(
@@ -125,7 +126,9 @@ export class DialogCreateOperation<
       }
 
       phase = 'persistence';
-      const row = await this.createRow(values, request);
+      const row = await this.createRow(values, request, () => {
+        hasPersistenceCompleted = true;
+      });
       if (!this.owns(request)) {
         return;
       }
@@ -169,7 +172,14 @@ export class DialogCreateOperation<
         values,
       });
     } catch (rawError: unknown) {
-      this.handleFailure(form, presentation, request, rawError, phase);
+      this.handleFailure(
+        form,
+        presentation,
+        request,
+        rawError,
+        phase,
+        hasPersistenceCompleted,
+      );
     }
   }
 
@@ -180,6 +190,7 @@ export class DialogCreateOperation<
   private async createRow(
     values: Readonly<EditorValues<TFormValues>>,
     request: OwnedOperationRequest<'create'>,
+    onPersistenceCompleted: () => void,
   ): Promise<TRow> {
     const { options, operationOwner } = this.arguments_;
     if (options.operations?.create !== undefined) {
@@ -187,6 +198,7 @@ export class DialogCreateOperation<
         values,
         operationOwner.context(request),
       );
+      onPersistenceCompleted();
       assertCompleteRow(rowCandidate, 'operations.create');
       return rowCandidate as TRow;
     }
@@ -213,6 +225,7 @@ export class DialogCreateOperation<
     request: OwnedOperationRequest<'create'>,
     rawError: unknown,
     phase: EditorErrorHookContext['phase'],
+    hasPersistenceCompleted: boolean,
   ): void {
     if (!this.owns(request)) {
       return;
@@ -223,6 +236,7 @@ export class DialogCreateOperation<
       request.abortController.signal,
       this.arguments_.language,
     );
+    const isCommitted = hasPersistenceCompleted || phase === 'commit';
     this.arguments_.operationOwner.complete(request);
     if (operationError instanceof InternalOperationAbort) {
       presentation.restoreAfterAbort(form);
@@ -233,7 +247,7 @@ export class DialogCreateOperation<
     this.arguments_.errorReporter.report(
       operationError,
       {
-        committed: false,
+        committed: isCommitted,
         mode: 'dialog',
         operation: 'create',
         phase,

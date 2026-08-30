@@ -166,6 +166,58 @@ describe('batch edit operation runner', () => {
     expect(presentation.showOperationError).toHaveBeenCalledOnce();
   });
 
+  it('reports a Host application failure after persistence completes', async () => {
+    const updateMany = vi.fn(() => originals.map((row) => ({ ...row, name: 'Updated' })));
+    const runner = new BatchEditOperationRunner<TestRow, TestValues>(
+      new OperationOwner(),
+      ENGLISH_LANGUAGE,
+      { updateMany },
+      undefined,
+    );
+    const presentation = createPresentation();
+    const runArguments = createRunArguments(presentation);
+    runArguments.commit.mockRejectedValue(new Error('Host application failed.'));
+
+    const result = await runner.run(runArguments);
+
+    expect(result.status).toBe('failed');
+    expect(updateMany).toHaveBeenCalledOnce();
+    const reportedError = runArguments.reportError.mock.calls[0]?.[0];
+    expect(runArguments.reportError).toHaveBeenCalledWith(
+      reportedError,
+      expect.objectContaining({ committed: true, phase: 'commit' }),
+      true,
+    );
+  });
+
+  it('reports target loss after persistence as committed', async () => {
+    const updateMany = vi.fn(() => originals.map((row) => ({ ...row, name: 'Updated' })));
+    const runner = new BatchEditOperationRunner<TestRow, TestValues>(
+      new OperationOwner(),
+      ENGLISH_LANGUAGE,
+      { updateMany },
+      undefined,
+    );
+    const presentation = createPresentation();
+    const runArguments = createRunArguments(presentation);
+    runArguments.revalidateTargets
+      .mockResolvedValueOnce(undefined)
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(new Error('Target unavailable.'));
+
+    const result = await runner.run(runArguments);
+
+    expect(result.status).toBe('failed');
+    expect(updateMany).toHaveBeenCalledOnce();
+    expect(runArguments.commit).not.toHaveBeenCalled();
+    const reportedError = runArguments.reportError.mock.calls[0]?.[0];
+    expect(runArguments.reportError).toHaveBeenCalledWith(
+      reportedError,
+      expect.objectContaining({ committed: true, phase: 'persistence' }),
+      true,
+    );
+  });
+
   it('reports a presentation failure together with the persistence failure', async () => {
     const runner = new BatchEditOperationRunner<TestRow, TestValues>(
       new OperationOwner(),
@@ -203,6 +255,12 @@ describe('batch edit operation runner', () => {
 
     expect(result.status).toBe('failed');
     expect(runArguments.commit).not.toHaveBeenCalled();
+    const reportedError = runArguments.reportError.mock.calls[0]?.[0];
+    expect(runArguments.reportError).toHaveBeenCalledWith(
+      reportedError,
+      expect.objectContaining({ committed: true, phase: 'persistence' }),
+      true,
+    );
   });
 
   it('rejects a non-array remote result before commit', async () => {

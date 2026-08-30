@@ -134,6 +134,7 @@ export type AfterSuccessContext<TRow extends object, TFormValues extends object>
 interface EditorErrorHookContextBase {
   readonly phase:
     'open' | 'validation' | 'submit' | 'persistence' | 'commit' | 'afterSuccess';
+  /** Whether configured persistence completed or Host application began. */
   readonly committed: boolean;
 }
 

@@ -204,4 +204,8 @@ into an `AltEditorLiteError`.
 
 Only errors marked retryable keep the primary action enabled. Retrying creates a
 new request identity and a new signal. Cancellation does not publish a normal
-error.
+error. Errors raised after configured persistence completes or Host application
+begins are reported with `committed: true`; remote or Host state may already be
+updated. Mark such an error retryable only when repeating the complete
+persistence operation is safe. Otherwise, close the presentation and reconcile
+the Host with the authoritative data source.

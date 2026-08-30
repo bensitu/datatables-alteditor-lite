@@ -27,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Reported failures after persistence or Host application begins as committed so
+  consumers can avoid repeating completed remote operations.
 - Rejected duplicate Remove record targets before hooks or persistence run.
 - Completed refresh notifications consistently and bounded DataTables Ajax reload
   waits so missing callbacks cannot retain editor ownership indefinitely.

@@ -137,6 +137,35 @@ describe('AltEditorLite Standalone CRUD', () => {
     expect(remove.mock.calls[0]?.[0]).toEqual([{ id: 'record-a', name: 'Alpha' }]);
   });
 
+  it('reports a Remove Host application failure after persistence completes', async () => {
+    const onError = vi.fn();
+    const remove = vi.fn();
+    const fixture = createStandaloneTestFixture(
+      {
+        hooks: { onError },
+        operations: { remove },
+      },
+      {
+        applyRemove: () => {
+          throw new Error('Host application failed.');
+        },
+      },
+    );
+
+    await fixture.editor.openRemoveDialog(['record-a']);
+    confirmRemove();
+    await vi.waitFor(() => {
+      expect(onError).toHaveBeenCalledOnce();
+    });
+
+    expect(remove).toHaveBeenCalledOnce();
+    expect(fixture.records.has('record-a')).toBe(true);
+    expect(onError).toHaveBeenCalledWith(
+      expect.objectContaining({ code: 'UNKNOWN' }),
+      expect.objectContaining({ committed: true, phase: 'commit' }),
+    );
+  });
+
   it('keeps a failed Create operation open for a successful retry', async () => {
     let attempt = 0;
     const fixture = createStandaloneTestFixture({
@@ -168,6 +197,39 @@ describe('AltEditorLite Standalone CRUD', () => {
       expect(fixture.editor.getState().status).toBe('ready');
     });
     expect(fixture.records.get('record-retried')?.name).toBe('Retried record');
+  });
+
+  it('reports a Create Host application failure after persistence completes', async () => {
+    const onError = vi.fn();
+    const create = vi.fn((values: Readonly<{ readonly name?: string }>) => ({
+      id: 'record-created',
+      name: values.name ?? '',
+    }));
+    const fixture = createStandaloneTestFixture(
+      {
+        hooks: { onError },
+        operations: { create },
+      },
+      {
+        applyCreate: () => {
+          throw new Error('Host application failed.');
+        },
+      },
+    );
+
+    await fixture.editor.openCreateDialog();
+    replaceName('Created record');
+    submitForm();
+    await vi.waitFor(() => {
+      expect(onError).toHaveBeenCalledOnce();
+    });
+
+    expect(create).toHaveBeenCalledOnce();
+    expect(fixture.records.has('record-created')).toBe(false);
+    expect(onError).toHaveBeenCalledWith(
+      expect.objectContaining({ code: 'UNKNOWN' }),
+      expect.objectContaining({ committed: true, phase: 'commit' }),
+    );
   });
 
   it('requires and uses an explicit record provider for local uniqueness', async () => {

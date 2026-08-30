@@ -64,6 +64,7 @@ export class DialogRemoveOperation<
     presentation.startSubmission();
     const request = this.arguments_.operationOwner.begin('remove', 'dialog');
     let phase: EditorErrorHookContext['phase'] = 'submit';
+    let hasPersistenceCompleted = false;
 
     try {
       await readHostRecords(
@@ -95,6 +96,7 @@ export class DialogRemoveOperation<
           rows,
           this.arguments_.operationOwner.context(request),
         );
+        hasPersistenceCompleted = true;
       }
       if (!this.owns(request)) {
         return;
@@ -137,7 +139,7 @@ export class DialogRemoveOperation<
         rows,
       });
     } catch (rawError: unknown) {
-      this.handleFailure(presentation, request, rawError, phase);
+      this.handleFailure(presentation, request, rawError, phase, hasPersistenceCompleted);
     }
   }
 
@@ -150,6 +152,7 @@ export class DialogRemoveOperation<
     request: OwnedOperationRequest<'remove'>,
     rawError: unknown,
     phase: EditorErrorHookContext['phase'],
+    hasPersistenceCompleted: boolean,
   ): void {
     if (!this.owns(request)) {
       return;
@@ -160,6 +163,7 @@ export class DialogRemoveOperation<
       request.abortController.signal,
       this.arguments_.language,
     );
+    const isCommitted = hasPersistenceCompleted || phase === 'commit';
     this.arguments_.operationOwner.complete(request);
     if (operationError instanceof InternalOperationAbort) {
       presentation.restoreAfterAbort();
@@ -170,7 +174,7 @@ export class DialogRemoveOperation<
     this.arguments_.errorReporter.report(
       operationError,
       {
-        committed: false,
+        committed: isCommitted,
         mode: 'dialog',
         operation: 'remove',
         phase,

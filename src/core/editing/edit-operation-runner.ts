@@ -88,6 +88,7 @@ export class EditOperationRunner<TRow extends object, TFormValues extends object
       runArguments.target,
     );
     let phase: EditorErrorHookContext['phase'] = 'validation';
+    const persistenceState = { hasCompleted: false };
 
     try {
       runArguments.presentation.startValidation();
@@ -147,7 +148,9 @@ export class EditOperationRunner<TRow extends object, TFormValues extends object
 
       runArguments.presentation.setBusy(true);
       phase = 'persistence';
-      const row = await this.updateRow(transaction, request);
+      const row = await this.updateRow(transaction, request, () => {
+        persistenceState.hasCompleted = true;
+      });
       if (!this.operationOwner.owns(request)) {
         return { status: 'aborted' };
       }
@@ -228,6 +231,7 @@ export class EditOperationRunner<TRow extends object, TFormValues extends object
       }
 
       const operationError = this.normalize(rawError, request);
+      const isCommitted = persistenceState.hasCompleted || phase === 'commit';
       this.operationOwner.complete(request);
       runArguments.presentation.setBusy(false);
       if (operationError instanceof InternalOperationAbort) {
@@ -243,7 +247,7 @@ export class EditOperationRunner<TRow extends object, TFormValues extends object
           runArguments.reportError(
             presentationError,
             {
-              committed: false,
+              committed: isCommitted,
               mode: runArguments.mode,
               operation: 'edit',
               phase,
@@ -257,7 +261,7 @@ export class EditOperationRunner<TRow extends object, TFormValues extends object
       runArguments.reportError(
         operationError,
         {
-          committed: false,
+          committed: isCommitted,
           mode: runArguments.mode,
           operation: 'edit',
           phase,
@@ -272,6 +276,7 @@ export class EditOperationRunner<TRow extends object, TFormValues extends object
   private async updateRow(
     transaction: Readonly<EditTransaction<TRow, TFormValues>>,
     request: OwnedOperationRequest<'edit'>,
+    onPersistenceCompleted: () => void,
   ): Promise<TRow> {
     if (this.operations?.update !== undefined) {
       const rowCandidate: unknown = await this.operations.update(
@@ -279,6 +284,7 @@ export class EditOperationRunner<TRow extends object, TFormValues extends object
         transaction.original,
         this.operationOwner.context(request),
       );
+      onPersistenceCompleted();
       assertCompleteRow(rowCandidate, 'operations.update');
       return rowCandidate as TRow;
     }

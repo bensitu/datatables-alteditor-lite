@@ -86,8 +86,10 @@ interface EditorHost<TRow extends object, TTarget> {
 
 Application persistence runs before `applyCreate`, `applyUpdate`, or
 `applyRemove`. Each apply promise resolves only when consumer-visible Host
-presentation is stable. A rejection is reported as an unapplied commit and does
-not publish success.
+presentation is stable. After configured persistence completes or Host
+application begins, a rejection is reported with `committed: true` because
+remote or Host state may have changed. Success is not published until the apply
+promise resolves.
 
 Optional contracts add selection (`HostSelectionCapability`), refresh
 (`HostRefreshCapability`), record enumeration

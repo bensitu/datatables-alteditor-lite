@@ -434,7 +434,7 @@ describe('AltEditorLite asynchronous Create', () => {
 });
 
 describe('AltEditorLite Edit snapshots', () => {
-  it('reports a draw failure as an unapplied commit and suppresses success observers', async () => {
+  it('reports a draw failure after Host application begins', async () => {
     const afterSuccess = vi.fn();
     const onError = vi.fn();
     const { api, editor, tableElement } = createCrudEditor('failed-edit-commit', {
@@ -461,8 +461,9 @@ describe('AltEditorLite Edit snapshots', () => {
     });
     expect(onError).toHaveBeenCalledWith(
       expect.objectContaining({ code: 'UNKNOWN' }),
-      expect.objectContaining({ committed: false, phase: 'commit' }),
+      expect.objectContaining({ committed: true, phase: 'commit' }),
     );
+    expect(api.row('#row-a').data().name).toBe('Unpublished update');
     expect(successListener).not.toHaveBeenCalled();
     expect(afterSuccess).not.toHaveBeenCalled();
     expect(editor.getState()).toMatchObject({ action: 'edit', status: 'open' });
@@ -696,6 +697,33 @@ describe('AltEditorLite Edit snapshots', () => {
       status: 'open',
       submissionError: { code: 'TARGET_UNAVAILABLE' },
     });
+  });
+
+  it('reports target loss after persistence as committed', async () => {
+    const deferredUpdate = createDeferred<TestRow>();
+    const onError = vi.fn();
+    const updateOperation = vi.fn(() => deferredUpdate.promise);
+    const { api, editor } = createCrudEditor('stale-after-persistence', {
+      hooks: { onError },
+      operations: { update: updateOperation },
+    });
+
+    await editor.openEditDialog('#row-a');
+    editor.getField('name')?.setValue('Persisted Alpha');
+    submitForm();
+    await vi.waitFor(() => {
+      expect(updateOperation).toHaveBeenCalledOnce();
+    });
+    api.row('#row-a').remove().draw(false);
+    deferredUpdate.resolve({ id: 'row-a', name: 'Persisted Alpha', rank: 1 });
+    await vi.waitFor(() => {
+      expect(onError).toHaveBeenCalledOnce();
+    });
+
+    expect(onError).toHaveBeenCalledWith(
+      expect.objectContaining({ code: 'TARGET_UNAVAILABLE' }),
+      expect.objectContaining({ committed: true, phase: 'persistence' }),
+    );
   });
 
   it('uses the guarded row-index fallback when no rowId exists', async () => {
