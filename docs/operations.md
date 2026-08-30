@@ -166,7 +166,7 @@ Inline session, and rejects while a hover Inline session awaits Submit or Cancel
 and remains mutually exclusive with dialog operations. `DataTablesHost` waits for
 the public reload callback for Ajax tables and redraws local tables without
 resetting paging. If an Ajax reload callback does not arrive within 30 seconds,
-the refresh rejects with a normalized error and releases editor ownership.
+the editor reports a normalized error and releases refresh ownership.
 DataTables does not expose an
 `AbortSignal` parameter for `ajax.reload()`, so aborting editor ownership cannot
 guarantee cancellation of that transport. `StandaloneHost` invokes its optional

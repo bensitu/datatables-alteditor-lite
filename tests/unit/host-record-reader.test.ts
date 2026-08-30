@@ -10,16 +10,22 @@ interface TestRow {
 
 interface Deferred<TValue> {
   readonly promise: Promise<TValue>;
+  reject(reason: unknown): void;
   resolve(value: TValue): void;
 }
 
 function createDeferred<TValue>(): Deferred<TValue> {
+  let rejectPromise: ((reason?: unknown) => void) | undefined;
   let resolvePromise: ((value: TValue) => void) | undefined;
-  const promise = new Promise<TValue>((resolve) => {
+  const promise = new Promise<TValue>((resolve, reject) => {
+    rejectPromise = reject;
     resolvePromise = resolve;
   });
   return {
     promise,
+    reject: (reason) => {
+      rejectPromise?.(reason);
+    },
     resolve: (value) => {
       resolvePromise?.(value);
     },
@@ -105,5 +111,30 @@ describe('Host record reader', () => {
       readHostRecords(host, ['record-a', 'record-b'], new AbortController().signal),
     ).rejects.toThrow('Record A is unavailable.');
     expect(reads).toEqual(['record-a', 'record-b']);
+  });
+
+  it('stops scheduling queued reads after one read fails', async () => {
+    const failedRead = createDeferred<Readonly<TestRow>>();
+    const releaseReads = createDeferred<undefined>();
+    const targets = Array.from({ length: 40 }, (_, index) => `record-${String(index)}`);
+    const reads: string[] = [];
+    const host = createHost(async (target) => {
+      reads.push(target);
+      if (target === 'record-0') {
+        return await failedRead.promise;
+      }
+      await releaseReads.promise;
+      return { id: target };
+    });
+
+    const result = readHostRecords(host, targets, new AbortController().signal);
+    await vi.waitFor(() => {
+      expect(reads).toHaveLength(16);
+    });
+    failedRead.reject(new Error('Record 0 is unavailable.'));
+
+    await expect(result).rejects.toThrow('Record 0 is unavailable.');
+    expect(reads).toEqual(targets.slice(0, 16));
+    releaseReads.resolve(undefined);
   });
 });

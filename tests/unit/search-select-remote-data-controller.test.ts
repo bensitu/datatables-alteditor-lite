@@ -135,4 +135,19 @@ describe('SearchSelectRemoteDataController', () => {
     await expect(searchResult).resolves.toBeUndefined();
     await expect(resolveResult).resolves.toBeUndefined();
   });
+
+  it('settles cancelled requests when a data source ignores cancellation', async () => {
+    const neverSettles = new Promise<never>(() => undefined);
+    const controller = new SearchSelectRemoteDataController<string>(
+      () => neverSettles,
+      () => neverSettles,
+    );
+    const searchResult = controller.search('query');
+    const resolveResult = controller.resolve('value');
+
+    controller.destroy();
+
+    await expect(searchResult).resolves.toBeUndefined();
+    await expect(resolveResult).resolves.toBeUndefined();
+  });
 });

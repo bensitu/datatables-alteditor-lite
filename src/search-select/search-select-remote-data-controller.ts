@@ -1,3 +1,5 @@
+import { settleWithAbort } from '../core/settle-with-abort.js';
+
 import type { SelectOption } from '../fields/field-config.js';
 import type {
   SearchSelectOptionLoader,
@@ -57,7 +59,10 @@ export class SearchSelectRemoteDataController<TValue extends string | number> {
       context: { readonly signal: AbortSignal },
     ) => TResult | PromiseLike<TResult>;
     try {
-      const value = await source(input, { signal: request.signal });
+      const value = await settleWithAbort(
+        source(input, { signal: request.signal }),
+        request.signal,
+      );
       if (this.#requests[channel] === request) {
         this.#requests[channel] = undefined;
         return ['ok', value];

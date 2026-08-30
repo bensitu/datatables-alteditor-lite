@@ -42,6 +42,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Preserved SearchSelect manual text during programmatic submission, retained
   selections after canceled IME composition, and closed open listboxes during
   cleanup.
+- Settled canceled remote SearchSelect requests even when a data source ignores
+  cancellation, and stopped scheduling queued Host reads after a read failure.
 - Normalized trimmed text before native validation and presented safe errors when
   an Inline custom or file field cannot read its value.
 - Switched double-click editing directly to a newly activated cell and detached

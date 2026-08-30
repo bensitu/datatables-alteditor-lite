@@ -27,7 +27,12 @@ export async function readHostRecords<TRow extends object, TTarget>(
     let index = nextIndex;
     while (index < targets.length) {
       nextIndex += 1;
-      rows[index] = await readHostRecord(host, targets[index] as TTarget, signal);
+      try {
+        rows[index] = await readHostRecord(host, targets[index] as TTarget, signal);
+      } catch (error: unknown) {
+        nextIndex = targets.length;
+        throw error;
+      }
       index = nextIndex;
     }
   };
