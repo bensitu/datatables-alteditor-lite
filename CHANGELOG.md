@@ -27,6 +27,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Preserved primary Create and Remove failures when error presentation fails,
+  and completed dialog ownership release and Host presentation synchronization
+  when custom field cleanup fails.
 - Reported failures after persistence or Host application begins as committed so
   consumers can avoid repeating completed remote operations.
 - Rejected duplicate Remove record targets before hooks or persistence run.

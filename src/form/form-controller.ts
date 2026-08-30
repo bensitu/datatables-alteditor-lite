@@ -243,7 +243,11 @@ export class EditorFormController<
         });
       }
     } catch (error: unknown) {
-      this.destroy();
+      try {
+        this.destroy();
+      } catch {
+        // Continue returning the construction failure.
+      }
       throw error;
     }
   }
@@ -512,8 +516,6 @@ export class EditorFormController<
         this.activeFieldValidationAbortControllers.get(name)?.abort();
         this.activeFieldValidationAbortControllers.delete(name);
         this.activeFormValidationAbortController?.abort();
-        runtime.setVisible(false);
-        managedController.destroy();
         this.controllerByName.delete(name);
         this.fieldControllerByName.delete(name);
         this.runtimeByName.delete(name);
@@ -522,6 +524,14 @@ export class EditorFormController<
         this.controllers = this.controllers.filter(
           (controller) => controller !== managedController,
         );
+        runCleanupSteps([
+          () => {
+            runtime.setVisible(false);
+          },
+          () => {
+            managedController.destroy();
+          },
+        ]);
       },
     };
     this.fieldControllerByName.set(name, fieldController);

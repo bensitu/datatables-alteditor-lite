@@ -713,8 +713,18 @@ export class DialogEditingController<
       this.provisionalForm = undefined;
       this.activeSession = session;
     } catch (rawError: unknown) {
-      this.dialog.close();
-      form?.destroy();
+      try {
+        runCleanupSteps([
+          () => {
+            this.dialog.close();
+          },
+          () => {
+            form?.destroy();
+          },
+        ]);
+      } catch {
+        // Continue handling the opening failure.
+      }
       if (this.provisionalForm === form) {
         this.provisionalForm = undefined;
       }
@@ -808,8 +818,18 @@ export class DialogEditingController<
         recordTargets,
       };
     } catch (rawError: unknown) {
-      this.dialog.close();
-      form?.destroy();
+      try {
+        runCleanupSteps([
+          () => {
+            this.dialog.close();
+          },
+          () => {
+            form?.destroy();
+          },
+        ]);
+      } catch {
+        // Continue handling the opening failure.
+      }
       if (this.provisionalForm === form) {
         this.provisionalForm = undefined;
       }
@@ -1206,12 +1226,24 @@ export class DialogEditingController<
 
   private finishClose(action: DialogAction, reason: EditorCloseReason): void {
     const session = this.requireSession(action);
-    this.dialog.close();
     this.activeSession = undefined;
-    destroyDialogSession(session);
-    this.releaseInteraction();
-    this.arguments_.stateCoordinator.transitionTo({ status: 'ready' });
-    this.dispatchClose(session, reason);
+    runCleanupSteps([
+      () => {
+        this.dialog.close();
+      },
+      () => {
+        destroyDialogSession(session);
+      },
+      () => {
+        this.releaseInteraction();
+      },
+      () => {
+        this.arguments_.stateCoordinator.transitionTo({ status: 'ready' });
+      },
+      () => {
+        this.dispatchClose(session, reason);
+      },
+    ]);
   }
 
   private dispatchClose(

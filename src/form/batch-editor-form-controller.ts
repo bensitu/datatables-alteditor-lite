@@ -148,7 +148,11 @@ export class BatchEditorFormController<TFormValues extends object> {
         });
       }
     } catch (error: unknown) {
-      this.destroy();
+      try {
+        this.destroy();
+      } catch {
+        // Continue returning the construction failure.
+      }
       throw error;
     }
   }

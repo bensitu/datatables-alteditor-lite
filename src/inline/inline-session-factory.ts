@@ -84,7 +84,11 @@ export class InlineSessionFactory<TFormValues extends object> {
       };
     } catch (error: unknown) {
       lifecycleAbortController.abort();
-      controller.destroy();
+      try {
+        controller.destroy();
+      } catch {
+        // Continue returning the session creation failure.
+      }
       throw error;
     }
   }

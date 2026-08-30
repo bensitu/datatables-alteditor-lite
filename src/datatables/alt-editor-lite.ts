@@ -24,7 +24,11 @@ export class AltEditorLite<
     try {
       super(host, options);
     } catch (error: unknown) {
-      host.destroy();
+      try {
+        host.destroy();
+      } catch {
+        // Continue returning the editor construction failure.
+      }
       throw error;
     }
     this.dataTablesHost = host;

@@ -567,4 +567,128 @@ describe('AltEditorLite custom fields', () => {
     expect(applyCreate).not.toHaveBeenCalled();
     expect(editor.getState().status).toBe('ready');
   });
+
+  it('releases dialog ownership when custom field cleanup fails', async () => {
+    const cleanupFailure = new Error('Custom field cleanup failed.');
+    let shouldFailCleanup = true;
+    const onError = vi.fn();
+    const definition = defineCustomField<readonly string[]>({
+      createController: () => {
+        const control = document.createElement('input');
+        return {
+          control,
+          destroy: () => {
+            if (shouldFailCleanup) {
+              shouldFailCleanup = false;
+              throw cleanupFailure;
+            }
+          },
+          focus: () => {
+            control.focus();
+          },
+          getValue: () => ['created'],
+          setDisabled: (disabled) => {
+            control.disabled = disabled;
+          },
+          setReadOnly: (readOnly) => {
+            control.readOnly = readOnly;
+          },
+          setRequired: (required) => {
+            control.required = required;
+          },
+          setValue: () => undefined,
+        };
+      },
+    });
+    const host = new StandaloneHost<RecordRow, string>({
+      applyCreate: (row) => row.id,
+      read: () => {
+        throw new Error('No records are available.');
+      },
+    });
+    editor = new AltEditorLite(host, {
+      clientSide: {
+        createRow: (values) => ({
+          id: 'created',
+          summary: '',
+          tags: values.tags ?? [],
+        }),
+      },
+      fields: [definition.field<RecordValues>({ label: 'Tags', name: 'tags' })],
+      hooks: { onError },
+    });
+
+    await editor.openCreateDialog();
+    document.querySelector<HTMLFormElement>('.alteditor-lite-form')?.requestSubmit();
+
+    await vi.waitFor(() => {
+      expect(editor?.getState().status).toBe('ready');
+    });
+    expect(onError).toHaveBeenCalledWith(
+      expect.objectContaining({ cause: cleanupFailure }),
+      expect.objectContaining({ committed: true, operation: 'create' }),
+    );
+    await expect(editor.openCreateDialog()).resolves.toBeUndefined();
+    shouldFailCleanup = true;
+    const reopenedField = editor.getField('tags');
+    expect(() => {
+      reopenedField?.destroy();
+    }).toThrow(cleanupFailure);
+    expect(editor.getField('tags')).toBeNull();
+    await editor.closeDialog();
+  });
+
+  it('returns the initialization failure when earlier custom cleanup also fails', async () => {
+    const initializationFailure = new Error('Custom field initialization failed.');
+    const cleanupFailure = new Error('Custom field cleanup failed.');
+    const initializedDefinition = defineCustomField<readonly string[]>({
+      createController: () => {
+        const control = document.createElement('input');
+        return {
+          control,
+          destroy: () => {
+            throw cleanupFailure;
+          },
+          focus: () => undefined,
+          getValue: () => [],
+          setDisabled: () => undefined,
+          setReadOnly: () => undefined,
+          setRequired: () => undefined,
+          setValue: () => undefined,
+        };
+      },
+    });
+    const failingDefinition = defineCustomField<string>({
+      createController: () => {
+        throw initializationFailure;
+      },
+    });
+    const host = new StandaloneHost<RecordRow, string>({
+      read: () => {
+        throw new Error('No records are available.');
+      },
+    });
+
+    editor = new AltEditorLite(host, {
+      clientSide: {
+        createRow: (values) => ({
+          id: 'created',
+          summary: values.summary ?? '',
+          tags: values.tags ?? [],
+        }),
+      },
+      fields: [
+        initializedDefinition.field<RecordValues>({
+          label: 'Tags',
+          name: 'tags',
+        }),
+        failingDefinition.field<RecordValues>({
+          label: 'Summary',
+          name: 'summary',
+        }),
+      ],
+    });
+
+    await expect(editor.openCreateDialog()).rejects.toBe(initializationFailure);
+  });
 });

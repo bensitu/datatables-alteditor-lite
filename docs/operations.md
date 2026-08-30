@@ -209,3 +209,7 @@ begins are reported with `committed: true`; remote or Host state may already be
 updated. Mark such an error retryable only when repeating the complete
 persistence operation is safe. Otherwise, close the presentation and reconcile
 the Host with the authoritative data source.
+
+If the editor cannot present an operation error, the original operation error
+is still reported. The presentation failure is reported separately without
+publishing a second error event.

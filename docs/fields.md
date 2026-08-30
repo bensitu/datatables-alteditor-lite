@@ -200,6 +200,8 @@ return its focusable control as `ariaTarget`; it must be the widget root or a
 descendant. The widget root remains the mounted `control`.
 Configure widget-specific attributes when creating the control; the general
 field `attributes` property is intentionally unavailable for custom fields.
+If adapter cleanup throws, the editor still releases its remaining dialog
+resources and ownership before returning the failure.
 
 `CustomFieldControllerContext` supplies the resolved language, the owning
 `presentation` (`dialog`, `batch`, or `inline`), a lifecycle `AbortSignal`, and

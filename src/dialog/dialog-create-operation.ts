@@ -161,6 +161,10 @@ export class DialogCreateOperation<
       this.arguments_.operationOwner.complete(request);
       try {
         presentation.completeSuccess(form);
+      } catch (rawError: unknown) {
+        this.reportCommittedFailure(rawError, request);
+      }
+      try {
         this.arguments_.onPresentationComplete();
       } catch (rawError: unknown) {
         this.reportCommittedFailure(rawError, request);
@@ -243,7 +247,11 @@ export class DialogCreateOperation<
       return;
     }
 
-    presentation.showOperationError(form, operationError);
+    try {
+      presentation.showOperationError(form, operationError);
+    } catch (rawPresentationError: unknown) {
+      this.reportPresentationFailure(rawPresentationError, request, isCommitted, phase);
+    }
     this.arguments_.errorReporter.report(
       operationError,
       {
@@ -253,6 +261,32 @@ export class DialogCreateOperation<
         phase,
       },
       true,
+    );
+  }
+
+  private reportPresentationFailure(
+    rawError: unknown,
+    request: OwnedOperationRequest<'create'>,
+    committed: boolean,
+    phase: EditorErrorHookContext['phase'],
+  ): void {
+    const presentationError = normalizeOperationError(
+      rawError,
+      request.abortController.signal,
+      this.arguments_.language,
+    );
+    if (presentationError instanceof InternalOperationAbort) {
+      return;
+    }
+    this.arguments_.errorReporter.report(
+      presentationError,
+      {
+        committed,
+        mode: 'dialog',
+        operation: 'create',
+        phase,
+      },
+      false,
     );
   }
 

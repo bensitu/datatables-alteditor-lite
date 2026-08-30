@@ -1,4 +1,5 @@
 import { EditorConfigurationError } from '../core/alt-editor-lite-error.js';
+import { runCleanupSteps } from '../core/run-cleanup-steps.js';
 import { createFieldController } from '../fields/create-field-controller.js';
 import {
   resolveBatchFieldRestriction,
@@ -232,11 +233,17 @@ export class BatchFieldBinding<TFormValues extends object> {
       this.render();
     } catch (error: unknown) {
       try {
-        controller?.destroy();
+        runCleanupSteps([
+          () => {
+            controller?.destroy();
+          },
+          () => {
+            presentation?.destroy();
+          },
+        ]);
       } catch {
-        // Preserve the initialization failure.
+        // Continue returning the initialization failure.
       }
-      presentation?.destroy();
       throw error;
     }
   }
@@ -283,8 +290,14 @@ export class BatchFieldBinding<TFormValues extends object> {
     this.#isDestroyed = true;
     this.revision += 1;
     this.#mountPoint.setVisible(false);
-    this.controller.destroy();
-    this.#presentation.destroy();
+    runCleanupSteps([
+      () => {
+        this.controller.destroy();
+      },
+      () => {
+        this.#presentation.destroy();
+      },
+    ]);
   }
 
   #activateOverrideEditor(): void {
