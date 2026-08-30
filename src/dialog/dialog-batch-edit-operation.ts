@@ -152,47 +152,50 @@ export class DialogBatchEditOperation<
       originals,
       presentation: {
         completeSuccess: async (result) => {
-          if (!editing.closeOnSuccess && committedSignal !== undefined) {
-            const signal = committedSignal;
-            try {
-              const nextOriginals = await readHostRecords(host, recordTargets, signal);
-              updateOriginals(nextOriginals);
-            } catch (rawError: unknown) {
-              let operationError = normalizeOperationError(
-                rawError,
-                signal,
-                this.arguments_.language,
-              );
-              if (operationError instanceof InternalOperationAbort) {
-                return;
-              }
+          try {
+            if (!editing.closeOnSuccess && committedSignal !== undefined) {
+              const signal = committedSignal;
               try {
-                updateOriginals(result.rows);
-              } catch (fallbackError: unknown) {
-                operationError = normalizeOperationError(
-                  fallbackError,
+                const nextOriginals = await readHostRecords(host, recordTargets, signal);
+                updateOriginals(nextOriginals);
+              } catch (rawError: unknown) {
+                let operationError = normalizeOperationError(
+                  rawError,
                   signal,
                   this.arguments_.language,
                 );
                 if (operationError instanceof InternalOperationAbort) {
                   return;
                 }
+                try {
+                  updateOriginals(result.rows);
+                } catch (fallbackError: unknown) {
+                  operationError = normalizeOperationError(
+                    fallbackError,
+                    signal,
+                    this.arguments_.language,
+                  );
+                  if (operationError instanceof InternalOperationAbort) {
+                    return;
+                  }
+                }
+                errorReporter.report(
+                  operationError,
+                  {
+                    committed: true,
+                    mode: 'dialog',
+                    operation: 'batchEdit',
+                    phase: 'commit',
+                    targets,
+                  },
+                  false,
+                );
               }
-              errorReporter.report(
-                operationError,
-                {
-                  committed: true,
-                  mode: 'dialog',
-                  operation: 'batchEdit',
-                  phase: 'commit',
-                  targets,
-                },
-                false,
-              );
             }
+            await presentation.completeSuccess(result.rows);
+          } finally {
+            this.arguments_.onPresentationComplete();
           }
-          await presentation.completeSuccess(result.rows);
-          this.arguments_.onPresentationComplete();
         },
         completeUnchanged: async () => {
           await presentation.completeUnchanged();

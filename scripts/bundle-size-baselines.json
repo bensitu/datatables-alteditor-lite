@@ -1,0 +1,20 @@
+{
+  "baselineVersion": "0.7.2",
+  "distributables": [
+    {
+      "allowanceBytes": 512,
+      "baselineBytes": 55904,
+      "path": "dist/umd/alt-editor-lite.min.js"
+    },
+    {
+      "allowanceBytes": 512,
+      "baselineBytes": 37890,
+      "path": "dist/umd/alt-editor-lite-standalone.min.js"
+    },
+    {
+      "allowanceBytes": 256,
+      "baselineBytes": 2831,
+      "path": "dist/umd/alt-editor-lite.min.css"
+    }
+  ]
+}

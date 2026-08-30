@@ -189,7 +189,25 @@ export class BatchEditOperationRunner<TRow extends object, TFormValues extends o
       if (!this.operationOwner.owns(request)) {
         return { status: 'aborted' };
       }
-      await runArguments.presentation.completeSuccess(result);
+      try {
+        await runArguments.presentation.completeSuccess(result);
+      } catch (rawPresentationError: unknown) {
+        const presentationError = this.normalize(rawPresentationError, request);
+        if (presentationError instanceof InternalOperationAbort) {
+          return { status: 'aborted' };
+        }
+        runArguments.reportError(
+          presentationError,
+          {
+            committed: true,
+            mode: 'dialog',
+            operation: 'batchEdit',
+            phase: 'afterSuccess',
+            targets: runArguments.targets,
+          },
+          false,
+        );
+      }
       if (!this.operationOwner.owns(request)) {
         return { status: 'aborted' };
       }

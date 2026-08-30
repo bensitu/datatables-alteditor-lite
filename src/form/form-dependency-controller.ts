@@ -609,9 +609,6 @@ export class FormDependencyController<TFormValues extends object> {
           await this.arguments_.applyValue(patch.targetPath, patch.binding, patch.value);
         }
       }
-      if (!isCurrent()) {
-        return;
-      }
       if (patch.hasVisible) {
         runtime.setVisible(patch.visible ?? false);
       }
@@ -630,9 +627,6 @@ export class FormDependencyController<TFormValues extends object> {
         hasValue: patch.hasValue,
         targetPath: patch.targetPath,
       });
-      if (!isCurrent()) {
-        return;
-      }
     }
   }
 

@@ -2,6 +2,8 @@ import { settleWithAbort } from '../core/settle-with-abort.js';
 
 import type { EditorHost } from './editor-host.js';
 
+const MAX_CONCURRENT_READS = 16;
+
 /** Reads one Host record with cancellation-aware settlement. */
 export async function readHostRecord<TRow extends object, TTarget>(
   host: EditorHost<TRow, TTarget>,
@@ -13,13 +15,22 @@ export async function readHostRecord<TRow extends object, TTarget>(
   return row;
 }
 
-/** Reads Host records concurrently while retaining target order. */
-export function readHostRecords<TRow extends object, TTarget>(
+/** Reads Host records with bounded concurrency while retaining target order. */
+export async function readHostRecords<TRow extends object, TTarget>(
   host: EditorHost<TRow, TTarget>,
   targets: readonly TTarget[],
   signal: AbortSignal,
 ): Promise<readonly Readonly<TRow>[]> {
-  return Promise.all(
-    targets.map(async (target) => await readHostRecord(host, target, signal)),
-  );
+  const rows = new Array<Readonly<TRow>>(targets.length);
+  let nextIndex = 0;
+  const readNext = async (): Promise<void> => {
+    let index = nextIndex;
+    while (index < targets.length) {
+      nextIndex += 1;
+      rows[index] = await readHostRecord(host, targets[index] as TTarget, signal);
+      index = nextIndex;
+    }
+  };
+  await Promise.all(targets.slice(0, MAX_CONCURRENT_READS).map(readNext));
+  return rows;
 }

@@ -1,28 +1,16 @@
 import { appendFile, readFile } from 'node:fs/promises';
 import { gzipSync } from 'node:zlib';
 
-// These gzip measurements come from the v0.6.1 build at commit a945eb4.
-// JavaScript receives 3 KiB for typed custom fields and cancellable Host reads.
-// CSS receives 256 bytes for small presentation fixes without hiding larger growth.
-// ESM implementation code uses a content-named shared chunk, so the stable UMD
-// main and Standalone files represent the complete shipping runtimes here.
-const distributables = [
-  {
-    allowanceBytes: 3 * 1024,
-    baselineBytes: 52_873,
-    path: 'dist/umd/alt-editor-lite.min.js',
-  },
-  {
-    allowanceBytes: 3 * 1024,
-    baselineBytes: 34_851,
-    path: 'dist/umd/alt-editor-lite-standalone.min.js',
-  },
-  {
-    allowanceBytes: 256,
-    baselineBytes: 2_815,
-    path: 'dist/umd/alt-editor-lite.min.css',
-  },
-];
+const packageMetadata = JSON.parse(
+  await readFile(new URL('../package.json', import.meta.url), 'utf8'),
+);
+const sizeBaselines = JSON.parse(
+  await readFile(new URL('./bundle-size-baselines.json', import.meta.url), 'utf8'),
+);
+if (sizeBaselines.baselineVersion !== packageMetadata.version) {
+  throw new Error('Bundle size baselines must match the package version.');
+}
+const { distributables } = sizeBaselines;
 
 const failures = [];
 const results = [];

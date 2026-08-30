@@ -342,7 +342,7 @@ describe('form dependencies', () => {
     controller.destroy();
   });
 
-  it('applies dependency updates in request order and stops stale patch work', async () => {
+  it('finishes each started dependency update before applying the next one', async () => {
     const firstApplication = createDeferred<undefined>();
     const applications: string[] = [];
     const setVisible = vi.fn();
@@ -410,8 +410,7 @@ describe('form dependencies', () => {
       'second:start',
       'second:end',
     ]);
-    expect(setVisible).toHaveBeenCalledOnce();
-    expect(setVisible).toHaveBeenCalledWith(true);
+    expect(setVisible.mock.calls).toEqual([[false], [true]]);
     controller.destroy();
   });
 

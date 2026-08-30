@@ -214,7 +214,9 @@ export class AltEditorLite<
           this.notifyIntegration();
         },
         onPresentationComplete: () => {
-          this.synchronizeHostPresentation();
+          if (this.stateCoordinator.getState().status !== 'destroyed') {
+            this.synchronizeHostPresentation();
+          }
         },
         operationOwner: this.operationOwner,
         options,

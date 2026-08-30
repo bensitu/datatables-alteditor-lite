@@ -4,6 +4,8 @@ interface DataTableInitialization {
   readonly ajax?: unknown;
 }
 
+const AJAX_RELOAD_TIMEOUT_MS = 30_000;
+
 function hasAjaxSource<TRow extends object>(table: Api<TRow>): boolean {
   const initialization = table.init() as unknown as DataTableInitialization;
   return initialization.ajax !== undefined && initialization.ajax !== null;
@@ -33,28 +35,34 @@ export async function refreshDataTable<TRow extends object>(
 
   await new Promise<void>((resolve, reject) => {
     let isSettled = false;
-    const finish = (): void => {
+    const finish = (error?: Error): void => {
       if (isSettled) {
         return;
       }
 
       isSettled = true;
       signal.removeEventListener('abort', handleAbort);
-      resolve();
+      globalThis.clearTimeout(timeoutId);
+      if (error === undefined) {
+        resolve();
+      } else {
+        reject(error);
+      }
     };
     const handleAbort = (): void => {
       finish();
     };
 
     signal.addEventListener('abort', handleAbort, { once: true });
+    const timeoutId = globalThis.setTimeout(() => {
+      finish(new Error('DataTables Ajax refresh did not complete in time.'));
+    }, AJAX_RELOAD_TIMEOUT_MS);
     try {
       table.ajax.reload(() => {
         finish();
       }, false);
     } catch (error: unknown) {
-      isSettled = true;
-      signal.removeEventListener('abort', handleAbort);
-      reject(
+      finish(
         error instanceof Error
           ? error
           : new Error('DataTables refresh failed.', { cause: error }),

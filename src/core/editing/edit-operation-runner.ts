@@ -168,7 +168,25 @@ export class EditOperationRunner<TRow extends object, TFormValues extends object
       if (!this.operationOwner.owns(request)) {
         return { status: 'aborted' };
       }
-      await runArguments.presentation.completeSuccess(result);
+      try {
+        await runArguments.presentation.completeSuccess(result);
+      } catch (rawPresentationError: unknown) {
+        const presentationError = this.normalize(rawPresentationError, request);
+        if (presentationError instanceof InternalOperationAbort) {
+          return { status: 'aborted' };
+        }
+        runArguments.reportError(
+          presentationError,
+          {
+            committed: true,
+            mode: runArguments.mode,
+            operation: 'edit',
+            phase: 'afterSuccess',
+            target: runArguments.target,
+          },
+          false,
+        );
+      }
       if (!this.operationOwner.owns(request)) {
         return { status: 'aborted' };
       }

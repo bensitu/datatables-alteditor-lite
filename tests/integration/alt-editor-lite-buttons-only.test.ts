@@ -162,7 +162,7 @@ describe('Buttons without Select', () => {
   });
 
   it('forwards Refresh cancellation to a consumer-owned operation', async () => {
-    const { api } = createTestTable('cancellable-refresh');
+    const { api, tableElement } = createTestTable('cancellable-refresh');
     let refreshSignal: AbortSignal | undefined;
     let reportStarted: (() => void) | undefined;
     const started = new Promise<void>((resolve) => {
@@ -188,6 +188,10 @@ describe('Buttons without Select', () => {
       operations: { refresh },
     });
     activeEditor = editor;
+    const refreshEvents: string[] = [];
+    tableElement.addEventListener('alteditor-lite:refresh', (event) => {
+      refreshEvents.push((event as CustomEvent<{ readonly phase: string }>).detail.phase);
+    });
 
     const refreshRequest = editor.refresh();
     await started;
@@ -197,5 +201,6 @@ describe('Buttons without Select', () => {
 
     expect(refresh).toHaveBeenCalledOnce();
     expect(refreshSignal?.aborted).toBe(true);
+    expect(refreshEvents).toEqual(['start', 'complete']);
   });
 });

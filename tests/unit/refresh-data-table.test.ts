@@ -33,4 +33,24 @@ describe('refreshDataTable', () => {
 
     expect(draw).toHaveBeenCalledWith(false);
   });
+
+  it('rejects when an Ajax reload never reports completion', async () => {
+    vi.useFakeTimers();
+    try {
+      const table = {
+        ajax: { reload: vi.fn() },
+        init: () => ({ ajax: '/records' }),
+      } as unknown as Api<RefreshRow>;
+      const refresh = refreshDataTable(table, new AbortController().signal);
+      const rejection = expect(refresh).rejects.toThrow(
+        'DataTables Ajax refresh did not complete in time.',
+      );
+
+      await vi.advanceTimersByTimeAsync(30_000);
+
+      await rejection;
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

@@ -409,6 +409,30 @@ describe('batch edit operation runner', () => {
     );
   });
 
+  it('keeps a committed update successful when presentation completion rejects', async () => {
+    const runner = new BatchEditOperationRunner<TestRow, TestValues>(
+      new OperationOwner(),
+      ENGLISH_LANGUAGE,
+      undefined,
+      undefined,
+    );
+    const presentation = createPresentation();
+    presentation.completeSuccess.mockRejectedValue(new Error('Completion failed.'));
+    const runArguments = createRunArguments(presentation);
+
+    const result = await runner.run(runArguments);
+
+    expect(result.status).toBe('success');
+    expect(presentation.showOperationError).not.toHaveBeenCalled();
+    const reportedError = runArguments.reportError.mock.calls[0]?.[0];
+    expect(reportedError?.cause).toMatchObject({ message: 'Completion failed.' });
+    expect(runArguments.reportError).toHaveBeenCalledWith(
+      reportedError,
+      expect.objectContaining({ committed: true, phase: 'afterSuccess' }),
+      false,
+    );
+  });
+
   it('rejects asynchronous client-side row mapping before commit', async () => {
     const updateRow = vi.fn(() =>
       Promise.resolve(originals[0]),

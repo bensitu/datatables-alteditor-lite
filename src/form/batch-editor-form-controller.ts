@@ -537,7 +537,7 @@ export class BatchEditorFormController<TFormValues extends object> {
 
   private async waitForChanges(): Promise<void> {
     while (this.pendingChangeTasks.size > 0) {
-      await Promise.all([...this.pendingChangeTasks]);
+      await Promise.allSettled([...this.pendingChangeTasks]);
     }
     await this.dependencyController?.waitForCurrent();
   }

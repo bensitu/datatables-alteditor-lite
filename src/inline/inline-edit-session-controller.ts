@@ -384,11 +384,31 @@ export class InlineEditSessionController<
       candidate = await Promise.resolve(
         session.controller.getValue(session.lifecycleAbortController.signal),
       );
-    } catch (error: unknown) {
+    } catch (rawError: unknown) {
       if (session.lifecycleAbortController.signal.aborted || this.session !== session) {
         return;
       }
+      const error = normalizeOperationError(
+        rawError,
+        session.lifecycleAbortController.signal,
+        this.arguments_.language,
+      );
       presentation.restoreAfterValidationFailure();
+      if (error instanceof InternalOperationAbort) {
+        return;
+      }
+      await presentation.showOperationError(error);
+      this.arguments_.reportError(
+        error,
+        {
+          committed: false,
+          mode: 'inline',
+          operation: 'edit',
+          phase: 'validation',
+          target: createInlineOperationTarget(session.capture.summary),
+        },
+        true,
+      );
       throw error;
     }
     if (session.lifecycleAbortController.signal.aborted || this.session !== session) {

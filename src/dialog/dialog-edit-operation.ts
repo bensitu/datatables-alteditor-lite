@@ -145,51 +145,54 @@ export class DialogEditOperation<
       original,
       presentation: {
         completeSuccess: async () => {
-          if (
-            !editing.closeOnSuccess &&
-            committedRow !== undefined &&
-            committedSignal !== undefined
-          ) {
-            const signal = committedSignal;
-            try {
-              const nextOriginal = await readHostRecord(host, committedTarget, signal);
-              await updateRetainedForm(nextOriginal);
-            } catch (rawError: unknown) {
-              let operationError = normalizeOperationError(
-                rawError,
-                signal,
-                this.arguments_.language,
-              );
-              if (operationError instanceof InternalOperationAbort) {
-                return;
-              }
+          try {
+            if (
+              !editing.closeOnSuccess &&
+              committedRow !== undefined &&
+              committedSignal !== undefined
+            ) {
+              const signal = committedSignal;
               try {
-                await updateRetainedForm(committedRow);
-              } catch (fallbackError: unknown) {
-                operationError = normalizeOperationError(
-                  fallbackError,
+                const nextOriginal = await readHostRecord(host, committedTarget, signal);
+                await updateRetainedForm(nextOriginal);
+              } catch (rawError: unknown) {
+                let operationError = normalizeOperationError(
+                  rawError,
                   signal,
                   this.arguments_.language,
                 );
                 if (operationError instanceof InternalOperationAbort) {
                   return;
                 }
+                try {
+                  await updateRetainedForm(committedRow);
+                } catch (fallbackError: unknown) {
+                  operationError = normalizeOperationError(
+                    fallbackError,
+                    signal,
+                    this.arguments_.language,
+                  );
+                  if (operationError instanceof InternalOperationAbort) {
+                    return;
+                  }
+                }
+                errorReporter.report(
+                  operationError,
+                  {
+                    committed: true,
+                    mode: 'dialog',
+                    operation: 'edit',
+                    phase: 'commit',
+                    target,
+                  },
+                  false,
+                );
               }
-              errorReporter.report(
-                operationError,
-                {
-                  committed: true,
-                  mode: 'dialog',
-                  operation: 'edit',
-                  phase: 'commit',
-                  target,
-                },
-                false,
-              );
             }
+            presentation.completeSuccess();
+          } finally {
+            this.arguments_.onPresentationComplete();
           }
-          presentation.completeSuccess();
-          this.arguments_.onPresentationComplete();
         },
         restoreAfterOperationFailure: () => {
           presentation.restoreAfterOperationFailure();

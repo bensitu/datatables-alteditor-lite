@@ -58,7 +58,7 @@ export class OperationOwner {
     if (this.isDestroyed) {
       throw new EditorDestroyedError();
     }
-    this.abort();
+    this.activeRequest?.abortController.abort();
     const request: OwnedOperationRequest = {
       abortController: new AbortController(),
       mode,

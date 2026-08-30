@@ -68,6 +68,29 @@ describe('Host record reader', () => {
     await expect(result).resolves.toEqual([{ id: 'record-a' }, { id: 'record-b' }]);
   });
 
+  it('limits concurrent reads while preserving every result position', async () => {
+    const releaseReads = createDeferred<undefined>();
+    const targets = Array.from({ length: 40 }, (_, index) => `record-${String(index)}`);
+    let activeReads = 0;
+    let highestActiveReads = 0;
+    const host = createHost(async (target) => {
+      activeReads += 1;
+      highestActiveReads = Math.max(highestActiveReads, activeReads);
+      await releaseReads.promise;
+      activeReads -= 1;
+      return { id: target };
+    });
+
+    const result = readHostRecords(host, targets, new AbortController().signal);
+    await vi.waitFor(() => {
+      expect(activeReads).toBe(16);
+    });
+    releaseReads.resolve(undefined);
+
+    await expect(result).resolves.toEqual(targets.map((id) => ({ id })));
+    expect(highestActiveReads).toBe(16);
+  });
+
   it('invokes later targets when an earlier read throws synchronously', async () => {
     const reads: string[] = [];
     const host = createHost((target) => {

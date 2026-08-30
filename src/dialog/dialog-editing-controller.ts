@@ -464,14 +464,14 @@ export class DialogEditingController<
       );
       this.openCoordinator.assertCurrent(openAbortController);
       const recordTargets = Object.freeze([...requestedTargets]);
-      this.arguments_.stateCoordinator.transitionTo({
-        action: 'remove',
-        status: 'opening',
-      });
       const confirmationElement = createRemoveConfirmation(
         requestedTargets.length,
         this.arguments_.language,
       );
+      this.arguments_.stateCoordinator.transitionTo({
+        action: 'remove',
+        status: 'opening',
+      });
       try {
         this.dialog.openConfirmation(
           confirmationElement,
