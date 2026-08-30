@@ -100,6 +100,7 @@ export class KeyTableInlineIntegration<TRow extends object, TFormValues extends 
       return;
     }
     this.previousState = state;
+    this.detachKeyListener();
     this.keys.disable();
   }
 
@@ -113,6 +114,9 @@ export class KeyTableInlineIntegration<TRow extends object, TFormValues extends 
       this.keys.disable();
     } else {
       this.keys.enable(state);
+      if (this.isAttached && this.focusedCell !== undefined) {
+        this.attachKeyListener();
+      }
     }
   }
 

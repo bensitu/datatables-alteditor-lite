@@ -54,10 +54,12 @@ export function createInputFieldController<TFormValues extends object>(
   const inputElement = document.createElement('input');
   inputElement.type = config.type;
 
+  const readValue = (): string =>
+    isTrimEnabled(config) ? inputElement.value.trim() : inputElement.value;
+
   const adapter: NativeControlAdapter<string> = {
     control: inputElement,
-    readValue: () =>
-      isTrimEnabled(config) ? inputElement.value.trim() : inputElement.value,
+    readValue,
     writeValue: (value: unknown) => {
       if (typeof value !== 'string') {
         throw new EditorConfigurationError(
@@ -70,8 +72,12 @@ export function createInputFieldController<TFormValues extends object>(
     setReadOnly: (isReadOnly: boolean) => {
       inputElement.readOnly = isReadOnly;
     },
-    validateNative: () =>
-      inputElement.checkValidity() ? { valid: true } : { valid: false },
+    validateNative: () => {
+      if (isTrimEnabled(config)) {
+        inputElement.value = readValue();
+      }
+      return inputElement.checkValidity() ? { valid: true } : { valid: false };
+    },
   };
 
   return createNativeControlController({

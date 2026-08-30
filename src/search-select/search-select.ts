@@ -129,6 +129,8 @@ export class SearchSelect<TValue extends string | number> {
 
   private isComposing = false;
 
+  private compositionStartValue = '';
+
   private isDestroyed = false;
 
   private isOpen = false;
@@ -285,9 +287,20 @@ export class SearchSelect<TValue extends string | number> {
     );
   }
 
-  /** Reads the exact selected option value or committed manual string. */
+  /** Reads the exact selected option value or current manual string. */
   public getValue(): TValue | string | undefined {
-    return this.selectedValue ?? this.manualValue;
+    const committedValue = this.getCommittedValue();
+    if (
+      committedValue !== undefined ||
+      !this.shouldAllowManualValue ||
+      this.isComposing
+    ) {
+      return committedValue;
+    }
+
+    return this.inputElement.value.trim().length === 0
+      ? undefined
+      : this.inputElement.value;
   }
 
   /** Returns the current immutable local or seed option snapshot. */
@@ -419,7 +432,9 @@ export class SearchSelect<TValue extends string | number> {
     }
 
     if (this.isOpen) {
-      this.renderOptions(this.getValue() === undefined ? this.inputElement.value : '');
+      this.renderOptions(
+        this.getCommittedValue() === undefined ? this.inputElement.value : '',
+      );
     }
   }
 
@@ -468,6 +483,7 @@ export class SearchSelect<TValue extends string | number> {
       return;
     }
 
+    this.close();
     this.isDestroyed = true;
     this.cancelScheduledRender();
     this.#remoteDataController?.destroy();
@@ -503,7 +519,7 @@ export class SearchSelect<TValue extends string | number> {
     }
 
     this.commitManualValue();
-    if (this.getValue() === undefined) {
+    if (this.getCommittedValue() === undefined) {
       this.inputElement.value = '';
     }
     this.close();
@@ -523,7 +539,9 @@ export class SearchSelect<TValue extends string | number> {
       return;
     }
     this.isComposing = false;
-    this.scheduleRender();
+    if (this.inputElement.value !== this.compositionStartValue) {
+      this.handleInput();
+    }
   };
 
   private readonly handleCompositionStart = (): void => {
@@ -531,6 +549,7 @@ export class SearchSelect<TValue extends string | number> {
       return;
     }
     this.isComposing = true;
+    this.compositionStartValue = this.inputElement.value;
     this.cancelScheduledRender();
   };
 
@@ -557,7 +576,11 @@ export class SearchSelect<TValue extends string | number> {
     if (!this.isSearchEnabled) {
       return;
     }
-    const hasCommittedValue = this.getValue() !== undefined;
+    if (this.isComposing) {
+      return;
+    }
+
+    const hasCommittedValue = this.getCommittedValue() !== undefined;
     this.cancelResolveRequest();
     this.selectedToken = undefined;
     this.selectedValue = undefined;
@@ -569,9 +592,7 @@ export class SearchSelect<TValue extends string | number> {
       this.onCommit();
     }
 
-    if (!this.isComposing) {
-      this.scheduleRender();
-    }
+    this.scheduleRender();
   };
 
   private readonly handleKeyDown = (event: KeyboardEvent): void => {
@@ -632,7 +653,7 @@ export class SearchSelect<TValue extends string | number> {
 
     if (event.key === 'Tab') {
       this.commitManualValue();
-      if (this.getValue() === undefined) {
+      if (this.getCommittedValue() === undefined) {
         this.inputElement.value = '';
       }
       this.close();
@@ -675,7 +696,7 @@ export class SearchSelect<TValue extends string | number> {
   }
 
   private clear(shouldNotify: boolean): void {
-    const hasCommittedValue = this.getValue() !== undefined;
+    const hasCommittedValue = this.getCommittedValue() !== undefined;
     this.cancelResolveRequest();
     this.selectedToken = undefined;
     this.selectedValue = undefined;
@@ -726,6 +747,10 @@ export class SearchSelect<TValue extends string | number> {
     }
   }
 
+  private getCommittedValue(): TValue | string | undefined {
+    return this.selectedValue ?? this.manualValue;
+  }
+
   private moveActiveOption(key: SearchSelectNavigationKey): void {
     const activeOptionIndex = this.filteredEntries.findIndex(
       ({ token }) => token === this.activeToken,
@@ -750,7 +775,7 @@ export class SearchSelect<TValue extends string | number> {
     this.inputElement.placeholder = this.messages.searchPlaceholder;
     this.startPositionTracking();
     this.renderOptions(
-      this.isSearchEnabled && this.getValue() === undefined
+      this.isSearchEnabled && this.getCommittedValue() === undefined
         ? this.inputElement.value
         : '',
     );
@@ -924,7 +949,7 @@ export class SearchSelect<TValue extends string | number> {
 
   private updateClearButton(): void {
     this.clearButtonElement.hidden =
-      !this.shouldAllowClear || this.getValue() === undefined;
+      !this.shouldAllowClear || this.getCommittedValue() === undefined;
   }
 
   private isRemote(): boolean {

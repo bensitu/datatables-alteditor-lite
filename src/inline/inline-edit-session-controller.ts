@@ -393,10 +393,11 @@ export class InlineEditSessionController<
         session.lifecycleAbortController.signal,
         this.arguments_.language,
       );
-      presentation.restoreAfterValidationFailure();
       if (error instanceof InternalOperationAbort) {
+        presentation.restoreAfterValidationFailure();
         return;
       }
+      session.host.setBusy(false);
       await presentation.showOperationError(error);
       this.arguments_.reportError(
         error,

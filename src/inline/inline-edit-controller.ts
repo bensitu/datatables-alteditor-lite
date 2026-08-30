@@ -162,6 +162,8 @@ export class InlineEditController<TRow extends object, TFormValues extends objec
   }
 
   private readonly activate = (target: Readonly<InlineActivationTarget>): void => {
-    void this.open(target.rowIndex, target.columnIndex).catch(() => undefined);
+    void this.prepareForExternalOperation()
+      .then(() => this.open(target.rowIndex, target.columnIndex))
+      .catch(() => undefined);
   };
 }

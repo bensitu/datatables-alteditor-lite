@@ -229,6 +229,86 @@ describe('AltEditorLite programmatic inline editing', () => {
     expect(editor.getInlineState()).toEqual({ status: 'idle' });
   });
 
+  it('reports a consumer-defined value read failure and keeps the cell editable', async () => {
+    const onError = vi.fn();
+    const errorEvent = vi.fn();
+    const unreadableText = defineCustomField<string>({
+      capabilities: { inline: true },
+      createController: () => {
+        const control = document.createElement('input');
+        let readCount = 0;
+        return {
+          control,
+          destroy: () => undefined,
+          focus: () => {
+            control.focus();
+          },
+          getValue: () => {
+            readCount += 1;
+            if (readCount > 1) {
+              throw new Error('Consumer value unavailable.');
+            }
+            return control.value;
+          },
+          setDisabled: (disabled) => {
+            control.disabled = disabled;
+          },
+          setReadOnly: (readOnly) => {
+            control.readOnly = readOnly;
+          },
+          setRequired: (required) => {
+            control.required = required;
+          },
+          setValue: (value) => {
+            control.value = value;
+          },
+        };
+      },
+    });
+    const { editor, tableElement } = createInlineEditor({
+      editing: inlineEditing('doubleClick', { blurAction: 'none' }),
+      fields: [
+        unreadableText.field<InlineValues>({
+          inlineEdit: true,
+          label: 'Name',
+          name: 'name',
+        }),
+        fields[1],
+      ],
+      hooks: { onError },
+    });
+    tableElement.addEventListener('alteditor-lite:error', errorEvent);
+
+    await editor.openInlineEdit('#row-a', 0);
+    expect(editor.getInlineState().status).toBe('editing');
+    const submission = editor.submitInlineEdit();
+    const rejection = expect(submission).rejects.toMatchObject({ code: 'UNKNOWN' });
+    await vi.waitFor(() => {
+      expect(document.querySelector('.alteditor-lite-dialog--alert')).toHaveProperty(
+        'open',
+        true,
+      );
+    });
+    expect(
+      document.querySelector(
+        '.alteditor-lite-dialog--alert .alteditor-lite-dialog__message',
+      )?.textContent,
+    ).toBe('The operation could not be completed.');
+    document
+      .querySelector<HTMLButtonElement>(
+        '.alteditor-lite-dialog--alert .alteditor-lite-dialog__button',
+      )
+      ?.click();
+    await rejection;
+
+    expect(editor.getInlineState().status).toBe('error');
+    expect(onError).toHaveBeenCalledWith(
+      expect.objectContaining({ code: 'UNKNOWN' }),
+      expect.objectContaining({ committed: false, phase: 'validation' }),
+    );
+    expect(errorEvent).toHaveBeenCalledOnce();
+  });
+
   it('enforces the configured Edit presentation and refresh ownership', async () => {
     const { api } = createTestTable('inline-disabled');
     const disabledEditor = new AltEditorLite<TestRow, InlineValues>(api, { fields });
@@ -1395,6 +1475,25 @@ describe('AltEditorLite inline interaction and redraw behavior', () => {
       expect(editor.getInlineState().status).toBe('idle');
     });
     expect(api.row('#row-a').data().name).toBe('Mouse Alpha');
+  });
+
+  it('switches a double-click session to the newly activated cell', async () => {
+    const { api, editor } = createInlineEditor();
+    await editor.openInlineEdit('#row-a', 0);
+
+    api
+      .cell('#row-b', 0)
+      .node()
+      .dispatchEvent(new MouseEvent('dblclick', { bubbles: true, button: 0, detail: 2 }));
+
+    await vi.waitFor(() => {
+      expect(
+        api.cell('#row-b', 0).node().querySelector<HTMLInputElement>('input')?.value,
+      ).toBe('Beta');
+    });
+    expect(api.row('#row-a').data().name).toBe('Alpha');
+    expect(editor.getInlineState().status).toBe('editing');
+    await editor.cancelInlineEdit();
   });
 
   it('keeps textarea Enter as input and submits with Ctrl+Enter', async () => {

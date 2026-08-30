@@ -183,6 +183,24 @@ describe('SearchSelect field integration', () => {
     );
   });
 
+  it('retains a selected value when an IME composition is canceled', async () => {
+    const form = createSearchForm();
+    const tagField = form.getField('tag');
+    const tagInput = tagField?.element.querySelector<HTMLInputElement>('input');
+    if (tagField === null || tagInput === null || tagInput === undefined) {
+      throw new Error('Expected a SearchSelect input.');
+    }
+
+    tagField.setValue('red');
+    tagInput.dispatchEvent(new CompositionEvent('compositionstart'));
+    tagInput.value = 'れ';
+    tagInput.dispatchEvent(new Event('input', { bubbles: true }));
+    tagInput.value = 'Red';
+    tagInput.dispatchEvent(new CompositionEvent('compositionend'));
+
+    await expect(tagField.getValue()).resolves.toBe('red');
+  });
+
   it('commits manual strings on Tab and clears with the accessible button', async () => {
     const form = createSearchForm();
     const tagField = form.getField('tag');
@@ -210,6 +228,22 @@ describe('SearchSelect field integration', () => {
     clearButton.click();
     await expect(tagField.getValue()).resolves.toBeUndefined();
     expect(clearButton.hidden).toBe(true);
+  });
+
+  it('reads a manual string before focus changes', async () => {
+    const form = createSearchForm();
+    const tagField = form.getField('tag');
+    const tagInput = tagField?.element.querySelector<HTMLInputElement>('input');
+    if (tagField === null || tagInput === null || tagInput === undefined) {
+      throw new Error('Expected a SearchSelect input.');
+    }
+
+    tagInput.focus();
+    tagInput.value = 'current-tag';
+    tagInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+    await expect(tagField.getValue()).resolves.toBe('current-tag');
+    await expect(form.collect()).resolves.toMatchObject({ tag: 'current-tag' });
   });
 
   it('rebuilds dynamic tokens and retains only exact current values', async () => {
@@ -247,7 +281,12 @@ describe('SearchSelect field integration', () => {
       }
     }).toThrow(EditorConfigurationError);
 
+    const listbox = officeField?.element.querySelector<HTMLElement>('[role="listbox"]');
+    officeField?.element.querySelector<HTMLInputElement>('input')?.focus();
+    expect(listbox?.hidden).toBe(false);
+
     officeField?.destroy();
+    expect(listbox?.hidden).toBe(true);
     expect(form.getField('officeId')).toBeNull();
     expect(document.querySelector('[data-field-name="officeId"]')).toBeNull();
   });

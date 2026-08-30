@@ -143,6 +143,27 @@ describe('native field presentation', () => {
     controller.destroy();
   });
 
+  it('normalizes trimmed text before native validation', () => {
+    const controller = createFieldController(
+      { label: 'Name', name: 'name', required: true, trim: true, type: 'text' },
+      'trimmed-name',
+      language,
+      () => undefined,
+    );
+    const input = controller.element.querySelector<HTMLInputElement>('input');
+    if (input === null) {
+      throw new Error('Expected a text input.');
+    }
+    input.value = '   ';
+
+    expect(controller.validateNative()).toEqual({
+      message: 'Localized required value.',
+      valid: false,
+    });
+    expect(input.value).toBe('');
+    controller.destroy();
+  });
+
   it('keeps a checkbox and its visible text in one associated label', () => {
     const form = buildEditorForm<RequiredFieldValues>(
       [{ label: 'Active', name: 'active', type: 'checkbox' }],
