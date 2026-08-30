@@ -301,7 +301,10 @@ the same type are rejected.
 remote loading starts. `search.debounceMs` delays input work; remote fields
 default to 250 ms. `sortOptions` uses an `Intl.Collator` for the active locale.
 `allowClear` returns `undefined`. `allowManualValue` is available only for
-string-valued configurations; manual numeric parsing is not supported.
+string-valued configurations; manual numeric parsing is not supported. Current
+non-empty manual text is available to form collection and programmatic submission
+before Tab or a focus change commits its presentation state. Canceling IME
+composition retains the previously selected value.
 
 Set `search: { enabled: false }` for a choice-only combobox. Its focusable control
 remains keyboard accessible, opens with Enter, Space, or ArrowDown, and exposes

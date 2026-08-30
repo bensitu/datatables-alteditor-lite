@@ -22,6 +22,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Expanded maintained coverage for asynchronous Host reads, dialog cleanup,
   remote SearchSelect behavior, and custom fields across retained dialogs,
   multi-record editing, and Inline Edit.
+- Limited parallel Host record reads and moved compressed distribution baselines
+  into versioned configuration used by local and develop-branch CI checks.
+
+### Fixed
+
+- Completed refresh notifications consistently and bounded DataTables Ajax reload
+  waits so missing callbacks cannot retain editor ownership indefinitely.
+- Kept successful edits successful when retained presentation work fails, and
+  completed integration synchronization after canceled retained-form reloads.
+- Applied each dependency update coherently before a newer update and waited for
+  all pending multi-record field work to settle.
+- Preserved SearchSelect manual text during programmatic submission, retained
+  selections after canceled IME composition, and closed open listboxes during
+  cleanup.
+- Normalized trimmed text before native validation and presented safe errors when
+  an Inline custom or file field cannot read its value.
+- Switched double-click editing directly to a newly activated cell and detached
+  KeyTable activation shortcuts while an Inline session owns the cell.
 
 ## [0.7.1] - 2026-08-30
 

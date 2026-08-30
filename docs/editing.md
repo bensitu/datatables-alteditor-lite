@@ -199,6 +199,10 @@ links, buttons, form controls, `[contenteditable]`, and elements marked with
 `openInlineEdit()` from an application control when the cell display itself is an
 interactive element.
 
+Double-clicking another eligible cell cancels the current double-click session
+before opening the new target. The canceled candidate is not submitted as a side
+effect of the cell switch.
+
 ### Keyboard and focus
 
 When KeyTable is available, `editing.inline.keyboardActivation` defaults to
@@ -207,7 +211,8 @@ ctrlKey: true }`. Setting it to `false` disables only focused-cell activation;
 it does not disable keyboard behavior inside an open session. Arrow keys, Tab,
 Home, End, PageUp, and PageDown are reserved, and IME composition never activates
 editing. KeyTable is disabled during editing and its exact prior state is
-restored afterward.
+restored afterward. The document-level activation shortcut is detached while the
+inline control owns the session and is restored with the prior KeyTable state.
 
 The following compact behavior applies to double-click activation:
 

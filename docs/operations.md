@@ -164,7 +164,9 @@ the Host to remove the captured records locally after confirmation.
 Inline session, and rejects while a hover Inline session awaits Submit or Cancel,
 and remains mutually exclusive with dialog operations. `DataTablesHost` waits for
 the public reload callback for Ajax tables and redraws local tables without
-resetting paging. DataTables does not expose an
+resetting paging. If an Ajax reload callback does not arrive within 30 seconds,
+the refresh rejects with a normalized error and releases editor ownership.
+DataTables does not expose an
 `AbortSignal` parameter for `ajax.reload()`, so aborting editor ownership cannot
 guarantee cancellation of that transport. `StandaloneHost` invokes its optional
 consumer-provided refresh callback and otherwise completes without changing
@@ -175,7 +177,8 @@ required. The callback receives the owned signal, replaces the Host's default
 refresh behavior, and is responsible for applying its result. Retain the
 DataTables API or call `DataTablesHost.unwrap()` when that implementation uses
 public DataTables methods. Aborted or superseded callback results do not publish
-AltEditorLite success events.
+AltEditorLite success events. Every started refresh emits its completion
+notification, including work canceled by replacement or destruction.
 
 ## Errors and retry
 

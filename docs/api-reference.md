@@ -52,7 +52,9 @@ identity understood by the Host. Only one active editor may own a Host's
 
 Methods that cannot run in the current state reject or throw a typed
 `AltEditorLiteError`. `destroy()` is idempotent; other methods are unavailable
-after destruction.
+after destruction. Starting another operation while an incompatible operation is
+active rejects with `EditorOperationBusyError`; callers should await each method
+and handle that rejection when requests can overlap.
 
 ## EditorHost
 
