@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Rejected duplicate Remove record targets before hooks or persistence run.
 - Completed refresh notifications consistently and bounded DataTables Ajax reload
   waits so missing callbacks cannot retain editor ownership indefinitely.
 - Kept successful edits successful when retained presentation work fails, and

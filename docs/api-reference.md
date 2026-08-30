@@ -38,7 +38,7 @@ identity understood by the Host. Only one active editor may own a Host's
 | `openCreateDialog()`            | `Promise<void>`                   | Opens Create when a Create implementation is configured.                     |
 | `openEditDialog(target?)`       | `Promise<void>`                   | Opens Edit for one explicit or Host-selected target.                         |
 | `openBatchEditDialog(targets?)` | `Promise<void>`                   | Opens Edit for at least two distinct explicit or Host-selected targets.      |
-| `openRemoveDialog(targets?)`    | `Promise<void>`                   | Opens confirmation for explicit or Host-selected targets.                    |
+| `openRemoveDialog(targets?)`    | `Promise<void>`                   | Opens confirmation for distinct explicit or Host-selected targets.           |
 | `openInlineEdit(target)`        | `Promise<void>`                   | Opens an inline target created by a Host that supports inline presentation.  |
 | `submitInlineEdit()`            | `Promise<void>`                   | Validates and submits the active inline value.                               |
 | `cancelInlineEdit()`            | `Promise<void>`                   | Cancels the active inline presentation.                                      |

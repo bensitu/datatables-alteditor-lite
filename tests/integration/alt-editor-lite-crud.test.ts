@@ -1095,4 +1095,18 @@ describe('AltEditorLite Refresh and optional selection boundary', () => {
     );
     expect(editor.getState()).toEqual({ status: 'ready' });
   });
+
+  it('rejects duplicate Remove record targets before persistence', async () => {
+    const removeOperation = vi.fn();
+    const { editor } = createCrudEditor('duplicate-remove-targets', {
+      operations: { remove: removeOperation },
+    });
+    const target = editor.dataTablesHost.resolveRecordTarget('#row-a');
+
+    await expect(editor.openRemoveDialog([target, target])).rejects.toThrow(
+      EditorConfigurationError,
+    );
+    expect(removeOperation).not.toHaveBeenCalled();
+    expect(editor.getState()).toEqual({ status: 'ready' });
+  });
 });

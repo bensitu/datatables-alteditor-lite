@@ -431,6 +431,9 @@ export class DialogEditingController<
           this.arguments_.language.errors.selectionRequired,
         );
       }
+      if (new Set(requestedTargets).size !== requestedTargets.length) {
+        throw new EditorConfigurationError('Remove targets must be distinct.');
+      }
 
       const operationTargets = requestedTargets.map((recordTarget) =>
         this.createEditOperationTarget(recordTarget),

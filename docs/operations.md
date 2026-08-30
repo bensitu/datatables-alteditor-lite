@@ -153,7 +153,8 @@ await editor.openRemoveDialog(['#user-42', '#user-43']);
 Remove always opens a confirmation dialog and never constructs a form controller.
 All targets are captured before confirmation. A later selection change is
 irrelevant. If any target becomes unavailable, the entire operation fails; partial
-deletion is not performed.
+deletion is not performed. Explicit target lists must contain distinct records;
+duplicates are rejected before hooks or persistence run.
 
 `operations.remove` runs before Host application. Without it, AltEditorLite asks
 the Host to remove the captured records locally after confirmation.
