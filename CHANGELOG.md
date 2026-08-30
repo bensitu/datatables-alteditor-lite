@@ -46,6 +46,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   cancellation, and stopped scheduling queued Host reads after a read failure.
 - Normalized trimmed text before native validation and presented safe errors when
   an Inline custom or file field cannot read its value.
+- Preserved Inline activation and value-read failures when session cleanup or
+  alert presentation also fails.
 - Switched double-click editing directly to a newly activated cell and detached
   KeyTable activation shortcuts while an Inline session owns the cell.
 

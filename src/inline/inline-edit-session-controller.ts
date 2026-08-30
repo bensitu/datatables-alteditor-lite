@@ -303,7 +303,11 @@ export class InlineEditSessionController<
       this.arguments_.notifyIntegration();
     } catch (rawError: unknown) {
       if (this.session?.capture === capture) {
-        this.cleanupSession('api', true, false, false);
+        try {
+          this.cleanupSession('api', true, false, false);
+        } catch {
+          // Continue returning the activation failure.
+        }
       } else {
         try {
           runCleanupSteps([
@@ -397,19 +401,27 @@ export class InlineEditSessionController<
         presentation.restoreAfterValidationFailure();
         return;
       }
+      const errorContext = {
+        committed: false,
+        mode: 'inline',
+        operation: 'edit',
+        phase: 'validation',
+        target: createInlineOperationTarget(session.capture.summary),
+      } as const;
       session.host.setBusy(false);
-      await presentation.showOperationError(error);
-      this.arguments_.reportError(
-        error,
-        {
-          committed: false,
-          mode: 'inline',
-          operation: 'edit',
-          phase: 'validation',
-          target: createInlineOperationTarget(session.capture.summary),
-        },
-        true,
-      );
+      try {
+        await presentation.showOperationError(error);
+      } catch (rawPresentationError: unknown) {
+        const presentationError = normalizeOperationError(
+          rawPresentationError,
+          session.lifecycleAbortController.signal,
+          this.arguments_.language,
+        );
+        if (!(presentationError instanceof InternalOperationAbort)) {
+          this.arguments_.reportError(presentationError, errorContext, false);
+        }
+      }
+      this.arguments_.reportError(error, errorContext, true);
       throw error;
     }
     if (session.lifecycleAbortController.signal.aborted || this.session !== session) {

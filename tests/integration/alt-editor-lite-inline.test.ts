@@ -309,6 +309,84 @@ describe('AltEditorLite programmatic inline editing', () => {
     expect(errorEvent).toHaveBeenCalledOnce();
   });
 
+  it('preserves a value read failure when its alert cannot open', async () => {
+    const readFailure = new Error('Consumer value unavailable.');
+    const presentationFailure = new Error('Unable to open the alert.');
+    const onError = vi.fn();
+    const errorEvent = vi.fn();
+    const unreadableText = defineCustomField<string>({
+      capabilities: { inline: true },
+      createController: () => {
+        const control = document.createElement('input');
+        let readCount = 0;
+        return {
+          control,
+          destroy: () => undefined,
+          focus: () => {
+            control.focus();
+          },
+          getValue: () => {
+            readCount += 1;
+            if (readCount > 1) {
+              throw readFailure;
+            }
+            return control.value;
+          },
+          setDisabled: (disabled) => {
+            control.disabled = disabled;
+          },
+          setReadOnly: (readOnly) => {
+            control.readOnly = readOnly;
+          },
+          setRequired: (required) => {
+            control.required = required;
+          },
+          setValue: (value) => {
+            control.value = value;
+          },
+        };
+      },
+    });
+    const { editor, tableElement } = createInlineEditor({
+      editing: inlineEditing('doubleClick', { blurAction: 'none' }),
+      fields: [
+        unreadableText.field<InlineValues>({
+          inlineEdit: true,
+          label: 'Name',
+          name: 'name',
+        }),
+        fields[1],
+      ],
+      hooks: { onError },
+    });
+    tableElement.addEventListener('alteditor-lite:error', errorEvent);
+    const showModal = vi
+      .spyOn(HTMLDialogElement.prototype, 'showModal')
+      .mockImplementation(() => {
+        throw presentationFailure;
+      });
+
+    await editor.openInlineEdit('#row-a', 0);
+    await expect(editor.submitInlineEdit()).rejects.toMatchObject({
+      cause: readFailure,
+    });
+
+    expect(onError).toHaveBeenCalledTimes(2);
+    expect(onError).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ cause: presentationFailure }),
+      expect.objectContaining({ committed: false, phase: 'validation' }),
+    );
+    expect(onError).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ cause: readFailure }),
+      expect.objectContaining({ committed: false, phase: 'validation' }),
+    );
+    expect(errorEvent).toHaveBeenCalledOnce();
+    expect(editor.getInlineState().status).toBe('error');
+    showModal.mockRestore();
+  });
+
   it('enforces the configured Edit presentation and refresh ownership', async () => {
     const { api } = createTestTable('inline-disabled');
     const disabledEditor = new AltEditorLite<TestRow, InlineValues>(api, { fields });
