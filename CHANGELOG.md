@@ -33,6 +33,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Invalidated pending asynchronous close decisions when form state changes or
+  submission begins; cancelled decisions no longer keep the editor waiting.
+- Made `closeDialog()` cancel an active Dialog submission without invoking
+  `beforeClose`.
+- Preserved committed dirty-state semantics after a retained form read failure
+  and protected caller-owned structured Create initial values.
+- Validated refresh timeouts when constructing `DataTablesHost` directly.
 - Prevented stale asynchronous blur validation from replacing newer field
   feedback or continuing into submission.
 - Applied the same cancellable field validation to common overrides in

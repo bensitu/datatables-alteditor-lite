@@ -112,6 +112,10 @@ values throw `EditorConfigurationError`; values are never accepted through
 coercion. Runtime setters change only the active rendered form and do not modify
 the original field configuration.
 
+Runtime changes that alter whether a field participates in submission can affect
+Dialog dirty state even when its stored value is unchanged. Restoring the
+original participation and values restores the clean state.
+
 Select, Radio, and SearchSelect expose `ChoiceFieldController<TValue>`. Narrow a
 field controller before updating options:
 

@@ -33,22 +33,22 @@ collected from fields and defaults to `DeepPartial<TRow>`. `TTarget` is the opaq
 identity understood by the Host. Only one active editor may own a Host's
 `ownershipKey`.
 
-| Method                          | Result                            | Description                                                                  |
-| ------------------------------- | --------------------------------- | ---------------------------------------------------------------------------- |
-| `openCreateDialog(values?)`     | `Promise<void>`                   | Opens Create with optional typed initial values.                             |
-| `openEditDialog(target?)`       | `Promise<void>`                   | Opens Edit for one explicit or Host-selected target.                         |
-| `openBatchEditDialog(targets?)` | `Promise<void>`                   | Opens Edit for at least two distinct explicit or Host-selected targets.      |
-| `openRemoveDialog(targets?)`    | `Promise<void>`                   | Opens confirmation for distinct explicit or Host-selected targets.           |
-| `openInlineEdit(target)`        | `Promise<void>`                   | Opens an inline target created by a Host that supports inline presentation.  |
-| `submitInlineEdit()`            | `Promise<void>`                   | Validates and submits the active inline value.                               |
-| `cancelInlineEdit()`            | `Promise<void>`                   | Cancels the active inline presentation.                                      |
-| `getInlineState()`              | `Readonly<InlineEditState>`       | Returns host-neutral inline lifecycle state.                                 |
-| `isInlineEditing()`             | `boolean`                         | Reports whether inline work is active.                                       |
-| `refresh()`                     | `Promise<void>`                   | Runs application refresh and the configured Host refresh behavior.           |
-| `closeDialog()`                 | `Promise<void>`                   | Requests closing through `beforeClose`, then aborts owned work if accepted.  |
-| `getField<TValue>(name)`        | `FieldController<TValue> \| null` | Returns a rendered field while a form is open.                               |
-| `getState()`                    | `Readonly<EditorState>`           | Returns the current dialog and API lifecycle state.                          |
-| `destroy()`                     | `void`                            | Releases operations, presentation, listeners, Host resources, and ownership. |
+| Method                          | Result                            | Description                                                                       |
+| ------------------------------- | --------------------------------- | --------------------------------------------------------------------------------- |
+| `openCreateDialog(values?)`     | `Promise<void>`                   | Opens Create with optional typed initial values.                                  |
+| `openEditDialog(target?)`       | `Promise<void>`                   | Opens Edit for one explicit or Host-selected target.                              |
+| `openBatchEditDialog(targets?)` | `Promise<void>`                   | Opens Edit for at least two distinct explicit or Host-selected targets.           |
+| `openRemoveDialog(targets?)`    | `Promise<void>`                   | Opens confirmation for distinct explicit or Host-selected targets.                |
+| `openInlineEdit(target)`        | `Promise<void>`                   | Opens an inline target created by a Host that supports inline presentation.       |
+| `submitInlineEdit()`            | `Promise<void>`                   | Validates and submits the active inline value.                                    |
+| `cancelInlineEdit()`            | `Promise<void>`                   | Cancels the active inline presentation.                                           |
+| `getInlineState()`              | `Readonly<InlineEditState>`       | Returns host-neutral inline lifecycle state.                                      |
+| `isInlineEditing()`             | `boolean`                         | Reports whether inline work is active.                                            |
+| `refresh()`                     | `Promise<void>`                   | Runs application refresh and the configured Host refresh behavior.                |
+| `closeDialog()`                 | `Promise<void>`                   | Requests dismissal of an open dialog or immediately cancels an active submission. |
+| `getField<TValue>(name)`        | `FieldController<TValue> \| null` | Returns a rendered field while a form is open.                                    |
+| `getState()`                    | `Readonly<EditorState>`           | Returns the current dialog and API lifecycle state.                               |
+| `destroy()`                     | `void`                            | Releases operations, presentation, listeners, Host resources, and ownership.      |
 
 Methods that cannot run in the current state reject or throw a typed
 `AltEditorLiteError`. `destroy()` is idempotent; other methods are unavailable
@@ -58,7 +58,10 @@ and handle that rejection when requests can overlap.
 
 `openCreateDialog` accepts optional `Readonly<EditorValues<TFormValues>>` initial
 values. `closeDialog()` resolves normally when a close decision is vetoed; the
-dialog remains open.
+dialog remains open. Form changes or submission supersede pending decisions.
+During submission this method cancels editor-owned work and closes immediately,
+without invoking `beforeClose`. Remote work may already have committed; use
+authoritative Host/backend state when reopening or refreshing.
 
 ## EditorHost
 

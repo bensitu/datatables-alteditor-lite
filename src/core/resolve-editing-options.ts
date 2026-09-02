@@ -10,7 +10,7 @@ import type {
 import type { InlineKeyboardActivation } from '../inline/inline-keyboard-shortcut.js';
 import type { FieldPath } from '../object-path/field-path.js';
 
-/** Dialog behavior with every default applied. */
+/** Resolved dialog settings; operation-specific callbacks remain on editor options. */
 export interface ResolvedDialogEditingOptions {
   readonly enabled: boolean;
   readonly className?: string;

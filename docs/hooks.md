@@ -68,11 +68,21 @@ The hook is veto-only: it cannot return replacement values and cannot bypass val
 ## beforeClose
 
 `beforeClose(context)` runs for Cancel, Escape, and `closeDialog()` while an
-ordinary editor dialog is open. The context contains the current operation, the
+ordinary editor dialog is in the `open` state. The context contains the current operation, the
 close `reason`, an owned cancellation signal, and `dirty`. Returning or resolving
 to `false` keeps the dialog and its form active. Only one close decision can run
 at a time.
 Remove has no editable form and reports `dirty: false`.
+
+If the form changes while an asynchronous decision is pending, that decision
+cannot close the changed form. A new dismissal request starts a new decision;
+the hook is not automatically repeated. Starting a submission supersedes any
+pending close decision.
+
+The signal is aborted when the decision loses ownership, including form
+changes, submission, and destruction. Observe it for expensive asynchronous
+checks. AltEditorLite stops awaiting cancelled decisions, but a consumer Promise
+that ignores the signal may continue independently.
 
 AltEditorLite determines whether the current form differs from its baseline;
 application code decides whether that difference should prevent closing. Create
@@ -83,6 +93,11 @@ baseline for Create, Edit, and multi-record Edit.
 If the callback throws or rejects, the dialog stays open and the normalized error
 is reported to `onError`. Forced cleanup after `destroy()` and automatic closing
 after success are not intercepted.
+
+During an active submission, `closeDialog()` immediately cancels editor-owned
+work and closes the dialog without invoking `beforeClose`. Cancellation cannot
+guarantee that a remote service has not already committed work. Reopening or
+refreshing should use authoritative Host/backend state.
 
 ## afterSuccess
 

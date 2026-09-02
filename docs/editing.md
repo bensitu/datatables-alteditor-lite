@@ -35,10 +35,15 @@ Create initial values override configured defaults before initial dependencies
 run. They do not mutate field configuration and become part of the opening clean
 baseline.
 
-Cancel, Escape, and `closeDialog()` can be intercepted with `hooks.beforeClose`.
+When the dialog is open, Cancel, Escape, and `closeDialog()` can be intercepted with `hooks.beforeClose`.
 Its context reports whether current values differ from that baseline. Returning
 `false` keeps the dialog active. Successful forms retained by
 `closeOnSuccess: false` use their canonical result as a new clean baseline.
+
+Form changes invalidate a pending asynchronous close decision. Starting a
+submission also supersedes it. During submission, `closeDialog()` immediately
+cancels editor-owned work and closes without invoking `beforeClose`; this does
+not guarantee cancellation of work already committed by a remote service.
 
 An explicit row selector does not require Select. When the Edit selector is
 omitted, Select must identify exactly one row. Remove accepts one or more explicit
@@ -58,7 +63,9 @@ populated and before the form becomes visible. See [Dynamic forms](forms.md).
 `HTMLElement` or `DocumentFragment`. It receives freshly read rows, the row
 count, and resolved language after `beforeOpen`. String results are always
 inserted as text. Returned DOM nodes are mounted directly so application event
-listeners remain attached.
+listeners remain attached. Return newly created disposable content on every
+invocation. Returned nodes are removed when the confirmation dialog is cleaned
+up, so do not reuse content mounted elsewhere.
 DOM results are trusted application content; sanitize external markup before
 returning it. The editor still owns the dialog title, actions, and focus handling.
 
@@ -82,6 +89,11 @@ after an actual common value is supplied. Restore returns the field to its
 opening baseline and removes its override. Hidden fields preserve each record's
 value. Unique and file fields remain visible with an explanation but cannot be
 overridden.
+
+Multi-record Edit tracks pending common-value deltas, not a full-form snapshot.
+An initial dependency value patch can create a pending override and make the
+dialog dirty before direct user input. Presentation-only dependency changes
+that do not produce submitted changes remain clean.
 
 Only overridden fields run field validation. For cross-field validation, the
 editor reads declared paths from each original record, overlays the common
