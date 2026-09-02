@@ -28,6 +28,12 @@ native property or ARIA state to the semantic element, and ensure `focus()` move
 focus to it. Required custom values also need adapter validation because the
 editor cannot infer an empty representation for an arbitrary value type.
 
+When a composite widget owns a focusable popup outside its mounted subtree,
+implement `containsFocusTarget(target)` so focus movement to that popup stays
+inside the field boundary. Fields using `validateOn: 'blur'` expose
+`aria-busy="true"` while the current asynchronous request is active and retain
+their normal label and error relationships.
+
 ## SearchSelect keyboard behavior
 
 | Key                   | Behavior                                                            |
@@ -65,9 +71,10 @@ the dialog when leaving it.
 ## Stylesheet customization
 
 Override the following inherited variables on `:root` for an application-wide
-theme, or on `.alteditor-lite-dialog` and `.alteditor-lite-inline` for one
-presentation type. Custom colors must retain sufficient contrast in light, dark,
-and forced-color environments.
+theme. Set `editing.dialog.className` or `editing.inline.className` and target
+that class when only one editor presentation should inherit the mapping. Custom
+colors must retain sufficient contrast in light, dark, and forced-color
+environments.
 
 | Variable                                    | Default or purpose                          |
 | ------------------------------------------- | ------------------------------------------- |
@@ -77,8 +84,18 @@ and forced-color environments.
 | `--alteditor-lite-focus-color`              | `Highlight`                                 |
 | `--alteditor-lite-primary-color`            | Primary action color                        |
 | `--alteditor-lite-primary-text-color`       | Text on primary actions                     |
-| `--alteditor-lite-error-color`              | Error and destructive-action color          |
-| `--alteditor-lite-error-text-color`         | Text on destructive actions                 |
+| `--alteditor-lite-error-color`              | Error feedback color                        |
+| `--alteditor-lite-error-text-color`         | Existing error contrast value               |
+| `--alteditor-lite-danger-color`             | Destructive-action color                    |
+| `--alteditor-lite-danger-text-color`        | Text on destructive actions                 |
+| `--alteditor-lite-font-family`              | `inherit`                                   |
+| `--alteditor-lite-font-size`                | `1rem`                                      |
+| `--alteditor-lite-control-background-color` | Surface color                               |
+| `--alteditor-lite-control-text-color`       | Text color                                  |
+| `--alteditor-lite-control-border-color`     | Border color                                |
+| `--alteditor-lite-control-min-height`       | `2.5rem`                                    |
+| `--alteditor-lite-focus-width`              | `2px`                                       |
+| `--alteditor-lite-focus-offset`             | `2px`                                       |
 | `--alteditor-lite-overlay-color`            | `rgb(0 0 0 / 45%)`                          |
 | `--alteditor-lite-option-active-color`      | `Highlight`                                 |
 | `--alteditor-lite-option-active-text-color` | `HighlightText`                             |
@@ -92,6 +109,49 @@ and forced-color environments.
 The stylesheet supplies dark-scheme defaults for the primary, error, and popup
 colors. `--alteditor-lite-search-select-available-height` is maintained by the
 component while its listbox is open and must not be set by application styles.
+
+A Bootstrap-oriented application can scope existing design tokens to one dialog:
+
+```ts
+editing: {
+  dialog: {
+    className: 'admin-editor';
+  }
+}
+```
+
+```css
+.admin-editor {
+  --alteditor-lite-primary-color: var(--bs-primary);
+  --alteditor-lite-primary-text-color: var(--bs-white);
+  --alteditor-lite-danger-color: var(--bs-danger);
+  --alteditor-lite-danger-text-color: var(--bs-white);
+  --alteditor-lite-border-radius: var(--bs-border-radius);
+}
+```
+
+A custom design system can scope Inline controls independently:
+
+```ts
+editing: {
+  inline: {
+    className: 'product-grid-editor';
+  }
+}
+```
+
+```css
+.product-grid-editor {
+  --alteditor-lite-font-family: var(--app-font-family);
+  --alteditor-lite-control-background-color: var(--app-control-surface);
+  --alteditor-lite-control-text-color: var(--app-control-text);
+  --alteditor-lite-control-border-color: var(--app-control-border);
+  --alteditor-lite-focus-color: var(--app-focus-color);
+  --alteditor-lite-focus-width: var(--app-focus-width);
+}
+```
+
+These mappings are CSS-only and do not require a framework adapter.
 
 ## Inline focus and controls
 

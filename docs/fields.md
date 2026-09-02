@@ -60,6 +60,14 @@ Validate and authorize submitted values in the persistence layer.
 Configured defaults are checked when the editor is constructed so values that
 cannot be represented by their field type fail before a dialog opens.
 
+Set `validateOn: 'blur'` to request Dialog field validation when focus leaves that
+field's owned focus boundary. The default is `'submit'`. Blur validation provides
+early feedback only: submission cancels any in-progress blur request and reruns
+the complete validation sequence before hooks, events, persistence, or Host
+application. A newer value, another validation request, closing, or destruction
+invalidates stale asynchronous results. Backend validation remains authoritative
+for business, concurrency, and security rules.
+
 Edit source values are also checked against the configured field type. A mismatch
 such as `null` for a text field rejects that open request, publishes
 `alteditor-lite:error`, and returns the editor to `ready`; values are not silently
@@ -203,6 +211,13 @@ field `attributes` property is intentionally unavailable for custom fields.
 If adapter cleanup throws, the editor still releases its remaining dialog
 resources and ownership before returning the failure.
 
+A composite widget that renders a popup or another focusable surface outside its
+`control` subtree can implement `containsFocusTarget(target)`. Return `true` for
+every node that remains logically inside the widget. This prevents
+`validateOn: 'blur'` from running while focus moves between the mounted control
+and a consumer-owned portal. The callback is used only for focus-boundary
+detection and does not transfer DOM ownership to the editor.
+
 `CustomFieldControllerContext` supplies the resolved language, the owning
 `presentation` (`dialog`, `batch`, or `inline`), a lifecycle `AbortSignal`, and
 `onUserChange()`. Call `onUserChange()` for logical user changes so dependencies
@@ -226,8 +241,8 @@ restrictions.
 
 Built-in fields compare values with `Object.is`. A custom definition can supply
 `isEqual` for structured values; that comparator determines common
-multi-record values, whether an Inline candidate is unchanged, and local
-uniqueness. Keep its semantics stable and aligned with the values returned by
+multi-record values, Dialog dirty state, whether an Inline candidate is unchanged,
+and local uniqueness. Keep its semantics stable and aligned with the values returned by
 the adapter. See the [consumer tags example](../examples/custom-fields/README.md)
 for a complete configuration.
 

@@ -43,6 +43,26 @@ cloned. AltEditorLite never detaches, moves, or mutates the source. Every form
 open receives a separate clone, so one template can serve multiple editor
 instances.
 
+A synchronous resolver can select the layout for one opening:
+
+```ts
+editing: {
+  dialog: {
+    template: ({ operation }) =>
+      operation === 'create'
+        ? '#employee-create-layout'
+        : operation === 'edit'
+          ? '#employee-edit-layout'
+          : '#employee-batch-layout',
+  },
+},
+```
+
+The resolver receives `create`, `edit`, or `batchEdit`, runs once for that
+opening, and may return `undefined` to use the generated layout. Its result is
+cloned and validated by the same rules as a static selector or element. A thrown
+error rejects opening without mutating the configured template source.
+
 Template markup is trusted application configuration. AltEditorLite clones it as
 provided and does not sanitize elements or attributes. Use only templates created
 by the application, or sanitize externally sourced markup before configuration.
@@ -58,6 +78,18 @@ The application owns layout markup and CSS. AltEditorLite owns every field node,
 label association, control identifier, validation message, busy state, and
 cleanup. Keep semantic grouping such as `<fieldset>` and `<legend>`, preserve a
 logical reading order, and let the editor move focus to invalid controls.
+
+Create accepts typed initial values without changing field configuration:
+
+```ts
+await editor.openCreateDialog({
+  country: 'JP',
+  role: 'reader',
+});
+```
+
+Configured defaults are applied first, then supplied values, then initial
+dependencies. The resulting state is the clean baseline used by `beforeClose`.
 
 ## Hidden and initially concealed fields
 
@@ -209,6 +241,12 @@ native constraints, field validators, local uniqueness, and `validateForm`.
 Earlier field errors take precedence when several checks report the same path.
 `message` appears in the form submission region. A failed result keeps the form
 open and prevents `beforeSubmit`, submit events, persistence, and Host mutation.
+
+Fields configured with `validateOn: 'blur'` use the same native, adapter,
+configured-validator, and local-uniqueness checks when focus leaves the field.
+This earlier feedback never replaces submit validation. Submission cancels any
+active blur request and revalidates current values before `validateForm`,
+`beforeSubmit`, events, persistence, and Host application.
 
 Inline validation builds a complete candidate from the canonical row plus the
 edited cell. It runs native and active-field validation, local uniqueness, waits

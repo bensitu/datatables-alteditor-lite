@@ -1,6 +1,6 @@
 # Lifecycle hooks
 
-Four optional lifecycle hooks extend the operation lifecycle. DOM events remain
+Five optional lifecycle hooks extend the operation lifecycle. DOM events remain
 non-cancelable observation points.
 
 ```ts
@@ -16,6 +16,12 @@ const editor = new AltEditorLite(table, {
       if (context.mode === 'inline' && values.rank === 13) {
         return false;
       }
+    },
+    beforeClose({ dirty }) {
+      if (!dirty) {
+        return;
+      }
+      return window.confirm('Discard unsaved changes?');
     },
     async afterSuccess(context) {
       await updateRelatedView(context);
@@ -58,6 +64,25 @@ browser host objects such as `File` retain their normal identity. Return `false`
 to keep the presentation open without publishing submit or calling persistence.
 
 The hook is veto-only: it cannot return replacement values and cannot bypass validation.
+
+## beforeClose
+
+`beforeClose(context)` runs for Cancel, Escape, and `closeDialog()` while an
+ordinary editor dialog is open. The context contains the current operation, the
+close `reason`, an owned cancellation signal, and `dirty`. Returning or resolving
+to `false` keeps the dialog and its form active. Only one close decision can run
+at a time.
+Remove has no editable form and reports `dirty: false`.
+
+AltEditorLite determines whether the current form differs from its baseline;
+application code decides whether that difference should prevent closing. Create
+defaults and caller-supplied initial values form the opening baseline. When
+`closeOnSuccess` is false, the canonical successful result becomes the new clean
+baseline for Create, Edit, and multi-record Edit.
+
+If the callback throws or rejects, the dialog stays open and the normalized error
+is reported to `onError`. Forced cleanup after `destroy()` and automatic closing
+after success are not intercepted.
 
 ## afterSuccess
 

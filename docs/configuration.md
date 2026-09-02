@@ -20,6 +20,7 @@ const editor = new AltEditorLite<Row, FormValues>(table, {
   },
   fields,
   operations,
+  refreshTimeout: 30_000,
 });
 ```
 
@@ -37,6 +38,11 @@ entry exports this neutral API without importing DataTables.
 intentionally needs an integration-specific escape hatch. `StandaloneHost`
 delegates storage and refresh work to consumer callbacks and is exported from
 `datatables-alteditor-lite/standalone`.
+
+The `/datatables` facade additionally accepts `refreshTimeout`, a finite positive
+number of milliseconds to wait for an Ajax reload callback. It defaults to
+`30_000`. This integration setting is not part of the neutral or standalone
+option types.
 
 ## Options
 
@@ -65,15 +71,20 @@ enables Dialog Edit and disables Inline Edit.
 
 ### `editing.dialog`
 
-| Property         | Default | Description                                                                              |
-| ---------------- | ------- | ---------------------------------------------------------------------------------------- |
-| `enabled`        | `true`  | Enables single- and multi-record Dialog Edit when their Host capabilities are available. |
-| `template`       | none    | Selector or consumer-owned element cloned for every Create or Edit form.                 |
-| `closeOnSuccess` | `true`  | Closes successful Create and Dialog Edit forms.                                          |
+| Property             | Default | Description                                                                                     |
+| -------------------- | ------- | ----------------------------------------------------------------------------------------------- |
+| `enabled`            | `true`  | Enables single- and multi-record Dialog Edit when their Host capabilities are available.        |
+| `template`           | none    | Static source or synchronous resolver selecting a Create, Edit, or multi-record Edit layout.    |
+| `closeOnSuccess`     | `true`  | Closes successful Create and Dialog Edit forms.                                                 |
+| `className`          | none    | Safe additional class tokens applied to the editor-owned outer dialog.                          |
+| `removeConfirmation` | none    | Creates plain text or an owned DOM fragment from the current Remove rows and resolved language. |
 
-`template` and `closeOnSuccess` also affect Create forms even when Dialog Edit is
-disabled. Remove always closes after success because its captured rows no longer
-exist.
+`template`, `closeOnSuccess`, and `className` also affect Create forms even when
+Dialog Edit is disabled. Remove always closes after success because its captured
+rows no longer exist. A `template` resolver receives `{ operation }`, where the
+operation is `create`, `edit`, or `batchEdit`, and is evaluated once per opening.
+Its result uses the same clone, ownership, and layout validation as a static
+source.
 
 ### `editing.inline`
 
@@ -87,7 +98,7 @@ exist.
 | `columns`            | `{}`                | Exact named-column mapping to field paths; `false` disables a named column. |
 | `updateMode`         | `'replace-row'`     | Commits a complete row or uses consumer-owned `'refresh'`.                  |
 | `className`          | none                | Safe additional class tokens applied to the Inline host.                    |
-| `keyboardActivation` | `{ key: 'F2' }`     | KeyTable-focused-cell shortcut, a custom shortcut, or `false`.              |
+| `keyboardActivation` | `{ key: 'F2' }`     | One or more exact KeyTable-focused-cell shortcuts, or `false`.              |
 
 Hover sessions use their native Submit and Cancel buttons, and Escape cancels
 without saving. If `blurAction`, `enterAction`, or `tabAction` is explicitly
@@ -96,6 +107,8 @@ configured for hover activation, its value must be `'none'`.
 `keyboardActivation: false` disables only focused-cell activation. It does not
 disable keyboard behavior inside an open session: native controls keep their
 keys, and the configured double-click or hover interaction policy still applies.
+An array must contain at least one shortcut. Each shortcut matches its key and
+modifier flags exactly; navigation keys remain reserved.
 
 Inline editing requires at least one supported field with `inlineEdit: true`.
 Automatic mapping first uses an exact `column().dataSrc()` and field-path match.
@@ -215,9 +228,10 @@ Refresh uses `operations.refresh` or the configured Host's default behavior.
 `DataTablesHost` uses public `ajax.reload` for Ajax tables and `draw(false)` for
 local tables; `StandaloneHost` invokes its optional `refresh` callback.
 
-`hooks` configures `beforeOpen`, `beforeSubmit`, `afterSuccess`, and `onError`.
-See [Lifecycle hooks](hooks.md). `language` accepts complete language data or
-nested overrides, including data loaded through `loadEditorLanguage`.
+`hooks` configures `beforeOpen`, `beforeSubmit`, `beforeClose`, `afterSuccess`,
+and `onError`. See [Lifecycle hooks](hooks.md). `language` accepts complete
+language data or nested overrides, including data loaded through
+`loadEditorLanguage`.
 
 ## Optional extensions
 
@@ -241,6 +255,23 @@ After a successful Create, Edit, or Remove, detected extensions with derived
 table state are synchronized through public APIs. ColumnControl SearchList
 options are refreshed and Responsive recalculates its layout after the editor
 presentation reaches a stable state.
+
+## Migrating from v0.7.x
+
+v0.8.0 is additive. Existing v0.7.2 configuration retains its default close,
+submit validation, F2 activation, generated/static template, Remove text, theme,
+and 30-second DataTables Ajax refresh behavior.
+
+- `openCreateDialog(initialValues?)` can override defaults for one opening.
+- `hooks.beforeClose` is opt-in and runs only for Cancel, Escape, and the public
+  close method.
+- `validateOn: 'blur'` is opt-in; fields continue to validate on submit.
+- `keyboardActivation` also accepts a non-empty array of exact shortcuts.
+- Dialog templates may use a synchronous operation resolver; static selectors
+  and elements remain unchanged.
+- Dialog classes, custom Remove content, and semantic CSS variables are opt-in.
+- The `/datatables` `refreshTimeout` setting is optional and defaults to
+  `30_000` milliseconds.
 
 ## Migrating from v0.6.x
 

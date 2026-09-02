@@ -24,12 +24,21 @@ workflows are available through public methods or the optional DataTables Button
 integration:
 
 ```ts
-await editor.openCreateDialog();
+await editor.openCreateDialog({ role: 'reader' });
 await editor.openEditDialog('#user-42');
 await editor.openBatchEditDialog(['#user-42', '#user-43']);
 await editor.openRemoveDialog(['#user-42', '#user-43']);
 await editor.closeDialog();
 ```
+
+Create initial values override configured defaults before initial dependencies
+run. They do not mutate field configuration and become part of the opening clean
+baseline.
+
+Cancel, Escape, and `closeDialog()` can be intercepted with `hooks.beforeClose`.
+Its context reports whether current values differ from that baseline. Returning
+`false` keeps the dialog active. Successful forms retained by
+`closeOnSuccess: false` use their canonical result as a new clean baseline.
 
 An explicit row selector does not require Select. When the Edit selector is
 omitted, Select must identify exactly one row. Remove accepts one or more explicit
@@ -44,6 +53,14 @@ before DataTables is changed.
 `editing.dialog.template` can arrange editor-owned fields in a cloned custom
 layout. Dialog dependencies resolve after defaults or Edit source values are
 populated and before the form becomes visible. See [Dynamic forms](forms.md).
+
+`editing.dialog.removeConfirmation` can render plain text or return an
+`HTMLElement` or `DocumentFragment`. It receives freshly read rows, the row
+count, and resolved language after `beforeOpen`. String results are always
+inserted as text. Returned DOM nodes are mounted directly so application event
+listeners remain attached.
+DOM results are trusted application content; sanitize external markup before
+returning it. The editor still owns the dialog title, actions, and focus handling.
 
 The dialog keeps the originally captured Edit row even if selection later
 changes. It revalidates that identity before submission and again after
@@ -206,13 +223,25 @@ effect of the cell switch.
 ### Keyboard and focus
 
 When KeyTable is available, `editing.inline.keyboardActivation` defaults to
-`{ key: 'F2' }`. Set it to `false` or use a shortcut such as `{ key: 'e',
-ctrlKey: true }`. Setting it to `false` disables only focused-cell activation;
-it does not disable keyboard behavior inside an open session. Arrow keys, Tab,
-Home, End, PageUp, and PageDown are reserved, and IME composition never activates
-editing. KeyTable is disabled during editing and its exact prior state is
-restored afterward. The document-level activation shortcut is detached while the
-inline control owns the session and is restored with the prior KeyTable state.
+`{ key: 'F2' }`. Set it to `false`, use one custom shortcut, or supply several:
+
+```ts
+keyboardActivation: [
+  { key: 'F2' },
+  { key: 'Enter' },
+  { key: ' ' },
+  { key: 'e', ctrlKey: true },
+],
+```
+
+Setting it to `false` disables only focused-cell activation; it does not disable
+keyboard behavior inside an open session. Each key and modifier combination is
+matched exactly once. Enter and Space are claimed only when an eligible
+KeyTable-focused cell can open. Arrow keys, Tab, Home, End, PageUp, and PageDown
+are reserved, and IME composition never activates editing. KeyTable is disabled
+during editing and its exact prior state is restored afterward unless external
+code changed that state while editing was active. The document-level activation
+listener is detached while the inline control owns the session.
 
 The following compact behavior applies to double-click activation:
 

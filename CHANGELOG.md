@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-09-03
+
+### Added
+
+- Added asynchronous `beforeClose` decisions with dirty state for Cancel,
+  Escape, and public dialog closing.
+- Added typed Create initial values, optional field validation on blur, and
+  consumer focus-boundary support for composite custom fields.
+- Added multiple exact KeyTable activation shortcuts, including eligible Enter
+  and Space activation.
+- Added custom Remove confirmation renderers and synchronous dialog template
+  selection for Create, Edit, and multi-record Edit.
+- Added semantic font, control, danger, and focus CSS variables, plus a
+  dialog-scoped `className` option.
+- Added the DataTables-only `refreshTimeout` option while retaining the
+  30-second default.
+
+### Changed
+
+- Retained successful forms now rebase dirty tracking from the latest canonical
+  result when `closeOnSuccess` is false.
+- KeyTable restoration now preserves external state changes made while Inline
+  Edit owns the focused cell.
+- Documented backend field-error presentation through `AltEditorLiteError` for
+  retryable single-record and multi-record operations.
+
+### Fixed
+
+- Prevented stale asynchronous blur validation from replacing newer field
+  feedback or continuing into submission.
+- Preserved custom-field portal interaction when determining whether focus left
+  a field.
+- Used freshly read Remove rows for custom confirmation content after
+  `beforeOpen` completes.
+
 ## [0.7.2] - 2026-08-31
 
 ### Changed

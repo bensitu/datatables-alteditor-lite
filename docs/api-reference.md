@@ -35,7 +35,7 @@ identity understood by the Host. Only one active editor may own a Host's
 
 | Method                          | Result                            | Description                                                                  |
 | ------------------------------- | --------------------------------- | ---------------------------------------------------------------------------- |
-| `openCreateDialog()`            | `Promise<void>`                   | Opens Create when a Create implementation is configured.                     |
+| `openCreateDialog(values?)`     | `Promise<void>`                   | Opens Create with optional typed initial values.                             |
 | `openEditDialog(target?)`       | `Promise<void>`                   | Opens Edit for one explicit or Host-selected target.                         |
 | `openBatchEditDialog(targets?)` | `Promise<void>`                   | Opens Edit for at least two distinct explicit or Host-selected targets.      |
 | `openRemoveDialog(targets?)`    | `Promise<void>`                   | Opens confirmation for distinct explicit or Host-selected targets.           |
@@ -45,7 +45,7 @@ identity understood by the Host. Only one active editor may own a Host's
 | `getInlineState()`              | `Readonly<InlineEditState>`       | Returns host-neutral inline lifecycle state.                                 |
 | `isInlineEditing()`             | `boolean`                         | Reports whether inline work is active.                                       |
 | `refresh()`                     | `Promise<void>`                   | Runs application refresh and the configured Host refresh behavior.           |
-| `closeDialog()`                 | `Promise<void>`                   | Closes an open dialog and aborts its owned work.                             |
+| `closeDialog()`                 | `Promise<void>`                   | Requests closing through `beforeClose`, then aborts owned work if accepted.  |
 | `getField<TValue>(name)`        | `FieldController<TValue> \| null` | Returns a rendered field while a form is open.                               |
 | `getState()`                    | `Readonly<EditorState>`           | Returns the current dialog and API lifecycle state.                          |
 | `destroy()`                     | `void`                            | Releases operations, presentation, listeners, Host resources, and ownership. |
@@ -55,6 +55,10 @@ Methods that cannot run in the current state reject or throw a typed
 after destruction. Starting another operation while an incompatible operation is
 active rejects with `EditorOperationBusyError`; callers should await each method
 and handle that rejection when requests can overlap.
+
+`openCreateDialog` accepts optional `Readonly<EditorValues<TFormValues>>` initial
+values. `closeDialog()` resolves normally when a close decision is vetoed; the
+dialog remains open.
 
 ## EditorHost
 
@@ -113,6 +117,12 @@ import { AltEditorLite, DataTablesHost } from 'datatables-alteditor-lite/datatab
 
 const editor = new AltEditorLite<TRow, TFormValues>(table, options);
 ```
+
+The DataTables constructor accepts
+`DataTablesAltEditorLiteOptions<TRow, TFormValues>`, which extends the neutral
+options with an optional finite positive `refreshTimeout` in milliseconds. The
+default is `30_000` and applies only while waiting for the built-in
+`ajax.reload()` callback.
 
 `AltEditorLite` extends the neutral editor and accepts public DataTables
 selectors through these overloads:
@@ -201,11 +211,21 @@ Edit, and Remove. It intentionally does not supply DataTables inline behavior.
 | `hooks`        | `EditorHooks<TRow, TFormValues>`          | Lifecycle observation and veto callbacks.               |
 
 `EditingOptions` contains independent `dialog` and `inline` objects.
-`DialogEditingOptions` provides `enabled`, `template`, and `closeOnSuccess`.
+`DialogEditingOptions` provides `enabled`, a static or operation-resolved
+`template`, `closeOnSuccess`, `className`, and `removeConfirmation`.
 `InlineEditingOptions` provides `enabled`, `activation`, `blurAction`,
 `enterAction`, `tabAction`, `keyboardActivation`, exact named-column `columns`,
 `updateMode`, and `className`. A Host must support inline presentation before an
 enabled inline configuration can be used.
+
+`keyboardActivation` accepts one `InlineKeyboardShortcut`, a non-empty readonly
+array of shortcuts, or `false`. `DialogTemplateResolver` receives a
+`DialogTemplateContext` with `operation: 'create' | 'edit' | 'batchEdit'`.
+`RemoveConfirmationRenderer` receives current readonly rows, their count, and the
+resolved language, and returns text, an `HTMLElement`, or a `DocumentFragment`.
+`EditorHooks` provides `beforeOpen`, `beforeSubmit`, `beforeClose`,
+`afterSuccess`, and `onError`. `BeforeCloseContext` includes the current dialog
+operation, `reason`, `dirty`, and an owned `signal`.
 
 `EditorOperations` supports:
 

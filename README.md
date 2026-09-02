@@ -23,6 +23,8 @@ native browser controls. It has no jQuery or UI-framework runtime dependency.
 
 - Native `<dialog>` forms with cloned custom layouts, focus containment,
   restoration, and accessible validation feedback
+- Dirty-aware asynchronous close decisions, Create initial values, and optional
+  field validation when focus leaves a control
 - Single-cell double-click or hover/touch editing with exact column mapping,
   explicit actions, validation, and optional KeyTable activation
 - Dialog and Inline Edit can be enabled together on one editor
@@ -165,7 +167,7 @@ Each line below is an independent action to connect to an application control.
 Explicit DataTables row selectors do not require Select:
 
 ```ts
-await editor.openCreateDialog();
+await editor.openCreateDialog({ name: 'New user', rank: 1 });
 await editor.openEditDialog('#user-42');
 await editor.openBatchEditDialog(['#user-42', '#user-43']);
 await editor.openRemoveDialog(['#user-42', '#user-43']);
@@ -280,8 +282,10 @@ available.
 
 Double-click activation uses compact Enter, Escape, Tab, and blur behavior.
 Hover activation provides a discoverable pencil, explicit Submit / Cancel
-actions, and Escape cancellation; the default F2 shortcut can edit a
-KeyTable-focused cell. Setting `keyboardActivation: false` disables only focused-cell activation, not keyboard behavior inside an open session.
+actions, and Escape cancellation. KeyTable-focused cells use F2 by default and
+can accept several exact shortcuts, including Enter or Space. Setting
+`keyboardActivation: false` disables only focused-cell activation, not keyboard
+behavior inside an open session.
 
 An active dialog prevents Inline activation. Create, Remove, Refresh, or Dialog
 Edit safely cancel an active double-click session; an active hover session must
@@ -292,11 +296,14 @@ transaction. See [Editing](docs/editing.md) and [Lifecycle hooks](docs/hooks.md)
 ## Dynamic forms
 
 Dialog forms can clone an application template and place fields into
-`data-alteditor-lite-field` slots. Declarative dependencies can update options,
-values, visibility, required, read-only, and disabled state with cancellation and
-stale-result protection. A typed `validateForm` callback applies the same
-cross-field data rules to Dialog Create, Dialog Edit, multi-record Dialog Edit,
-and Inline Edit. Multi-record dependencies use only known common values and
+`data-alteditor-lite-field` slots. A synchronous template resolver can select a
+different layout for Create, Edit, or multi-record Edit. Declarative dependencies
+can update options, values, visibility, required, read-only, and disabled state
+with cancellation and stale-result protection. A field may use `validateOn:
+'blur'` for early feedback; submission still reruns the authoritative complete
+client-side validation sequence. A typed `validateForm` callback applies the
+same cross-field data rules to Dialog Create, Dialog Edit, multi-record Dialog
+Edit, and Inline Edit. Multi-record dependencies use only known common values and
 explicit overrides; preserved differing values are omitted.
 
 Dependency value changes do not recursively run another resolver or fire the
@@ -333,9 +340,12 @@ const editor = new AltEditorLite<UserRow, UserForm>(table, {
 });
 ```
 
-Throw `AltEditorLiteError` for safe user-facing messages, field errors, and retry
-behavior. Unknown exceptions are replaced with the localized generic error. See
-[Operations](docs/operations.md) for cancellation and snapshot semantics.
+Throw `AltEditorLiteError` for safe user-facing messages, backend field errors,
+and retry behavior. Known `fieldErrors` are mapped back to active controls while
+the canonical Host record remains unchanged; retryable failures keep submission
+available. Unknown exceptions are replaced with the localized generic error. See
+[Operations](docs/operations.md) for cancellation, server validation, and
+snapshot semantics.
 
 ## Localization
 

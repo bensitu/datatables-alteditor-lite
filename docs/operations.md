@@ -181,7 +181,47 @@ public DataTables methods. Aborted or superseded callback results do not publish
 AltEditorLite success events. Every started refresh emits its completion
 notification, including work canceled by replacement or destruction.
 
+The `/datatables` facade can use another finite positive timeout in milliseconds:
+
+```ts
+const editor = new AltEditorLite(table, {
+  fields,
+  refreshTimeout: 10_000,
+});
+```
+
+This applies only to the built-in DataTables Ajax reload wait. It does not set a
+deadline for `operations.refresh` or any other consumer callback.
+
 ## Errors and retry
+
+Backend or domain validation should use the existing operation error path. It
+does not require another public validation callback:
+
+```ts
+operations: {
+  async update(values, original, { signal }) {
+    const response = await save(values, original, signal);
+    if (!response.valid) {
+      throw new AltEditorLiteError({
+        code: 'VALIDATION',
+        fieldErrors: response.fieldErrors,
+        message: 'The record could not be saved.',
+        retryable: true,
+      });
+    }
+    return response.row;
+  },
+},
+```
+
+Known field paths are presented beside their active controls, the general safe
+message remains visible, and Host application does not begin. Retryable failures
+keep the form and primary action available. The same behavior applies to
+`updateMany` for multi-record editing. This pattern covers database uniqueness,
+stale record versions, date overlaps, allocation totals, and other cross-record
+business rules. Backend checks remain authoritative even when local or blur
+validation provides earlier feedback.
 
 Throw `AltEditorLiteError` when the callback owns safe user-facing text, field
 errors, and retryability:
