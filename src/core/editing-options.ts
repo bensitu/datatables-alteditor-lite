@@ -1,4 +1,4 @@
-import type { InlineKeyboardShortcut } from '../inline/inline-keyboard-shortcut.js';
+import type { InlineKeyboardActivation } from '../inline/inline-keyboard-shortcut.js';
 import type { FieldPath } from '../object-path/field-path.js';
 
 /** User interaction that opens an inline editing session. */
@@ -43,7 +43,7 @@ export interface InlineEditingOptions<
   readonly updateMode?: 'replace-row' | 'refresh';
   readonly className?: string;
   /** Set to false to disable only focused-cell keyboard activation. */
-  readonly keyboardActivation?: Readonly<InlineKeyboardShortcut> | false;
+  readonly keyboardActivation?: InlineKeyboardActivation;
 }
 
 /** Composable dialog and inline editing configuration. */

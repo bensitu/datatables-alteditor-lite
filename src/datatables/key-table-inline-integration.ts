@@ -3,7 +3,10 @@ import { matchesInlineKeyboardShortcut } from '../inline/inline-keyboard-shortcu
 
 import type { InlineActivationTarget } from '../inline/inline-activation.js';
 import type { InlineColumnMapping } from '../inline/inline-column-mapping.js';
-import type { InlineKeyboardShortcut } from '../inline/inline-keyboard-shortcut.js';
+import type {
+  InlineKeyboardActivation,
+  InlineKeyboardShortcut,
+} from '../inline/inline-keyboard-shortcut.js';
 import type { Api } from 'datatables.net';
 
 export type KeyTableEnabledState = true | false | 'navigation-only' | 'tab-only';
@@ -55,6 +58,12 @@ function isCellApiSurface(value: unknown): value is CellApiSurface {
   );
 }
 
+function isShortcutList(
+  value: Exclude<InlineKeyboardActivation, false>,
+): value is readonly Readonly<InlineKeyboardShortcut>[] {
+  return Array.isArray(value);
+}
+
 /** Tracks KeyTable focus and owns the configured native activation shortcut. */
 export class KeyTableInlineIntegration<TRow extends object, TFormValues extends object> {
   private readonly keys: KeyTableApiSurface | undefined;
@@ -72,7 +81,7 @@ export class KeyTableInlineIntegration<TRow extends object, TFormValues extends 
       number,
       Readonly<InlineColumnMapping<TFormValues>>
     >,
-    private readonly shortcut: Readonly<InlineKeyboardShortcut> | false,
+    private readonly shortcut: InlineKeyboardActivation,
     private readonly onActivate: (target: Readonly<InlineActivationTarget>) => void,
     private readonly onFocusCell: (cell: HTMLTableCellElement | undefined) => void,
   ) {
@@ -108,6 +117,9 @@ export class KeyTableInlineIntegration<TRow extends object, TFormValues extends 
     const state = this.previousState;
     this.previousState = undefined;
     if (this.keys === undefined || state === undefined) {
+      return;
+    }
+    if (normalizeKeyTableEnabledState(this.keys.enabled()) !== false) {
       return;
     }
     if (state === false) {
@@ -175,7 +187,7 @@ export class KeyTableInlineIntegration<TRow extends object, TFormValues extends 
       this.shortcut === false ||
       cell === undefined ||
       cell.classList.contains('alteditor-lite-cell--editing') ||
-      !matchesInlineKeyboardShortcut(event, this.shortcut)
+      !this.matchesShortcut(event)
     ) {
       return;
     }
@@ -192,4 +204,14 @@ export class KeyTableInlineIntegration<TRow extends object, TFormValues extends 
     event.stopPropagation();
     this.onActivate(target);
   };
+
+  private matchesShortcut(event: KeyboardEvent): boolean {
+    const shortcut = this.shortcut;
+    if (shortcut === false) {
+      return false;
+    }
+    return isShortcutList(shortcut)
+      ? shortcut.some((candidate) => matchesInlineKeyboardShortcut(event, candidate))
+      : matchesInlineKeyboardShortcut(event, shortcut);
+  }
 }

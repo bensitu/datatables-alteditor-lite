@@ -196,13 +196,17 @@ describe('inline interaction foundations', () => {
 
   it('validates and exactly matches focused-cell keyboard shortcuts', () => {
     expect(resolveInlineKeyboardShortcut(undefined)).toEqual({ key: 'F2' });
+    expect(
+      resolveInlineKeyboardShortcut([{ key: 'F2' }, { key: 'Enter' }, { key: ' ' }]),
+    ).toEqual([{ key: 'F2' }, { key: 'Enter' }, { key: ' ' }]);
+    expect(() => resolveInlineKeyboardShortcut([])).toThrow(EditorConfigurationError);
+    expect(() => resolveInlineKeyboardShortcut([{ key: 'ArrowDown' }])).toThrow(
+      EditorConfigurationError,
+    );
     expect(() => resolveInlineKeyboardShortcut({ key: 'Tab' })).toThrow(
       EditorConfigurationError,
     );
     const shortcut = resolveInlineKeyboardShortcut({ ctrlKey: true, key: 'e' });
-    if (shortcut === false) {
-      throw new Error('Expected a resolved shortcut.');
-    }
     expect(
       matchesInlineKeyboardShortcut(
         new KeyboardEvent('keydown', { ctrlKey: true, key: 'e' }),

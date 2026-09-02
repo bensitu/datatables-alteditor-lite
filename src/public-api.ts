@@ -166,7 +166,10 @@ export type {
   FormValidator,
 } from './form/form-validation.js';
 export type { FieldPath, FieldPathValue } from './object-path/field-path.js';
-export type { InlineKeyboardShortcut } from './inline/inline-keyboard-shortcut.js';
+export type {
+  InlineKeyboardActivation,
+  InlineKeyboardShortcut,
+} from './inline/inline-keyboard-shortcut.js';
 export type {
   EditorHost,
   HostApplyContext,

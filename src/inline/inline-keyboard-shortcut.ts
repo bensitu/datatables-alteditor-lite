@@ -24,15 +24,11 @@ const reservedKeys = new Set([
 export const DEFAULT_INLINE_KEYBOARD_SHORTCUT: Readonly<InlineKeyboardShortcut> =
   Object.freeze({ key: 'F2' });
 
-/** Resolves and validates a keyboard activation shortcut. */
-export function resolveInlineKeyboardShortcut(
-  shortcut: unknown,
-): Readonly<InlineKeyboardShortcut> | false {
-  if (shortcut === false) {
-    return false;
-  }
-  const candidate: unknown =
-    shortcut === undefined ? DEFAULT_INLINE_KEYBOARD_SHORTCUT : shortcut;
+/** Accepted single or multiple focused-cell activation shortcuts. */
+export type InlineKeyboardActivation =
+  Readonly<InlineKeyboardShortcut> | readonly Readonly<InlineKeyboardShortcut>[] | false;
+
+function resolveShortcut(candidate: unknown): Readonly<InlineKeyboardShortcut> {
   if (
     typeof candidate !== 'object' ||
     candidate === null ||
@@ -69,6 +65,34 @@ export function resolveInlineKeyboardShortcut(
       ? {}
       : { metaKey: validatedCandidate.metaKey as boolean }),
   });
+}
+
+/** Resolves and validates a keyboard activation shortcut. */
+export function resolveInlineKeyboardShortcut(shortcut: false): false;
+export function resolveInlineKeyboardShortcut(
+  shortcut: Readonly<InlineKeyboardShortcut> | undefined,
+): Readonly<InlineKeyboardShortcut>;
+export function resolveInlineKeyboardShortcut(
+  shortcut: readonly Readonly<InlineKeyboardShortcut>[],
+): readonly Readonly<InlineKeyboardShortcut>[];
+export function resolveInlineKeyboardShortcut(
+  shortcut: unknown,
+): InlineKeyboardActivation;
+export function resolveInlineKeyboardShortcut(
+  shortcut: unknown,
+): InlineKeyboardActivation {
+  if (shortcut === false) {
+    return false;
+  }
+  const candidate: unknown =
+    shortcut === undefined ? DEFAULT_INLINE_KEYBOARD_SHORTCUT : shortcut;
+  if (Array.isArray(candidate)) {
+    if (candidate.length === 0) {
+      throw new EditorConfigurationError('inline.keyboardActivation is not valid.');
+    }
+    return Object.freeze(candidate.map((entry) => resolveShortcut(entry)));
+  }
+  return resolveShortcut(candidate);
 }
 
 /** Matches an owned native key event without claiming it. */

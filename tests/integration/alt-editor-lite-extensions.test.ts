@@ -370,7 +370,7 @@ describe('optional KeyTable and ColReorder integration', () => {
         dialog: { enabled: false },
         inline: {
           enabled: true,
-          keyboardActivation: { key: 'Enter' },
+          keyboardActivation: [{ key: 'F2' }, { key: 'Enter' }, { key: ' ' }],
         },
       },
       fields: inlineFields,
@@ -402,6 +402,49 @@ describe('optional KeyTable and ColReorder integration', () => {
 
     expect(api.row('#row-a').data().name).toBe('Keyboard edit');
     expect(extensionApi.keys.enabled()).toBe('navigation-only');
+
+    const spaceEvent = new KeyboardEvent('keydown', {
+      bubbles: true,
+      cancelable: true,
+      key: ' ',
+    });
+    document.dispatchEvent(spaceEvent);
+    await vi.waitFor(() => {
+      expect(editor.getInlineState().status).toBe('editing');
+    });
+    expect(spaceEvent.defaultPrevented).toBe(true);
+    await editor.cancelInlineEdit();
+  });
+
+  it('preserves a newer external KeyTable state', async () => {
+    const { api } = createTestTable('keytable-external-state', {
+      columns: [
+        { data: 'name', name: 'name' },
+        { data: 'rank', name: 'rank' },
+      ],
+      keys: true,
+    });
+    const extensionApi = api as unknown as ExtensionTableApi;
+    extensionApi.keys.enable('navigation-only');
+    const editor = new AltEditorLite<TestRow, ExtensionValues>(api, {
+      editing: {
+        dialog: { enabled: false },
+        inline: { enabled: true, keyboardActivation: { key: 'Enter' } },
+      },
+      fields: inlineFields,
+    });
+    activeEditors.add(editor);
+
+    (api.cell('#row-a', 0) as unknown as CellFocusApi).focus();
+    document.dispatchEvent(
+      new KeyboardEvent('keydown', { bubbles: true, cancelable: true, key: 'Enter' }),
+    );
+    await vi.waitFor(() => {
+      expect(editor.getInlineState().status).toBe('editing');
+    });
+    extensionApi.keys.enable(true);
+    await editor.cancelInlineEdit();
+    expect(extensionApi.keys.enabled()).toBe(true);
   });
 
   it('rebuilds mappings after completed column reorder without recreating the editor', async () => {

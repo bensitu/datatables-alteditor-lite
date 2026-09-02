@@ -229,6 +229,9 @@ expectAssignable<InlineEditingOptions<Row, FormValues>>({
   keyboardActivation: { ctrlKey: true, key: 'e' },
 });
 expectAssignable<InlineEditingOptions<Row, FormValues>>({
+  keyboardActivation: [{ key: 'F2' }, { key: 'Enter' }, { key: ' ' }],
+});
+expectAssignable<InlineEditingOptions<Row, FormValues>>({
   keyboardActivation: false,
 });
 expectNotAssignable<InlineEditingOptions<Row, FormValues>>({

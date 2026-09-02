@@ -7,7 +7,7 @@ import type {
   EditingOptions,
   InlineActivation,
 } from './editing-options.js';
-import type { InlineKeyboardShortcut } from '../inline/inline-keyboard-shortcut.js';
+import type { InlineKeyboardActivation } from '../inline/inline-keyboard-shortcut.js';
 import type { FieldPath } from '../object-path/field-path.js';
 
 /** Dialog behavior with every default applied. */
@@ -27,7 +27,7 @@ export interface ResolvedInlineEditingOptions<TFormValues extends object> {
   readonly columns: Readonly<Record<string, FieldPath<TFormValues> | false>>;
   readonly updateMode: 'replace-row' | 'refresh';
   readonly className?: string;
-  readonly keyboardActivation: Readonly<InlineKeyboardShortcut> | false;
+  readonly keyboardActivation: InlineKeyboardActivation;
 }
 
 /** Complete editing configuration used by runtime components. */
