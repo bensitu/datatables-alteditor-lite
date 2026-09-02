@@ -410,6 +410,7 @@ export class BatchEditorFormController<TFormValues extends object> {
       return;
     }
     this.isDestroyed = true;
+    this.onMutation = undefined;
     this.lifecycleAbortController.abort();
     this.fieldValidation.destroy();
     for (const abortController of this.activeChangeAbortControllers.values()) {

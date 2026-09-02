@@ -688,6 +688,7 @@ export class EditorFormController<
     }
 
     this.isDestroyed = true;
+    this.onMutation = undefined;
     this.lifecycleAbortController.abort();
     for (const abortController of this.activeChangeAbortControllers.values()) {
       abortController.abort();

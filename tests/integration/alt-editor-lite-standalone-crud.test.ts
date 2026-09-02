@@ -353,17 +353,27 @@ describe('AltEditorLite Standalone CRUD', () => {
     expect(fixture.editor.getState().status).toBe('open');
   });
 
-  it('shares one pending beforeClose decision', async () => {
+  it('shares a pending close decision without retaining earlier forms', async () => {
     const deferred = createDeferred();
-    const beforeClose = vi.fn(() => deferred.promise);
+    const beforeClose = vi
+      .fn<(context: Readonly<BeforeCloseContext>) => Promise<void>>(
+        () => deferred.promise,
+      )
+      .mockResolvedValueOnce(undefined);
     const fixture = createStandaloneTestFixture({ hooks: { beforeClose } });
 
+    await fixture.editor.openEditDialog('record-a');
+    const previousField = fixture.editor.getField('name');
+    await fixture.editor.closeDialog();
     await fixture.editor.openEditDialog('record-a');
     const firstClose = fixture.editor.closeDialog();
     const secondClose = fixture.editor.closeDialog();
     await vi.waitFor(() => {
-      expect(beforeClose).toHaveBeenCalledOnce();
+      expect(beforeClose).toHaveBeenCalledTimes(2);
     });
+
+    previousField?.setValue('Obsolete');
+    expect(beforeClose.mock.calls[1]?.[0].signal.aborted).toBe(false);
 
     deferred.resolve();
     await expect(Promise.all([firstClose, secondClose])).resolves.toEqual([
