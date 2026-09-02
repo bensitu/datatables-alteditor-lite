@@ -13,6 +13,7 @@ import type { FieldPath } from '../object-path/field-path.js';
 /** Dialog behavior with every default applied. */
 export interface ResolvedDialogEditingOptions {
   readonly enabled: boolean;
+  readonly className?: string;
   readonly template?: DialogTemplateOption;
   readonly closeOnSuccess: boolean;
 }
@@ -51,6 +52,21 @@ function assertOptionalObject(value: unknown, propertyName: string): void {
   }
 }
 
+const classTokenPattern = /^-?[_a-zA-Z]+[_a-zA-Z0-9-]*$/u;
+
+function assertOptionalClassName(value: unknown, propertyName: string): void {
+  if (value === undefined) {
+    return;
+  }
+  if (
+    typeof value !== 'string' ||
+    value.trim().length === 0 ||
+    value.split(/\s+/u).some((token) => !classTokenPattern.test(token))
+  ) {
+    throw new EditorConfigurationError(`${propertyName} is not valid.`);
+  }
+}
+
 /** Resolves composable editing options without mutating consumer configuration. */
 export function resolveEditingOptions<TRow extends object, TFormValues extends object>(
   options: Readonly<EditingOptions<TRow, TFormValues>> | undefined,
@@ -62,6 +78,7 @@ export function resolveEditingOptions<TRow extends object, TFormValues extends o
   assertOptionalObject(inline, 'editing.inline');
   assertOptionalBoolean(dialog?.enabled, 'editing.dialog.enabled');
   assertOptionalBoolean(dialog?.closeOnSuccess, 'editing.dialog.closeOnSuccess');
+  assertOptionalClassName(dialog?.className, 'editing.dialog.className');
   if (
     dialog?.removeConfirmation !== undefined &&
     typeof dialog.removeConfirmation !== 'function'
@@ -81,6 +98,7 @@ export function resolveEditingOptions<TRow extends object, TFormValues extends o
   const resolvedDialog = Object.freeze({
     closeOnSuccess: dialog?.closeOnSuccess ?? true,
     enabled: dialog?.enabled ?? true,
+    ...(dialog?.className === undefined ? {} : { className: dialog.className }),
     ...(dialog?.template === undefined ? {} : { template: dialog.template }),
   });
   const resolvedInline = Object.freeze({

@@ -46,6 +46,8 @@ export type RemoveConfirmationRenderer<TRow extends object> = (
 export interface DialogEditingOptions<TRow extends object = object> {
   /** Whether Dialog Edit is available. Defaults to true. */
   readonly enabled?: boolean;
+  /** Optional CSS classes applied to the editor dialog element. */
+  readonly className?: string;
   /** Optional consumer-owned layout source for Create and Edit forms. */
   readonly template?: DialogTemplateOption;
   /** Whether successful Create and Edit operations close the dialog. */

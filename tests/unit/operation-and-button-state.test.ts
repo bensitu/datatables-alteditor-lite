@@ -113,11 +113,16 @@ describe('editing configuration', () => {
       },
     });
     expect(editing.inline).not.toHaveProperty('className');
+    expect(editing.dialog).not.toHaveProperty('className');
   });
 
   it('resolves independent dialog and inline choices', () => {
     const inlineOnly = resolveEditingOptions({
-      dialog: { closeOnSuccess: false, enabled: false },
+      dialog: {
+        className: 'admin-editor compact-editor',
+        closeOnSuccess: false,
+        enabled: false,
+      },
       inline: {
         activation: 'hover',
         enabled: true,
@@ -130,6 +135,7 @@ describe('editing configuration', () => {
     });
 
     expect(inlineOnly.dialog).toMatchObject({
+      className: 'admin-editor compact-editor',
       closeOnSuccess: false,
       enabled: false,
     });
@@ -140,6 +146,12 @@ describe('editing configuration', () => {
     });
     expect(hybrid.dialog.enabled).toBe(true);
     expect(hybrid.inline.enabled).toBe(true);
+  });
+
+  it('rejects unsafe dialog class names', () => {
+    expect(() =>
+      resolveEditingOptions({ dialog: { className: 'admin-editor unsafe!' } }),
+    ).toThrow('editing.dialog.className is not valid.');
   });
 });
 

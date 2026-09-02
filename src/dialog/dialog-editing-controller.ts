@@ -151,6 +151,7 @@ export class DialogEditingController<
       focusTarget,
       arguments_.instanceId,
       arguments_.language,
+      arguments_.editing.className,
     );
     this.openCoordinator = new DialogOpenCoordinator({
       errorReporter: arguments_.errorReporter,

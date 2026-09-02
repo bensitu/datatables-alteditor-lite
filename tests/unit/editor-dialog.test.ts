@@ -48,6 +48,23 @@ function getButton(
 }
 
 describe('EditorDialog', () => {
+  it('applies consumer classes to the owned dialog element', () => {
+    const tableElement = document.createElement('table');
+    document.body.append(tableElement);
+
+    new EditorDialog(
+      tableElement,
+      'scoped-dialog',
+      ENGLISH_LANGUAGE,
+      'admin-editor compact-editor',
+    );
+
+    const dialogElement = document.querySelector<HTMLDialogElement>('dialog');
+    expect(dialogElement?.className).toBe(
+      'alteditor-lite-dialog admin-editor compact-editor',
+    );
+  });
+
   it('requires the document body before construction', () => {
     const documentBody = document.body;
     const tableElement = document.createElement('table');

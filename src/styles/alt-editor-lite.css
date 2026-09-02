@@ -15,6 +15,16 @@
   --alteditor-lite-option-active-text-color: HighlightText;
   --alteditor-lite-popup-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 20%);
   --alteditor-lite-search-select-max-height: 16rem;
+  --alteditor-lite-font-family: inherit;
+  --alteditor-lite-font-size: 1rem;
+  --alteditor-lite-control-background-color: var(--alteditor-lite-surface-color);
+  --alteditor-lite-control-text-color: var(--alteditor-lite-text-color);
+  --alteditor-lite-control-border-color: var(--alteditor-lite-border-color);
+  --alteditor-lite-control-min-height: 2.5rem;
+  --alteditor-lite-danger-color: var(--alteditor-lite-error-color);
+  --alteditor-lite-danger-text-color: var(--alteditor-lite-error-text-color);
+  --alteditor-lite-focus-width: 2px;
+  --alteditor-lite-focus-offset: 2px;
 }
 
 @supports (color: color-mix(in srgb, CanvasText 25%, transparent)) {
@@ -34,6 +44,8 @@
   padding: 0;
   overflow: hidden;
   color: var(--alteditor-lite-text-color);
+  font-family: var(--alteditor-lite-font-family);
+  font-size: var(--alteditor-lite-font-size);
   color-scheme: light dark;
   background: var(--alteditor-lite-surface-color);
   border: 1px solid var(--alteditor-lite-border-color);
@@ -98,7 +110,7 @@
 }
 
 .alteditor-lite-dialog__button {
-  min-height: 2.5rem;
+  min-height: var(--alteditor-lite-control-min-height);
   padding: 0.5rem 1rem;
   color: inherit;
   font: inherit;
@@ -115,9 +127,9 @@
 }
 
 .alteditor-lite-dialog__button--destructive {
-  color: var(--alteditor-lite-error-text-color);
-  background: var(--alteditor-lite-error-color);
-  border-color: var(--alteditor-lite-error-color);
+  color: var(--alteditor-lite-danger-text-color);
+  background: var(--alteditor-lite-danger-color);
+  border-color: var(--alteditor-lite-danger-color);
 }
 
 .alteditor-lite-dialog__button:disabled {
@@ -217,16 +229,16 @@
 
 .alteditor-lite-field__control {
   box-sizing: border-box;
-  color: inherit;
+  color: var(--alteditor-lite-control-text-color);
   font: inherit;
 }
 
 .alteditor-lite-field__control:not([type='checkbox']) {
   width: 100%;
-  min-height: 2.5rem;
+  min-height: var(--alteditor-lite-control-min-height);
   padding: 0.5rem;
-  background: var(--alteditor-lite-surface-color);
-  border: 1px solid var(--alteditor-lite-border-color);
+  background: var(--alteditor-lite-control-background-color);
+  border: 1px solid var(--alteditor-lite-control-border-color);
   border-radius: calc(var(--alteditor-lite-border-radius) / 1.5);
 }
 
@@ -263,15 +275,15 @@ input[type='file'].alteditor-lite-field__control {
 }
 
 input[type='file'].alteditor-lite-field__control::file-selector-button {
-  min-height: calc(2.5rem - 2px);
+  min-height: calc(var(--alteditor-lite-control-min-height) - 2px);
   padding: 0.5rem;
   margin-inline-end: 0.5rem;
-  color: inherit;
+  color: var(--alteditor-lite-control-text-color);
   font: inherit;
   cursor: pointer;
-  background: var(--alteditor-lite-surface-color);
+  background: var(--alteditor-lite-control-background-color);
   border: 0;
-  border-inline-end: 1px solid var(--alteditor-lite-border-color);
+  border-inline-end: 1px solid var(--alteditor-lite-control-border-color);
 }
 
 input[type='file'].alteditor-lite-field__control:disabled::file-selector-button {
@@ -443,7 +455,7 @@ table[class~='dataTable'] tbody td.alteditor-lite-cell--editing::after {
   box-sizing: border-box;
   pointer-events: none;
   content: '';
-  border: 2px solid var(--alteditor-lite-focus-color);
+  border: var(--alteditor-lite-focus-width) solid var(--alteditor-lite-focus-color);
 }
 
 .alteditor-lite-inline {
@@ -453,6 +465,8 @@ table[class~='dataTable'] tbody td.alteditor-lite-cell--editing::after {
   width: 100%;
   min-width: 0;
   color: var(--alteditor-lite-text-color);
+  font-family: var(--alteditor-lite-font-family);
+  font-size: var(--alteditor-lite-font-size);
   color-scheme: light dark;
   align-items: center;
 }
@@ -549,10 +563,10 @@ table[class~='dataTable'] tbody td.alteditor-lite-cell--editing::after {
   width: 1.5rem;
   height: 1.5rem;
   padding: 0.25rem;
-  color: var(--alteditor-lite-text-color);
+  color: var(--alteditor-lite-control-text-color);
   cursor: pointer;
-  background: var(--alteditor-lite-surface-color);
-  border: 1px solid var(--alteditor-lite-border-color);
+  background: var(--alteditor-lite-control-background-color);
+  border: 1px solid var(--alteditor-lite-control-border-color);
   border-radius: calc(var(--alteditor-lite-border-radius) / 2);
   place-items: center;
 }
@@ -635,8 +649,8 @@ table[class~='dataTable']
 .alteditor-lite-search-select__clear:focus-visible,
 .alteditor-lite-inline-hover__trigger:focus-visible,
 .alteditor-lite-inline__action:focus-visible {
-  outline: 3px solid var(--alteditor-lite-focus-color);
-  outline-offset: 2px;
+  outline: var(--alteditor-lite-focus-width) solid var(--alteditor-lite-focus-color);
+  outline-offset: var(--alteditor-lite-focus-offset);
 }
 
 .alteditor-lite-inline .alteditor-lite-field__control:not([type='checkbox']) {
@@ -664,8 +678,8 @@ table[class~='dataTable']
 
 .alteditor-lite-inline
   .alteditor-lite-field__control:not([type='checkbox']):focus-visible {
-  outline-width: 2px;
-  outline-offset: -2px;
+  outline-width: var(--alteditor-lite-focus-width);
+  outline-offset: calc(-1 * var(--alteditor-lite-focus-offset));
 }
 
 .alteditor-lite-checkbox:has(> .alteditor-lite-field__control:disabled) {

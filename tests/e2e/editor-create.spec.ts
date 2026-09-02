@@ -13,7 +13,7 @@ const dataTablesScriptPath = resolve(
 const browserBundlePath = resolve(repositoryRoot, 'dist/umd/alt-editor-lite.js');
 const stylesheetPath = resolve(repositoryRoot, 'dist/umd/alt-editor-lite.css');
 
-type EditorFixtureVariant = 'basic' | 'file' | 'slow-validation';
+type EditorFixtureVariant = 'basic' | 'file' | 'slow-validation' | 'theme';
 
 function initializationScript(variant: EditorFixtureVariant): string {
   if (variant === 'file') {
@@ -64,6 +64,8 @@ function initializationScript(variant: EditorFixtureVariant): string {
           },
         `
       : '';
+  const editing =
+    variant === 'theme' ? `editing: { dialog: { className: 'theme-dialog' } },` : '';
 
   return `
     globalThis.createCalls = 0;
@@ -75,6 +77,7 @@ function initializationScript(variant: EditorFixtureVariant): string {
       globalThis.editor = new AltEditorLite.Editor(
       globalThis.tableApi,
       {
+        ${editing}
         fields: [
           {
             label: 'Name',
@@ -181,6 +184,64 @@ test('completes Create with keyboard-only interaction and restores focus', async
   await expect(page.locator('#created-row')).toContainText('Keyboard row');
   await expect(page.locator('#created-row')).toContainText('8');
   await expect(page.evaluate(() => 'jQuery' in globalThis)).resolves.toBe(false);
+});
+
+test('applies scoped dialog theme tokens', async ({ page }) => {
+  await createEditorFixture(page, 'theme');
+  await page.addStyleTag({
+    content: `
+      .theme-dialog {
+        --alteditor-lite-font-family: monospace;
+        --alteditor-lite-font-size: 20px;
+        --alteditor-lite-control-background-color: rgb(1 2 3);
+        --alteditor-lite-control-text-color: rgb(250 249 248);
+        --alteditor-lite-control-border-color: rgb(7 8 9);
+        --alteditor-lite-control-min-height: 47px;
+        --alteditor-lite-danger-color: rgb(90 30 40);
+        --alteditor-lite-focus-width: 4px;
+        --alteditor-lite-focus-offset: 3px;
+      }
+    `,
+  });
+
+  await page.locator('#open-editor').click();
+  const dialog = page.locator('dialog.theme-dialog');
+  const nameInput = dialog.getByRole('textbox', { exact: true, name: 'Name' });
+  await expect(dialog).toBeVisible();
+  await expect(nameInput).toBeFocused();
+
+  const theme = await dialog.evaluate((dialogElement) => {
+    const dialogStyles = getComputedStyle(dialogElement);
+    const inputElement = dialogElement.querySelector('input');
+    if (inputElement === null) {
+      throw new Error('Expected a themed input.');
+    }
+    const inputStyles = getComputedStyle(inputElement);
+    return {
+      background: inputStyles.backgroundColor,
+      border: inputStyles.borderTopColor,
+      danger: dialogStyles.getPropertyValue('--alteditor-lite-danger-color').trim(),
+      error: dialogStyles.getPropertyValue('--alteditor-lite-error-color').trim(),
+      focusOffset: inputStyles.outlineOffset,
+      focusWidth: inputStyles.outlineWidth,
+      fontFamily: dialogStyles.fontFamily,
+      fontSize: dialogStyles.fontSize,
+      minHeight: inputStyles.minHeight,
+      text: inputStyles.color,
+    };
+  });
+
+  expect(theme).toMatchObject({
+    background: 'rgb(1, 2, 3)',
+    border: 'rgb(7, 8, 9)',
+    focusOffset: '3px',
+    focusWidth: '4px',
+    fontFamily: 'monospace',
+    fontSize: '20px',
+    minHeight: '47px',
+    text: 'rgb(250, 249, 248)',
+  });
+  expect(theme.danger).not.toBe(theme.error);
 });
 
 test('shows native validation without mutating DataTables', async ({ page }) => {

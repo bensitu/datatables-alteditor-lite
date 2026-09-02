@@ -213,7 +213,10 @@ expectAssignable<EditingOptions<Row, FormValues>>({
   },
 });
 expectAssignable<DialogEditingOptions>({ enabled: true });
-expectAssignable<DialogEditingOptions<Row>>({ closeOnSuccess: false });
+expectAssignable<DialogEditingOptions<Row>>({
+  className: 'admin-editor',
+  closeOnSuccess: false,
+});
 expectAssignable<DialogEditingOptions<Row>>({
   removeConfirmation: ({ count, language, rows }) => {
     expectType<number>(count);

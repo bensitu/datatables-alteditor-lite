@@ -39,13 +39,18 @@ export class EditorDialog {
    * @param focusFallback - Host element used when the opening target disappears.
    * @param instanceId - Instance-scoped DOM prefix.
    * @param language - Complete resolved language.
+   * @param className - Optional consumer classes for the dialog element.
    */
   public constructor(
     focusFallback: HTMLElement,
     instanceId: string,
     language: Readonly<AltEditorLiteLanguage>,
+    className?: string,
   ) {
     this.shell = createEditorDialogShell(instanceId, language);
+    if (className !== undefined) {
+      this.shell.dialogElement.classList.add(...className.split(/\s+/u));
+    }
     this.focusScope = new DialogFocusScope(this.shell.dialogElement, focusFallback);
     this.shell.dialogElement.addEventListener('cancel', this.handleNativeCancel);
     this.shell.cancelButton.addEventListener('click', this.handleCancelClick);
