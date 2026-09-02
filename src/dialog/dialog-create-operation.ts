@@ -32,7 +32,10 @@ export interface DialogCreatePresentation<TFormValues extends object> {
     form: EditorFormController<TFormValues>,
     error: AltEditorLiteError,
   ): void;
-  completeSuccess(form: EditorFormController<TFormValues>): void;
+  completeSuccess(
+    form: EditorFormController<TFormValues>,
+    row: Readonly<object>,
+  ): Promise<void>;
 }
 
 export interface DialogCreateOperationArguments<
@@ -160,7 +163,7 @@ export class DialogCreateOperation<
 
       this.arguments_.operationOwner.complete(request);
       try {
-        presentation.completeSuccess(form);
+        await presentation.completeSuccess(form, row);
       } catch (rawError: unknown) {
         this.reportCommittedFailure(rawError, request);
       }

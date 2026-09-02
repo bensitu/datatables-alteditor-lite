@@ -1010,8 +1010,21 @@ export class DialogEditingController<
 
   private createPresentation(): DialogCreatePresentation<TFormValues> {
     return {
-      completeSuccess: (form) => {
-        this.completeFormSuccess('create', form);
+      completeSuccess: async (form, row) => {
+        if (this.arguments_.editing.closeOnSuccess) {
+          this.closeAfterSuccess('create');
+          return;
+        }
+        try {
+          form.populateFromSource(row);
+          await form.initializeDependencies();
+        } finally {
+          try {
+            await form.rebaseDirtyState();
+          } finally {
+            this.restoreOpen('create', form);
+          }
+        }
       },
       restoreAfterAbort: (form) => {
         this.restoreOpen('create', form);
@@ -1032,8 +1045,8 @@ export class DialogEditingController<
     form: EditorFormController<TFormValues>,
   ): DialogEditPresentation {
     return {
-      completeSuccess: () => {
-        this.completeFormSuccess('edit', form);
+      completeSuccess: async () => {
+        await this.completeFormSuccess('edit', form);
       },
       restoreAfterOperationFailure: () => undefined,
       restoreAfterValidationFailure: () => {
@@ -1185,14 +1198,18 @@ export class DialogEditingController<
     });
   }
 
-  private completeFormSuccess(
+  private async completeFormSuccess(
     action: 'create' | 'edit',
     form: EditorFormController<TFormValues>,
-  ): void {
+  ): Promise<void> {
     if (this.arguments_.editing.closeOnSuccess) {
       this.closeAfterSuccess(action);
     } else {
-      this.restoreOpen(action, form);
+      try {
+        await form.rebaseDirtyState();
+      } finally {
+        this.restoreOpen(action, form);
+      }
     }
   }
 

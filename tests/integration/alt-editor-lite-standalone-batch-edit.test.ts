@@ -40,6 +40,7 @@ describe('AltEditorLite Standalone batch edit', () => {
       ['record-b', { id: 'record-b', name: 'Beta' }],
     ]);
     const lifecycle: string[] = [];
+    const dirtyStates: boolean[] = [];
     const applyUpdates = vi.fn(
       (updates: readonly Readonly<HostBatchUpdate<RecordRow, string>>[]) => {
         lifecycle.push('apply');
@@ -71,8 +72,13 @@ describe('AltEditorLite Standalone batch edit', () => {
       },
     });
     editor = new AltEditorLite(host, {
-      editing: { dialog: { enabled: true } },
+      editing: { dialog: { closeOnSuccess: false, enabled: true } },
       fields: [{ label: 'Name', name: 'name', type: 'text' }],
+      hooks: {
+        beforeClose: ({ dirty }) => {
+          dirtyStates.push(dirty);
+        },
+      },
     });
 
     await editor.openBatchEditDialog(['record-a', 'record-b']);
@@ -94,7 +100,7 @@ describe('AltEditorLite Standalone batch edit', () => {
       ?.requestSubmit();
 
     await vi.waitFor(() => {
-      expect(editor?.getState().status).toBe('ready');
+      expect(editor?.getState().status).toBe('open');
     });
     expect([...records.values()].map(({ name }) => name)).toEqual([
       'Shared name',
@@ -105,6 +111,14 @@ describe('AltEditorLite Standalone batch edit', () => {
       'record-a',
       'record-b',
     ]);
+    expect(lifecycle).toEqual([
+      'alteditor-lite:open',
+      'alteditor-lite:submit',
+      'apply',
+      'alteditor-lite:success',
+    ]);
+    await editor.closeDialog();
+    expect(dirtyStates).toEqual([false]);
     expect(lifecycle).toEqual([
       'alteditor-lite:open',
       'alteditor-lite:submit',

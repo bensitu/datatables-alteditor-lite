@@ -23,7 +23,7 @@ export interface DialogEditPresentation {
   restoreAfterOperationFailure(): void;
   setBusy(isBusy: boolean): void;
   showOperationError(error: AltEditorLiteError): void;
-  completeSuccess(): void;
+  completeSuccess(): Promise<void>;
 }
 
 export interface DialogEditOperationArguments<
@@ -189,7 +189,7 @@ export class DialogEditOperation<
                 );
               }
             }
-            presentation.completeSuccess();
+            await presentation.completeSuccess();
           } finally {
             this.arguments_.onPresentationComplete();
           }

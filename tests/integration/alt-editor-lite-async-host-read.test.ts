@@ -69,9 +69,15 @@ describe('AltEditorLite asynchronous Host reads', () => {
       id: 'record-a',
       name: `${values.name ?? ''} from service`,
     }));
+    const dirtyStates: boolean[] = [];
     const fixture = createStandaloneTestFixture(
       {
         editing: { dialog: { closeOnSuccess: false, enabled: true } },
+        hooks: {
+          beforeClose: ({ dirty }) => {
+            dirtyStates.push(dirty);
+          },
+        },
         operations: { update },
       },
       {
@@ -108,6 +114,8 @@ describe('AltEditorLite asynchronous Host reads', () => {
       'record-a',
       'record-a',
     ]);
+    await fixture.editor.closeDialog();
+    expect(dirtyStates).toEqual([false]);
   });
 
   it('keeps a committed Edit active when its canonical reload fails', async () => {

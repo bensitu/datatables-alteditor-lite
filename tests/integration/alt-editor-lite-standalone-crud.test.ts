@@ -114,6 +114,34 @@ describe('AltEditorLite Standalone CRUD', () => {
     expect(fixture.records.get('record-created')?.name).toBe('Updated record');
   });
 
+  it('treats a retained Create result as the current clean form', async () => {
+    const dirtyStates: boolean[] = [];
+    const fixture = createStandaloneTestFixture({
+      editing: { dialog: { closeOnSuccess: false, enabled: true } },
+      hooks: {
+        beforeClose: ({ dirty }) => {
+          dirtyStates.push(dirty);
+        },
+      },
+      operations: {
+        create: () => ({ id: 'record-created', name: 'Canonical name' }),
+      },
+    });
+
+    await fixture.editor.openCreateDialog();
+    replaceName('Submitted name');
+    submitForm();
+    await vi.waitFor(async () => {
+      expect(fixture.editor.getState().status).toBe('open');
+      await expect(fixture.editor.getField('name')?.getValue()).resolves.toBe(
+        'Canonical name',
+      );
+    });
+
+    await fixture.editor.closeDialog();
+    expect(dirtyStates).toEqual([false]);
+  });
+
   it('waits for asynchronous removal before applying consumer state', async () => {
     const deferred = createDeferred();
     const remove = vi.fn(
