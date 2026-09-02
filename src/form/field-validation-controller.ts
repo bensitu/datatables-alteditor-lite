@@ -1,4 +1,4 @@
-import { mergeAbortSignals } from '../core/merge-abort-signals.js';
+import { normalizeRejectedReason } from '../core/error-normalization.js';
 
 import type { FieldValidationTrigger } from '../fields/field-config.js';
 import type { FieldValidationResult } from '../fields/field-controller.js';
@@ -21,7 +21,6 @@ export class FieldValidationController<TFormValues extends object> {
 
   public constructor(
     private readonly form: HTMLFormElement,
-    private readonly lifecycleSignal: AbortSignal,
     private readonly invalidMessage: string,
   ) {}
 
@@ -129,8 +128,7 @@ export class FieldValidationController<TFormValues extends object> {
     this.invalidate(name, source === 'eager');
     const request = new AbortController();
     field.request = request;
-    const merged = mergeAbortSignals([request.signal, this.lifecycleSignal]);
-    const isCurrent = (): boolean => !merged.signal.aborted && field.request === request;
+    const isCurrent = (): boolean => !request.signal.aborted && field.request === request;
     const showError = (message: string): void => {
       field.controller.showError(message);
       field.eagerError = source === 'eager';
@@ -142,7 +140,7 @@ export class FieldValidationController<TFormValues extends object> {
       this.setValidating(field, true);
     }
     try {
-      const result = await field.validate(merged.signal);
+      const result = await field.validate(request.signal);
       if (!isCurrent()) {
         return { valid: false };
       }
@@ -155,11 +153,8 @@ export class FieldValidationController<TFormValues extends object> {
         return { valid: false };
       }
       showError(this.invalidMessage);
-      throw error instanceof Error
-        ? error
-        : new Error('Field validation failed with a non-Error value.', { cause: error });
+      throw normalizeRejectedReason(error);
     } finally {
-      merged.dispose();
       if (field.request === request) {
         field.request = undefined;
         this.setValidating(field, false);

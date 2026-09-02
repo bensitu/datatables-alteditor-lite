@@ -5,6 +5,13 @@ import type { AltEditorLiteLanguage } from './alt-editor-lite-language.js';
 /** Signal used when normalization is not associated with cancellable work. */
 export const NEVER_ABORTED_SIGNAL: AbortSignal = new AbortController().signal;
 
+/** Preserves thrown errors and wraps other rejection values without coercion. */
+export function normalizeRejectedReason(error: unknown): Error {
+  return error instanceof Error
+    ? error
+    : new Error('The operation failed.', { cause: error });
+}
+
 function isAltEditorLiteError(error: unknown): error is AltEditorLiteError {
   try {
     return error instanceof AltEditorLiteError;

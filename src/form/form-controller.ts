@@ -146,19 +146,17 @@ export class EditorFormController<
 
   private dirtyBaseline: ReadonlyMap<string, unknown> | undefined;
 
-  private possiblyDirty = true;
+  private cleanRevision = -1;
 
-  private mutationRevision = 0;
+  public revision = 0;
 
   public onMutation: (() => void) | undefined;
 
-  public getMutationRevision(): number {
-    return this.mutationRevision;
-  }
-
-  private recordMutation(): void {
-    this.possiblyDirty = true;
-    this.mutationRevision += 1;
+  private recordMutation(fieldName?: string): void {
+    if (fieldName !== undefined) {
+      this.fieldValidation.invalidate(fieldName, true);
+    }
+    this.revision += 1;
     this.onMutation?.();
   }
 
@@ -186,7 +184,6 @@ export class EditorFormController<
     this.invalidMessage = language.validation.invalid;
     this.fieldValidation = new FieldValidationController(
       this.element,
-      this.lifecycleAbortController.signal,
       this.invalidMessage,
     );
     this.layout =
@@ -276,8 +273,7 @@ export class EditorFormController<
             this.renderSubmissionError();
           },
           afterApplyPatch: ({ targetPath }) => {
-            this.fieldValidation.invalidate(targetPath, true);
-            this.recordMutation();
+            this.recordMutation(targetPath);
           },
         });
       }
@@ -338,21 +334,21 @@ export class EditorFormController<
     this.assertActive();
     // A failed read must not revive the snapshot from before a successful save.
     this.dirtyBaseline = undefined;
-    this.possiblyDirty = false;
+    this.cleanRevision = this.revision;
     await this.waitForCurrentFieldWork();
-    const revision = this.mutationRevision;
+    const revision = this.revision;
     const state = await collectFormState(
       this.controllers,
       this.lifecycleAbortController.signal,
     );
-    this.dirtyBaseline = new Map(state.fieldValues);
-    this.possiblyDirty = revision !== this.mutationRevision;
+    this.dirtyBaseline = state.fieldValues;
+    this.cleanRevision = revision;
   }
 
   /** Compares current values with the latest clean dialog state when needed. */
   public async isDirty(): Promise<boolean> {
     this.assertActive();
-    if (!this.possiblyDirty) {
+    if (this.cleanRevision === this.revision) {
       return false;
     }
     await this.waitForCurrentFieldWork();
@@ -360,15 +356,12 @@ export class EditorFormController<
     if (baseline === undefined) {
       return true;
     }
-    const revision = this.mutationRevision;
+    const revision = this.revision;
     const current = await collectFormState(
       this.controllers,
       this.lifecycleAbortController.signal,
     );
-    if (
-      revision !== this.mutationRevision ||
-      current.fieldValues.size !== baseline.size
-    ) {
+    if (revision !== this.revision || current.fieldValues.size !== baseline.size) {
       return true;
     }
     for (const [name, baselineValue] of baseline) {
@@ -380,7 +373,7 @@ export class EditorFormController<
         return true;
       }
     }
-    this.possiblyDirty = false;
+    this.cleanRevision = revision;
     return false;
   }
 
@@ -565,18 +558,16 @@ export class EditorFormController<
       element: managedController.element,
       getValue: async () => await Promise.resolve(managedController.getValue()),
       setValue: (value: unknown) => {
-        this.fieldValidation.invalidate(name, true);
+        this.recordMutation(name);
         managedController.setValue(value);
-        this.recordMutation();
       },
       ...(getOptions === undefined || setOptions === undefined
         ? {}
         : {
             getOptions: () => getOptions(),
             setOptions: (options: readonly SelectOption[]) => {
-              this.fieldValidation.invalidate(name, true);
+              this.recordMutation(name);
               setOptions(options);
-              this.recordMutation();
             },
           }),
       isVisible: () => runtime.isVisible(),
@@ -585,9 +576,8 @@ export class EditorFormController<
       },
       isDisabled: () => runtime.isDisabled(),
       setDisabled: (isDisabled: boolean) => {
-        this.fieldValidation.invalidate(name, true);
+        this.recordMutation(name);
         runtime.setDisabled(isDisabled);
-        this.recordMutation();
       },
       isReadOnly: () => runtime.isReadOnly(),
       setReadOnly: (isReadOnly: boolean) => {
@@ -615,6 +605,7 @@ export class EditorFormController<
         }
 
         isFieldDestroyed = true;
+        this.recordMutation();
         this.activeChangeAbortControllers.get(name)?.abort();
         this.activeChangeAbortControllers.delete(name);
         this.fieldValidation.remove(name);
@@ -737,8 +728,7 @@ export class EditorFormController<
   }
 
   private notifyFieldChange(fieldName: string): void {
-    this.recordMutation();
-    this.fieldValidation.invalidate(fieldName, true);
+    this.recordMutation(fieldName);
     const task = this.runFieldChange(fieldName);
     this.activeChangeTasks.set(fieldName, task);
     void task.finally(() => {

@@ -1,4 +1,7 @@
-function isPlainRecord(value: object): boolean {
+export function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
   const prototype = Object.getPrototypeOf(value) as unknown;
   return prototype === Object.prototype || prototype === null;
 }
@@ -15,31 +18,17 @@ function cloneReadonlyContainer(
   if (existingClone !== undefined) {
     return existingClone;
   }
-  if (Array.isArray(value)) {
-    const clone: unknown[] = new Array(value.length);
-    clones.set(value, clone);
-    for (const key of Reflect.ownKeys(value)) {
-      const descriptor = Object.getOwnPropertyDescriptor(value, key);
-      if (descriptor?.enumerable !== true) {
-        continue;
-      }
-      Object.defineProperty(clone, key, {
-        configurable: true,
-        enumerable: true,
-        value: cloneReadonlyContainer(Reflect.get(value, key), clones),
-        writable: true,
-      });
-    }
-    return Object.freeze(clone);
-  }
-  if (!cloneRecord && !isPlainRecord(value)) {
+  const isArray = Array.isArray(value);
+  if (!isArray && !cloneRecord && !isPlainRecord(value)) {
     return value;
   }
 
   const clonePrototype = (
     cloneRecord ? Object.prototype : Object.getPrototypeOf(value)
   ) as object | null;
-  const clone = Object.create(clonePrototype) as Record<PropertyKey, unknown>;
+  const clone = isArray
+    ? new Array<unknown>(value.length)
+    : (Object.create(clonePrototype) as Record<PropertyKey, unknown>);
   clones.set(value, clone);
   for (const key of Reflect.ownKeys(value)) {
     const descriptor = Object.getOwnPropertyDescriptor(value, key);

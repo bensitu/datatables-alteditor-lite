@@ -10,6 +10,7 @@ import {
   InternalOperationAbort,
   NEVER_ABORTED_SIGNAL,
   normalizeOperationError,
+  normalizeRejectedReason,
 } from '../core/error-normalization.js';
 import { createReadonlyRowView } from '../core/readonly-row-view.js';
 import { runCleanupSteps } from '../core/run-cleanup-steps.js';
@@ -92,14 +93,6 @@ export interface DialogEditingControllerArguments<
   readonly uniquenessValidator: LocalUniquenessValidator<TRow, TFormValues, TTarget>;
 }
 
-function normalizeRejectedReason(error: unknown): Error {
-  return error instanceof Error
-    ? error
-    : new Error('AltEditorLite dialog operation failed with a non-Error value.', {
-        cause: error,
-      });
-}
-
 /** Owns dialog presentation, target captures, forms, and submission routing. */
 export class DialogEditingController<
   TRow extends object,
@@ -134,8 +127,6 @@ export class DialogEditingController<
   private closeDecisionAbortController: AbortController | undefined;
 
   private closeDecisionTask: Promise<void> | undefined;
-
-  private closeDecisionSession: DialogSession<TRow, TFormValues, TTarget> | undefined;
 
   public constructor(
     private readonly arguments_: DialogEditingControllerArguments<
@@ -1069,11 +1060,7 @@ export class DialogEditingController<
           form.populateFromSource(row);
           await form.initializeDependencies();
         } finally {
-          try {
-            await form.rebaseDirtyState();
-          } finally {
-            this.restoreOpen('create', form);
-          }
+          await this.completeFormSuccess('create', form);
         }
       },
       restoreAfterAbort: (form) => {
@@ -1304,10 +1291,9 @@ export class DialogEditingController<
 
     const abortController = new AbortController();
     this.closeDecisionAbortController = abortController;
-    this.closeDecisionSession = session;
-    const task = Promise.resolve().then(async () => {
-      await this.evaluateCloseRequest(session, reason, abortController);
-    });
+    const task = Promise.resolve().then(() =>
+      this.evaluateCloseRequest(session, reason, abortController),
+    );
     this.closeDecisionTask = task;
     return task;
   }
@@ -1318,11 +1304,16 @@ export class DialogEditingController<
     abortController: AbortController,
   ): Promise<void> {
     const form = session.action === 'remove' ? undefined : session.form;
-    const revision = form?.getMutationRevision();
+    const revision = form?.revision;
     const isCurrent = (): boolean =>
-      this.ownsCloseDecision(session, abortController) &&
-      form?.getMutationRevision() === revision;
+      !abortController.signal.aborted &&
+      this.activeSession === session &&
+      this.closeDecisionAbortController === abortController &&
+      form?.revision === revision;
     try {
+      if (!isCurrent()) {
+        return;
+      }
       const beforeClose = this.arguments_.options.hooks?.beforeClose;
       if (beforeClose !== undefined) {
         const isDirty = await settleWithAbort(
@@ -1352,9 +1343,7 @@ export class DialogEditingController<
           return;
         }
       }
-      if (isCurrent()) {
-        this.closeNow(reason);
-      }
+      this.closeNow(reason);
     } catch (rawError: unknown) {
       if (!isCurrent()) {
         return;
@@ -1380,18 +1369,6 @@ export class DialogEditingController<
         this.invalidateCloseDecision();
       }
     }
-  }
-
-  private ownsCloseDecision(
-    session: DialogSession<TRow, TFormValues, TTarget>,
-    abortController: AbortController,
-  ): boolean {
-    return (
-      !abortController.signal.aborted &&
-      this.activeSession === session &&
-      this.closeDecisionSession === session &&
-      this.closeDecisionAbortController === abortController
-    );
   }
 
   private createCloseErrorContext(
@@ -1427,7 +1404,6 @@ export class DialogEditingController<
   private invalidateCloseDecision(): void {
     this.closeDecisionAbortController?.abort();
     this.closeDecisionAbortController = undefined;
-    this.closeDecisionSession = undefined;
     this.closeDecisionTask = undefined;
   }
 

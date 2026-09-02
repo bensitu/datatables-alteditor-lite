@@ -74,16 +74,12 @@ export class BatchEditorFormController<TFormValues extends object> {
 
   private isDestroyed = false;
 
-  private mutationRevision = 0;
+  public revision = 0;
 
   public onMutation: (() => void) | undefined;
 
-  public getMutationRevision(): number {
-    return this.mutationRevision;
-  }
-
   private recordMutation(): void {
-    this.mutationRevision += 1;
+    this.revision += 1;
     this.onMutation?.();
   }
 
@@ -107,7 +103,6 @@ export class BatchEditorFormController<TFormValues extends object> {
     this.element.noValidate = true;
     this.fieldValidation = new FieldValidationController(
       this.element,
-      this.lifecycleAbortController.signal,
       this.invalidMessage,
     );
     this.layout =

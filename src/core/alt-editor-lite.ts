@@ -31,6 +31,7 @@ import { resolveEditorCapabilities } from './editor-capabilities.js';
 import { EditorErrorReporter } from './editor-error-reporter.js';
 import { dispatchEditorEvent } from './editor-event.js';
 import { EditorStateCoordinator } from './editor-state-coordinator.js';
+import { normalizeRejectedReason } from './error-normalization.js';
 import { LocalUniquenessValidator } from './local-uniqueness-validator.js';
 import { RefreshOperationRunner } from './refresh-operation-runner.js';
 import { resolveEditingOptions } from './resolve-editing-options.js';
@@ -50,14 +51,6 @@ import type {
 } from '../host/editor-host.js';
 import type { HostInlineState, InlineHostRuntime } from '../host/inline-host-runtime.js';
 import type { FieldPath, FieldPathValue } from '../object-path/field-path.js';
-
-function normalizeRejectedReason(error: unknown): Error {
-  return error instanceof Error
-    ? error
-    : new Error('AltEditorLite failed with a non-Error value.', {
-        cause: error,
-      });
-}
 
 function createInactiveInlineRuntime(): InlineHostRuntime {
   const unavailable = (): Promise<void> =>

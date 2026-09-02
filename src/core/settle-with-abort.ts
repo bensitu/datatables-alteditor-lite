@@ -1,9 +1,9 @@
+import { normalizeRejectedReason } from './error-normalization.js';
+
 type SettlementError = DOMException | Error;
 
 function normalizeRejection(error: unknown): SettlementError {
-  return error instanceof Error || error instanceof DOMException
-    ? error
-    : new Error('The request failed.', { cause: error });
+  return error instanceof DOMException ? error : normalizeRejectedReason(error);
 }
 
 /** Settles a direct or promise-like value, rejecting promptly when cancelled. */
