@@ -68,6 +68,10 @@ application. A newer value, another validation request, closing, or destruction
 invalidates stale asynchronous results. Backend validation remains authoritative
 for business, concurrency, and security rules.
 
+Batch dialogs validate only fields with an explicit common override on blur.
+Unchanged or mixed fields are not submitted and do not trigger this validation.
+Single-cell Inline editing continues to use its existing submission actions.
+
 Edit source values are also checked against the configured field type. A mismatch
 such as `null` for a text field rejects that open request, publishes
 `alteditor-lite:error`, and returns the editor to `ready`; values are not silently

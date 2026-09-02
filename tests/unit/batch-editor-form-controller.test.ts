@@ -6,6 +6,7 @@ import { isChoiceFieldController } from '../../src/fields/field-controller.js';
 import { BatchEditorFormController } from '../../src/form/batch-editor-form-controller.js';
 
 import type { FieldChangeContext, FieldConfig } from '../../src/fields/field-config.js';
+import type { FieldValidationResult } from '../../src/fields/field-controller.js';
 import type { FormDependencies } from '../../src/form/form-dependency.js';
 
 interface BatchFormValues {
@@ -60,6 +61,98 @@ function batchField(name: keyof BatchFormValues): HTMLElement {
 }
 
 describe('BatchEditorFormController', () => {
+  it('validates common overrides on blur and preserves submission ownership', async () => {
+    const requests: {
+      signal: AbortSignal;
+      resolve: (result: FieldValidationResult) => void;
+    }[] = [];
+    activeForm = new BatchEditorFormController<BatchFormValues>(
+      [
+        {
+          label: 'Office',
+          name: 'office',
+          type: 'text',
+          validateOn: 'blur',
+          validate: (_value, { signal }) =>
+            new Promise<FieldValidationResult>((resolve) => {
+              requests.push({ resolve, signal });
+            }),
+        },
+      ],
+      [{ office: 'Tokyo' }, { office: 'Osaka' }],
+      'batch-blur-validation',
+      ENGLISH_LANGUAGE,
+    );
+    const form = activeForm;
+    document.body.append(form.element);
+    const field = form.getField('office');
+    const input = field?.element.querySelector('input');
+    if (field === null || input === null || input === undefined) {
+      throw new Error('Expected an office input.');
+    }
+    const blur = (): void => {
+      input.dispatchEvent(
+        new FocusEvent('focusout', {
+          bubbles: true,
+          relatedTarget: document.body,
+        }),
+      );
+    };
+    blur();
+    await Promise.resolve();
+    expect(requests).toHaveLength(0);
+
+    field.setValue('Seoul');
+    blur();
+    await vi.waitFor(() => {
+      expect(requests).toHaveLength(1);
+    });
+    expect(field.element.getAttribute('aria-busy')).toBe('true');
+    field.setValue('Busan');
+    expect(requests[0]?.signal.aborted).toBe(true);
+    blur();
+    await vi.waitFor(() => {
+      expect(requests).toHaveLength(2);
+    });
+
+    const submission = form.validateForSubmission(new AbortController().signal);
+    await vi.waitFor(() => {
+      expect(requests).toHaveLength(3);
+    });
+    expect(requests[1]?.signal.aborted).toBe(true);
+    blur();
+    requests[2]?.resolve({ message: 'The office is unavailable.', valid: false });
+    await expect(submission).resolves.toMatchObject({ valid: false });
+    requests[0]?.resolve({ message: 'Old result.', valid: false });
+    requests[1]?.resolve({ valid: true });
+    await Promise.resolve();
+    expect(requests).toHaveLength(3);
+    expect(field.element.textContent).toContain('The office is unavailable.');
+    expect(field.element.hasAttribute('aria-busy')).toBe(false);
+
+    form.showSubmissionError(
+      new AltEditorLiteError({
+        fieldErrors: { office: 'The office is reserved.' },
+        message: 'The request could not be saved.',
+        retryable: true,
+      }),
+    );
+    input.value = 'Kyoto';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    await form.collectChanges();
+    expect(field.element.textContent).toContain('The office is reserved.');
+
+    blur();
+    await vi.waitFor(() => {
+      expect(requests).toHaveLength(4);
+    });
+    form.destroy();
+    expect(requests[3]?.signal.aborted).toBe(true);
+    requests[3]?.resolve({ message: 'Closed result.', valid: false });
+    await Promise.resolve();
+    expect(field.element.isConnected).toBe(false);
+  });
+
   it('removes an individually destroyed field from the active form', () => {
     const form = createForm([
       {

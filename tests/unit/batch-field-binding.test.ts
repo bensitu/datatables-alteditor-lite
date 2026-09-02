@@ -36,8 +36,10 @@ function createBinding(originals: readonly Readonly<TestValues>[]) {
       return mountPoint;
     },
     onDestroyRequest,
+    onErrorChange: vi.fn(),
     onRestore,
     onUserValue: vi.fn(),
+    onValueChange: vi.fn(),
     originals,
     validate: () => Promise.resolve({ valid: true }),
   });

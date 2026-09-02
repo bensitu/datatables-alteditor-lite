@@ -11,6 +11,7 @@ import { setPathValue } from '../object-path/set-path-value.js';
 
 import { BatchFieldBinding, type BatchFieldConfig } from './batch-field-binding.js';
 import { buildBatchEffectiveValues } from './build-batch-effective-values.js';
+import { FieldValidationController } from './field-validation-controller.js';
 import {
   FormDependencyController,
   type DependencyFieldBinding,
@@ -61,6 +62,8 @@ export class BatchEditorFormController<TFormValues extends object> {
 
   private readonly invalidMessage: string;
 
+  private readonly fieldValidation: FieldValidationController<TFormValues>;
+
   private readonly batchValidationMessage: string;
 
   private dependencyController: FormDependencyController<TFormValues> | undefined;
@@ -89,6 +92,11 @@ export class BatchEditorFormController<TFormValues extends object> {
     this.element.className = 'alteditor-lite-form alteditor-lite-batch-form';
     this.element.id = `${instanceId}-batch-form`;
     this.element.noValidate = true;
+    this.fieldValidation = new FieldValidationController(
+      this.element,
+      this.lifecycleAbortController.signal,
+      this.invalidMessage,
+    );
     this.layout =
       template === undefined
         ? new DefaultFormLayout()
@@ -137,6 +145,7 @@ export class BatchEditorFormController<TFormValues extends object> {
                 }),
           onErrorChange: (sourcePath, error) => {
             const binding = this.bindingByName.get(sourcePath);
+            this.fieldValidation.forgetError(sourcePath);
             if (error === undefined) {
               binding?.controller.clearError();
             } else {
@@ -218,13 +227,14 @@ export class BatchEditorFormController<TFormValues extends object> {
     operationSignal: AbortSignal,
   ): Promise<Readonly<BatchEditValidationResult<TFormValues>>> {
     this.assertActive();
-    await this.waitForChanges();
+    const resumeFieldValidation = this.fieldValidation.suspend();
     const mergedSignal = mergeAbortSignals([
       operationSignal,
       this.lifecycleAbortController.signal,
     ]);
     const { signal } = mergedSignal;
     try {
+      await this.waitForChanges();
       signal.throwIfAborted();
       this.clearErrors();
       const dependencyErrors =
@@ -327,6 +337,7 @@ export class BatchEditorFormController<TFormValues extends object> {
       }
       return { ...collected, valid: true };
     } finally {
+      resumeFieldValidation();
       mergedSignal.dispose();
     }
   }
@@ -363,6 +374,7 @@ export class BatchEditorFormController<TFormValues extends object> {
       if (binding === undefined) {
         this.submissionMessages.add(message);
       } else {
+        this.fieldValidation.forgetError(fieldName);
         binding.controller.showError(message);
       }
     }
@@ -374,6 +386,7 @@ export class BatchEditorFormController<TFormValues extends object> {
   public clearErrors(): void {
     this.assertActive();
     for (const binding of this.bindings) {
+      this.fieldValidation.forgetError(binding.config.name);
       binding.controller.clearError();
     }
     this.submissionMessages.clear();
@@ -390,6 +403,7 @@ export class BatchEditorFormController<TFormValues extends object> {
     }
     this.isDestroyed = true;
     this.lifecycleAbortController.abort();
+    this.fieldValidation.destroy();
     for (const abortController of this.activeChangeAbortControllers.values()) {
       abortController.abort();
     }
@@ -433,6 +447,12 @@ export class BatchEditorFormController<TFormValues extends object> {
       onDestroyRequest: (currentBinding) => {
         this.destroyBinding(currentBinding);
       },
+      onValueChange: () => {
+        this.fieldValidation.invalidate(config.name, true);
+      },
+      onErrorChange: () => {
+        this.fieldValidation.forgetError(config.name);
+      },
       onRestore: (currentBinding) => {
         this.queueKnownUserValue(currentBinding);
       },
@@ -440,11 +460,22 @@ export class BatchEditorFormController<TFormValues extends object> {
         this.queueUserValue(currentBinding);
       },
       originals,
-      validate: async (currentBinding) =>
-        await this.validateBinding(currentBinding, this.lifecycleAbortController.signal),
+      validate: async () => await this.fieldValidation.validate(config.name, 'manual'),
     });
     this.bindings.push(binding);
     this.bindingByName.set(config.name, binding);
+    this.fieldValidation.register(
+      binding.controller,
+      config.validateOn,
+      async (signal) => {
+        await this.waitForChanges();
+        signal.throwIfAborted();
+        return await this.validateBinding(binding, signal, this.collectLogicalValues());
+      },
+      () =>
+        binding.restriction === undefined &&
+        binding.state.current.status === 'overridden',
+    );
     this.dependencyFieldByName.set(config.name, {
       config,
       controller: binding.controller,
@@ -453,6 +484,7 @@ export class BatchEditorFormController<TFormValues extends object> {
   }
 
   private queueUserValue(binding: BatchFieldBinding<TFormValues>): void {
+    this.fieldValidation.invalidate(binding.config.name, true);
     binding.revision += 1;
     const { revision } = binding;
     this.startUserChange(binding, revision, async (signal) => {
@@ -508,11 +540,13 @@ export class BatchEditorFormController<TFormValues extends object> {
         )) {
           const errorBinding = this.bindingByName.get(fieldName);
           if (errorBinding !== undefined) {
+            this.fieldValidation.forgetError(fieldName);
             errorBinding.controller.showError(message);
             hasKnownFieldError = true;
           }
         }
         if (!hasKnownFieldError) {
+          this.fieldValidation.forgetError(binding.config.name);
           binding.controller.showError(operationError.message);
         }
         this.submissionMessages.add(operationError.message);
@@ -581,6 +615,7 @@ export class BatchEditorFormController<TFormValues extends object> {
     if (binding === undefined) {
       return;
     }
+    this.fieldValidation.invalidate(application.targetPath, true);
     if (binding.restriction === 'unique') {
       binding.runtime.setReadOnly(true);
     }
@@ -606,19 +641,14 @@ export class BatchEditorFormController<TFormValues extends object> {
   ): Promise<FieldValidationResult> {
     const { restrictionText } = binding;
     if (restrictionText !== undefined) {
-      const message = restrictionText;
-      binding.controller.showError(message);
-      return { message, valid: false } as const;
+      return { message: restrictionText, valid: false };
     }
     const nativeResult = binding.controller.validateNative();
     if (!nativeResult.valid) {
-      binding.controller.showError(nativeResult.message ?? this.invalidMessage);
       return nativeResult;
     }
     const customResult = await binding.controller.validateCustom(values, signal);
-    if (!customResult.valid) {
-      binding.controller.showError(customResult.message ?? this.invalidMessage);
-    }
+    signal.throwIfAborted();
     return customResult;
   }
 
@@ -626,6 +656,7 @@ export class BatchEditorFormController<TFormValues extends object> {
     if (!this.bindingByName.delete(binding.config.name)) {
       return;
     }
+    this.fieldValidation.remove(binding.config.name);
     this.activeChangeAbortControllers.get(binding.config.name)?.abort();
     this.activeChangeAbortControllers.delete(binding.config.name);
     this.dependencyFieldByName.delete(binding.config.name);

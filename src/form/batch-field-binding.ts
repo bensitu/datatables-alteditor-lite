@@ -41,6 +41,8 @@ export interface BatchFieldBindingArguments<TFormValues extends object> {
   readonly lifecycleSignal: AbortSignal;
   readonly mount: (element: HTMLElement) => FieldMountPoint;
   readonly onDestroyRequest: (binding: BatchFieldBinding<TFormValues>) => void;
+  readonly onValueChange: () => void;
+  readonly onErrorChange: () => void;
   readonly onRestore: (binding: BatchFieldBinding<TFormValues>) => void;
   readonly onUserValue: (binding: BatchFieldBinding<TFormValues>) => void;
   readonly originals: readonly Readonly<object>[];
@@ -112,7 +114,9 @@ export class BatchFieldBinding<TFormValues extends object> {
 
   public state: Readonly<BatchFieldState<unknown>>;
 
-  public constructor(configuration: BatchFieldBindingArguments<TFormValues>) {
+  public constructor(
+    private readonly configuration: BatchFieldBindingArguments<TFormValues>,
+  ) {
     const { config } = configuration;
     let controller: ManagedFieldController<TFormValues> | undefined;
     let presentation: BatchFieldPresentation | undefined;
@@ -181,6 +185,7 @@ export class BatchFieldBinding<TFormValues extends object> {
       const setOptions = this.controller.setOptions;
       this.field = {
         clearError: () => {
+          configuration.onErrorChange();
           this.controller.clearError();
         },
         destroy: () => {
@@ -220,6 +225,7 @@ export class BatchFieldBinding<TFormValues extends object> {
           runtime.setVisible(isVisible);
         },
         showError: (message) => {
+          configuration.onErrorChange();
           this.controller.showError(message);
         },
         validate: async () => await configuration.validate(this),
@@ -258,10 +264,10 @@ export class BatchFieldBinding<TFormValues extends object> {
 
   public applyUserValue(value: unknown): void {
     this.#applyValue(value);
-    this.controller.clearError();
   }
 
   public rebase(originals: readonly Readonly<object>[]): void {
+    this.configuration.onValueChange();
     this.state = createBatchFieldState(
       originals.map((original) => getPathValue(original, this.config.name)),
       this.isEqual,
@@ -310,6 +316,7 @@ export class BatchFieldBinding<TFormValues extends object> {
   }
 
   #applyValue(value: unknown): void {
+    this.configuration.onValueChange();
     this.state = setBatchFieldValue(this.state, value, this.isEqual);
     this.#isOverrideEditorActive = true;
     this.render();
@@ -334,11 +341,11 @@ export class BatchFieldBinding<TFormValues extends object> {
   }
 
   #restore(): void {
+    this.configuration.onValueChange();
     this.revision += 1;
     this.state = restoreBatchFieldValue(this.state);
     this.#isOverrideEditorActive = this.state.baseline.status === 'common';
     this.#populateCommonValue();
-    this.controller.clearError();
     this.render();
     this.#presentation.focus(
       this.state.baseline.status === 'mixed' ? 'setValue' : 'field',

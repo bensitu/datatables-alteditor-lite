@@ -346,12 +346,16 @@ describe('AltEditorLite Standalone editor features', () => {
       expect(pendingValidations).toHaveLength(4);
     });
     expect(pendingValidations[2]?.signal.aborted).toBe(true);
+    input.dispatchEvent(
+      new FocusEvent('focusout', { bubbles: true, relatedTarget: outside }),
+    );
     pendingValidations[3]?.resolve({ message: 'Submit error.', valid: false });
     await vi.waitFor(() => {
       expect(
         field.element.querySelector('.alteditor-lite-field__error')?.textContent,
       ).toBe('Submit error.');
     });
+    expect(pendingValidations).toHaveLength(4);
     pendingValidations[2]?.resolve({ message: 'Late blur error.', valid: false });
     await Promise.resolve();
     expect(field.element.querySelector('.alteditor-lite-field__error')?.textContent).toBe(
