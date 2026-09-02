@@ -32,6 +32,8 @@ export type {
   BatchEditOperationContext,
   AfterSuccessContext,
   AltEditorLiteOptions,
+  BeforeCloseContext,
+  BeforeCloseReason,
   BeforeOpenContext,
   BeforeSubmitContext,
   ClientSideOperations,

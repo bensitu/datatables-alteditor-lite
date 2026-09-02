@@ -22,6 +22,7 @@ import {
   type BatchFieldState,
   type ClientSideOperations,
   type ChoiceFieldController,
+  type DialogEditingOptions,
   type DialogTemplateSource,
   type DialogAction,
   type DeepPartial,
@@ -207,6 +208,8 @@ expectAssignable<EditingOptions<Row, FormValues>>({
     enabled: true,
   },
 });
+expectAssignable<DialogEditingOptions>({ enabled: true });
+expectAssignable<DialogEditingOptions<Row>>({ closeOnSuccess: false });
 expectAssignable<AltEditorLiteOptions<Row, FormValues>>({
   editing: {
     dialog: { enabled: true },
@@ -319,6 +322,13 @@ expectNotAssignable<FieldConfig<FormValues>>({
 });
 
 expectAssignable<EditorHooks<Row, FormValues>>({
+  beforeClose: (context) => {
+    expectType<'create' | 'edit' | 'batchEdit' | 'remove'>(context.operation);
+    expectType<'api' | 'cancel' | 'escape'>(context.reason);
+    expectType<boolean>(context.dirty);
+    expectType<AbortSignal>(context.signal);
+    return context.dirty ? false : undefined;
+  },
   beforeSubmit: (_values, context) => {
     expectType<'dialog' | 'inline'>(context.mode);
     if (context.operation === 'edit') {

@@ -9,6 +9,7 @@ import { RequestSequence } from '../core/request-sequence.js';
 import { runCleanupSteps } from '../core/run-cleanup-steps.js';
 import { createFieldController } from '../fields/create-field-controller.js';
 import { resolveFieldCapabilities } from '../fields/field-capabilities.js';
+import { resolveFieldValueComparator } from '../fields/field-value-comparator.js';
 
 import {
   collectFormState,
@@ -100,6 +101,11 @@ export class EditorFormController<
 
   private readonly configuredFieldNames: ReadonlySet<string>;
 
+  private readonly comparatorByName = new Map<
+    string,
+    (left: unknown, right: unknown) => boolean
+  >();
+
   private readonly fieldControllerByName = new Map<string, FieldController<unknown>>();
 
   private readonly runtimeByName = new Map<string, FieldRuntimeController<TFormValues>>();
@@ -139,6 +145,10 @@ export class EditorFormController<
   private controllers: ManagedFieldController<TFormValues>[] = [];
 
   private isDestroyed = false;
+
+  private dirtyBaseline: ReadonlyMap<string, unknown> | undefined;
+
+  private possiblyDirty = true;
 
   /**
    * Creates fields in stable configuration order.
@@ -191,6 +201,7 @@ export class EditorFormController<
         );
         this.controllers.push(controller);
         this.controllerByName.set(config.name, controller);
+        this.comparatorByName.set(config.name, resolveFieldValueComparator(config));
         const mountPoint = this.layout.mountField(config.name, controller.element);
         const runtime = new FieldRuntimeController({
           config,
@@ -239,6 +250,9 @@ export class EditorFormController<
               onDependencyError?.(sourcePath, error);
             }
             this.renderSubmissionError();
+          },
+          afterApplyPatch: () => {
+            this.possiblyDirty = true;
           },
         });
       }
@@ -290,6 +304,49 @@ export class EditorFormController<
       this.controllers,
       this.lifecycleAbortController.signal,
     );
+  }
+
+  /** Captures the current settled field values as the clean dialog state. */
+  public async rebaseDirtyState(): Promise<void> {
+    this.assertActive();
+    await this.waitForCurrentFieldWork();
+    const state = await collectFormState(
+      this.controllers,
+      this.lifecycleAbortController.signal,
+    );
+    this.dirtyBaseline = new Map(state.fieldValues);
+    this.possiblyDirty = false;
+  }
+
+  /** Compares current values with the latest clean dialog state when needed. */
+  public async isDirty(): Promise<boolean> {
+    this.assertActive();
+    if (!this.possiblyDirty) {
+      return false;
+    }
+    await this.waitForCurrentFieldWork();
+    const baseline = this.dirtyBaseline;
+    if (baseline === undefined) {
+      return true;
+    }
+    const current = await collectFormState(
+      this.controllers,
+      this.lifecycleAbortController.signal,
+    );
+    if (current.fieldValues.size !== baseline.size) {
+      return true;
+    }
+    for (const [name, baselineValue] of baseline) {
+      if (!current.fieldValues.has(name)) {
+        return true;
+      }
+      const isEqual = this.comparatorByName.get(name) ?? Object.is;
+      if (!isEqual(baselineValue, current.fieldValues.get(name))) {
+        return true;
+      }
+    }
+    this.possiblyDirty = false;
+    return false;
   }
 
   /** Runs native and custom validation. */
@@ -470,6 +527,7 @@ export class EditorFormController<
       getValue: async () => await Promise.resolve(managedController.getValue()),
       setValue: (value: unknown) => {
         managedController.setValue(value);
+        this.possiblyDirty = true;
       },
       ...(getOptions === undefined || setOptions === undefined
         ? {}
@@ -477,6 +535,7 @@ export class EditorFormController<
             getOptions: () => getOptions(),
             setOptions: (options: readonly SelectOption[]) => {
               setOptions(options);
+              this.possiblyDirty = true;
             },
           }),
       isVisible: () => runtime.isVisible(),
@@ -486,6 +545,7 @@ export class EditorFormController<
       isDisabled: () => runtime.isDisabled(),
       setDisabled: (isDisabled: boolean) => {
         runtime.setDisabled(isDisabled);
+        this.possiblyDirty = true;
       },
       isReadOnly: () => runtime.isReadOnly(),
       setReadOnly: (isReadOnly: boolean) => {
@@ -635,6 +695,7 @@ export class EditorFormController<
   }
 
   private notifyFieldChange(fieldName: string): void {
+    this.possiblyDirty = true;
     const task = this.runFieldChange(fieldName);
     this.activeChangeTasks.set(fieldName, task);
     void task.finally(() => {

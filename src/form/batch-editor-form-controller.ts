@@ -341,6 +341,13 @@ export class BatchEditorFormController<TFormValues extends object> {
     this.clearErrors();
   }
 
+  /** Reports whether any batch field differs from its current baseline. */
+  public async isDirty(): Promise<boolean> {
+    this.assertActive();
+    await this.waitForChanges();
+    return this.bindings.some(({ state }) => state.current.status === 'overridden');
+  }
+
   /** Updates the form busy state. */
   public setBusy(isBusy: boolean): void {
     this.assertActive();

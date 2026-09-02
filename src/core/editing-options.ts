@@ -14,7 +14,10 @@ export type InlineActivation = 'doubleClick' | 'hover';
 export type DialogTemplateSource = string | HTMLElement;
 
 /** Configuration for the dialog Edit presentation. */
-export interface DialogEditingOptions {
+export interface DialogEditingOptions<
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- The row type supports typed remove rendering.
+  TRow extends object = object,
+> {
   /** Whether Dialog Edit is available. Defaults to true. */
   readonly enabled?: boolean;
   /** Optional consumer-owned layout source for Create and Edit forms. */
@@ -45,6 +48,6 @@ export interface InlineEditingOptions<
 
 /** Composable dialog and inline editing configuration. */
 export interface EditingOptions<TRow extends object, TFormValues extends object> {
-  readonly dialog?: DialogEditingOptions;
+  readonly dialog?: DialogEditingOptions<TRow>;
   readonly inline?: InlineEditingOptions<TRow, TFormValues>;
 }

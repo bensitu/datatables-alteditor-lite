@@ -5,14 +5,14 @@ import { DialogFocusScope } from './dialog-focus-scope.js';
 import { createEditorDialogShell, type EditorDialogShell } from './dialog-shell.js';
 
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
-import type { EditorCloseReason } from '../core/editor-event.js';
+import type { BeforeCloseReason } from '../core/alt-editor-lite-options.js';
 
 /**
  * Callbacks owned by the editor while an operation dialog is open.
  */
 export interface EditorDialogCallbacks {
   readonly onSubmit: () => void;
-  readonly onRequestClose: (reason: Exclude<EditorCloseReason, 'success'>) => void;
+  readonly onRequestClose: (reason: BeforeCloseReason) => void;
 }
 
 /**
@@ -169,6 +169,16 @@ export class EditorDialog {
   public focusInvalidField(): void {
     if (this.formElement !== undefined) {
       this.focusScope.focusInitial(this.formElement);
+    }
+  }
+
+  /** Restores focus inside the active dialog after a close request is declined. */
+  public ensureFocus(): void {
+    if (
+      this.shell.dialogElement.open &&
+      !this.shell.dialogElement.contains(document.activeElement)
+    ) {
+      this.focusScope.focusInitial(this.formElement ?? this.shell.bodyElement);
     }
   }
 

@@ -42,6 +42,7 @@ import { EditorDialog } from './editor-dialog.js';
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type {
   AltEditorLiteOptions,
+  BeforeCloseReason,
   EditorErrorHookContext,
 } from '../core/alt-editor-lite-options.js';
 import type { AltEditorLite } from '../core/alt-editor-lite.js';
@@ -126,6 +127,12 @@ export class DialogEditingController<
     | EditorFormController<TFormValues>
     | BatchEditorFormController<TFormValues>
     | undefined;
+
+  private closeDecisionAbortController: AbortController | undefined;
+
+  private closeDecisionTask: Promise<void> | undefined;
+
+  private closeDecisionSession: DialogSession<TRow, TFormValues, TTarget> | undefined;
 
   public constructor(
     private readonly arguments_: DialogEditingControllerArguments<
@@ -482,7 +489,7 @@ export class DialogEditingController<
           this.arguments_.language.actions.remove,
           {
             onRequestClose: (reason) => {
-              this.closeNow(reason);
+              this.observeCloseRequest(reason);
             },
             onSubmit: () => {
               this.beginSubmission();
@@ -547,8 +554,7 @@ export class DialogEditingController<
   public close(): Promise<void> {
     try {
       this.arguments_.stateCoordinator.assertActive();
-      this.closeNow('api');
-      return Promise.resolve();
+      return this.requestClose('api');
     } catch (error: unknown) {
       return Promise.reject(normalizeRejectedReason(error));
     }
@@ -584,6 +590,9 @@ export class DialogEditingController<
     runCleanupSteps([
       () => {
         this.openCoordinator.destroy();
+      },
+      () => {
+        this.invalidateCloseDecision();
       },
       () => {
         this.arguments_.operationOwner.abort('dialog');
@@ -690,6 +699,7 @@ export class DialogEditingController<
         form.populateFromSource(sourceValues);
       }
       await form.initializeDependencies();
+      await form.rebaseDirtyState();
       this.arguments_.stateCoordinator.assertActive();
       this.dialog.openForm(
         form.element,
@@ -699,7 +709,7 @@ export class DialogEditingController<
         this.arguments_.language.actions.submit,
         {
           onRequestClose: (reason) => {
-            this.closeNow(reason);
+            this.observeCloseRequest(reason);
           },
           onSubmit: () => {
             this.beginSubmission();
@@ -799,7 +809,7 @@ export class DialogEditingController<
         this.arguments_.language.actions.submit,
         {
           onRequestClose: (reason) => {
-            this.closeNow(reason);
+            this.observeCloseRequest(reason);
           },
           onSubmit: () => {
             this.beginSubmission();
@@ -1202,6 +1212,168 @@ export class DialogEditingController<
     this.finishClose(action, reason);
   }
 
+  private observeCloseRequest(reason: BeforeCloseReason): void {
+    void this.requestClose(reason).catch(() => undefined);
+  }
+
+  private requestClose(reason: BeforeCloseReason): Promise<void> {
+    const pendingTask = this.closeDecisionTask;
+    if (pendingTask !== undefined) {
+      return pendingTask;
+    }
+
+    const state = this.arguments_.stateCoordinator.getState();
+    if (state.status === 'ready') {
+      this.closeNow(reason);
+      return Promise.resolve();
+    }
+    if (state.status !== 'open' && state.status !== 'submitting') {
+      return Promise.reject(new EditorOperationBusyError());
+    }
+    const session = this.activeSession;
+    if (session?.action !== state.action) {
+      return Promise.reject(
+        new Error('Dialog state does not match its active resources.'),
+      );
+    }
+
+    const abortController = new AbortController();
+    this.closeDecisionAbortController = abortController;
+    this.closeDecisionSession = session;
+    const task = Promise.resolve().then(async () => {
+      await this.evaluateCloseRequest(session, reason, abortController);
+    });
+    this.closeDecisionTask = task;
+    return task;
+  }
+
+  private async evaluateCloseRequest(
+    session: DialogSession<TRow, TFormValues, TTarget>,
+    reason: BeforeCloseReason,
+    abortController: AbortController,
+  ): Promise<void> {
+    try {
+      const beforeClose = this.arguments_.options.hooks?.beforeClose;
+      if (beforeClose !== undefined) {
+        const isDirty = await this.isSessionDirty(session);
+        if (!this.ownsCloseDecision(session, abortController)) {
+          return;
+        }
+        const shouldClose = await Promise.resolve(
+          beforeClose(
+            Object.freeze({
+              dirty: isDirty,
+              mode: 'dialog',
+              operation: session.action,
+              reason,
+              signal: abortController.signal,
+            }),
+          ),
+        );
+        if (!this.ownsCloseDecision(session, abortController)) {
+          return;
+        }
+        if (shouldClose === false) {
+          this.dialog.ensureFocus();
+          return;
+        }
+      }
+      if (this.ownsCloseDecision(session, abortController)) {
+        this.closeNow(reason);
+      }
+    } catch (rawError: unknown) {
+      if (!this.ownsCloseDecision(session, abortController)) {
+        return;
+      }
+      const error = normalizeOperationError(
+        rawError,
+        abortController.signal,
+        this.arguments_.language,
+      );
+      if (error instanceof InternalOperationAbort) {
+        return;
+      }
+      this.dialog.showError(error.message);
+      this.dialog.ensureFocus();
+      this.arguments_.errorReporter.report(
+        error,
+        this.createCloseErrorContext(session),
+        true,
+      );
+      throw error;
+    } finally {
+      if (this.closeDecisionAbortController === abortController) {
+        this.closeDecisionAbortController = undefined;
+        this.closeDecisionSession = undefined;
+        this.closeDecisionTask = undefined;
+      }
+    }
+  }
+
+  private async isSessionDirty(
+    session: DialogSession<TRow, TFormValues, TTarget>,
+  ): Promise<boolean> {
+    switch (session.action) {
+      case 'create':
+      case 'edit':
+      case 'batchEdit': {
+        return await session.form.isDirty();
+      }
+      case 'remove': {
+        return false;
+      }
+    }
+  }
+
+  private ownsCloseDecision(
+    session: DialogSession<TRow, TFormValues, TTarget>,
+    abortController: AbortController,
+  ): boolean {
+    return (
+      !abortController.signal.aborted &&
+      this.activeSession === session &&
+      this.closeDecisionSession === session &&
+      this.closeDecisionAbortController === abortController
+    );
+  }
+
+  private createCloseErrorContext(
+    session: DialogSession<TRow, TFormValues, TTarget>,
+  ): EditorErrorHookContext {
+    const closeContextBase = {
+      committed: false,
+      mode: 'dialog',
+      phase: 'close',
+    } as const;
+    switch (session.action) {
+      case 'create':
+      case 'remove': {
+        return { ...closeContextBase, operation: session.action };
+      }
+      case 'edit': {
+        return {
+          ...closeContextBase,
+          operation: 'edit',
+          target: session.operationTarget,
+        };
+      }
+      case 'batchEdit': {
+        return {
+          ...closeContextBase,
+          operation: 'batchEdit',
+          targets: session.operationTargets,
+        };
+      }
+    }
+  }
+
+  private invalidateCloseDecision(): void {
+    this.closeDecisionAbortController?.abort();
+    this.closeDecisionAbortController = undefined;
+    this.closeDecisionSession = undefined;
+    this.closeDecisionTask = undefined;
+  }
+
   private closeNow(reason: Exclude<EditorCloseReason, 'success'>): void {
     this.arguments_.stateCoordinator.assertActive();
     const state = this.arguments_.stateCoordinator.getState();
@@ -1226,6 +1398,7 @@ export class DialogEditingController<
 
   private finishClose(action: DialogAction, reason: EditorCloseReason): void {
     const session = this.requireSession(action);
+    this.invalidateCloseDecision();
     this.activeSession = undefined;
     runCleanupSteps([
       () => {

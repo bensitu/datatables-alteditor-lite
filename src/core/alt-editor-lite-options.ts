@@ -1,5 +1,6 @@
 import type { PartialEditorLanguage } from './alt-editor-lite-language.js';
 import type { EditingOptions } from './editing-options.js';
+import type { EditorCloseReason } from './editor-event.js';
 import type { EditorOperationTarget } from './editor-operation.js';
 import type { BatchChanges, DeepPartial, EditorValues } from './editor-values.js';
 import type { FieldConfig } from '../fields/field-config.js';
@@ -95,6 +96,18 @@ export type BeforeSubmitContext<TRow extends object> =
       readonly originals: readonly Readonly<TRow>[];
     });
 
+/** Consumer-controlled reasons that can be intercepted before a dialog closes. */
+export type BeforeCloseReason = Extract<EditorCloseReason, 'api' | 'cancel' | 'escape'>;
+
+/** Context supplied before a consumer-controlled dialog close. */
+export interface BeforeCloseContext {
+  readonly operation: 'create' | 'edit' | 'batchEdit' | 'remove';
+  readonly mode: 'dialog';
+  readonly reason: BeforeCloseReason;
+  readonly dirty: boolean;
+  readonly signal: AbortSignal;
+}
+
 /** Context supplied after a successful canonical row commit. */
 export type AfterSuccessContext<TRow extends object, TFormValues extends object> =
   | {
@@ -133,7 +146,13 @@ export type AfterSuccessContext<TRow extends object, TFormValues extends object>
 /** Context supplied to the non-recursive error callback. */
 interface EditorErrorHookContextBase {
   readonly phase:
-    'open' | 'validation' | 'submit' | 'persistence' | 'commit' | 'afterSuccess';
+    | 'open'
+    | 'validation'
+    | 'submit'
+    | 'persistence'
+    | 'commit'
+    | 'afterSuccess'
+    | 'close';
   /** Whether configured persistence completed or Host application began. */
   readonly committed: boolean;
 }
@@ -170,6 +189,9 @@ export interface EditorHooks<TRow extends object, TFormValues extends object> {
   readonly beforeSubmit?: (
     values: Readonly<EditorValues<TFormValues> | BatchChanges<TFormValues>>,
     context: BeforeSubmitContext<TRow>,
+  ) => MaybePromise<boolean | void>;
+  readonly beforeClose?: (
+    context: Readonly<BeforeCloseContext>,
   ) => MaybePromise<boolean | void>;
   readonly afterSuccess?: (
     context: AfterSuccessContext<TRow, TFormValues>,

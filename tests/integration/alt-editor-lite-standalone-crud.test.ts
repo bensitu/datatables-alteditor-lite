@@ -15,7 +15,10 @@ import {
   type StandaloneRecord,
 } from './standalone-test-fixture.js';
 
-import type { OperationContext } from '../../src/core/alt-editor-lite-options.js';
+import type {
+  BeforeCloseContext,
+  OperationContext,
+} from '../../src/core/alt-editor-lite-options.js';
 
 interface Deferred {
   readonly promise: Promise<void>;
@@ -197,6 +200,102 @@ describe('AltEditorLite Standalone CRUD', () => {
       expect(fixture.editor.getState().status).toBe('ready');
     });
     expect(fixture.records.get('record-retried')?.name).toBe('Retried record');
+  });
+
+  it('lets beforeClose decide from the current dialog values', async () => {
+    const closeEvents = vi.fn();
+    const beforeClose = vi.fn(({ dirty }: { readonly dirty: boolean }) =>
+      dirty ? false : undefined,
+    );
+    const fixture = createStandaloneTestFixture({ hooks: { beforeClose } });
+    fixture.eventTarget.addEventListener('alteditor-lite:close', closeEvents);
+
+    await fixture.editor.openEditDialog('record-a');
+    replaceName('Unsaved');
+    await expect(fixture.editor.closeDialog()).resolves.toBeUndefined();
+    expect(fixture.editor.getState().status).toBe('open');
+    expect(beforeClose).toHaveBeenLastCalledWith(
+      expect.objectContaining({ dirty: true, operation: 'edit', reason: 'api' }),
+    );
+    expect(closeEvents).not.toHaveBeenCalled();
+
+    replaceName('Alpha');
+    await expect(fixture.editor.closeDialog()).resolves.toBeUndefined();
+    expect(fixture.editor.getState().status).toBe('ready');
+    expect(beforeClose).toHaveBeenLastCalledWith(
+      expect.objectContaining({ dirty: false, operation: 'edit', reason: 'api' }),
+    );
+    expect(closeEvents).toHaveBeenCalledOnce();
+  });
+
+  it('routes cancel and Escape requests through beforeClose', async () => {
+    const beforeClose = vi.fn((context: Readonly<BeforeCloseContext>) => {
+      expect(context.mode).toBe('dialog');
+      return false;
+    });
+    const fixture = createStandaloneTestFixture({ hooks: { beforeClose } });
+
+    await fixture.editor.openEditDialog('record-a');
+    document
+      .querySelector<HTMLButtonElement>('.alteditor-lite-dialog__button--cancel')
+      ?.click();
+    await vi.waitFor(() => {
+      expect(beforeClose).toHaveBeenCalledTimes(1);
+    });
+    expect(beforeClose.mock.calls[0]?.[0].reason).toBe('cancel');
+
+    document
+      .querySelector<HTMLDialogElement>('.alteditor-lite-dialog')
+      ?.dispatchEvent(new Event('cancel', { cancelable: true }));
+    await vi.waitFor(() => {
+      expect(beforeClose).toHaveBeenCalledTimes(2);
+    });
+    expect(beforeClose.mock.calls[1]?.[0].reason).toBe('escape');
+    expect(fixture.editor.getState().status).toBe('open');
+  });
+
+  it('shares one pending beforeClose decision', async () => {
+    const deferred = createDeferred();
+    const beforeClose = vi.fn(() => deferred.promise);
+    const fixture = createStandaloneTestFixture({ hooks: { beforeClose } });
+
+    await fixture.editor.openEditDialog('record-a');
+    const firstClose = fixture.editor.closeDialog();
+    const secondClose = fixture.editor.closeDialog();
+    await vi.waitFor(() => {
+      expect(beforeClose).toHaveBeenCalledOnce();
+    });
+
+    deferred.resolve();
+    await expect(Promise.all([firstClose, secondClose])).resolves.toEqual([
+      undefined,
+      undefined,
+    ]);
+    expect(fixture.editor.getState().status).toBe('ready');
+  });
+
+  it('reports a rejected beforeClose decision and keeps the dialog open', async () => {
+    const failure = new Error('Close decision failed.');
+    const onError = vi.fn();
+    const fixture = createStandaloneTestFixture({
+      hooks: {
+        beforeClose: () => {
+          throw failure;
+        },
+        onError,
+      },
+    });
+
+    await fixture.editor.openEditDialog('record-a');
+    await expect(fixture.editor.closeDialog()).rejects.toMatchObject({
+      cause: failure,
+      code: 'UNKNOWN',
+    });
+    expect(fixture.editor.getState().status).toBe('open');
+    expect(onError).toHaveBeenCalledWith(
+      expect.any(AltEditorLiteError),
+      expect.objectContaining({ committed: false, phase: 'close' }),
+    );
   });
 
   it('reports a Create Host application failure after persistence completes', async () => {
