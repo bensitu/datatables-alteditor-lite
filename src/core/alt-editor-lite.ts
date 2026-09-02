@@ -41,7 +41,7 @@ import { validateOperationConfiguration } from './validate-operation-configurati
 import type { AltEditorLiteOptions } from './alt-editor-lite-options.js';
 import type { EditorCapabilities } from './editor-capabilities.js';
 import type { EditorState } from './editor-state.js';
-import type { DeepPartial } from './editor-values.js';
+import type { DeepPartial, EditorValues } from './editor-values.js';
 import type { FieldController } from '../fields/field-controller.js';
 import type {
   EditorHost,
@@ -277,9 +277,11 @@ export class AltEditorLite<
     this.notifyIntegration();
   }
 
-  /** Opens the Create dialog. */
-  public openCreateDialog(): Promise<void> {
-    return this.dialogController.openCreate();
+  /** Opens the Create dialog with optional partial form values. */
+  public openCreateDialog(
+    initialValues?: Readonly<EditorValues<TFormValues>>,
+  ): Promise<void> {
+    return this.dialogController.openCreate(initialValues);
   }
 
   /** Opens Dialog Edit for one explicit or selected Host target. */

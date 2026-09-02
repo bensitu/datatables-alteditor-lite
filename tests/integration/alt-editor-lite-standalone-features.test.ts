@@ -190,6 +190,75 @@ describe('AltEditorLite Standalone editor features', () => {
     editor.destroy();
   });
 
+  it('applies Create initial values before dependency initialization', async () => {
+    const initialValues = Object.freeze({ name: 'Beta' });
+    const dirtyStates: boolean[] = [];
+    const host = new StandaloneHost<FeatureRecord, string>({
+      applyCreate: () => 'created',
+      eventTarget: new EventTarget(),
+      read: () => ({
+        id: 'created',
+        name: 'Beta',
+        reviewer: 'reviewer-b',
+        role: 'editor',
+      }),
+    });
+    const editor = new AltEditorLite<FeatureRecord, FeatureValues, string>(host, {
+      dependencies: {
+        name: (name) => ({
+          reviewer: { value: name === 'Beta' ? 'reviewer-b' : 'reviewer-a' },
+          role: { value: name === 'Beta' ? 'editor' : 'reader' },
+        }),
+      },
+      fields: [
+        { defaultValue: 'Default', label: 'Name', name: 'name', type: 'text' },
+        {
+          defaultValue: 'reader',
+          label: 'Role',
+          name: 'role',
+          options: [
+            { label: 'Reader', value: 'reader' },
+            { label: 'Editor', value: 'editor' },
+          ],
+          type: 'select',
+        },
+        {
+          defaultValue: 'reviewer-a',
+          label: 'Reviewer',
+          name: 'reviewer',
+          options: [
+            { label: 'Reviewer A', value: 'reviewer-a' },
+            { label: 'Reviewer B', value: 'reviewer-b' },
+          ],
+          type: 'select',
+        },
+      ],
+      hooks: {
+        beforeClose: ({ dirty }) => {
+          dirtyStates.push(dirty);
+        },
+      },
+      operations: {
+        create: (values) => ({
+          id: 'created',
+          name: values.name ?? '',
+          reviewer: values.reviewer ?? '',
+          role: values.role ?? '',
+        }),
+      },
+    });
+
+    await editor.openCreateDialog(initialValues);
+    await expect(editor.getField('name')?.getValue()).resolves.toBe('Beta');
+    await expect(editor.getField('role')?.getValue()).resolves.toBe('editor');
+    await expect(editor.getField('reviewer')?.getValue()).resolves.toBe('reviewer-b');
+    expect(initialValues).toEqual({ name: 'Beta' });
+
+    await editor.closeDialog();
+    expect(dirtyStates).toEqual([false]);
+    editor.destroy();
+  });
+
   it('completes destruction when consumer-owned notification and host cleanup fail', () => {
     const ownershipKey = {};
     const eventFailure = new Error('Notification failed.');

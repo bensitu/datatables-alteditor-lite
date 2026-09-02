@@ -178,6 +178,9 @@ expectType<CoreEditor<Row, DeepPartial<Row>, DataTablesRecordTarget> | null>(
   table.altEditorLite(),
 );
 expectType<Promise<void>>(editor.openCreateDialog());
+expectType<Promise<void>>(
+  editor.openCreateDialog({ contact: { email: 'initial@example.test' } }),
+);
 expectType<Promise<void>>(editor.openEditDialog(host.resolveRecordTarget('#row')));
 expectType<Promise<void>>(
   editor.openBatchEditDialog(host.resolveRecordTargets('.selected')),

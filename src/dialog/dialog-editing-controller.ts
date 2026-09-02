@@ -57,6 +57,7 @@ import type { EditorCapabilities } from '../core/editor-capabilities.js';
 import type { EditorErrorReporter } from '../core/editor-error-reporter.js';
 import type { DialogAction, EditorOperationTarget } from '../core/editor-operation.js';
 import type { EditorStateCoordinator } from '../core/editor-state-coordinator.js';
+import type { EditorValues } from '../core/editor-values.js';
 import type { LocalUniquenessValidator } from '../core/local-uniqueness-validator.js';
 import type { ResolvedDialogEditingOptions } from '../core/resolve-editing-options.js';
 import type { FieldController } from '../fields/field-controller.js';
@@ -193,7 +194,9 @@ export class DialogEditingController<
   }
 
   /** Opens a Create form when a row-construction owner is configured. */
-  public async openCreate(): Promise<void> {
+  public async openCreate(
+    initialValues?: Readonly<EditorValues<TFormValues>>,
+  ): Promise<void> {
     let interactionToken: InteractionToken | undefined;
     let openAbortController: AbortController | undefined;
     try {
@@ -212,12 +215,17 @@ export class DialogEditingController<
         return;
       }
       this.openCoordinator.assertCurrent(openAbortController);
-      await this.openForm('create', undefined, (form) => ({ action: 'create', form }), {
-        committed: false,
-        mode: 'dialog',
-        operation: 'create',
-        phase: 'open',
-      });
+      await this.openForm(
+        'create',
+        initialValues,
+        (form) => ({ action: 'create', form }),
+        {
+          committed: false,
+          mode: 'dialog',
+          operation: 'create',
+          phase: 'open',
+        },
+      );
     } catch (error: unknown) {
       if (interactionToken !== undefined) {
         this.releaseInteraction(interactionToken);
