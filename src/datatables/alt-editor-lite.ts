@@ -12,6 +12,27 @@ import type { DeepPartial } from '../core/editor-values.js';
 import type { InlineEditState } from '../inline/inline-edit-state.js';
 import type { Api, ColumnSelector, RowSelector } from 'datatables.net';
 
+/** DataTables-specific editor configuration. */
+export interface DataTablesAltEditorLiteOptions<
+  TRow extends object,
+  TFormValues extends object = DeepPartial<TRow>,
+> extends AltEditorLiteOptions<TRow, TFormValues> {
+  /** Maximum wait for an Ajax refresh callback, in milliseconds. */
+  readonly refreshTimeout?: number;
+}
+
+function resolveRefreshTimeout(value: unknown): number {
+  if (value === undefined) {
+    return 30_000;
+  }
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+    throw new EditorConfigurationError(
+      'refreshTimeout must be a finite positive number.',
+    );
+  }
+  return value;
+}
+
 /** DataTables-specific convenience facade over the neutral editor runtime. */
 export class AltEditorLite<
   TRow extends object,
@@ -19,8 +40,11 @@ export class AltEditorLite<
 > extends CoreAltEditorLite<TRow, TFormValues, DataTablesRecordTarget> {
   public readonly dataTablesHost: DataTablesHost<TRow>;
 
-  public constructor(table: Api<TRow>, options: AltEditorLiteOptions<TRow, TFormValues>) {
-    const host = new DataTablesHost(table);
+  public constructor(
+    table: Api<TRow>,
+    options: DataTablesAltEditorLiteOptions<TRow, TFormValues>,
+  ) {
+    const host = new DataTablesHost(table, resolveRefreshTimeout(options.refreshTimeout));
     try {
       super(host, options);
     } catch (error: unknown) {

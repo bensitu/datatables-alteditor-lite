@@ -23,6 +23,7 @@ function hasAjaxSource<TRow extends object>(table: Api<TRow>): boolean {
 export async function refreshDataTable<TRow extends object>(
   table: Api<TRow>,
   signal: AbortSignal,
+  timeoutMs = AJAX_RELOAD_TIMEOUT_MS,
 ): Promise<void> {
   if (signal.aborted) {
     return;
@@ -56,7 +57,7 @@ export async function refreshDataTable<TRow extends object>(
     signal.addEventListener('abort', handleAbort, { once: true });
     const timeoutId = globalThis.setTimeout(() => {
       finish(new Error('DataTables Ajax refresh did not complete in time.'));
-    }, AJAX_RELOAD_TIMEOUT_MS);
+    }, timeoutMs);
     try {
       table.ajax.reload(() => {
         finish();

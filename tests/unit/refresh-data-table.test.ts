@@ -53,4 +53,62 @@ describe('refreshDataTable', () => {
       vi.useRealTimers();
     }
   });
+
+  it('uses a custom Ajax reload timeout', async () => {
+    vi.useFakeTimers();
+    try {
+      const table = {
+        ajax: { reload: vi.fn() },
+        init: () => ({ ajax: '/records' }),
+      } as unknown as Api<RefreshRow>;
+      const refresh = refreshDataTable(table, new AbortController().signal, 1_250);
+      const rejection = expect(refresh).rejects.toThrow(
+        'DataTables Ajax refresh did not complete in time.',
+      );
+
+      await vi.advanceTimersByTimeAsync(1_249);
+      expect(vi.getTimerCount()).toBe(1);
+      await vi.advanceTimersByTimeAsync(1);
+
+      await rejection;
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('stops waiting when ownership is aborted', async () => {
+    vi.useFakeTimers();
+    try {
+      const abortController = new AbortController();
+      const table = {
+        ajax: { reload: vi.fn() },
+        init: () => ({ ajax: '/records' }),
+      } as unknown as Api<RefreshRow>;
+      const refresh = refreshDataTable(table, abortController.signal, 1_250);
+
+      abortController.abort();
+
+      await expect(refresh).resolves.toBeUndefined();
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('resolves when Ajax reload reports completion', async () => {
+    let complete: (() => void) | undefined;
+    const reload = vi.fn((callback: () => void) => {
+      complete = callback;
+    });
+    const table = {
+      ajax: { reload },
+      init: () => ({ ajax: '/records' }),
+    } as unknown as Api<RefreshRow>;
+    const refresh = refreshDataTable(table, new AbortController().signal, 1_250);
+
+    complete?.();
+
+    await expect(refresh).resolves.toBeUndefined();
+    expect(reload).toHaveBeenCalledWith(expect.any(Function), false);
+  });
 });

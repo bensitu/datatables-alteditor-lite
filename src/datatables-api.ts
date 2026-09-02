@@ -1,5 +1,6 @@
 export * from './public-api.js';
 export { AltEditorLite } from './datatables/alt-editor-lite.js';
+export type { DataTablesAltEditorLiteOptions } from './datatables/alt-editor-lite.js';
 export { DataTablesHost } from './datatables/datatables-host.js';
 export { registerAltEditorLite } from './datatables/register-alt-editor-lite.js';
 export type {

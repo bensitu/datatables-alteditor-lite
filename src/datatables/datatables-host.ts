@@ -119,7 +119,10 @@ export class DataTablesHost<TRow extends object>
     InlineSelectorPair<TRow>
   >();
 
-  public constructor(private readonly table: Api<TRow>) {
+  public constructor(
+    private readonly table: Api<TRow>,
+    private readonly refreshTimeout = 30_000,
+  ) {
     const tableElement: unknown = table.table().node();
     if (!(tableElement instanceof HTMLTableElement)) {
       throw new EditorConfigurationError(
@@ -335,7 +338,7 @@ export class DataTablesHost<TRow extends object>
   public async refresh(signal: AbortSignal, action?: () => Promise<void>): Promise<void> {
     await this.drawOwnership.runWhile('refresh', signal, async () => {
       if (action === undefined) {
-        await refreshDataTable(this.table, signal);
+        await refreshDataTable(this.table, signal, this.refreshTimeout);
       } else {
         await action();
       }

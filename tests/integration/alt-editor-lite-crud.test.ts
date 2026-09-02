@@ -7,7 +7,7 @@ import {
   EditorConfigurationError,
   EditorOperationBusyError,
   EditorSelectionUnavailableError,
-  type AltEditorLiteOptions,
+  type DataTablesAltEditorLiteOptions,
   type FieldConfig,
   type OperationContext,
 } from '../../src/datatables.js';
@@ -119,7 +119,7 @@ function createDeferred<TValue>(): Deferred<TValue> {
 
 function createCrudEditor(
   tableId: string,
-  editorOptions: Omit<AltEditorLiteOptions<TestRow, CrudValues>, 'fields'> = {},
+  editorOptions: Omit<DataTablesAltEditorLiteOptions<TestRow, CrudValues>, 'fields'> = {},
   tableOptions: object = {},
 ): {
   readonly api: ReturnType<typeof createTestTable>['api'];
@@ -134,6 +134,20 @@ function createCrudEditor(
   activeEditors.add(editor);
   return { api, editor, tableElement };
 }
+
+describe('AltEditorLite DataTables configuration', () => {
+  it('rejects a non-positive refresh timeout', () => {
+    const { api } = createTestTable('invalid-refresh-timeout');
+
+    expect(
+      () =>
+        new AltEditorLite<TestRow, CrudValues>(api, {
+          fields,
+          refreshTimeout: 0,
+        }),
+    ).toThrow('refreshTimeout must be a finite positive number.');
+  });
+});
 
 function submitForm(): void {
   const formElement = document.querySelector<HTMLFormElement>('.alteditor-lite-form');

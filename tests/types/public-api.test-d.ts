@@ -5,6 +5,7 @@ import {
   DataTablesHost,
   defineCustomField as defineDataTablesCustomField,
   type CustomFieldPresentation as DataTablesCustomFieldPresentation,
+  type DataTablesAltEditorLiteOptions,
   type DataTablesRecordTarget,
 } from '../../src/datatables.js';
 import {
@@ -141,6 +142,14 @@ expectAssignable<AltEditorLiteOptions<Row>>({
 });
 
 const host = new DataTablesHost(table);
+expectAssignable<DataTablesAltEditorLiteOptions<Row, FormValues>>({
+  fields: [],
+  refreshTimeout: 5_000,
+});
+expectNotAssignable<AltEditorLiteOptions<Row, FormValues>>({
+  fields: [],
+  refreshTimeout: 5_000,
+});
 const editor = new CoreEditor<
   Row,
   FormValues,
