@@ -44,6 +44,9 @@ export type FieldValidator<TFormValues extends object, TValue> = (
   context: FieldValidationContext<TFormValues>,
 ) => MaybePromise<FieldValidationResult>;
 
+/** Interaction that requests field validation before submission. */
+export type FieldValidationTrigger = 'submit' | 'blur';
+
 /**
  * Configuration shared by all fields.
  */
@@ -66,6 +69,8 @@ export interface BaseFieldConfig<TFormValues extends object, TValue = unknown> {
   readonly onChange?: FieldChangeCallback<TFormValues, TValue>;
   /** Validator invoked after native constraint validation. */
   readonly validate?: FieldValidator<TFormValues, TValue>;
+  /** Whether leaving the field also requests validation. Defaults to submit. */
+  readonly validateOn?: FieldValidationTrigger;
   /** Whether the normalized value must be distinct in currently loaded rows. */
   readonly unique?: boolean;
   /** Allows this field to participate in single-cell inline editing. */

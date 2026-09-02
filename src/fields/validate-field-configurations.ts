@@ -162,6 +162,12 @@ export function validateFieldConfigurations<TFormValues extends object>(
       );
     }
     configuredNames.add(config.name);
+    const validateOn: unknown = config.validateOn;
+    if (validateOn !== undefined && validateOn !== 'submit' && validateOn !== 'blur') {
+      throw new EditorConfigurationError(
+        `validateOn for field "${config.name}" must be "submit" or "blur".`,
+      );
+    }
     if (config.type === 'custom') {
       const definition: unknown = config.definition;
       if (typeof definition !== 'object' || definition === null) {

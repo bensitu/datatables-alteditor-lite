@@ -283,6 +283,10 @@ input[type='file'].alteditor-lite-field__control:disabled::file-selector-button 
   box-shadow: 0 0 0 1px var(--alteditor-lite-error-color);
 }
 
+.alteditor-lite-field--validating {
+  cursor: progress;
+}
+
 textarea.alteditor-lite-field__control {
   min-height: 6rem;
   resize: vertical;

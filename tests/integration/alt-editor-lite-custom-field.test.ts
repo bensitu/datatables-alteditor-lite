@@ -509,6 +509,7 @@ describe('AltEditorLite custom fields', () => {
   it('does not submit a late asynchronous value after the dialog closes', async () => {
     const pendingValue = createDeferred<readonly string[]>();
     const getValue = vi.fn(() => pendingValue.promise);
+    getValue.mockResolvedValueOnce([]);
     const createRow = vi.fn((values: Readonly<Partial<RecordValues>>): RecordRow => ({
       id: 'created',
       summary: '',
@@ -554,7 +555,7 @@ describe('AltEditorLite custom fields', () => {
     await editor.openCreateDialog();
     document.querySelector<HTMLFormElement>('.alteditor-lite-form')?.requestSubmit();
     await vi.waitFor(() => {
-      expect(getValue).toHaveBeenCalledOnce();
+      expect(getValue).toHaveBeenCalledTimes(2);
     });
 
     await editor.closeDialog();

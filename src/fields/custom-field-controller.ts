@@ -69,6 +69,14 @@ function assertAdapter<TValue>(
       `Custom field "${fieldName}" adapter validate property must be a function.`,
     );
   }
+  if (
+    record['containsFocusTarget'] !== undefined &&
+    typeof record['containsFocusTarget'] !== 'function'
+  ) {
+    throw new EditorConfigurationError(
+      `Custom field "${fieldName}" adapter containsFocusTarget property must be a function.`,
+    );
+  }
 }
 
 function destroyReturnedAdapter(candidate: unknown): void {
@@ -166,6 +174,9 @@ export function createCustomFieldController<TFormValues extends object>(
       focus: () => {
         adapter.focus();
       },
+      containsFocusTarget: (target) =>
+        adapter.containsFocusTarget?.(target) ??
+        (target === null ? false : control.contains(target)),
       validateNative: () => ({ valid: true }),
       validateCustom: async (
         values: Readonly<EditorValues<TFormValues>>,

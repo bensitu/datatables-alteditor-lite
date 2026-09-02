@@ -257,6 +257,7 @@ expectAssignable<FieldConfig<FormValues>>({
   name: 'contact.email',
   readOnly: true,
   type: 'email',
+  validateOn: 'blur',
 });
 
 const tagsDefinition = defineCustomField<readonly string[], TagOptions>({
@@ -269,6 +270,10 @@ const tagsDefinition = defineCustomField<readonly string[], TagOptions>({
     expectType<'dialog' | 'batch' | 'inline'>(context.presentation);
     expectType<AbortSignal>(context.signal);
     const adapter: CustomFieldAdapter<readonly string[]> = {
+      containsFocusTarget: (target) => {
+        expectType<Node | null>(target);
+        return target === null;
+      },
       control: document.createElement('div'),
       destroy: () => undefined,
       focus: () => undefined,

@@ -1,12 +1,14 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { AltEditorLite } from '../../src/core/alt-editor-lite.js';
+import { defineCustomField } from '../../src/fields/custom-field.js';
 import { isChoiceFieldController } from '../../src/fields/field-controller.js';
 import { StandaloneHost } from '../../src/standalone/standalone-host.js';
 
 import { installDialogElementSupport } from './standalone-test-fixture.js';
 
 import type { EditorValues } from '../../src/core/editor-values.js';
+import type { FieldValidationResult } from '../../src/fields/field-controller.js';
 import type { EditorHost } from '../../src/host/editor-host.js';
 
 interface FeatureRecord {
@@ -14,6 +16,11 @@ interface FeatureRecord {
   readonly name: string;
   readonly reviewer: string;
   readonly role: string;
+}
+
+interface PendingValidation {
+  readonly signal: AbortSignal;
+  resolve(result: FieldValidationResult): void;
 }
 
 type FeatureValues = Omit<FeatureRecord, 'id'>;
@@ -256,6 +263,178 @@ describe('AltEditorLite Standalone editor features', () => {
 
     await editor.closeDialog();
     expect(dirtyStates).toEqual([false]);
+    editor.destroy();
+  });
+
+  it('keeps only the current blur or submit validation result', async () => {
+    const pendingValidations: PendingValidation[] = [];
+    const record: FeatureRecord = {
+      id: 'validation-record',
+      name: 'Alpha',
+      reviewer: 'reviewer-a',
+      role: 'reader',
+    };
+    const host = new StandaloneHost<FeatureRecord, string>({
+      eventTarget: new EventTarget(),
+      read: () => record,
+    });
+    const editor = new AltEditorLite<FeatureRecord, FeatureValues, string>(host, {
+      fields: [
+        {
+          label: 'Name',
+          name: 'name',
+          type: 'text',
+          validate: (_value, { signal }) =>
+            new Promise<FieldValidationResult>((resolve) => {
+              pendingValidations.push({ resolve, signal });
+            }),
+          validateOn: 'blur',
+        },
+      ],
+    });
+
+    await editor.openEditDialog('validation-record');
+    const field = editor.getField('name');
+    const input = field?.element.querySelector<HTMLInputElement>('input');
+    const outside = document.querySelector<HTMLButtonElement>(
+      '.alteditor-lite-dialog__button--cancel',
+    );
+    if (field === null || input === null || input === undefined || outside === null) {
+      throw new Error('Expected an open validation field.');
+    }
+
+    input.dispatchEvent(
+      new FocusEvent('focusout', { bubbles: true, relatedTarget: outside }),
+    );
+    await vi.waitFor(() => {
+      expect(pendingValidations).toHaveLength(1);
+    });
+    expect(field.element.classList.contains('alteditor-lite-field--validating')).toBe(
+      true,
+    );
+    expect(field.element.getAttribute('aria-busy')).toBe('true');
+
+    input.value = 'Beta';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(pendingValidations[0]?.signal.aborted).toBe(true);
+    input.dispatchEvent(
+      new FocusEvent('focusout', { bubbles: true, relatedTarget: outside }),
+    );
+    await vi.waitFor(() => {
+      expect(pendingValidations).toHaveLength(2);
+    });
+    pendingValidations[1]?.resolve({ message: 'Current blur error.', valid: false });
+    await vi.waitFor(() => {
+      expect(
+        field.element.querySelector('.alteditor-lite-field__error')?.textContent,
+      ).toBe('Current blur error.');
+    });
+    pendingValidations[0]?.resolve({ message: 'Stale blur error.', valid: false });
+    await Promise.resolve();
+    expect(field.element.querySelector('.alteditor-lite-field__error')?.textContent).toBe(
+      'Current blur error.',
+    );
+
+    input.dispatchEvent(
+      new FocusEvent('focusout', { bubbles: true, relatedTarget: outside }),
+    );
+    await vi.waitFor(() => {
+      expect(pendingValidations).toHaveLength(3);
+    });
+    document.querySelector<HTMLFormElement>('.alteditor-lite-form')?.requestSubmit();
+    await vi.waitFor(() => {
+      expect(pendingValidations).toHaveLength(4);
+    });
+    expect(pendingValidations[2]?.signal.aborted).toBe(true);
+    pendingValidations[3]?.resolve({ message: 'Submit error.', valid: false });
+    await vi.waitFor(() => {
+      expect(
+        field.element.querySelector('.alteditor-lite-field__error')?.textContent,
+      ).toBe('Submit error.');
+    });
+    pendingValidations[2]?.resolve({ message: 'Late blur error.', valid: false });
+    await Promise.resolve();
+    expect(field.element.querySelector('.alteditor-lite-field__error')?.textContent).toBe(
+      'Submit error.',
+    );
+    expect(field.element.classList.contains('alteditor-lite-field--validating')).toBe(
+      false,
+    );
+    expect(field.element.hasAttribute('aria-busy')).toBe(false);
+    editor.destroy();
+  });
+
+  it('honors a custom field focus boundary', async () => {
+    const validate = vi.fn(() => ({ valid: true }) as const);
+    const portal = document.createElement('button');
+    document.body.append(portal);
+    const customText = defineCustomField<string>({
+      createController: () => {
+        const control = document.createElement('div');
+        const input = document.createElement('input');
+        control.append(input);
+        return {
+          containsFocusTarget: (target) =>
+            (target !== null && control.contains(target)) || target === portal,
+          control,
+          destroy: () => {
+            portal.remove();
+          },
+          focus: () => {
+            input.focus();
+          },
+          getValue: () => input.value,
+          setDisabled: (isDisabled) => {
+            input.disabled = isDisabled;
+          },
+          setReadOnly: (isReadOnly) => {
+            input.readOnly = isReadOnly;
+          },
+          setRequired: (isRequired) => {
+            input.required = isRequired;
+          },
+          setValue: (value) => {
+            input.value = value;
+          },
+        };
+      },
+    });
+    const host = new StandaloneHost<FeatureRecord, string>({
+      read: () => ({
+        id: 'custom-focus',
+        name: 'Alpha',
+        reviewer: 'reviewer-a',
+        role: 'reader',
+      }),
+    });
+    const editor = new AltEditorLite<FeatureRecord, FeatureValues, string>(host, {
+      fields: [
+        customText.field<FeatureValues>({
+          label: 'Name',
+          name: 'name',
+          validate,
+          validateOn: 'blur',
+        }),
+      ],
+    });
+
+    await editor.openEditDialog('custom-focus');
+    const customInput = editor.getField('name')?.element.querySelector('input');
+    if (customInput === null || customInput === undefined) {
+      throw new Error('Expected an open custom field.');
+    }
+    customInput.dispatchEvent(
+      new FocusEvent('focusout', { bubbles: true, relatedTarget: portal }),
+    );
+    await Promise.resolve();
+    expect(validate).not.toHaveBeenCalled();
+
+    customInput.dispatchEvent(
+      new FocusEvent('focusout', { bubbles: true, relatedTarget: document.body }),
+    );
+    await vi.waitFor(() => {
+      expect(validate).toHaveBeenCalledOnce();
+    });
     editor.destroy();
   });
 

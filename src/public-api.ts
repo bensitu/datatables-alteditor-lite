@@ -103,6 +103,7 @@ export type {
   FieldChangeContext,
   FieldConfig,
   FieldValidationContext,
+  FieldValidationTrigger,
   FieldValidator,
   FileEncoding,
   FileFieldConfig,

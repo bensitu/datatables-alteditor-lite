@@ -20,6 +20,7 @@ export interface ManagedFieldController<TFormValues extends object> {
   setRequired(isRequired: boolean): void;
   isRequired(): boolean;
   focus(): void;
+  readonly containsFocusTarget?: (target: Node | null) => boolean;
   validateNative(): FieldValidationResult;
   validateCustom(
     values: Readonly<EditorValues<TFormValues>>,

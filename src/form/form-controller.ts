@@ -130,6 +130,15 @@ export class EditorFormController<
     AbortController
   >();
 
+  private readonly fieldValidationSequenceByName = new Map<string, RequestSequence>();
+
+  private readonly eagerErrorFieldNames = new Set<string>();
+
+  private readonly blurValidationListeners = new Map<
+    string,
+    { readonly element: HTMLElement; readonly listener: EventListener }
+  >();
+
   private readonly invalidMessage: string;
 
   private readonly layout: FormLayout;
@@ -223,6 +232,10 @@ export class EditorFormController<
         runtime.setReadOnly(runtime.isReadOnly());
         runtime.setRequired(runtime.isRequired());
 
+        if (config.validateOn === 'blur') {
+          this.attachBlurValidation(controller);
+        }
+
         if (hasOwn(config, 'defaultValue')) {
           controller.setValue(config.defaultValue);
         }
@@ -246,6 +259,7 @@ export class EditorFormController<
             if (error === undefined) {
               controller?.clearError();
             } else {
+              this.eagerErrorFieldNames.delete(sourcePath);
               controller?.showError(error.message);
               onDependencyError?.(sourcePath, error);
             }
@@ -352,6 +366,7 @@ export class EditorFormController<
   /** Runs native and custom validation. */
   public async validate(): Promise<EditorFormValidationResult> {
     this.assertActive();
+    this.invalidateAllFieldValidations();
     this.activeFormValidationAbortController?.abort();
     const validationAbortController = new AbortController();
     this.activeFormValidationAbortController = validationAbortController;
@@ -417,6 +432,7 @@ export class EditorFormController<
     context: FormValidationRequestContext,
   ): Promise<FormSubmissionValidationResult<TFormValues>> {
     this.assertActive();
+    this.invalidateAllFieldValidations();
     this.activeFormValidationAbortController?.abort();
     const validationAbortController = new AbortController();
     this.activeFormValidationAbortController = validationAbortController;
@@ -558,11 +574,14 @@ export class EditorFormController<
       focus: () => {
         managedController.focus();
       },
-      validate: async () => await this.validateManagedController(managedController),
+      validate: async () =>
+        await this.validateManagedController(managedController, 'manual'),
       clearError: () => {
+        this.eagerErrorFieldNames.delete(name);
         managedController.clearError();
       },
       showError: (message: string) => {
+        this.eagerErrorFieldNames.delete(name);
         managedController.showError(message);
       },
       destroy: () => {
@@ -573,8 +592,8 @@ export class EditorFormController<
         isFieldDestroyed = true;
         this.activeChangeAbortControllers.get(name)?.abort();
         this.activeChangeAbortControllers.delete(name);
-        this.activeFieldValidationAbortControllers.get(name)?.abort();
-        this.activeFieldValidationAbortControllers.delete(name);
+        this.invalidateFieldValidation(name);
+        this.detachBlurValidation(name);
         this.activeFormValidationAbortController?.abort();
         this.controllerByName.delete(name);
         this.fieldControllerByName.delete(name);
@@ -617,6 +636,7 @@ export class EditorFormController<
         submissionMessages.push(message);
       } else {
         hasKnownFieldError = true;
+        this.eagerErrorFieldNames.delete(fieldName);
         controller.showError(message);
       }
     }
@@ -636,6 +656,7 @@ export class EditorFormController<
     for (const controller of this.controllers) {
       controller.clearError();
     }
+    this.eagerErrorFieldNames.clear();
     this.operationErrorMessage = undefined;
     this.validationErrorMessage = undefined;
     for (const [sourcePath, dependencyError] of this.dependencyController?.errors() ??
@@ -662,6 +683,11 @@ export class EditorFormController<
       abortController.abort();
     }
     this.activeFieldValidationAbortControllers.clear();
+    for (const fieldName of this.blurValidationListeners.keys()) {
+      this.detachBlurValidation(fieldName);
+    }
+    this.fieldValidationSequenceByName.clear();
+    this.eagerErrorFieldNames.clear();
     this.activeFormValidationAbortController?.abort();
     this.validationSequence.invalidate();
     const dependencyController = this.dependencyController;
@@ -696,6 +722,7 @@ export class EditorFormController<
 
   private notifyFieldChange(fieldName: string): void {
     this.possiblyDirty = true;
+    this.invalidateFieldValidation(fieldName, true);
     const task = this.runFieldChange(fieldName);
     this.activeChangeTasks.set(fieldName, task);
     void task.finally(() => {
@@ -809,6 +836,7 @@ export class EditorFormController<
       if (controller === undefined) {
         submissionMessages.add(fieldMessage);
       } else {
+        this.eagerErrorFieldNames.delete(fieldName);
         controller.showError(fieldMessage);
       }
     }
@@ -817,22 +845,120 @@ export class EditorFormController<
     this.renderSubmissionError();
   }
 
+  private attachBlurValidation(controller: ManagedFieldController<TFormValues>): void {
+    const listener: EventListener = (event) => {
+      if (!(event instanceof FocusEvent) || controller.isDisabled()) {
+        return;
+      }
+      const focusTarget =
+        event.relatedTarget instanceof Node ? event.relatedTarget : null;
+      const isInside =
+        controller.containsFocusTarget?.(focusTarget) ??
+        (focusTarget === null ? false : controller.element.contains(focusTarget));
+      if (isInside) {
+        return;
+      }
+      void this.validateManagedController(controller, 'eager').catch(() => undefined);
+    };
+    controller.element.addEventListener('focusout', listener);
+    this.blurValidationListeners.set(controller.name, {
+      element: controller.element,
+      listener,
+    });
+  }
+
+  private detachBlurValidation(fieldName: string): void {
+    const registration = this.blurValidationListeners.get(fieldName);
+    if (registration === undefined) {
+      return;
+    }
+    registration.element.removeEventListener('focusout', registration.listener);
+    this.blurValidationListeners.delete(fieldName);
+  }
+
+  private invalidateAllFieldValidations(): void {
+    for (const controller of this.controllers) {
+      this.invalidateFieldValidation(controller.name);
+    }
+  }
+
+  private invalidateFieldValidation(fieldName: string, clearEagerError = false): void {
+    this.activeFieldValidationAbortControllers.get(fieldName)?.abort();
+    this.activeFieldValidationAbortControllers.delete(fieldName);
+    this.fieldValidationSequenceByName.get(fieldName)?.invalidate();
+    const controller = this.controllerByName.get(fieldName);
+    if (controller !== undefined) {
+      this.setFieldValidating(controller, false);
+      if (clearEagerError && this.eagerErrorFieldNames.delete(fieldName)) {
+        controller.clearError();
+      }
+    }
+  }
+
+  private ownsFieldValidation(
+    fieldName: string,
+    abortController: AbortController,
+    requestSequence: number,
+  ): boolean {
+    return (
+      !abortController.signal.aborted &&
+      this.activeFieldValidationAbortControllers.get(fieldName) === abortController &&
+      this.fieldValidationSequenceByName.get(fieldName)?.isCurrent(requestSequence) ===
+        true
+    );
+  }
+
+  private setFieldValidating(
+    controller: ManagedFieldController<TFormValues>,
+    isValidating: boolean,
+  ): void {
+    controller.element.classList.toggle('alteditor-lite-field--validating', isValidating);
+    if (isValidating) {
+      controller.element.setAttribute('aria-busy', 'true');
+    } else {
+      controller.element.removeAttribute('aria-busy');
+    }
+  }
+
   private async validateManagedController(
     controller: ManagedFieldController<TFormValues>,
+    source: 'eager' | 'manual',
   ): Promise<FieldValidationResult> {
     this.assertActive();
-    this.activeFieldValidationAbortControllers.get(controller.name)?.abort();
+    this.invalidateFieldValidation(controller.name, source === 'eager');
     const validationAbortController = new AbortController();
     this.activeFieldValidationAbortControllers.set(
       controller.name,
       validationAbortController,
     );
-    controller.clearError();
+    const validationSequence =
+      this.fieldValidationSequenceByName.get(controller.name) ?? new RequestSequence();
+    this.fieldValidationSequenceByName.set(controller.name, validationSequence);
+    const requestSequence = validationSequence.next();
+    if (source === 'manual') {
+      this.eagerErrorFieldNames.delete(controller.name);
+      controller.clearError();
+    }
+    if (source === 'eager') {
+      this.setFieldValidating(controller, true);
+    }
     const nativeResult = controller.validateNative();
 
     if (!nativeResult.valid) {
-      controller.showError(nativeResult.message ?? this.invalidMessage);
+      if (
+        this.ownsFieldValidation(
+          controller.name,
+          validationAbortController,
+          requestSequence,
+        )
+      ) {
+        controller.showError(nativeResult.message ?? this.invalidMessage);
+        if (source === 'eager') {
+          this.eagerErrorFieldNames.add(controller.name);
+        }
+      }
       this.activeFieldValidationAbortControllers.delete(controller.name);
+      this.setFieldValidating(controller, false);
       return nativeResult;
     }
 
@@ -844,12 +970,22 @@ export class EditorFormController<
     try {
       const values = await collectFormValues(this.controllers, signal);
       const customResult = await controller.validateCustom(values, signal);
-      if (signal.aborted) {
+      if (
+        signal.aborted ||
+        !this.ownsFieldValidation(
+          controller.name,
+          validationAbortController,
+          requestSequence,
+        )
+      ) {
         return { valid: false };
       }
 
       if (!customResult.valid) {
         controller.showError(customResult.message ?? this.invalidMessage);
+        if (source === 'eager') {
+          this.eagerErrorFieldNames.add(controller.name);
+        }
         return customResult;
       }
 
@@ -857,15 +993,28 @@ export class EditorFormController<
       if (uniqueMessage !== undefined) {
         const uniqueResult = { message: uniqueMessage, valid: false } as const;
         controller.showError(uniqueMessage);
+        if (source === 'eager') {
+          this.eagerErrorFieldNames.add(controller.name);
+        }
         return uniqueResult;
       }
 
       return customResult;
     } catch (error: unknown) {
-      if (signal.aborted) {
+      if (
+        signal.aborted ||
+        !this.ownsFieldValidation(
+          controller.name,
+          validationAbortController,
+          requestSequence,
+        )
+      ) {
         return { valid: false };
       }
       controller.showError(this.invalidMessage);
+      if (source === 'eager') {
+        this.eagerErrorFieldNames.add(controller.name);
+      }
       throw error instanceof Error
         ? error
         : new Error('Field validation failed with a non-Error value.', {
@@ -878,6 +1027,7 @@ export class EditorFormController<
         validationAbortController
       ) {
         this.activeFieldValidationAbortControllers.delete(controller.name);
+        this.setFieldValidating(controller, false);
       }
     }
   }

@@ -47,6 +47,8 @@ export interface CustomFieldAdapter<TValue> {
   focus(): void;
   /** Validates widget semantics, including required emptiness when applicable. */
   validate?(signal: AbortSignal): MaybePromise<FieldValidationResult>;
+  /** Reports whether a focus destination remains inside this widget. */
+  readonly containsFocusTarget?: (target: Node | null) => boolean;
   destroy(): void;
 }
 
