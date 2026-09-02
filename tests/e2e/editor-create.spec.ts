@@ -15,6 +15,13 @@ const stylesheetPath = resolve(repositoryRoot, 'dist/umd/alt-editor-lite.css');
 
 type EditorFixtureVariant = 'basic' | 'file' | 'slow-validation' | 'theme';
 
+interface ValidationRuntime {
+  readonly validationRequests?: {
+    readonly signal: AbortSignal;
+    resolve(result: { readonly valid: boolean; readonly message?: string }): void;
+  }[];
+}
+
 function initializationScript(variant: EditorFixtureVariant): string {
   if (variant === 'file') {
     return `
@@ -56,11 +63,11 @@ function initializationScript(variant: EditorFixtureVariant): string {
   const validator =
     variant === 'slow-validation'
       ? `
-          validate: async () => {
-            await new Promise(resolve => {
-              globalThis.setTimeout(resolve, 120);
+          validateOn: 'blur',
+          validate: (_value, { signal }) => {
+            return new Promise(resolve => {
+              (globalThis.validationRequests ??= []).push({ resolve, signal });
             });
-            return { valid: true };
           },
         `
       : '';
@@ -324,14 +331,26 @@ test('falls back to the table when the opening trigger is removed', async ({ pag
     });
 });
 
-test('suppresses duplicate submit while asynchronous validation is busy', async ({
+test('replaces blur validation and suppresses duplicate submit while busy', async ({
   page,
 }) => {
   await createEditorFixture(page, 'slow-validation');
   await page.locator('#open-editor').click();
   const dialog = page.locator('dialog');
-  await dialog.getByRole('textbox', { exact: true, name: 'Name' }).fill('One row');
   await dialog.getByRole('spinbutton', { name: 'Rank' }).fill('3');
+  await dialog.getByRole('textbox', { exact: true, name: 'Name' }).fill('One row');
+  await dialog.getByRole('spinbutton', { name: 'Rank' }).focus();
+  await expect(dialog.locator('.alteditor-lite-field--validating')).toHaveAttribute(
+    'aria-busy',
+    'true',
+  );
+  const requestCount = async (): Promise<number> =>
+    await page.evaluate(
+      () =>
+        (globalThis as typeof globalThis & ValidationRuntime).validationRequests
+          ?.length ?? 0,
+    );
+  await expect.poll(requestCount).toBe(1);
 
   await dialog.locator('form').evaluate((formElement) => {
     if (!(formElement instanceof HTMLFormElement)) {
@@ -341,6 +360,21 @@ test('suppresses duplicate submit while asynchronous validation is busy', async 
     formElement.requestSubmit();
   });
 
+  await expect.poll(requestCount).toBe(2);
+  const isBlurAborted = await page.evaluate(() => {
+    const requests = (globalThis as typeof globalThis & ValidationRuntime)
+      .validationRequests;
+    requests?.[1]?.resolve({ valid: true });
+    return requests?.[0]?.signal.aborted;
+  });
+  expect(isBlurAborted).toBe(true);
+
+  await expect(page.locator('dialog')).not.toBeVisible();
+  await page.evaluate(() => {
+    const requests = (globalThis as typeof globalThis & ValidationRuntime)
+      .validationRequests;
+    requests?.[0]?.resolve({ message: 'Obsolete validation error.', valid: false });
+  });
   await expect(page.locator('dialog')).not.toBeVisible();
   await expect(getCreateCallCount(page)).resolves.toBe(1);
   await expect(page.locator('#created-row')).toHaveCount(1);

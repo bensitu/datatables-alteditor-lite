@@ -358,7 +358,10 @@ async function createExtensionInlineFixture(page: Page): Promise<void> {
         {
           editing: {
             dialog: { enabled: false },
-            inline: { activation: 'hover', enabled: true }
+            inline: {
+              activation: 'hover', enabled: true,
+              keyboardActivation: [{ key: 'F2' }, { key: 'Enter' }, { key: ' ' }]
+            }
           },
           fields: [
             { inlineEdit: true, label: 'Name', name: 'name', type: 'text' },
@@ -771,6 +774,19 @@ test('activates a KeyTable-focused cell and remaps after ColReorder', async ({
   await expect(page.locator('.alteditor-lite-inline')).toHaveCount(0);
   await expect(nameCell).toContainText('Alpha');
 
+  await page.keyboard.press('Enter');
+  await expect(nameInput).toHaveValue('Alpha');
+  await nameInput.fill('Saved name');
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('button', { exact: true, name: 'Submit' })).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('.alteditor-lite-inline')).toHaveCount(0);
+  await expect(nameCell).toContainText('Saved name');
+  await page.keyboard.press('Space');
+  await expect(nameInput).toHaveValue('Saved name');
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.alteditor-lite-inline')).toHaveCount(0);
+
   await page.evaluate(() => {
     const runtimeScope = globalThis as typeof globalThis & {
       tableApi?: { colReorder: { move(from: number, to: number): void } };
@@ -780,7 +796,7 @@ test('activates a KeyTable-focused cell and remaps after ColReorder', async ({
   const reorderedNameCell = page.locator('#row-a td').nth(1);
   await reorderedNameCell.click();
   await page.keyboard.press('F2');
-  await expect(page.getByRole('textbox', { name: 'Name' })).toHaveValue('Alpha');
+  await expect(page.getByRole('textbox', { name: 'Name' })).toHaveValue('Saved name');
   await page.getByRole('button', { name: 'Cancel' }).click();
 });
 
