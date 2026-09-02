@@ -80,6 +80,13 @@ const fieldConfigurations = [
     required: true,
     type: 'email',
     unique: true,
+    validateOn: 'blur',
+    async validate(value, { signal }) {
+      await waitForLatency(signal);
+      return value.toLocaleLowerCase().endsWith('@invalid.example')
+        ? { message: 'This email domain is not accepted.', valid: false }
+        : { valid: true };
+    },
   },
   {
     attributes: { max: '120', min: '16' },
@@ -209,6 +216,7 @@ const eventNames = [
 const eventLog = document.querySelector('#event-log');
 const editorState = document.querySelector('#editor-state');
 const failNextButton = document.querySelector('#fail-next');
+const createPresetButton = document.querySelector('#create-preset');
 const localeSelect = document.querySelector('#locale-select');
 const localeStatus = document.querySelector('#locale-status');
 const hybridSelectionStatus = document.querySelector('#hybrid-selection-status');
@@ -341,7 +349,10 @@ function hasDuplicateEmail(table, email, excludedId) {
 }
 
 function assertUniqueEmail(table, email, excludedId) {
-  if (hasDuplicateEmail(table, email, excludedId)) {
+  if (
+    email?.toLocaleLowerCase() === 'reserved@example.test' ||
+    hasDuplicateEmail(table, email, excludedId)
+  ) {
     throw new AltEditorLiteError({
       code: 'EMAIL_CONFLICT',
       fieldErrors: { email: 'This email is already registered.' },
@@ -369,6 +380,22 @@ function applyEmployeeChanges(original, values) {
     startDate: values.startDate ?? original.startDate,
     status: values.status ?? original.status,
   };
+}
+
+function renderEmployeeRemoval({ count, language, rows }) {
+  const content = document.createDocumentFragment();
+  const summary = document.createElement('p');
+  const names = document.createElement('ul');
+  const warning = document.createElement('p');
+  summary.textContent = language.dialog.removeCount.replaceAll('{count}', String(count));
+  warning.textContent = language.dialog.removeMessage;
+  for (const row of rows) {
+    const name = document.createElement('li');
+    name.textContent = `${row.name} — ${row.email}`;
+    names.append(name);
+  }
+  content.append(summary, names, warning);
+  return content;
 }
 
 function createEmployeeEditor(table, inlineActivation, language, dialogEnabled = false) {
@@ -402,15 +429,27 @@ function createEmployeeEditor(table, inlineActivation, language, dialogEnabled =
     },
     editing: {
       dialog: {
+        className: 'demo-editor-theme',
+        closeOnSuccess: !dialogEnabled,
         enabled: dialogEnabled,
-        template: '#employee-editor-template',
+        removeConfirmation: renderEmployeeRemoval,
+        template: ({ operation }) =>
+          operation === 'batchEdit'
+            ? undefined
+            : operation === 'create'
+              ? '#employee-create-template'
+              : '#employee-editor-template',
       },
       inline: {
         activation: inlineActivation ?? 'doubleClick',
         enabled: inlineActivation !== undefined,
+        keyboardActivation: [{ key: 'F2' }, { key: 'Enter' }, { key: ' ' }],
       },
     },
     fields: inlineActivation === 'hover' ? hoverFieldConfigurations : fieldConfigurations,
+    hooks: {
+      beforeClose: ({ dirty }) => !dirty || window.confirm('Discard unsaved changes?'),
+    },
     language,
     operations: {
       async create(values, context) {
@@ -659,6 +698,19 @@ failNextButton.addEventListener('click', () => {
   shouldFailNextOperation = true;
   failNextButton.textContent = 'Next request will fail';
   failNextButton.dataset.armed = 'true';
+});
+
+createPresetButton.addEventListener('click', () => {
+  void hybridEmployeeEditor.openCreateDialog({
+    active: true,
+    age: 30,
+    country: 'JP',
+    name: 'New employee',
+    officeId: 10,
+    role: 'developer',
+    salary: 65000,
+    startDate: new Date().toISOString().slice(0, 10),
+  });
 });
 
 localeSelect.addEventListener('change', () => {

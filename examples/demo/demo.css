@@ -25,6 +25,20 @@
   background: var(--demo-background);
 }
 
+.demo-editor-theme {
+  --alteditor-lite-surface-color: var(--demo-card);
+  --alteditor-lite-text-color: var(--demo-text);
+  --alteditor-lite-border-color: var(--demo-border);
+  --alteditor-lite-control-background-color: var(--demo-card-subtle);
+  --alteditor-lite-control-text-color: var(--demo-text);
+  --alteditor-lite-control-border-color: var(--demo-border);
+  --alteditor-lite-primary-color: var(--demo-accent-strong);
+  --alteditor-lite-primary-text-color: #fff;
+  --alteditor-lite-danger-color: #b42318;
+  --alteditor-lite-danger-text-color: #fff;
+  --alteditor-lite-focus-width: 3px;
+}
+
 * {
   box-sizing: border-box;
 }

@@ -743,13 +743,79 @@ test('applies a common value through desktop multi-row editing', async ({ page }
     .fill('Shared team member');
   await dialog.getByRole('button', { name: 'Submit' }).click();
 
-  await expect(dialog).toBeHidden();
+  await expect(dialog).toBeVisible();
   await expect(employeeDirectory.locator('#employee-1')).toContainText(
     'Shared team member',
   );
   await expect(employeeDirectory.locator('#employee-5')).toContainText(
     'Shared team member',
   );
+  await dialog.getByRole('button', { name: 'Cancel' }).click();
+  await expect(dialog).toBeHidden();
+});
+
+test('demonstrates initial values, close decisions, and retryable field errors', async ({
+  page,
+}) => {
+  let closePrompts = 0;
+  page.on('dialog', async (prompt) => {
+    closePrompts += 1;
+    await prompt.dismiss();
+  });
+  await page.goto('http://127.0.0.1:4173/examples/demo/');
+  await page.getByRole('button', { name: 'Create with preset values' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Create row' });
+  const name = dialog.getByRole('textbox', { exact: true, name: 'Name' });
+  const email = dialog.getByRole('textbox', { exact: true, name: 'Email' });
+  await expect(dialog).toHaveClass(/demo-editor-theme/);
+  await expect(dialog.getByRole('group', { name: 'New employee details' })).toBeVisible();
+  await expect(name).toHaveValue('New employee');
+  await expect(dialog.getByRole('spinbutton', { name: 'Age' })).toHaveValue('30');
+
+  await name.fill('Created employee');
+  await dialog.getByRole('button', { name: 'Cancel' }).click();
+  await expect(dialog).toBeVisible();
+  expect(closePrompts).toBe(1);
+
+  await email.fill('user@invalid.example');
+  await email.press('Tab');
+  await expect(email).toHaveAttribute('aria-invalid', 'true');
+  await expect(dialog).toContainText('This email domain is not accepted.');
+
+  await email.fill('reserved@example.test');
+  await dialog.getByRole('button', { name: 'Submit' }).click();
+  await expect(dialog).toContainText('This email is already registered.');
+  await expect(dialog.getByRole('button', { name: 'Submit' })).toBeEnabled();
+  await expect(page.locator('#employee-1000')).toHaveCount(0);
+
+  await email.fill('created.employee@example.test');
+  await dialog.getByRole('button', { name: 'Submit' }).click();
+  await expect(page.locator('#employees #employee-1000')).toContainText(
+    'Created employee',
+  );
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole('button', { name: 'Cancel' }).click();
+  await expect(dialog).toBeHidden();
+  expect(closePrompts).toBe(1);
+
+  const employeeDirectory = page.getByRole('region', {
+    exact: true,
+    name: 'Employee directory',
+  });
+  await employeeDirectory.locator('#employee-1000').click();
+  await employeeDirectory.getByRole('button', { exact: true, name: 'Remove' }).click();
+  const confirmation = page.getByRole('dialog', { name: 'Remove rows' });
+  await expect(
+    confirmation.locator('.alteditor-lite-remove-confirmation--custom'),
+  ).toContainText('Created employee — created.employee@example.test');
+  const scan = await new AxeBuilder({ page }).include('dialog[open]').analyze();
+  expect(
+    scan.violations.filter(
+      (violation) => violation.impact === 'serious' || violation.impact === 'critical',
+    ),
+  ).toEqual([]);
+  await confirmation.getByRole('button', { name: 'Cancel' }).click();
+  await expect(confirmation).toBeHidden();
 });
 
 test('has no serious or critical axe violations in dark Edit and Remove dialogs', async ({

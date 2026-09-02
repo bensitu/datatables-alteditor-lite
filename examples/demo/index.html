@@ -165,6 +165,33 @@
         </div>
       </template>
 
+      <template id="employee-create-template">
+        <div class="demo-employee-form">
+          <fieldset>
+            <legend>New employee details</legend>
+            <div class="demo-employee-form__grid">
+              <div data-alteditor-lite-field="name"></div>
+              <div data-alteditor-lite-field="email"></div>
+              <div data-alteditor-lite-field="age"></div>
+              <div data-alteditor-lite-field="startDate"></div>
+              <div data-alteditor-lite-field="country"></div>
+              <div data-alteditor-lite-field="prefecture"></div>
+              <div data-alteditor-lite-field="employmentType"></div>
+              <div data-alteditor-lite-field="contractEnd"></div>
+              <div data-alteditor-lite-field="role"></div>
+              <div data-alteditor-lite-field="officeId"></div>
+              <div data-alteditor-lite-field="salary"></div>
+              <div data-alteditor-lite-field="status"></div>
+              <div data-alteditor-lite-field="active"></div>
+              <div
+                class="demo-employee-form__wide"
+                data-alteditor-lite-field="notes"
+              ></div>
+            </div>
+          </fieldset>
+        </div>
+      </template>
+
       <div id="workbench" class="demo-workspace">
         <section class="demo-table-panel" aria-labelledby="employees-title">
           <div class="demo-section-heading">
@@ -175,7 +202,7 @@
             <p class="demo-section-heading__hint">
               Double-click Salary or Status for a quick update, or select one or more rows
               and use Edit for grouped fields, common values, dependencies, and date
-              validation.
+              validation. Saved forms stay open with a new clean baseline.
             </p>
           </div>
           <div class="demo-table-scroll">
@@ -226,10 +253,19 @@
             </select>
           </label>
           <div class="demo-control-actions">
+            <button id="create-preset" class="demo-primary-link" type="button">
+              Create with preset values
+            </button>
             <button id="fail-next" class="demo-danger-button" type="button">
               Fail the next persistence request
             </button>
           </div>
+
+          <p>
+            Change a value and cancel to try the discard confirmation. Email validation
+            runs after leaving the field; <code>reserved@example.test</code> demonstrates
+            a retryable service field error on submission.
+          </p>
 
           <p id="demo-runtime-error" class="demo-runtime-error" role="alert" hidden></p>
 
@@ -259,8 +295,8 @@
             </div>
             <p class="demo-section-heading__hint">
               Hover or tap an eligible cell for its pencil, focus with KeyTable and press
-              F2, press Escape to discard an active cell edit, or drag a heading before
-              editing the reordered column.
+              F2, Enter, or Space, press Escape to discard an active cell edit, or drag a
+              heading before editing the reordered column.
             </p>
           </div>
           <div class="demo-table-scroll">
@@ -301,7 +337,8 @@
             <li>
               <span aria-hidden="true">02</span>
               <p class="demo-inline-step-copy">
-                <strong>Edit</strong> Use the pencil or press <kbd>F2</kbd>.
+                <strong>Edit</strong> Use the pencil, <kbd>F2</kbd>, <kbd>Enter</kbd>, or
+                <kbd>Space</kbd>.
               </p>
             </li>
             <li>
