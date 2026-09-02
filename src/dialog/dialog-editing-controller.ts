@@ -220,7 +220,7 @@ export class DialogEditingController<
       this.openCoordinator.assertCurrent(openAbortController);
       await this.openForm(
         'create',
-        initialValues,
+        initialValues === undefined ? undefined : createReadonlyRowView(initialValues),
         (form) => ({ action: 'create', form }),
         {
           committed: false,

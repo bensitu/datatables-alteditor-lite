@@ -8,6 +8,7 @@ interface FieldValidationState<TFormValues extends object> {
   readonly controller: ManagedFieldController<TFormValues>;
   readonly validate: (signal: AbortSignal) => Promise<FieldValidationResult>;
   readonly listener: EventListener;
+  readonly focusRoot: HTMLElement | Document;
   request: AbortController | undefined;
   eagerError: boolean;
 }
@@ -30,21 +31,29 @@ export class FieldValidationController<TFormValues extends object> {
     validate: (signal: AbortSignal) => Promise<FieldValidationResult>,
     isEligible: () => boolean = () => true,
   ): void {
+    const contains = (target: EventTarget | null): boolean => {
+      const node = target instanceof Node ? target : null;
+      return (
+        controller.containsFocusTarget?.(node) ??
+        (node !== null && controller.element.contains(node))
+      );
+    };
+    const focusRoot =
+      controller.containsFocusTarget === undefined
+        ? controller.element
+        : controller.element.ownerDocument;
     const listener: EventListener = (event) => {
       if (
         !(event instanceof FocusEvent) ||
         this.form.inert ||
         this.suspensionCount > 0 ||
         controller.isDisabled() ||
+        !contains(event.target) ||
         !isEligible()
       ) {
         return;
       }
-      const target = event.relatedTarget instanceof Node ? event.relatedTarget : null;
-      if (
-        controller.containsFocusTarget?.(target) ??
-        (target !== null && controller.element.contains(target))
-      ) {
+      if (contains(event.relatedTarget)) {
         return;
       }
       void this.validate(controller.name, 'eager').catch(() => undefined);
@@ -52,12 +61,13 @@ export class FieldValidationController<TFormValues extends object> {
     this.fields.set(controller.name, {
       controller,
       eagerError: false,
+      focusRoot,
       listener,
       request: undefined,
       validate,
     });
     if (trigger === 'blur') {
-      controller.element.addEventListener('focusout', listener);
+      focusRoot.addEventListener('focusout', listener, true);
     }
   }
 
@@ -97,7 +107,7 @@ export class FieldValidationController<TFormValues extends object> {
     const field = this.fields.get(name);
     if (field !== undefined) {
       this.invalidate(name);
-      field.controller.element.removeEventListener('focusout', field.listener);
+      field.focusRoot.removeEventListener('focusout', field.listener, true);
       this.fields.delete(name);
     }
   }

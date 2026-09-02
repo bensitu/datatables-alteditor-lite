@@ -336,6 +336,9 @@ export class EditorFormController<
   /** Captures the current settled field values as the clean dialog state. */
   public async rebaseDirtyState(): Promise<void> {
     this.assertActive();
+    // A failed read must not revive the snapshot from before a successful save.
+    this.dirtyBaseline = undefined;
+    this.possiblyDirty = false;
     await this.waitForCurrentFieldWork();
     const revision = this.mutationRevision;
     const state = await collectFormState(

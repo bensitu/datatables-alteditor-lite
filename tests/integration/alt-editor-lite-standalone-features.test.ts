@@ -45,6 +45,194 @@ describe('AltEditorLite Standalone editor features', () => {
     document.body.replaceChildren();
   });
 
+  it.each(['create', 'edit'] as const)(
+    'keeps committed %s values clean when a custom value read fails',
+    async (operation) => {
+      let record = { id: 'saved', name: 'Alpha', custom: 'Initial' };
+      let shouldFailRead = false;
+      const custom = defineCustomField<string>({
+        createController: () => {
+          const control = document.createElement('input');
+          return {
+            control,
+            destroy: () => {
+              control.remove();
+            },
+            focus: () => {
+              control.focus();
+            },
+            getValue: () => {
+              if (shouldFailRead) {
+                shouldFailRead = false;
+                return Promise.reject(new Error('Value read failed.'));
+              }
+              return control.value;
+            },
+            setValue: (value) => {
+              control.value = value;
+            },
+            setDisabled: (value) => {
+              control.disabled = value;
+            },
+            setReadOnly: (value) => {
+              control.readOnly = value;
+            },
+            setRequired: (value) => {
+              control.required = value;
+            },
+          };
+        },
+      });
+      const apply = (next: typeof record): string => {
+        record = next;
+        shouldFailRead = true;
+        return record.id;
+      };
+      const onError = vi.fn();
+      const beforeClose = vi.fn(() => false);
+      const host = new StandaloneHost<typeof record, string>({
+        read: () => record,
+        applyCreate: apply,
+        applyUpdate: (_target, next) => apply(next),
+      });
+      const editor = new AltEditorLite<typeof record, Omit<typeof record, 'id'>, string>(
+        host,
+        {
+          editing: { dialog: { closeOnSuccess: false } },
+          fields: [
+            { label: 'Name', name: 'name', type: 'text' },
+            custom.field<Omit<typeof record, 'id'>>({ label: 'Custom', name: 'custom' }),
+          ],
+          hooks: { beforeClose, onError },
+          operations: {
+            create: (values) => ({ ...record, ...values }),
+            update: (values) => ({ ...record, ...values }),
+          },
+        },
+      );
+      try {
+        if (operation === 'create') {
+          await editor.openCreateDialog(record);
+        } else {
+          await editor.openEditDialog(record.id);
+        }
+        editor.getField('name')?.setValue('Saved');
+        submitForm();
+        await vi.waitFor(() => {
+          expect(onError).toHaveBeenCalled();
+        });
+        expect(record.name).toBe('Saved');
+        expect(onError).toHaveBeenCalledWith(
+          expect.any(Error),
+          expect.objectContaining({ committed: true }),
+        );
+        await editor.closeDialog();
+        expect(beforeClose).toHaveBeenLastCalledWith(
+          expect.objectContaining({ dirty: false }),
+        );
+        editor.getField('name')?.setValue('Alpha');
+        await editor.closeDialog();
+        expect(beforeClose).toHaveBeenLastCalledWith(
+          expect.objectContaining({ dirty: true }),
+        );
+      } finally {
+        editor.destroy();
+      }
+    },
+  );
+
+  it('does not freeze caller-owned structured initial values during dependency resolution', async () => {
+    const initial = { custom: { label: 'Initial' } };
+    const custom = defineCustomField<{ label: string }>({
+      createController: () => {
+        const control = document.createElement('input');
+        let value = { label: '' };
+        return {
+          control,
+          destroy: () => {
+            control.remove();
+          },
+          focus: () => {
+            control.focus();
+          },
+          getValue: () => value,
+          setValue: (next) => {
+            value = next;
+          },
+          setDisabled: vi.fn(),
+          setReadOnly: vi.fn(),
+          setRequired: vi.fn(),
+        };
+      },
+    });
+    const host = new StandaloneHost<typeof initial, string>({
+      read: () => initial,
+      applyCreate: () => 'created',
+    });
+    const editor = new AltEditorLite(host, {
+      fields: [custom.field({ name: 'custom', label: 'Custom' })],
+      dependencies: { custom: () => ({}) },
+      operations: { create: () => initial },
+    });
+    try {
+      await editor.openCreateDialog(initial);
+      expect(Object.isFrozen(initial.custom)).toBe(false);
+      initial.custom.label = 'Changed outside';
+      await expect(editor.getField('custom')?.getValue()).resolves.toEqual({
+        label: 'Initial',
+      });
+    } finally {
+      editor.destroy();
+    }
+  });
+
+  it('invalidates blur validation when replacement options clear the value', async () => {
+    const pending: PendingValidation[] = [];
+    const host = new StandaloneHost<{ choice: string }, string>({
+      read: () => ({ choice: 'a' }),
+    });
+    const editor = new AltEditorLite(host, {
+      fields: [
+        {
+          name: 'choice',
+          label: 'Choice',
+          type: 'select',
+          options: [{ label: 'A', value: 'a' }],
+          validateOn: 'blur',
+          validate: (_value, { signal }) =>
+            new Promise<FieldValidationResult>((resolve) => {
+              pending.push({ resolve, signal });
+            }),
+        },
+      ],
+    });
+    try {
+      await editor.openEditDialog('record');
+      const field = editor.getField('choice');
+      if (field === null || !isChoiceFieldController(field)) {
+        throw new Error('Expected a choice field.');
+      }
+      field.element
+        .querySelector('select')
+        ?.dispatchEvent(
+          new FocusEvent('focusout', { bubbles: true, relatedTarget: document.body }),
+        );
+      await vi.waitFor(() => {
+        expect(pending).toHaveLength(1);
+      });
+      field.setOptions([{ label: 'B', value: 'b' }]);
+      expect(pending[0]?.signal.aborted).toBe(true);
+      pending[0]?.resolve({ valid: false, message: 'Obsolete value.' });
+      await Promise.resolve();
+      await expect(field.getValue()).resolves.toBeUndefined();
+      expect(
+        field.element.querySelector('.alteditor-lite-field__error')?.textContent,
+      ).toBe('');
+    } finally {
+      editor.destroy();
+    }
+  });
+
   it('reuses validation, dependencies, choice fields, templates, localization, hooks, and events', async () => {
     const template = document.createElement('template');
     template.id = 'standalone-feature-layout';
@@ -433,13 +621,17 @@ describe('AltEditorLite Standalone editor features', () => {
     await Promise.resolve();
     expect(validate).not.toHaveBeenCalled();
 
-    customInput.dispatchEvent(
+    portal.dispatchEvent(
       new FocusEvent('focusout', { bubbles: true, relatedTarget: document.body }),
     );
     await vi.waitFor(() => {
       expect(validate).toHaveBeenCalledOnce();
     });
     editor.destroy();
+    portal.dispatchEvent(
+      new FocusEvent('focusout', { bubbles: true, relatedTarget: document.body }),
+    );
+    expect(validate).toHaveBeenCalledOnce();
   });
 
   it('resolves a form template for each dialog operation', async () => {
