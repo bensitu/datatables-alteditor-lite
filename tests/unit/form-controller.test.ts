@@ -169,6 +169,42 @@ function createForm(
 }
 
 describe('FormController', () => {
+  it('compares multiple-file selections by their collected entries', async () => {
+    const form = buildEditorForm<{ name: string; attachments: readonly File[] }>(
+      [
+        { defaultValue: 'Alpha', label: 'Name', name: 'name', type: 'text' },
+        { label: 'Attachments', multiple: true, name: 'attachments', type: 'file' },
+      ],
+      'file-dirty-state',
+      ENGLISH_LANGUAGE,
+    );
+    try {
+      await form.rebaseDirtyState();
+      form.getField('name')?.setValue('Beta');
+      await expect(form.isDirty()).resolves.toBe(true);
+      form.getField('name')?.setValue('Alpha');
+      await expect(form.isDirty()).resolves.toBe(false);
+
+      const input = form.getField('attachments')?.element.querySelector('input');
+      if (input === null || input === undefined) {
+        throw new Error('Expected an attachment input.');
+      }
+      const originalFile = new File(['original'], 'original.txt');
+      const replaceFiles = (files: readonly File[]): void => {
+        Object.defineProperty(input, 'files', { configurable: true, value: files });
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      };
+      replaceFiles([originalFile]);
+      await form.rebaseDirtyState();
+      replaceFiles([new File(['changed'], 'changed.txt')]);
+      await expect(form.isDirty()).resolves.toBe(true);
+      replaceFiles([originalFile]);
+      await expect(form.isDirty()).resolves.toBe(false);
+    } finally {
+      form.destroy();
+    }
+  });
+
   it('collects normalized nested values and omits disabled fields', async () => {
     const form = createForm();
     form.getField('profile.name')?.setValue('Ada');

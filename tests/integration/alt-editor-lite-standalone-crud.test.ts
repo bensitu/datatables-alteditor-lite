@@ -117,12 +117,17 @@ describe('AltEditorLite Standalone CRUD', () => {
 
   it('treats a retained Create result as the current clean form', async () => {
     const dirtyStates: boolean[] = [];
+    const onError = vi.fn();
     const fixture = createStandaloneTestFixture({
       editing: { dialog: { closeOnSuccess: false, enabled: true } },
       hooks: {
+        afterSuccess: () => {
+          throw new Error('Success callback failed.');
+        },
         beforeClose: ({ dirty }) => {
           dirtyStates.push(dirty);
         },
+        onError,
       },
       operations: {
         create: () => ({ id: 'record-created', name: 'Canonical name' }),
@@ -141,6 +146,10 @@ describe('AltEditorLite Standalone CRUD', () => {
 
     await fixture.editor.closeDialog();
     expect(dirtyStates).toEqual([false]);
+    expect(onError).toHaveBeenCalledWith(
+      expect.any(AltEditorLiteError),
+      expect.objectContaining({ committed: true, phase: 'afterSuccess' }),
+    );
   });
 
   it('waits for asynchronous removal before applying consumer state', async () => {

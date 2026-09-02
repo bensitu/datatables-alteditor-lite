@@ -4,10 +4,11 @@ import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js'
 import type { RemoveConfirmationRenderer } from '../core/editing-options.js';
 
 /**
- * Creates plain-text Remove confirmation content with an explicit target count.
+ * Creates default or consumer-provided Remove confirmation content.
  *
- * @param targetCount - Number of rows captured by the Remove snapshot.
+ * @param rows - Current readonly Remove snapshots.
  * @param language - Resolved language used for the warning.
+ * @param renderer - Optional text or DOM content renderer.
  * @returns Owned confirmation content element.
  */
 export function createRemoveConfirmation<TRow extends object>(
