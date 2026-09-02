@@ -35,6 +35,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Prevented stale asynchronous blur validation from replacing newer field
   feedback or continuing into submission.
+- Applied the same cancellable field validation to common overrides in
+  multi-record dialogs while preserving operation errors during input changes.
+- Compared multiple-file selections by their values when checking dirty state.
 - Preserved custom-field portal interaction when determining whether focus left
   a field.
 - Used freshly read Remove rows for custom confirmation content after
