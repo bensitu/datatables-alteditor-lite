@@ -314,6 +314,10 @@ describe('AltEditorLite Standalone CRUD', () => {
     );
     expect(closeEvents).not.toHaveBeenCalled();
 
+    expect(
+      document.querySelector('.alteditor-lite-dialog')?.contains(document.activeElement),
+    ).toBe(true);
+
     replaceName('Alpha');
     await expect(fixture.editor.closeDialog()).resolves.toBeUndefined();
     expect(fixture.editor.getState().status).toBe('ready');
@@ -474,7 +478,8 @@ describe('AltEditorLite Standalone CRUD', () => {
     const onError = vi.fn();
     const fixture = createStandaloneTestFixture({
       hooks: {
-        beforeClose: () => {
+        beforeClose: async () => {
+          await Promise.resolve();
           throw failure;
         },
         onError,

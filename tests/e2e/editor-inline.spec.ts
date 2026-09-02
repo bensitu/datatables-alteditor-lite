@@ -758,6 +758,53 @@ test('supports SearchSelect inline editing while Scroller reuses rows', async ({
   ).toBe('beijing');
 });
 
+test('opens one inline editor for each KeyTable activation shortcut', async ({
+  page,
+}) => {
+  const errors: Error[] = [];
+  page.on('pageerror', (error) => {
+    errors.push(error);
+  });
+  await page.setContent(
+    '<!doctype html><html lang="en"><head><title>Keyboard editing</title></head><body><table id="keyboard-table"><thead><tr><th>Name</th></tr></thead></table></body></html>',
+  );
+  await page.addStyleTag({ path: stylesheetPath });
+  await page.addScriptTag({ path: dataTablesScriptPath });
+  await page.addScriptTag({ path: keyTableScriptPath });
+  await page.addScriptTag({ path: browserBundlePath });
+  await page.addScriptTag({
+    content: `
+    globalThis.tableApi = new DataTable('#keyboard-table', {
+      columns: [{ data: 'name', name: 'name' }],
+      data: [{ id: 'row-a', name: 'Alpha' }],
+      keys: true,
+      rowId: 'id'
+    });
+    globalThis.editor = new AltEditorLite.Editor(globalThis.tableApi, {
+      fields: [{ inlineEdit: true, label: 'Name', name: 'name', type: 'text' }],
+      editing: {
+        dialog: { enabled: false },
+        inline: { enabled: true, keyboardActivation: [{ key: 'F2' }, { key: 'Enter' }, { key: ' ' }] }
+      }
+    });
+  `,
+  });
+  const cell = page.locator('#row-a td');
+  for (const key of ['F2', 'Enter', 'Space']) {
+    await cell.click();
+    await page.keyboard.press(key);
+    await expect(page.locator('.alteditor-lite-inline')).toHaveCount(1);
+    const input = page.getByRole('textbox', { name: 'Name', exact: true });
+    await expect(input).toBeFocused();
+    await expect(input).toHaveValue('Alpha');
+    await input.fill('Discarded');
+    await page.keyboard.press('Escape');
+    await expect(page.locator('.alteditor-lite-inline')).toHaveCount(0);
+    await expect(cell).toHaveText('Alpha');
+  }
+  expect(errors).toEqual([]);
+});
+
 test('activates a KeyTable-focused cell and remaps after ColReorder', async ({
   browserName,
   page,

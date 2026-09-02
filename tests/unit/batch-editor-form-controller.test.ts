@@ -61,6 +61,51 @@ function batchField(name: keyof BatchFormValues): HTMLElement {
 }
 
 describe('BatchEditorFormController', () => {
+  it.each([false, true])(
+    'tracks only submitted changes from initial dependencies (value patch: %s)',
+    async (hasValue) => {
+      activeForm = new BatchEditorFormController<BatchFormValues>(
+        [
+          { label: 'Office', name: 'office', type: 'text' },
+          {
+            label: 'Department',
+            name: 'department',
+            type: 'select',
+            options: [
+              { label: 'Sales', value: 'Sales' },
+              { label: 'Engineering', value: 'Engineering' },
+            ],
+          },
+        ],
+        [
+          { office: 'Tokyo', department: 'Sales' },
+          { office: 'Tokyo', department: 'Sales' },
+        ],
+        'batch-dependencies',
+        ENGLISH_LANGUAGE,
+        undefined,
+        undefined,
+        {
+          office: () => ({
+            department: hasValue
+              ? { value: 'Engineering' }
+              : {
+                  visible: false,
+                  required: true,
+                  readOnly: true,
+                  options: [{ label: 'Sales team', value: 'Sales' }],
+                },
+          }),
+        },
+      );
+      await activeForm.initializeDependencies();
+      await expect(activeForm.collectChanges()).resolves.toMatchObject({
+        changes: hasValue ? { department: 'Engineering' } : {},
+      });
+      await expect(activeForm.isDirty()).resolves.toBe(hasValue);
+    },
+  );
+
   it('validates common overrides on blur and preserves submission ownership', async () => {
     const requests: {
       signal: AbortSignal;
