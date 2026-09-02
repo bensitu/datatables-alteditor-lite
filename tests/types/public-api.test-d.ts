@@ -24,6 +24,7 @@ import {
   type ChoiceFieldController,
   type DialogEditingOptions,
   type DialogTemplateSource,
+  type DialogTemplateResolver,
   type DialogAction,
   type DeepPartial,
   type EditingOptions,
@@ -263,6 +264,10 @@ expectNotAssignable<AltEditorLiteOptions<Row, FormValues>>({
 });
 expectAssignable<DialogTemplateSource>('#employee-editor');
 expectAssignable<DialogTemplateSource>(document.createElement('template'));
+expectAssignable<DialogTemplateResolver>(({ operation }) => {
+  expectType<'create' | 'edit' | 'batchEdit'>(operation);
+  return operation === 'create' ? '#create-template' : undefined;
+});
 expectAssignable<FieldConfig<FormValues>>({
   label: 'Email',
   name: 'contact.email',

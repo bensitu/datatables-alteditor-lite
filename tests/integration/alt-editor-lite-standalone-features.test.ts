@@ -438,6 +438,92 @@ describe('AltEditorLite Standalone editor features', () => {
     editor.destroy();
   });
 
+  it('resolves a form template for each dialog operation', async () => {
+    const operations: ('create' | 'edit' | 'batchEdit')[] = [];
+    const createTemplate = document.createElement('template');
+    const editTemplate = document.createElement('template');
+    const batchTemplate = document.createElement('template');
+    createTemplate.innerHTML =
+      '<section class="create-layout"><div data-alteditor-lite-field="name"></div></section>';
+    editTemplate.innerHTML =
+      '<section class="edit-layout"><div data-alteditor-lite-field="name"></div></section>';
+    batchTemplate.innerHTML =
+      '<section class="batch-layout"><div data-alteditor-lite-field="name"></div></section>';
+    document.body.append(createTemplate, editTemplate, batchTemplate);
+    const records = new Map<string, FeatureRecord>([
+      [
+        'record-a',
+        {
+          id: 'record-a',
+          name: 'Alpha',
+          reviewer: 'reviewer-a',
+          role: 'reader',
+        },
+      ],
+      [
+        'record-b',
+        {
+          id: 'record-b',
+          name: 'Beta',
+          reviewer: 'reviewer-b',
+          role: 'editor',
+        },
+      ],
+    ]);
+    const host = new StandaloneHost<FeatureRecord, string>({
+      applyUpdates: () => undefined,
+      read: (target) => {
+        const record = records.get(target);
+        if (record === undefined) {
+          throw new Error('The requested template record is unavailable.');
+        }
+        return record;
+      },
+    });
+    const editor = new AltEditorLite<FeatureRecord, FeatureValues, string>(host, {
+      editing: {
+        dialog: {
+          template: ({ operation }) => {
+            operations.push(operation);
+            return operation === 'create'
+              ? createTemplate
+              : operation === 'edit'
+                ? editTemplate
+                : batchTemplate;
+          },
+        },
+      },
+      fields: [{ label: 'Name', name: 'name', type: 'text' }],
+      operations: {
+        create: (values) => ({
+          id: 'created',
+          name: values.name ?? '',
+          reviewer: 'reviewer-a',
+          role: 'reader',
+        }),
+      },
+    });
+
+    await editor.openCreateDialog();
+    expect(document.querySelector('.create-layout')).not.toBeNull();
+    await editor.closeDialog();
+    await editor.openEditDialog('record-a');
+    expect(document.querySelector('.edit-layout')).not.toBeNull();
+    await editor.closeDialog();
+    await editor.openBatchEditDialog(['record-a', 'record-b']);
+    expect(document.querySelector('.batch-layout')).not.toBeNull();
+    await editor.closeDialog();
+
+    expect(operations).toEqual(['create', 'edit', 'batchEdit']);
+    expect(createTemplate.content.querySelector('.alteditor-lite-field')).toBeNull();
+    expect(editTemplate.content.querySelector('.alteditor-lite-field')).toBeNull();
+    expect(batchTemplate.content.querySelector('.alteditor-lite-field')).toBeNull();
+    editor.destroy();
+    createTemplate.remove();
+    editTemplate.remove();
+    batchTemplate.remove();
+  });
+
   it('completes destruction when consumer-owned notification and host cleanup fail', () => {
     const ownershipKey = {};
     const eventFailure = new Error('Notification failed.');

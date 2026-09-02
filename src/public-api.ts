@@ -54,6 +54,9 @@ export type {
 export type {
   DialogEditingOptions,
   DialogTemplateSource,
+  DialogTemplateContext,
+  DialogTemplateOption,
+  DialogTemplateResolver,
   EditingOptions,
   InlineActivation,
   InlineEditingOptions,

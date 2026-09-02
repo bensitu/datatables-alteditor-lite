@@ -14,6 +14,19 @@ export type InlineActivation = 'doubleClick' | 'hover';
  */
 export type DialogTemplateSource = string | HTMLElement;
 
+/** Dialog form operation supplied to a template resolver. */
+export interface DialogTemplateContext {
+  readonly operation: 'create' | 'edit' | 'batchEdit';
+}
+
+/** Selects a form template for one dialog opening. */
+export type DialogTemplateResolver = (
+  context: Readonly<DialogTemplateContext>,
+) => DialogTemplateSource | undefined;
+
+/** Static or operation-specific dialog template configuration. */
+export type DialogTemplateOption = DialogTemplateSource | DialogTemplateResolver;
+
 /** Stable values supplied to a custom Remove confirmation renderer. */
 export interface RemoveConfirmationContext<TRow extends object> {
   readonly rows: readonly Readonly<TRow>[];
@@ -34,7 +47,7 @@ export interface DialogEditingOptions<TRow extends object = object> {
   /** Whether Dialog Edit is available. Defaults to true. */
   readonly enabled?: boolean;
   /** Optional consumer-owned layout source for Create and Edit forms. */
-  readonly template?: DialogTemplateSource;
+  readonly template?: DialogTemplateOption;
   /** Whether successful Create and Edit operations close the dialog. */
   readonly closeOnSuccess?: boolean;
   /** Optional body renderer for Remove confirmations. */

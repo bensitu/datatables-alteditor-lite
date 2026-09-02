@@ -3,7 +3,7 @@ import { resolveInlineKeyboardShortcut } from '../inline/inline-keyboard-shortcu
 import { EditorConfigurationError } from './alt-editor-lite-error.js';
 
 import type {
-  DialogTemplateSource,
+  DialogTemplateOption,
   EditingOptions,
   InlineActivation,
 } from './editing-options.js';
@@ -13,7 +13,7 @@ import type { FieldPath } from '../object-path/field-path.js';
 /** Dialog behavior with every default applied. */
 export interface ResolvedDialogEditingOptions {
   readonly enabled: boolean;
-  readonly template?: DialogTemplateSource;
+  readonly template?: DialogTemplateOption;
   readonly closeOnSuccess: boolean;
 }
 

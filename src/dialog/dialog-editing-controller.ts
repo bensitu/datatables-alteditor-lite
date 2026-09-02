@@ -53,6 +53,7 @@ import type {
   InteractionToken,
 } from '../core/editing/interaction-coordinator.js';
 import type { OperationOwner } from '../core/editing/operation-owner.js';
+import type { DialogTemplateSource } from '../core/editing-options.js';
 import type { EditorCapabilities } from '../core/editor-capabilities.js';
 import type { EditorErrorReporter } from '../core/editor-error-reporter.js';
 import type { DialogAction, EditorOperationTarget } from '../core/editor-operation.js';
@@ -709,7 +710,7 @@ export class DialogEditingController<
             values,
             uniquenessTarget === undefined ? undefined : { target: uniquenessTarget },
           ),
-        this.arguments_.editing.template,
+        this.resolveDialogTemplate(action),
         this.arguments_.options.dependencies,
         (_sourcePath, error) => {
           this.arguments_.errorReporter.report(
@@ -811,7 +812,7 @@ export class DialogEditingController<
         originals,
         this.arguments_.instanceId,
         this.arguments_.language,
-        this.arguments_.editing.template,
+        this.resolveDialogTemplate('batchEdit'),
         this.arguments_.options.validateForm,
         this.arguments_.options.dependencies,
         (_sourcePath, error) => {
@@ -958,6 +959,15 @@ export class DialogEditingController<
         );
       }
     }
+  }
+
+  private resolveDialogTemplate(
+    operation: 'create' | 'edit' | 'batchEdit',
+  ): DialogTemplateSource | undefined {
+    const template = this.arguments_.editing.template;
+    return typeof template === 'function'
+      ? template(Object.freeze({ operation }))
+      : template;
   }
 
   private beginSubmission(): void {
