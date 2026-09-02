@@ -1,3 +1,4 @@
+import type { AltEditorLiteLanguage } from './alt-editor-lite-language.js';
 import type { InlineKeyboardActivation } from '../inline/inline-keyboard-shortcut.js';
 import type { FieldPath } from '../object-path/field-path.js';
 
@@ -13,17 +14,31 @@ export type InlineActivation = 'doubleClick' | 'hover';
  */
 export type DialogTemplateSource = string | HTMLElement;
 
+/** Stable values supplied to a custom Remove confirmation renderer. */
+export interface RemoveConfirmationContext<TRow extends object> {
+  readonly rows: readonly Readonly<TRow>[];
+  readonly count: number;
+  readonly language: Readonly<AltEditorLiteLanguage>;
+}
+
+/** Content accepted from a custom Remove confirmation renderer. */
+export type RemoveConfirmationContent = string | HTMLElement | DocumentFragment;
+
+/** Creates body content for one current Remove snapshot. */
+export type RemoveConfirmationRenderer<TRow extends object> = (
+  context: Readonly<RemoveConfirmationContext<TRow>>,
+) => RemoveConfirmationContent;
+
 /** Configuration for the dialog Edit presentation. */
-export interface DialogEditingOptions<
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- The row type supports typed remove rendering.
-  TRow extends object = object,
-> {
+export interface DialogEditingOptions<TRow extends object = object> {
   /** Whether Dialog Edit is available. Defaults to true. */
   readonly enabled?: boolean;
   /** Optional consumer-owned layout source for Create and Edit forms. */
   readonly template?: DialogTemplateSource;
   /** Whether successful Create and Edit operations close the dialog. */
   readonly closeOnSuccess?: boolean;
+  /** Optional body renderer for Remove confirmations. */
+  readonly removeConfirmation?: RemoveConfirmationRenderer<TRow>;
 }
 
 /** Configuration for single-cell inline editing. */

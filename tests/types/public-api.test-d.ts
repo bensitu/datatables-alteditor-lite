@@ -213,6 +213,14 @@ expectAssignable<EditingOptions<Row, FormValues>>({
 });
 expectAssignable<DialogEditingOptions>({ enabled: true });
 expectAssignable<DialogEditingOptions<Row>>({ closeOnSuccess: false });
+expectAssignable<DialogEditingOptions<Row>>({
+  removeConfirmation: ({ count, language, rows }) => {
+    expectType<number>(count);
+    expectType<string>(language.locale);
+    expectType<readonly Readonly<Row>[]>(rows);
+    return String(rows.length);
+  },
+});
 expectAssignable<AltEditorLiteOptions<Row, FormValues>>({
   editing: {
     dialog: { enabled: true },

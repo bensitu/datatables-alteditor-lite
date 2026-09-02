@@ -57,6 +57,9 @@ export type {
   EditingOptions,
   InlineActivation,
   InlineEditingOptions,
+  RemoveConfirmationContent,
+  RemoveConfirmationContext,
+  RemoveConfirmationRenderer,
 } from './core/editing-options.js';
 export type {
   EditorCreateSubmitEventDetail,

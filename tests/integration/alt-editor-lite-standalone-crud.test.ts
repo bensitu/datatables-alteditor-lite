@@ -19,6 +19,7 @@ import type {
   BeforeCloseContext,
   OperationContext,
 } from '../../src/core/alt-editor-lite-options.js';
+import type { RemoveConfirmationContext } from '../../src/core/editing-options.js';
 
 interface Deferred {
   readonly promise: Promise<void>;
@@ -166,6 +167,63 @@ describe('AltEditorLite Standalone CRUD', () => {
     });
     expect(fixture.records.has('record-a')).toBe(false);
     expect(remove.mock.calls[0]?.[0]).toEqual([{ id: 'record-a', name: 'Alpha' }]);
+  });
+
+  it('renders a current Remove snapshot without cloning custom DOM', async () => {
+    const customButton = document.createElement('button');
+    const handleCustomAction = vi.fn();
+    customButton.textContent = 'Review Alpha';
+    customButton.addEventListener('click', handleCustomAction);
+    let renderedContext:
+      Readonly<RemoveConfirmationContext<StandaloneRecord>> | undefined;
+    const fixture = createStandaloneTestFixture({
+      editing: {
+        dialog: {
+          enabled: true,
+          removeConfirmation: (context) => {
+            renderedContext = context;
+            return customButton;
+          },
+        },
+      },
+      hooks: {
+        beforeOpen: (context) => {
+          if (context.operation === 'remove') {
+            fixture.records.set('record-a', { id: 'record-a', name: 'Latest Alpha' });
+          }
+        },
+      },
+    });
+
+    await fixture.editor.openRemoveDialog(['record-a']);
+    expect(renderedContext?.count).toBe(1);
+    expect(renderedContext?.rows).toEqual([{ id: 'record-a', name: 'Latest Alpha' }]);
+    expect(renderedContext?.language.locale).toBe('en');
+    expect(
+      document.querySelector('.alteditor-lite-remove-confirmation--custom'),
+    ).not.toBeNull();
+    expect(customButton.isConnected).toBe(true);
+    customButton.click();
+    expect(handleCustomAction).toHaveBeenCalledOnce();
+
+    await fixture.editor.closeDialog();
+    expect(customButton.isConnected).toBe(false);
+  });
+
+  it('treats custom Remove strings as plain text', async () => {
+    const content = '<img src=x onerror=alert(1)>Remove selected records';
+    const fixture = createStandaloneTestFixture({
+      editing: {
+        dialog: { enabled: true, removeConfirmation: () => content },
+      },
+    });
+
+    await fixture.editor.openRemoveDialog(['record-a']);
+    const confirmation = document.querySelector(
+      '.alteditor-lite-remove-confirmation--custom',
+    );
+    expect(confirmation?.textContent).toBe(content);
+    expect(confirmation?.querySelector('img')).toBeNull();
   });
 
   it('reports a Remove Host application failure after persistence completes', async () => {

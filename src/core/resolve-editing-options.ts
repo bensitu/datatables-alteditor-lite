@@ -62,6 +62,14 @@ export function resolveEditingOptions<TRow extends object, TFormValues extends o
   assertOptionalObject(inline, 'editing.inline');
   assertOptionalBoolean(dialog?.enabled, 'editing.dialog.enabled');
   assertOptionalBoolean(dialog?.closeOnSuccess, 'editing.dialog.closeOnSuccess');
+  if (
+    dialog?.removeConfirmation !== undefined &&
+    typeof dialog.removeConfirmation !== 'function'
+  ) {
+    throw new EditorConfigurationError(
+      'editing.dialog.removeConfirmation must be a function.',
+    );
+  }
   assertOptionalBoolean(inline?.enabled, 'editing.inline.enabled');
 
   const configuredActivation: unknown = inline?.activation;

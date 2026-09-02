@@ -482,10 +482,33 @@ export class DialogEditingController<
       );
       this.openCoordinator.assertCurrent(openAbortController);
       const recordTargets = Object.freeze([...requestedTargets]);
-      const confirmationElement = createRemoveConfirmation(
-        requestedTargets.length,
-        this.arguments_.language,
-      );
+      let confirmationElement: HTMLDivElement;
+      try {
+        confirmationElement = createRemoveConfirmation(
+          currentOriginals,
+          this.arguments_.language,
+          this.arguments_.options.editing?.dialog?.removeConfirmation,
+        );
+      } catch (rawError: unknown) {
+        const error = normalizeOperationError(
+          rawError,
+          NEVER_ABORTED_SIGNAL,
+          this.arguments_.language,
+        );
+        if (!(error instanceof InternalOperationAbort)) {
+          this.arguments_.errorReporter.report(
+            error,
+            {
+              committed: false,
+              mode: 'dialog',
+              operation: 'remove',
+              phase: 'open',
+            },
+            true,
+          );
+        }
+        throw rawError;
+      }
       this.arguments_.stateCoordinator.transitionTo({
         action: 'remove',
         status: 'opening',
