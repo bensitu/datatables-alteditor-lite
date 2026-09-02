@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { EditorConfigurationError } from '../../src/core/alt-editor-lite-error.js';
 import { resolveLogicalCellTarget } from '../../src/datatables/commit-row-update.js';
 import { DataTablesHost } from '../../src/datatables/datatables-host.js';
 
@@ -22,6 +23,38 @@ describeEditorHostContract('DataTablesHost', () => {
 });
 
 describe('DataTablesHost', () => {
+  it.each([0, -1, NaN, Infinity, -Infinity])(
+    'rejects an invalid refresh timeout (%s)',
+    (timeout) => {
+      const { api } = createTestTable('host-invalid-timeout');
+      expect(() => new DataTablesHost(api, timeout)).toThrow(EditorConfigurationError);
+    },
+  );
+
+  it.each([undefined, 1_250])(
+    'uses the configured refresh timeout (%s)',
+    async (timeout) => {
+      const { api } = createTestTable('host-refresh-timeout');
+      const host = new DataTablesHost(api, timeout);
+      vi.spyOn(api, 'init').mockReturnValue({ ajax: '/records' });
+      vi.spyOn(api.ajax, 'reload').mockReturnValue(api);
+      vi.useFakeTimers();
+      try {
+        const refresh = host.refresh(new AbortController().signal);
+        const rejection = expect(refresh).rejects.toThrow(
+          'DataTables Ajax refresh did not complete in time.',
+        );
+        await vi.advanceTimersByTimeAsync((timeout ?? 30_000) - 1);
+        expect(vi.getTimerCount()).toBe(1);
+        await vi.advanceTimersByTimeAsync(1);
+        await rejection;
+      } finally {
+        vi.useRealTimers();
+        host.destroy();
+      }
+    },
+  );
+
   it('returns its owned DataTables API through the explicit escape hatch', () => {
     const { api } = createTestTable('host-unwrap');
     const host = new DataTablesHost(api);

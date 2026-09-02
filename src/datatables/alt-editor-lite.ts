@@ -21,18 +21,6 @@ export interface DataTablesAltEditorLiteOptions<
   readonly refreshTimeout?: number;
 }
 
-function resolveRefreshTimeout(value: unknown): number {
-  if (value === undefined) {
-    return 30_000;
-  }
-  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
-    throw new EditorConfigurationError(
-      'refreshTimeout must be a finite positive number.',
-    );
-  }
-  return value;
-}
-
 /** DataTables-specific convenience facade over the neutral editor runtime. */
 export class AltEditorLite<
   TRow extends object,
@@ -44,7 +32,7 @@ export class AltEditorLite<
     table: Api<TRow>,
     options: DataTablesAltEditorLiteOptions<TRow, TFormValues>,
   ) {
-    const host = new DataTablesHost(table, resolveRefreshTimeout(options.refreshTimeout));
+    const host = new DataTablesHost(table, options.refreshTimeout);
     try {
       super(host, options);
     } catch (error: unknown) {

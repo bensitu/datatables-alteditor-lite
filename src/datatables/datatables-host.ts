@@ -123,6 +123,11 @@ export class DataTablesHost<TRow extends object>
     private readonly table: Api<TRow>,
     private readonly refreshTimeout = 30_000,
   ) {
+    if (!Number.isFinite(refreshTimeout) || refreshTimeout <= 0) {
+      throw new EditorConfigurationError(
+        'refreshTimeout must be a finite positive number.',
+      );
+    }
     const tableElement: unknown = table.table().node();
     if (!(tableElement instanceof HTMLTableElement)) {
       throw new EditorConfigurationError(
