@@ -369,6 +369,106 @@ describe('AltEditorLite Standalone CRUD', () => {
     expect(fixture.editor.getState().status).toBe('ready');
   });
 
+  it('discards pending close decisions when the form changes', async () => {
+    const deferred = createDeferred();
+    const beforeClose = vi.fn(() => deferred.promise);
+    const onError = vi.fn();
+    const closeEvents = vi.fn();
+    const fixture = createStandaloneTestFixture({ hooks: { beforeClose, onError } });
+    fixture.eventTarget.addEventListener('alteditor-lite:close', closeEvents);
+    await fixture.editor.openEditDialog('record-a');
+    const closing = fixture.editor.closeDialog();
+    await vi.waitFor(() => {
+      expect(beforeClose).toHaveBeenCalledOnce();
+    });
+    replaceName('Unsaved');
+    await closing;
+    deferred.resolve();
+    await Promise.resolve();
+    expect(fixture.editor.getState().status).toBe('open');
+    await expect(fixture.editor.getField('name')?.getValue()).resolves.toBe('Unsaved');
+    expect(closeEvents).not.toHaveBeenCalled();
+    expect(onError).not.toHaveBeenCalled();
+    await fixture.editor.closeDialog();
+    expect(beforeClose).toHaveBeenLastCalledWith(
+      expect.objectContaining({ dirty: true }),
+    );
+    expect(closeEvents).toHaveBeenCalledOnce();
+  });
+
+  it.each([false, true])(
+    'lets submission replace a pending close decision (unsettled: %s)',
+    async (unsettled) => {
+      const decision = createDeferred();
+      const persistence = createDeferred();
+      const beforeClose = vi.fn<(context: Readonly<BeforeCloseContext>) => Promise<void>>(
+        () => decision.promise,
+      );
+      const onError = vi.fn();
+      const closeEvents = vi.fn();
+      const update = vi.fn(async (_values, original: StandaloneRecord) => {
+        await persistence.promise;
+        return original;
+      });
+      const applyUpdate = vi.fn();
+      const fixture = createStandaloneTestFixture(
+        { hooks: { beforeClose, onError }, operations: { update } },
+        { applyUpdate },
+      );
+      fixture.eventTarget.addEventListener('alteditor-lite:close', closeEvents);
+      await fixture.editor.openEditDialog('record-a');
+      replaceName('Changed');
+      const closing = fixture.editor.closeDialog();
+      await vi.waitFor(() => {
+        expect(beforeClose).toHaveBeenCalledOnce();
+      });
+      expect(beforeClose.mock.calls[0]?.[0].signal.aborted).toBe(false);
+      submitForm();
+      await closing;
+      expect(beforeClose.mock.calls[0]?.[0].signal.aborted).toBe(true);
+      await vi.waitFor(() => {
+        expect(update).toHaveBeenCalledOnce();
+      });
+      if (!unsettled) {
+        decision.resolve();
+        await Promise.resolve();
+      }
+      expect(fixture.editor.getState().status).toBe('submitting');
+      expect(closeEvents).not.toHaveBeenCalled();
+      await fixture.editor.closeDialog();
+      expect(beforeClose).toHaveBeenCalledOnce();
+      expect(fixture.editor.getState().status).toBe('ready');
+      persistence.resolve();
+      await vi.waitFor(() => {
+        expect(update.mock.settledResults[0]?.type).toBe('fulfilled');
+      });
+      expect(applyUpdate).not.toHaveBeenCalled();
+      expect(closeEvents).toHaveBeenCalledOnce();
+      expect(onError).not.toHaveBeenCalled();
+    },
+  );
+
+  it('stops awaiting an unresolved close decision when destroyed', async () => {
+    const beforeClose = vi.fn<(context: Readonly<BeforeCloseContext>) => Promise<void>>(
+      () => new Promise<void>(() => undefined),
+    );
+    const onError = vi.fn();
+    const closeEvents = vi.fn();
+    const fixture = createStandaloneTestFixture({ hooks: { beforeClose, onError } });
+    fixture.eventTarget.addEventListener('alteditor-lite:close', closeEvents);
+    await fixture.editor.openEditDialog('record-a');
+    const closing = fixture.editor.closeDialog();
+    await vi.waitFor(() => {
+      expect(beforeClose).toHaveBeenCalledOnce();
+    });
+    fixture.editor.destroy();
+    await closing;
+    expect(beforeClose.mock.calls[0]?.[0].signal.aborted).toBe(true);
+    expect(document.querySelector('.alteditor-lite-dialog')).toBeNull();
+    expect(closeEvents).not.toHaveBeenCalled();
+    expect(onError).not.toHaveBeenCalled();
+  });
+
   it('reports a rejected beforeClose decision and keeps the dialog open', async () => {
     const failure = new Error('Close decision failed.');
     const onError = vi.fn();

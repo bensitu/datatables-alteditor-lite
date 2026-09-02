@@ -74,6 +74,19 @@ export class BatchEditorFormController<TFormValues extends object> {
 
   private isDestroyed = false;
 
+  private mutationRevision = 0;
+
+  public onMutation: (() => void) | undefined;
+
+  public getMutationRevision(): number {
+    return this.mutationRevision;
+  }
+
+  private recordMutation(): void {
+    this.mutationRevision += 1;
+    this.onMutation?.();
+  }
+
   public constructor(
     private readonly fields: readonly FieldConfig<TFormValues>[],
     originals: readonly Readonly<object>[],
@@ -449,6 +462,7 @@ export class BatchEditorFormController<TFormValues extends object> {
       },
       onValueChange: () => {
         this.fieldValidation.invalidate(config.name, true);
+        this.recordMutation();
       },
       onErrorChange: () => {
         this.fieldValidation.forgetError(config.name);
@@ -484,6 +498,7 @@ export class BatchEditorFormController<TFormValues extends object> {
   }
 
   private queueUserValue(binding: BatchFieldBinding<TFormValues>): void {
+    this.recordMutation();
     this.fieldValidation.invalidate(binding.config.name, true);
     binding.revision += 1;
     const { revision } = binding;
@@ -656,6 +671,7 @@ export class BatchEditorFormController<TFormValues extends object> {
     if (!this.bindingByName.delete(binding.config.name)) {
       return;
     }
+    this.recordMutation();
     this.fieldValidation.remove(binding.config.name);
     this.activeChangeAbortControllers.get(binding.config.name)?.abort();
     this.activeChangeAbortControllers.delete(binding.config.name);

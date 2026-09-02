@@ -5,6 +5,7 @@ import {
   EditorDestroyedError,
 } from '../../src/core/alt-editor-lite-error.js';
 import { ENGLISH_LANGUAGE } from '../../src/core/alt-editor-lite-language.js';
+import { defineCustomField } from '../../src/fields/custom-field.js';
 import { buildEditorForm } from '../../src/form/build-editor-form.js';
 
 import type { FieldChangeContext, FieldConfig } from '../../src/fields/field-config.js';
@@ -169,6 +170,73 @@ function createForm(
 }
 
 describe('FormController', () => {
+  it('keeps changes made while an asynchronous dirty comparison is collecting', async () => {
+    let resolveValue: ((value: string) => void) | undefined;
+    let isReadDelayed = false;
+    const custom = defineCustomField<string>({
+      createController: () => {
+        const control = document.createElement('input');
+        return {
+          control,
+          destroy: () => {
+            control.remove();
+          },
+          focus: () => {
+            control.focus();
+          },
+          getValue: () =>
+            isReadDelayed
+              ? new Promise<string>((resolve) => {
+                  resolveValue = resolve;
+                })
+              : control.value,
+          setValue: (value) => {
+            control.value = value;
+          },
+          setDisabled: (value) => {
+            control.disabled = value;
+          },
+          setReadOnly: (value) => {
+            control.readOnly = value;
+          },
+          setRequired: (value) => {
+            control.required = value;
+          },
+        };
+      },
+    });
+    const form = buildEditorForm<{ name: string; custom: string }>(
+      [
+        { defaultValue: 'Alpha', label: 'Name', name: 'name', type: 'text' },
+        custom.field({ defaultValue: 'Initial', label: 'Custom', name: 'custom' }),
+      ],
+      'async-dirty',
+      ENGLISH_LANGUAGE,
+    );
+    try {
+      await form.rebaseDirtyState();
+      form.getField('name')?.setValue('Alpha');
+      isReadDelayed = true;
+      const comparison = form.isDirty();
+      await vi.waitFor(() => {
+        expect(resolveValue).toBeDefined();
+      });
+      form.getField('name')?.setValue('Unsaved');
+      isReadDelayed = false;
+      resolveValue?.('Initial');
+      await expect(comparison).resolves.toBe(true);
+      await expect(form.isDirty()).resolves.toBe(true);
+      form.getField('name')?.setValue('Alpha');
+      await expect(form.isDirty()).resolves.toBe(false);
+      form.getField('name')?.setDisabled(true);
+      await expect(form.isDirty()).resolves.toBe(true);
+      form.getField('name')?.setDisabled(false);
+      await expect(form.isDirty()).resolves.toBe(false);
+    } finally {
+      form.destroy();
+    }
+  });
+
   it('compares multiple-file selections by their collected entries', async () => {
     const form = buildEditorForm<{ name: string; attachments: readonly File[] }>(
       [

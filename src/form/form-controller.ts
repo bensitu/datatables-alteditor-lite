@@ -148,6 +148,20 @@ export class EditorFormController<
 
   private possiblyDirty = true;
 
+  private mutationRevision = 0;
+
+  public onMutation: (() => void) | undefined;
+
+  public getMutationRevision(): number {
+    return this.mutationRevision;
+  }
+
+  private recordMutation(): void {
+    this.possiblyDirty = true;
+    this.mutationRevision += 1;
+    this.onMutation?.();
+  }
+
   /**
    * Creates fields in stable configuration order.
    *
@@ -263,7 +277,7 @@ export class EditorFormController<
           },
           afterApplyPatch: ({ targetPath }) => {
             this.fieldValidation.invalidate(targetPath, true);
-            this.possiblyDirty = true;
+            this.recordMutation();
           },
         });
       }
@@ -281,6 +295,7 @@ export class EditorFormController<
   public populate(values: Readonly<DeepPartial<TFormValues>>): void {
     this.assertActive();
     populateFormValues(this.controllers, values);
+    this.recordMutation();
   }
 
   /**
@@ -294,6 +309,7 @@ export class EditorFormController<
   public populateFromSource(sourceValues: Readonly<object>): void {
     this.assertActive();
     populateFormValues(this.controllers, sourceValues);
+    this.recordMutation();
   }
 
   /** Resolves dependencies after defaults or source values are populated. */
@@ -321,12 +337,13 @@ export class EditorFormController<
   public async rebaseDirtyState(): Promise<void> {
     this.assertActive();
     await this.waitForCurrentFieldWork();
+    const revision = this.mutationRevision;
     const state = await collectFormState(
       this.controllers,
       this.lifecycleAbortController.signal,
     );
     this.dirtyBaseline = new Map(state.fieldValues);
-    this.possiblyDirty = false;
+    this.possiblyDirty = revision !== this.mutationRevision;
   }
 
   /** Compares current values with the latest clean dialog state when needed. */
@@ -340,11 +357,15 @@ export class EditorFormController<
     if (baseline === undefined) {
       return true;
     }
+    const revision = this.mutationRevision;
     const current = await collectFormState(
       this.controllers,
       this.lifecycleAbortController.signal,
     );
-    if (current.fieldValues.size !== baseline.size) {
+    if (
+      revision !== this.mutationRevision ||
+      current.fieldValues.size !== baseline.size
+    ) {
       return true;
     }
     for (const [name, baselineValue] of baseline) {
@@ -543,15 +564,16 @@ export class EditorFormController<
       setValue: (value: unknown) => {
         this.fieldValidation.invalidate(name, true);
         managedController.setValue(value);
-        this.possiblyDirty = true;
+        this.recordMutation();
       },
       ...(getOptions === undefined || setOptions === undefined
         ? {}
         : {
             getOptions: () => getOptions(),
             setOptions: (options: readonly SelectOption[]) => {
+              this.fieldValidation.invalidate(name, true);
               setOptions(options);
-              this.possiblyDirty = true;
+              this.recordMutation();
             },
           }),
       isVisible: () => runtime.isVisible(),
@@ -560,8 +582,9 @@ export class EditorFormController<
       },
       isDisabled: () => runtime.isDisabled(),
       setDisabled: (isDisabled: boolean) => {
+        this.fieldValidation.invalidate(name, true);
         runtime.setDisabled(isDisabled);
-        this.possiblyDirty = true;
+        this.recordMutation();
       },
       isReadOnly: () => runtime.isReadOnly(),
       setReadOnly: (isReadOnly: boolean) => {
@@ -711,7 +734,7 @@ export class EditorFormController<
   }
 
   private notifyFieldChange(fieldName: string): void {
-    this.possiblyDirty = true;
+    this.recordMutation();
     this.fieldValidation.invalidate(fieldName, true);
     const task = this.runFieldChange(fieldName);
     this.activeChangeTasks.set(fieldName, task);

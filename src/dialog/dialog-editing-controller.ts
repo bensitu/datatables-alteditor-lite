@@ -13,6 +13,7 @@ import {
 } from '../core/error-normalization.js';
 import { createReadonlyRowView } from '../core/readonly-row-view.js';
 import { runCleanupSteps } from '../core/run-cleanup-steps.js';
+import { settleWithAbort } from '../core/settle-with-abort.js';
 import { resolveFieldCapabilities } from '../fields/field-capabilities.js';
 import { BatchEditorFormController } from '../form/batch-editor-form-controller.js';
 import { buildEditorForm } from '../form/build-editor-form.js';
@@ -728,6 +729,9 @@ export class DialogEditingController<
         },
       );
       this.provisionalForm = form;
+      form.onMutation = () => {
+        this.invalidateCloseDecision();
+      };
       if (sourceValues !== undefined) {
         form.populateFromSource(sourceValues);
       }
@@ -834,6 +838,9 @@ export class DialogEditingController<
         },
       );
       this.provisionalForm = form;
+      form.onMutation = () => {
+        this.invalidateCloseDecision();
+      };
       await form.initializeDependencies();
       this.arguments_.stateCoordinator.assertActive();
       this.dialog.openForm(
@@ -976,6 +983,7 @@ export class DialogEditingController<
     if (state.status !== 'open') {
       return;
     }
+    this.invalidateCloseDecision();
     const session = this.activeSession;
     if (session?.action !== state.action) {
       throw new Error('Dialog state does not match its active resources.');
@@ -1276,18 +1284,16 @@ export class DialogEditingController<
   }
 
   private requestClose(reason: BeforeCloseReason): Promise<void> {
-    const pendingTask = this.closeDecisionTask;
-    if (pendingTask !== undefined) {
-      return pendingTask;
-    }
-
     const state = this.arguments_.stateCoordinator.getState();
-    if (state.status === 'ready') {
+    if (state.status === 'ready' || state.status === 'submitting') {
       this.closeNow(reason);
       return Promise.resolve();
     }
-    if (state.status !== 'open' && state.status !== 'submitting') {
+    if (state.status !== 'open') {
       return Promise.reject(new EditorOperationBusyError());
+    }
+    if (this.closeDecisionTask !== undefined) {
+      return this.closeDecisionTask;
     }
     const session = this.activeSession;
     if (session?.action !== state.action) {
@@ -1311,14 +1317,22 @@ export class DialogEditingController<
     reason: BeforeCloseReason,
     abortController: AbortController,
   ): Promise<void> {
+    const form = session.action === 'remove' ? undefined : session.form;
+    const revision = form?.getMutationRevision();
+    const isCurrent = (): boolean =>
+      this.ownsCloseDecision(session, abortController) &&
+      form?.getMutationRevision() === revision;
     try {
       const beforeClose = this.arguments_.options.hooks?.beforeClose;
       if (beforeClose !== undefined) {
-        const isDirty = await this.isSessionDirty(session);
-        if (!this.ownsCloseDecision(session, abortController)) {
+        const isDirty = await settleWithAbort(
+          form?.isDirty() ?? false,
+          abortController.signal,
+        );
+        if (!isCurrent()) {
           return;
         }
-        const shouldClose = await Promise.resolve(
+        const shouldClose = await settleWithAbort(
           beforeClose(
             Object.freeze({
               dirty: isDirty,
@@ -1328,8 +1342,9 @@ export class DialogEditingController<
               signal: abortController.signal,
             }),
           ),
+          abortController.signal,
         );
-        if (!this.ownsCloseDecision(session, abortController)) {
+        if (!isCurrent()) {
           return;
         }
         if (shouldClose === false) {
@@ -1337,11 +1352,11 @@ export class DialogEditingController<
           return;
         }
       }
-      if (this.ownsCloseDecision(session, abortController)) {
+      if (isCurrent()) {
         this.closeNow(reason);
       }
     } catch (rawError: unknown) {
-      if (!this.ownsCloseDecision(session, abortController)) {
+      if (!isCurrent()) {
         return;
       }
       const error = normalizeOperationError(
@@ -1362,24 +1377,7 @@ export class DialogEditingController<
       throw error;
     } finally {
       if (this.closeDecisionAbortController === abortController) {
-        this.closeDecisionAbortController = undefined;
-        this.closeDecisionSession = undefined;
-        this.closeDecisionTask = undefined;
-      }
-    }
-  }
-
-  private async isSessionDirty(
-    session: DialogSession<TRow, TFormValues, TTarget>,
-  ): Promise<boolean> {
-    switch (session.action) {
-      case 'create':
-      case 'edit':
-      case 'batchEdit': {
-        return await session.form.isDirty();
-      }
-      case 'remove': {
-        return false;
+        this.invalidateCloseDecision();
       }
     }
   }

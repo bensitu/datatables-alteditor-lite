@@ -35,6 +35,39 @@ describe('AltEditorLite Standalone batch edit', () => {
     document.body.replaceChildren();
   });
 
+  it('invalidates pending close decisions for batch overrides and restoration', async () => {
+    const beforeClose = vi.fn(() => new Promise<void>(() => undefined));
+    const host = new StandaloneHost<RecordRow, string>({
+      eventTarget: new EventTarget(),
+      read: (id) => ({ id, name: 'Alpha' }),
+      applyUpdates: vi.fn(),
+    });
+    editor = new AltEditorLite(host, {
+      fields: [{ label: 'Name', name: 'name', type: 'text' }],
+      hooks: { beforeClose },
+    });
+    await editor.openBatchEditDialog(['a', 'b']);
+    const closing = editor.closeDialog();
+    await vi.waitFor(() => {
+      expect(beforeClose).toHaveBeenCalledOnce();
+    });
+    editor.getField('name')?.setValue('Beta');
+    await closing;
+    expect(editor.getState().status).toBe('open');
+    const closingOverride = editor.closeDialog();
+    await vi.waitFor(() => {
+      expect(beforeClose).toHaveBeenCalledTimes(2);
+    });
+    document
+      .querySelector<HTMLButtonElement>(
+        '.alteditor-lite-batch-field__action:not([hidden])',
+      )
+      ?.click();
+    await closingOverride;
+    expect(editor.getState().status).toBe('open');
+    await expect(editor.getField('name')?.getValue()).resolves.toBe('Alpha');
+  });
+
   it('applies one common value to ordered explicit targets', async () => {
     const records = new Map<string, RecordRow>([
       ['record-a', { id: 'record-a', name: 'Alpha' }],
