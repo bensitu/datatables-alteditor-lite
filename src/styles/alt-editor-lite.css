@@ -17,12 +17,7 @@
   --alteditor-lite-search-select-max-height: 16rem;
   --alteditor-lite-font-family: inherit;
   --alteditor-lite-font-size: 1rem;
-  --alteditor-lite-control-background-color: var(--alteditor-lite-surface-color);
-  --alteditor-lite-control-text-color: var(--alteditor-lite-text-color);
-  --alteditor-lite-control-border-color: var(--alteditor-lite-border-color);
   --alteditor-lite-control-min-height: 2.5rem;
-  --alteditor-lite-danger-color: var(--alteditor-lite-error-color);
-  --alteditor-lite-danger-text-color: var(--alteditor-lite-error-text-color);
   --alteditor-lite-focus-width: 2px;
   --alteditor-lite-focus-offset: 2px;
 }
@@ -127,9 +122,9 @@
 }
 
 .alteditor-lite-dialog__button--destructive {
-  color: var(--alteditor-lite-danger-text-color);
-  background: var(--alteditor-lite-danger-color);
-  border-color: var(--alteditor-lite-danger-color);
+  color: var(--alteditor-lite-danger-text-color, var(--alteditor-lite-error-text-color));
+  background: var(--alteditor-lite-danger-color, var(--alteditor-lite-error-color));
+  border-color: var(--alteditor-lite-danger-color, var(--alteditor-lite-error-color));
 }
 
 .alteditor-lite-dialog__button:disabled {
@@ -229,7 +224,7 @@
 
 .alteditor-lite-field__control {
   box-sizing: border-box;
-  color: var(--alteditor-lite-control-text-color);
+  color: var(--alteditor-lite-control-text-color, var(--alteditor-lite-text-color));
   font: inherit;
 }
 
@@ -237,8 +232,12 @@
   width: 100%;
   min-height: var(--alteditor-lite-control-min-height);
   padding: 0.5rem;
-  background: var(--alteditor-lite-control-background-color);
-  border: 1px solid var(--alteditor-lite-control-border-color);
+  background: var(
+    --alteditor-lite-control-background-color,
+    var(--alteditor-lite-surface-color)
+  );
+  border: 1px solid
+    var(--alteditor-lite-control-border-color, var(--alteditor-lite-border-color));
   border-radius: calc(var(--alteditor-lite-border-radius) / 1.5);
 }
 
@@ -278,12 +277,16 @@ input[type='file'].alteditor-lite-field__control::file-selector-button {
   min-height: calc(var(--alteditor-lite-control-min-height) - 2px);
   padding: 0.5rem;
   margin-inline-end: 0.5rem;
-  color: var(--alteditor-lite-control-text-color);
+  color: var(--alteditor-lite-control-text-color, var(--alteditor-lite-text-color));
   font: inherit;
   cursor: pointer;
-  background: var(--alteditor-lite-control-background-color);
+  background: var(
+    --alteditor-lite-control-background-color,
+    var(--alteditor-lite-surface-color)
+  );
   border: 0;
-  border-inline-end: 1px solid var(--alteditor-lite-control-border-color);
+  border-inline-end: 1px solid
+    var(--alteditor-lite-control-border-color, var(--alteditor-lite-border-color));
 }
 
 input[type='file'].alteditor-lite-field__control:disabled::file-selector-button {
@@ -563,10 +566,14 @@ table[class~='dataTable'] tbody td.alteditor-lite-cell--editing::after {
   width: 1.5rem;
   height: 1.5rem;
   padding: 0.25rem;
-  color: var(--alteditor-lite-control-text-color);
+  color: var(--alteditor-lite-control-text-color, var(--alteditor-lite-text-color));
   cursor: pointer;
-  background: var(--alteditor-lite-control-background-color);
-  border: 1px solid var(--alteditor-lite-control-border-color);
+  background: var(
+    --alteditor-lite-control-background-color,
+    var(--alteditor-lite-surface-color)
+  );
+  border: 1px solid
+    var(--alteditor-lite-control-border-color, var(--alteditor-lite-border-color));
   border-radius: calc(var(--alteditor-lite-border-radius) / 2);
   place-items: center;
 }

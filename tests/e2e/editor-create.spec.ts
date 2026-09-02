@@ -242,6 +242,22 @@ test('applies scoped dialog theme tokens', async ({ page }) => {
     text: 'rgb(250, 249, 248)',
   });
   expect(theme.danger).not.toBe(theme.error);
+
+  await page.addStyleTag({
+    content: `
+      .theme-dialog {
+        --alteditor-lite-control-background-color: initial;
+        --alteditor-lite-control-text-color: initial;
+        --alteditor-lite-control-border-color: initial;
+        --alteditor-lite-surface-color: rgb(10 20 30);
+        --alteditor-lite-text-color: rgb(240 230 220);
+        --alteditor-lite-border-color: rgb(80 90 100);
+      }
+    `,
+  });
+  await expect(nameInput).toHaveCSS('background-color', 'rgb(10, 20, 30)');
+  await expect(nameInput).toHaveCSS('color', 'rgb(240, 230, 220)');
+  await expect(nameInput).toHaveCSS('border-top-color', 'rgb(80, 90, 100)');
 });
 
 test('shows native validation without mutating DataTables', async ({ page }) => {
