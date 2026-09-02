@@ -146,6 +146,61 @@ describe('AltEditorLite Standalone Edit', () => {
     expect(success).toHaveBeenCalledOnce();
   });
 
+  it('presents retryable operation field errors without applying a row', async () => {
+    let attempt = 0;
+    const applyUpdate = vi.fn((target: string, row: StandaloneRecord) => {
+      fixture.records.set(target, row);
+      return target;
+    });
+    const fixture = createStandaloneTestFixture(
+      {
+        operations: {
+          update: (values, original) => {
+            attempt += 1;
+            if (attempt === 1) {
+              throw new AltEditorLiteError({
+                code: 'VALIDATION',
+                fieldErrors: { name: 'Duplicate name.' },
+                message: 'The record could not be saved.',
+                retryable: true,
+              });
+            }
+            return { ...original, name: values.name ?? original.name };
+          },
+        },
+      },
+      { applyUpdate },
+    );
+
+    await fixture.editor.openEditDialog('record-a');
+    replaceName('Duplicate');
+    submitDialog();
+
+    await vi.waitFor(() => {
+      expect(fixture.editor.getState().status).toBe('open');
+    });
+    expect(applyUpdate).not.toHaveBeenCalled();
+    expect(fixture.records.get('record-a')?.name).toBe('Alpha');
+    expect(document.querySelector('[data-field-name="name"]')?.textContent).toContain(
+      'Duplicate name.',
+    );
+    expect(document.querySelector('.alteditor-lite-dialog__errors')?.textContent).toBe(
+      'The record could not be saved.',
+    );
+    expect(
+      document.querySelector<HTMLButtonElement>('.alteditor-lite-dialog__button--submit')
+        ?.disabled,
+    ).toBe(false);
+
+    replaceName('Available');
+    submitDialog();
+    await vi.waitFor(() => {
+      expect(fixture.editor.getState().status).toBe('ready');
+    });
+    expect(applyUpdate).toHaveBeenCalledOnce();
+    expect(fixture.records.get('record-a')?.name).toBe('Available');
+  });
+
   it('aborts persistence when the active dialog is closed', async () => {
     let operationSignal: AbortSignal | undefined;
     const applyUpdate = vi.fn();
