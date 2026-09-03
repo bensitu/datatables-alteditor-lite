@@ -195,7 +195,13 @@ test('loads and commits a remote option on touch', async ({ page }, testInfo) =>
   await cell.tap();
   await cell.getByRole('button', { name: 'Edit cell' }).tap();
   const input = page.getByRole('combobox', { name: 'Rank' });
+  await expect(cell.locator('.alteditor-lite-search-select')).toHaveAttribute(
+    'aria-busy',
+    'false',
+  );
+  await expect(input).toHaveValue('Rank 1');
   await input.fill('2');
+  await expect(input).toHaveValue('2');
   await page.getByRole('option', { name: 'Rank 2' }).tap();
   await page.getByRole('button', { name: 'Submit' }).tap();
   await expect(page.locator('#row-a td').nth(1)).toHaveText('2');
