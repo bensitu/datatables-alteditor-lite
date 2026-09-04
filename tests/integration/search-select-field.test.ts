@@ -294,7 +294,7 @@ describe('SearchSelect field integration', () => {
   it('resolves existing remote values and selects asynchronously loaded options', async () => {
     const remoteChange = vi.fn();
     const loadOptions = vi.fn((query: string, context: SearchSelectLoadContext) => {
-      void context;
+      expect(context.signal).toBeInstanceOf(AbortSignal);
       return Promise.resolve(
         [
           { label: 'Tokyo', value: 2 },

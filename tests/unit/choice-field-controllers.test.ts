@@ -73,7 +73,7 @@ describe('radio field controller', () => {
       >();
     const validationCallback = vi.fn(
       (value: string | undefined, context: FieldValidationContext<ChoiceValues>) => {
-        void context;
+        expect(context.signal).toBeInstanceOf(AbortSignal);
         return value === 'blocked'
           ? { message: 'Blocked choice.', valid: false }
           : { valid: true };
@@ -369,7 +369,7 @@ describe('select field controller', () => {
       >();
     const validationCallback = vi.fn(
       (value: number | undefined, context: FieldValidationContext<ChoiceValues>) => {
-        void context;
+        expect(context.signal).toBeInstanceOf(AbortSignal);
         return value === 2 ? { message: 'Unavailable.', valid: false } : { valid: true };
       },
     );
