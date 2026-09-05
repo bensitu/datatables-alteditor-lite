@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Expanded automatic dependency updates to all npm development tools and GitHub Actions.
+- Limited automatic development dependency updates to versions compatible with
+  the supported Node.js runtime.
 - Synchronized development dependency ranges with the lockfile without changing
   resolved versions.
 - Clarified cancellation, refresh, immutable-value boundaries, supported browser

@@ -1,18 +1,52 @@
 version: 2
 updates:
-  - package-ecosystem: 'npm'
-    directory: '/'
-    open-pull-requests-limit: 5
-    schedule:
-      interval: 'weekly'
-      day: 'monday'
-      time: '00:00'
-      timezone: 'America/New_York'
   - package-ecosystem: 'github-actions'
     directory: '/'
-    open-pull-requests-limit: 5
     schedule:
       interval: 'weekly'
       day: 'monday'
-      time: '00:00'
-      timezone: 'America/New_York'
+      time: '04:00'
+      timezone: 'Asia/Tokyo'
+    open-pull-requests-limit: 5
+    groups:
+      github-actions:
+        patterns:
+          - '*'
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '04:30'
+      timezone: 'Asia/Tokyo'
+    open-pull-requests-limit: 10
+    ignore:
+      - dependency-name: 'typescript'
+        versions:
+          - '>=7.0.0'
+      - dependency-name: 'jsdom'
+        versions:
+          - '>=29.0.0'
+      - dependency-name: '@types/jsdom'
+        versions:
+          - '>=29.0.0'
+      - dependency-name: '@types/node'
+        versions:
+          - '>=23.0.0'
+      - dependency-name: 'vitest'
+        versions:
+          - '>=5.0.0'
+      - dependency-name: '@vitest/coverage-v8'
+        versions:
+          - '>=5.0.0'
+    groups:
+      npm-development-minor-and-patch:
+        dependency-type: 'development'
+        update-types:
+          - 'minor'
+          - 'patch'
+      npm-production-minor-and-patch:
+        dependency-type: 'production'
+        update-types:
+          - 'minor'
+          - 'patch'
