@@ -61,6 +61,26 @@ function batchField(name: keyof BatchFormValues): HTMLElement {
 }
 
 describe('BatchEditorFormController', () => {
+  it('recomputes dependent presentation from committed records', async () => {
+    activeForm = new BatchEditorFormController<BatchFormValues>(
+      [
+        { name: 'office', label: 'Office', type: 'text' },
+        { name: 'department', label: 'Department', type: 'text' },
+      ],
+      [{ office: 'Tokyo' }, { office: 'Tokyo' }],
+      'committed-dependencies',
+      ENGLISH_LANGUAGE,
+      undefined,
+      undefined,
+      { office: (value) => ({ department: { visible: value === 'Tokyo' } }) },
+    );
+    await activeForm.initializeDependencies();
+    expect(activeForm.getField('department')?.isVisible()).toBe(true);
+    await activeForm.rebase([{ office: 'Osaka' }, { office: 'Osaka' }]);
+    expect(activeForm.getField('department')?.isVisible()).toBe(false);
+    await expect(activeForm.isDirty()).resolves.toBe(false);
+  });
+
   it.each([false, true])(
     'tracks only submitted changes from initial dependencies (value patch: %s)',
     async (hasValue) => {
@@ -809,7 +829,7 @@ describe('BatchEditorFormController', () => {
       ?.click();
     await expect(form.collectChanges()).resolves.toMatchObject({ changes: {} });
 
-    form.rebase([{ office: 'Osaka' }, { office: 'Osaka' }]);
+    await form.rebase([{ office: 'Osaka' }, { office: 'Osaka' }]);
     await expect(office.getValue()).resolves.toBe('Osaka');
     form.setBusy(true);
     expect(form.element.inert).toBe(true);

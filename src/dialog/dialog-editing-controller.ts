@@ -1106,14 +1106,16 @@ export class DialogEditingController<
     form: BatchEditorFormController<TFormValues>,
   ): DialogBatchEditPresentation<TRow> {
     return {
-      completeSuccess: () => {
+      completeSuccess: async () => {
         if (this.arguments_.editing.closeOnSuccess) {
           this.closeAfterSuccess('batchEdit');
         } else {
-          form.rebase(this.requireSession('batchEdit').originals);
-          this.restoreBatchOpen(form);
+          try {
+            await form.rebase(this.requireSession('batchEdit').originals);
+          } finally {
+            this.restoreBatchOpen(form);
+          }
         }
-        return Promise.resolve();
       },
       completeUnchanged: () => {
         this.closeAfterResult('batchEdit', 'unchanged');

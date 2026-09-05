@@ -18,7 +18,7 @@ afterEach(() => {
   document.body.replaceChildren();
 });
 
-function createBinding(originals: readonly Readonly<TestValues>[]) {
+function createBinding(originals: readonly Readonly<TestValues>[], unique = false) {
   const slot = document.createElement('div');
   document.body.append(slot);
   const mountPoint = createFieldMountPoint(slot);
@@ -27,7 +27,7 @@ function createBinding(originals: readonly Readonly<TestValues>[]) {
   });
   const onRestore = vi.fn();
   const binding = new BatchFieldBinding<TestValues>({
-    config: { label: 'Office', name: 'office', type: 'text' },
+    config: { label: 'Office', name: 'office', type: 'text', unique },
     fieldId: 'batch-binding-office',
     language: ENGLISH_LANGUAGE,
     lifecycleSignal: new AbortController().signal,
@@ -48,6 +48,12 @@ function createBinding(originals: readonly Readonly<TestValues>[]) {
 }
 
 describe('BatchFieldBinding', () => {
+  it('ignores value notifications from a restricted field', () => {
+    const { binding } = createBinding([{ office: 'Tokyo' }, { office: 'Tokyo' }], true);
+    binding.applyUserValue('Osaka');
+    expect(binding.state.current).toEqual({ status: 'common', value: 'Tokyo' });
+  });
+
   it('coordinates override, restore, rebase, and its public facade', async () => {
     const { binding, onDestroyRequest, onRestore } = createBinding([
       { office: 'Tokyo' },

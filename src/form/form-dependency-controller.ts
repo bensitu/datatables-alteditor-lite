@@ -58,6 +58,7 @@ export interface FormDependencyControllerArguments<TFormValues extends object> {
 
 /** Information exposed after one validated dependency patch is applied. */
 export interface DependencyPatchApplication<TFormValues extends object> {
+  readonly isCurrent: () => boolean;
   readonly binding: DependencyFieldBinding<TFormValues>;
   readonly targetPath: string;
   readonly hasOptions: boolean;
@@ -607,6 +608,9 @@ export class FormDependencyController<TFormValues extends object> {
           controller.setValue(patch.value);
         } else {
           await this.arguments_.applyValue(patch.targetPath, patch.binding, patch.value);
+          if (!isCurrent()) {
+            return;
+          }
         }
       }
       if (patch.hasVisible) {
@@ -622,6 +626,7 @@ export class FormDependencyController<TFormValues extends object> {
         runtime.setDisabled(patch.disabled ?? false);
       }
       await this.arguments_.afterApplyPatch?.({
+        isCurrent,
         binding: patch.binding,
         hasOptions: patch.hasOptions,
         hasValue: patch.hasValue,

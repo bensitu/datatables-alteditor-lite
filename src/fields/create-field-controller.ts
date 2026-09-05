@@ -147,22 +147,7 @@ export function createFieldController<TFormValues extends object>(
   const errorElement = controller.element.querySelector<HTMLElement>(
     '.alteditor-lite-field__error',
   );
-  const errorId = errorElement?.id;
-  errorElement?.remove();
-  if (errorId !== undefined) {
-    for (const control of controller.element.querySelectorAll<HTMLElement>(
-      '[aria-describedby]',
-    )) {
-      const references = (control.getAttribute('aria-describedby') ?? '')
-        .split(/\s+/u)
-        .filter((reference) => reference.length > 0 && reference !== errorId);
-      if (references.length === 0) {
-        control.removeAttribute('aria-describedby');
-      } else {
-        control.setAttribute('aria-describedby', references.join(' '));
-      }
-    }
-  }
+  errorElement?.classList.add('alteditor-lite-visually-hidden');
 
   let externalError: string | undefined;
   return {

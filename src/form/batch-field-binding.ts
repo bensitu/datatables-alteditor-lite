@@ -263,6 +263,9 @@ export class BatchFieldBinding<TFormValues extends object> {
   }
 
   public applyUserValue(value: unknown): void {
+    if (this.restriction !== undefined) {
+      return;
+    }
     this.#applyValue(value);
   }
 

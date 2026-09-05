@@ -119,7 +119,7 @@ function createUndefinedNumberController<TFormValues extends object>(
         return;
       }
 
-      if (typeof value !== 'number' || Number.isNaN(value)) {
+      if (typeof value !== 'number' || !Number.isFinite(value)) {
         throw new EditorConfigurationError(
           `Field "${config.name}" requires a number or its configured empty value.`,
         );
@@ -181,7 +181,7 @@ function createNullNumberController<TFormValues extends object>(
         return;
       }
 
-      if (typeof value !== 'number' || Number.isNaN(value)) {
+      if (typeof value !== 'number' || !Number.isFinite(value)) {
         throw new EditorConfigurationError(
           `Field "${config.name}" requires a number or null.`,
         );

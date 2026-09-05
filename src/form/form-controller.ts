@@ -155,6 +155,10 @@ export class EditorFormController<
   private recordMutation(fieldName?: string): void {
     if (fieldName !== undefined) {
       this.fieldValidation.invalidate(fieldName, true);
+    } else {
+      for (const controller of this.controllers) {
+        this.fieldValidation.invalidate(controller.name, true);
+      }
     }
     this.revision += 1;
     this.onMutation?.();

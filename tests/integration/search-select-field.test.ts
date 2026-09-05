@@ -84,6 +84,39 @@ function keyboardEvent(key: string): KeyboardEvent {
 }
 
 describe('SearchSelect field integration', () => {
+  it.each(['officeId', 'tag'] as const)(
+    'restores the previous %s selection when search is canceled',
+    async (name) => {
+      const form = createSearchForm();
+      const field = form.getField(name);
+      const input = field?.element.querySelector('input');
+      if (field === null || input === null || input === undefined)
+        throw new Error('Expected a search field.');
+      field.setValue(name === 'tag' ? 'red' : 2);
+      input.focus();
+      input.value = 'Uncommitted';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(keyboardEvent('Escape'));
+      expect(input.value).toBe(name === 'tag' ? 'Red' : 'Tokyo');
+      await expect(field.getValue()).resolves.toBe(name === 'tag' ? 'red' : 2);
+    },
+  );
+
+  it('does not commit partial composition text when clicking outside', async () => {
+    const form = createSearchForm();
+    const field = form.getField('tag');
+    const input = field?.element.querySelector('input');
+    if (field === null || input === null || input === undefined)
+      throw new Error('Expected a search field.');
+    input.focus();
+    input.dispatchEvent(new CompositionEvent('compositionstart'));
+    input.value = 'れ';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    document.body.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
+    await expect(field.getValue()).resolves.toBeUndefined();
+    expect(input.value).toBe('れ');
+  });
+
   it('renders secure combobox semantics and round-trips typed identities', async () => {
     const form = createSearchForm();
     const officeField = form.getField('officeId');

@@ -72,7 +72,7 @@ afterEach(() => {
 });
 
 describe('native field presentation', () => {
-  it('keeps inline labels accessible while exposing errors outside the field DOM', () => {
+  it('keeps inline labels and error descriptions accessible without visible field feedback', () => {
     const controller = createFieldController(
       { label: 'Name', name: 'name', type: 'text' },
       'inline-name',
@@ -89,7 +89,12 @@ describe('native field presentation', () => {
         .querySelector('.alteditor-lite-field__label')
         ?.classList.contains('alteditor-lite-visually-hidden'),
     ).toBe(true);
-    expect(controller.element.querySelector('.alteditor-lite-field__error')).toBeNull();
+    const error = controller.element.querySelector('.alteditor-lite-field__error');
+    expect(error?.classList.contains('alteditor-lite-visually-hidden')).toBe(true);
+    expect(error?.textContent).toBe('Name is unavailable.');
+    expect(
+      controller.element.querySelector('input')?.getAttribute('aria-describedby'),
+    ).toContain(error?.id);
     expect(controller.getError?.()).toBe('Name is unavailable.');
     expect(controller.element.querySelector('input')?.getAttribute('aria-invalid')).toBe(
       'true',

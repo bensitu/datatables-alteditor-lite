@@ -771,7 +771,7 @@ describe('AltEditorLite programmatic inline editing', () => {
     expect(alertMessage).toContain('Rank must be at least the length of the name.');
     expect(
       document.querySelector('.alteditor-lite-inline .alteditor-lite-field__error'),
-    ).toBeNull();
+    ).toHaveProperty('hidden', true);
     document
       .querySelector<HTMLButtonElement>(
         '.alteditor-lite-dialog--alert .alteditor-lite-dialog__button',

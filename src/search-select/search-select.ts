@@ -145,6 +145,8 @@ export class SearchSelect<TValue extends string | number> {
 
   private manualValue: string | undefined;
 
+  private searchOrigin: { readonly value: TValue | string | undefined } | undefined;
+
   private readonly clearButtonElement: HTMLButtonElement;
 
   private readonly listboxId: string;
@@ -310,6 +312,7 @@ export class SearchSelect<TValue extends string | number> {
 
   /** Writes an exact option value, manual string, or clear state. */
   public setValue(value: unknown): void {
+    this.searchOrigin = undefined;
     if (value === undefined) {
       this.clear(false);
       return;
@@ -370,6 +373,7 @@ export class SearchSelect<TValue extends string | number> {
   /** Rebuilds typed option tokens while retaining a still-present value. */
   public setOptions(options: readonly SelectOption<TValue>[]): void {
     assertSupportedOptionCount(options.length);
+    this.searchOrigin = undefined;
     if (
       this.shouldAllowManualValue &&
       options.some(({ value }) => typeof value !== 'string')
@@ -519,9 +523,6 @@ export class SearchSelect<TValue extends string | number> {
     }
 
     this.commitManualValue();
-    if (this.getCommittedValue() === undefined) {
-      this.inputElement.value = '';
-    }
     this.close();
   };
 
@@ -581,6 +582,7 @@ export class SearchSelect<TValue extends string | number> {
     }
 
     const hasCommittedValue = this.getCommittedValue() !== undefined;
+    this.searchOrigin ??= { value: this.getCommittedValue() };
     this.cancelResolveRequest();
     this.selectedToken = undefined;
     this.selectedValue = undefined;
@@ -637,7 +639,12 @@ export class SearchSelect<TValue extends string | number> {
     if (event.key === 'Escape' && this.isOpen) {
       event.preventDefault();
       event.stopPropagation();
+      const origin = this.searchOrigin;
       this.close();
+      if (origin !== undefined) {
+        this.setValue(origin.value);
+        this.onCommit();
+      }
       return;
     }
 
@@ -653,9 +660,6 @@ export class SearchSelect<TValue extends string | number> {
 
     if (event.key === 'Tab') {
       this.commitManualValue();
-      if (this.getCommittedValue() === undefined) {
-        this.inputElement.value = '';
-      }
       this.close();
     }
   };
@@ -696,6 +700,7 @@ export class SearchSelect<TValue extends string | number> {
   }
 
   private clear(shouldNotify: boolean): void {
+    this.searchOrigin = undefined;
     const hasCommittedValue = this.getCommittedValue() !== undefined;
     this.cancelResolveRequest();
     this.selectedToken = undefined;
@@ -717,6 +722,10 @@ export class SearchSelect<TValue extends string | number> {
   }
 
   private close(): void {
+    this.searchOrigin = undefined;
+    if (!this.isComposing && this.getCommittedValue() === undefined) {
+      this.inputElement.value = '';
+    }
     this.cancelSearchRequest();
     this.isOpen = false;
     this.stopPositionTracking();
@@ -728,7 +737,11 @@ export class SearchSelect<TValue extends string | number> {
   }
 
   private commitManualValue(): void {
-    if (!this.shouldAllowManualValue || this.selectedValue !== undefined) {
+    if (
+      this.isComposing ||
+      !this.shouldAllowManualValue ||
+      this.selectedValue !== undefined
+    ) {
       return;
     }
 

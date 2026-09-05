@@ -351,13 +351,14 @@ export class BatchEditorFormController<TFormValues extends object> {
   }
 
   /** Rebuilds baselines from newly committed canonical rows. */
-  public rebase(originals: readonly Readonly<object>[]): void {
+  public async rebase(originals: readonly Readonly<object>[]): Promise<void> {
     this.assertActive();
     this.originals = Object.freeze([...originals]);
     for (const binding of this.bindings) {
       binding.rebase(originals);
     }
     this.clearErrors();
+    await this.dependencyController?.initialize(this.collectLogicalValues());
   }
 
   /** Reports whether any batch field differs from its current baseline. */
@@ -638,6 +639,9 @@ export class BatchEditorFormController<TFormValues extends object> {
       const value = await Promise.resolve(
         binding.controller.getValue(this.lifecycleAbortController.signal),
       );
+      if (this.isDestroyed || !application.isCurrent()) {
+        return;
+      }
       if (!binding.isEqual(value, binding.state.current.value)) {
         binding.applyDependencyValue(value);
       }

@@ -170,6 +170,38 @@ function createForm(
 }
 
 describe('FormController', () => {
+  it('rejects non-finite numeric values without replacing the current value', async () => {
+    const form = createForm();
+    for (const name of ['age', 'optionalNumber'] as const) {
+      const field = form.getField(name);
+      field?.setValue(12);
+      for (const value of [Infinity, -Infinity, NaN]) {
+        expect(() => field?.setValue(value)).toThrow('number');
+        await expect(field?.getValue()).resolves.toBe(12);
+      }
+    }
+  });
+
+  it('clears obsolete field feedback when values are populated', async () => {
+    const form = buildEditorForm<{ name: string }>(
+      [{ name: 'name', label: 'Name', type: 'text', required: true, validateOn: 'blur' }],
+      'populated-feedback',
+      ENGLISH_LANGUAGE,
+    );
+    try {
+      document.body.append(form.element);
+      const input = form.element.querySelector('input');
+      input?.dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
+      await vi.waitFor(() => {
+        expect(input?.getAttribute('aria-invalid')).toBe('true');
+      });
+      form.populate({ name: 'Valid' });
+      expect(input?.hasAttribute('aria-invalid')).toBe(false);
+    } finally {
+      form.destroy();
+    }
+  });
+
   it('keeps changes made while an asynchronous dirty comparison is collecting', async () => {
     let resolveValue: ((value: string) => void) | undefined;
     let isReadDelayed = false;
