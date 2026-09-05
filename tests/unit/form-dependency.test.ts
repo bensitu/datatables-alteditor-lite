@@ -342,77 +342,85 @@ describe('form dependencies', () => {
     controller.destroy();
   });
 
-  it('stops obsolete field state changes before applying the next dependency result', async () => {
-    const firstApplication = createDeferred<undefined>();
-    const applications: string[] = [];
-    const setVisible = vi.fn();
-    const detailsConfig = {
-      defaultValue: '',
-      label: 'Details',
-      name: 'details',
-      type: 'text',
-    } as const satisfies FieldConfig<DependencyValues>;
-    const binding: DependencyFieldBinding<DependencyValues> = {
-      config: detailsConfig,
-      controller: {} as ManagedFieldController<DependencyValues>,
-      runtime: { setVisible } as unknown as FieldRuntimeController<DependencyValues>,
-    };
-    const lifecycleAbortController = new AbortController();
-    const resolver = vi.fn((value: string) => ({
-      details: { value, visible: value === 'second' },
-    }));
-    const controller = new FormDependencyController<DependencyValues>({
-      applyValue: async (_targetPath, _binding, value) => {
-        applications.push(`${String(value)}:start`);
-        if (value === 'first') {
-          await firstApplication.promise;
-        }
-        applications.push(`${String(value)}:end`);
-      },
-      dependencies: defineFormDependencies<DependencyValues>()({
-        country: resolver,
-      }),
-      fields: new Map<string, DependencyFieldBinding<DependencyValues>>([
-        ['details', binding],
-      ]),
-      lifecycleSignal: lifecycleAbortController.signal,
-      normalizeError: (error) => {
-        throw error;
-      },
-      onErrorChange: vi.fn(),
-    });
-    const parentSignal = new AbortController().signal;
-    const firstRequest = controller.handleUserChange(
-      'country',
-      { category: '', country: 'first', details: '', region: undefined },
-      parentSignal,
-    );
-    await vi.waitFor(() => {
+  it.each(['initial', 'changed'] as const)(
+    'stops obsolete %s field state before applying the next dependency result',
+    async (source) => {
+      const firstApplication = createDeferred<undefined>();
+      const applications: string[] = [];
+      const setVisible = vi.fn();
+      const detailsConfig = {
+        defaultValue: '',
+        label: 'Details',
+        name: 'details',
+        type: 'text',
+      } as const satisfies FieldConfig<DependencyValues>;
+      const binding: DependencyFieldBinding<DependencyValues> = {
+        config: detailsConfig,
+        controller: {} as ManagedFieldController<DependencyValues>,
+        runtime: { setVisible } as unknown as FieldRuntimeController<DependencyValues>,
+      };
+      const lifecycleAbortController = new AbortController();
+      const resolver = vi.fn((value: string) => ({
+        details: { value, visible: value === 'second' },
+      }));
+      const controller = new FormDependencyController<DependencyValues>({
+        applyValue: async (_targetPath, _binding, value) => {
+          applications.push(`${String(value)}:start`);
+          if (value === 'first') {
+            await firstApplication.promise;
+          }
+          applications.push(`${String(value)}:end`);
+        },
+        dependencies: defineFormDependencies<DependencyValues>()({
+          country: resolver,
+        }),
+        fields: new Map<string, DependencyFieldBinding<DependencyValues>>([
+          ['details', binding],
+        ]),
+        lifecycleSignal: lifecycleAbortController.signal,
+        normalizeError: (error) => {
+          throw error;
+        },
+        onErrorChange: vi.fn(),
+      });
+      const parentSignal = new AbortController().signal;
+      const initialValues = {
+        category: '',
+        country: 'first',
+        details: '',
+        region: undefined,
+      };
+      const firstRequest =
+        source === 'initial'
+          ? controller.initialize(initialValues)
+          : controller.handleUserChange('country', initialValues, parentSignal);
+      await vi.waitFor(() => {
+        expect(applications).toEqual(['first:start']);
+      });
+
+      const secondRequest = controller.handleUserChange(
+        'country',
+        { category: '', country: 'second', details: '', region: undefined },
+        parentSignal,
+      );
+      await vi.waitFor(() => {
+        expect(resolver).toHaveBeenCalledTimes(2);
+      });
       expect(applications).toEqual(['first:start']);
-    });
 
-    const secondRequest = controller.handleUserChange(
-      'country',
-      { category: '', country: 'second', details: '', region: undefined },
-      parentSignal,
-    );
-    await vi.waitFor(() => {
-      expect(resolver).toHaveBeenCalledTimes(2);
-    });
-    expect(applications).toEqual(['first:start']);
+      firstApplication.resolve(undefined);
+      await Promise.all([firstRequest, secondRequest]);
 
-    firstApplication.resolve(undefined);
-    await Promise.all([firstRequest, secondRequest]);
-
-    expect(applications).toEqual([
-      'first:start',
-      'first:end',
-      'second:start',
-      'second:end',
-    ]);
-    expect(setVisible.mock.calls).toEqual([[true]]);
-    controller.destroy();
-  });
+      expect(applications).toEqual([
+        'first:start',
+        'first:end',
+        'second:start',
+        'second:end',
+      ]);
+      expect(setVisible.mock.calls).toEqual([[true]]);
+      controller.destroy();
+    },
+  );
 
   it('stops initial field state updates when destroyed during an asynchronous value assignment', async () => {
     const pending = createDeferred<undefined>();

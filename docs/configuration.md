@@ -256,6 +256,16 @@ table state are synchronized through public APIs. ColumnControl SearchList
 options are refreshed and Responsive recalculates its layout after the editor
 presentation reaches a stable state.
 
+## Migrating from v0.8.0
+
+v0.8.1 retains the existing public API and adds corrections to cancellation,
+field state, and keyboard behavior.
+
+- `refreshTimeout` also bounds commit draw waits. A missing draw reports a
+  non-retryable error because persistence or Host application may have completed.
+- Standalone refresh without a Host callback or `operations.refresh` now rejects
+  with `EditorConfigurationError` instead of completing without changing records.
+
 ## Migrating from v0.7.x
 
 v0.8.0 adds optional editing behavior. Existing v0.7.2 configuration retains its default close,
@@ -271,9 +281,7 @@ and 30-second DataTables Ajax refresh behavior.
   and elements remain unchanged.
 - Dialog classes, custom Remove content, and semantic CSS variables are opt-in.
 - The `/datatables` `refreshTimeout` setting is optional and defaults to
-  `30_000` milliseconds. It also bounds commit draw waits.
-- Standalone refresh without a Host callback or `operations.refresh` now rejects
-  with `EditorConfigurationError` instead of completing without changing records.
+  `30_000` milliseconds.
 
 ## Migrating from v0.6.x
 

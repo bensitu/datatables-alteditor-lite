@@ -225,17 +225,15 @@ export class FormDependencyController<TFormValues extends object> {
         .filter((sourcePath) => this.arguments_.isSourceAvailable?.(sourcePath) !== false)
         .map(async (sourcePath) => await this.startResolution(sourcePath, values)),
     );
-    if (this.isDestroyed || this.arguments_.lifecycleSignal.aborted) {
-      return;
-    }
-
     const resolved = resolutions.filter(
       (
         resolution,
       ): resolution is Extract<
         DependencyResolution<TFormValues>,
         { readonly status: 'resolved' }
-      > => resolution.status === 'resolved',
+      > =>
+        resolution.status === 'resolved' &&
+        this.isCurrent(resolution.sourcePath, resolution.revision),
     );
     if (resolved.length === 0) {
       return;
@@ -243,7 +241,9 @@ export class FormDependencyController<TFormValues extends object> {
 
     const mergedResult = this.mergeInitialResults(resolved.map(({ result }) => result));
     const patches = this.validateResult(mergedResult);
-    await this.applyPatches(patches);
+    await this.queuePatches(patches, () =>
+      resolved.every(({ sourcePath, revision }) => this.isCurrent(sourcePath, revision)),
+    );
     for (const resolution of resolved) {
       if (this.isCurrent(resolution.sourcePath, resolution.revision)) {
         this.clearError(resolution.sourcePath);
@@ -584,8 +584,7 @@ export class FormDependencyController<TFormValues extends object> {
 
   private async applyPatches(
     patches: readonly ValidatedFieldPatch<TFormValues>[],
-    isCurrent: () => boolean = () =>
-      !this.isDestroyed && !this.arguments_.lifecycleSignal.aborted,
+    isCurrent: () => boolean,
   ): Promise<void> {
     for (const patch of patches) {
       if (!isCurrent()) {
@@ -627,18 +626,15 @@ export class FormDependencyController<TFormValues extends object> {
     }
   }
 
-  private async queuePatches(
+  private queuePatches(
     patches: readonly ValidatedFieldPatch<TFormValues>[],
     isCurrent: () => boolean,
   ): Promise<void> {
-    const application = this.patchApplicationTail.then(async () => {
-      await this.applyPatches(patches, isCurrent);
-    });
-    this.patchApplicationTail = application.then(
-      () => undefined,
-      () => undefined,
+    const application = this.patchApplicationTail.then(() =>
+      this.applyPatches(patches, isCurrent),
     );
-    await application;
+    this.patchApplicationTail = application.catch(() => undefined);
+    return application;
   }
 
   private recordError(sourcePath: string, error: AltEditorLiteError): void {
