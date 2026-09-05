@@ -30,6 +30,9 @@ describe('settleWithAbort', () => {
       name: 'AbortError',
     });
     expect(addEventListener).not.toHaveBeenCalled();
+    await expect(
+      settleWithAbort(Promise.reject(new Error('Late failure.')), controller.signal),
+    ).rejects.toMatchObject({ name: 'AbortError' });
   });
 
   it('releases its cancellation listener after normal settlement', async () => {

@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createInstanceId } from '../../src/instance/create-instance-id.js';
 
@@ -10,6 +10,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.unstubAllGlobals();
   if (originalDescriptor === undefined) {
     Reflect.deleteProperty(globalThis, instanceSequenceKey);
   } else {
@@ -31,6 +32,7 @@ describe('editor instance identifiers', () => {
   });
 
   it('creates distinct identifiers when the shared sequence cannot be written', () => {
+    vi.stubGlobal('crypto', undefined);
     Object.defineProperty(globalThis, instanceSequenceKey, {
       configurable: true,
       get: () => 9,

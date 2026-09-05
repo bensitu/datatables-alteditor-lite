@@ -103,6 +103,19 @@ function buttonByText(tableElement: HTMLTableElement, text: string): HTMLButtonE
 }
 
 describe('Buttons without Select', () => {
+  it('renders translated button labels as plain text', () => {
+    const { api, tableElement } = createTestTable('button-labels', {
+      layout: { topStart: { buttons: ['altEditorLiteRefresh'] } },
+    });
+    const label = '<img src="invalid" onerror="alert(1)">Refresh & reload';
+    activeEditor = new AltEditorLite<TestRow, ButtonOnlyValues>(api, {
+      fields,
+      language: { actions: { refresh: label } },
+    });
+    const button = buttonByText(tableElement, label);
+    expect(button.querySelector('img')).toBeNull();
+  });
+
   it('keeps Create and Refresh operational while selection actions stay disabled', async () => {
     const { api, tableElement } = createTestTable('buttons-only-table', {
       layout: {

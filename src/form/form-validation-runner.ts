@@ -4,6 +4,7 @@ import {
 } from '../core/alt-editor-lite-error.js';
 import { freezeEditorValues } from '../core/freeze-editor-values.js';
 import { hasOwn } from '../core/has-own.js';
+import { settleWithAbort } from '../core/settle-with-abort.js';
 import { parseFieldPath } from '../object-path/field-path.js';
 
 import type { FormValidationResult } from './form-validation.js';
@@ -60,63 +61,6 @@ function isObjectRecord(value: unknown): value is Readonly<Record<string, unknow
   }
 }
 
-function settleOnAbort<TValue>(
-  value: TValue | PromiseLike<TValue>,
-  signal: AbortSignal,
-): Promise<TValue> {
-  if (signal.aborted) {
-    return Promise.reject(new DOMException('The request was aborted.', 'AbortError'));
-  }
-
-  return new Promise<TValue>((resolve, reject) => {
-    const settlement: {
-      handleAbort: (() => void) | undefined;
-      reject: ((reason?: unknown) => void) | undefined;
-      resolve: ((result: TValue) => void) | undefined;
-      signal: AbortSignal | undefined;
-    } = { handleAbort: undefined, reject, resolve, signal };
-    const release = (): void => {
-      const currentSignal = settlement.signal;
-      const currentHandleAbort = settlement.handleAbort;
-      settlement.handleAbort = undefined;
-      settlement.reject = undefined;
-      settlement.resolve = undefined;
-      settlement.signal = undefined;
-      if (currentHandleAbort !== undefined) {
-        currentSignal?.removeEventListener('abort', currentHandleAbort);
-      }
-    };
-    const resolveValue = (result: TValue): void => {
-      const currentResolve = settlement.resolve;
-      if (currentResolve === undefined) {
-        return;
-      }
-      release();
-      currentResolve(result);
-    };
-    const rejectValue = (error: unknown): void => {
-      const currentReject = settlement.reject;
-      if (currentReject === undefined) {
-        return;
-      }
-      release();
-      currentReject(error);
-    };
-    const handleAbort = (): void => {
-      rejectValue(new DOMException('The request was aborted.', 'AbortError'));
-    };
-    settlement.handleAbort = handleAbort;
-    signal.addEventListener('abort', handleAbort, { once: true });
-    void Promise.resolve(value).then(resolveValue, (error: unknown) => {
-      rejectValue(
-        error instanceof Error
-          ? error
-          : new Error('Validation failed.', { cause: error }),
-      );
-    });
-  });
-}
-
 function isPromiseLike<TValue>(value: unknown): value is PromiseLike<TValue> {
   return (
     ((typeof value === 'object' && value !== null) || typeof value === 'function') &&
@@ -151,7 +95,7 @@ export class FormValidationRunner<TFormValues extends object> {
     const collectedValues = this.arguments_.collectValues(signal);
     const values = freezeEditorValues<TFormValues>(
       isPromiseLike<Readonly<EditorValues<TFormValues>>>(collectedValues)
-        ? await settleOnAbort(collectedValues, signal)
+        ? await settleWithAbort(collectedValues, signal)
         : collectedValues,
     );
     signal.throwIfAborted();
@@ -162,7 +106,7 @@ export class FormValidationRunner<TFormValues extends object> {
     }
 
     if (this.arguments_.beforeFormValidation !== undefined) {
-      const precedingError = await settleOnAbort(
+      const precedingError = await settleWithAbort(
         this.arguments_.beforeFormValidation(signal),
         signal,
       );
@@ -175,7 +119,7 @@ export class FormValidationRunner<TFormValues extends object> {
     let isFormInvalid = false;
     let message: string | undefined;
     if (this.arguments_.validateForm !== undefined) {
-      const result = await settleOnAbort(
+      const result = await settleWithAbort(
         this.arguments_.validateForm(values, signal),
         signal,
       );
@@ -212,7 +156,7 @@ export class FormValidationRunner<TFormValues extends object> {
     values: Readonly<EditorValues<TFormValues>>,
     signal: AbortSignal,
   ): Promise<Record<string, string>> {
-    const results = await settleOnAbort(
+    const results = await settleWithAbort(
       Promise.all(
         this.arguments_.controllers
           .filter((controller) => !controller.isDisabled())

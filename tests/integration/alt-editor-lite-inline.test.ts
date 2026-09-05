@@ -1790,6 +1790,30 @@ describe('AltEditorLite inline interaction and redraw behavior', () => {
     expect(document.activeElement).toBe(current);
   });
 
+  it('aborts field resources when custom control construction fails', async () => {
+    let fieldSignal: AbortSignal | undefined;
+    const unavailableField = defineCustomField<string>({
+      capabilities: { inline: true },
+      createController(_options, context) {
+        fieldSignal = context.signal;
+        throw new Error('Control unavailable.');
+      },
+    });
+    const { editor } = createInlineEditor({
+      editing: inlineEditing(),
+      fields: [
+        unavailableField.field<InlineValues>({
+          name: 'name',
+          label: 'Name',
+          inlineEdit: true,
+        }),
+      ],
+    });
+    await expect(editor.openInlineEdit('#row-a', 0)).rejects.toThrow();
+    expect(fieldSignal?.aborted).toBe(true);
+    expect(editor.getInlineState().status).toBe('idle');
+  });
+
   it('cancels on an external draw and ignores a late persistence result', async () => {
     const deferred = createDeferred<TestRow>();
     let operationSignal: AbortSignal | undefined;

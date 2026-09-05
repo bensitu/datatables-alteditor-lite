@@ -149,17 +149,9 @@ export function createFieldController<TFormValues extends object>(
   );
   errorElement?.classList.add('alteditor-lite-visually-hidden');
 
-  let externalError: string | undefined;
   return {
     ...controller,
-    clearError: () => {
-      externalError = undefined;
-      controller.clearError();
-    },
-    getError: () => externalError,
-    showError: (message: string) => {
-      externalError = message;
-      controller.showError(message);
-    },
+    getError: () =>
+      errorElement?.hidden === false ? errorElement.textContent : undefined,
   };
 }

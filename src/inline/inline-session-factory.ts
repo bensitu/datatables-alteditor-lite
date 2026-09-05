@@ -8,6 +8,7 @@ import type { InlineTargetCapture } from './inline-target-capture.js';
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type { InteractionToken } from '../core/editing/interaction-coordinator.js';
 import type { ResolvedInlineEditingOptions } from '../core/resolve-editing-options.js';
+import type { ManagedFieldController } from '../fields/managed-field-controller.js';
 
 export interface InlineSessionFactoryArguments<TFormValues extends object> {
   readonly instanceId: string;
@@ -43,16 +44,17 @@ export class InlineSessionFactory<TFormValues extends object> {
   ): Promise<InlineEditSession<TRow, TFormValues>> {
     const { capture, signal } = request;
     const lifecycleAbortController = new AbortController();
-    const controller = createFieldController(
-      capture.field,
-      `${this.arguments_.instanceId}-inline-${String(capture.summary.rowIndex)}-${String(capture.summary.columnIndex)}`,
-      this.arguments_.language,
-      this.arguments_.onUserChange,
-      INLINE_FIELD_PRESENTATION,
-      mergeAbortSignals([signal, lifecycleAbortController.signal]).signal,
-    );
-
+    let controller: ManagedFieldController<TFormValues> | undefined;
     try {
+      controller = createFieldController(
+        capture.field,
+        `${this.arguments_.instanceId}-inline-${String(capture.summary.rowIndex)}-${String(capture.summary.columnIndex)}`,
+        this.arguments_.language,
+        this.arguments_.onUserChange,
+        INLINE_FIELD_PRESENTATION,
+        mergeAbortSignals([signal, lifecycleAbortController.signal]).signal,
+      );
+
       controller.setValue(capture.originalValue);
       const normalizedOriginalValue = await Promise.resolve(controller.getValue(signal));
       signal.throwIfAborted();
@@ -85,7 +87,7 @@ export class InlineSessionFactory<TFormValues extends object> {
     } catch (error: unknown) {
       lifecycleAbortController.abort();
       try {
-        controller.destroy();
+        controller?.destroy();
       } catch {
         // Continue returning the session creation failure.
       }

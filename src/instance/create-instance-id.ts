@@ -12,7 +12,8 @@ let fallbackSequence = 0;
 
 function createFallbackInstanceId(): string {
   fallbackSequence += 1;
-  const randomUuid = (globalThis.crypto as CryptoWithOptionalRandomUuid).randomUUID;
+  const randomUuid = (globalThis.crypto as CryptoWithOptionalRandomUuid | undefined)
+    ?.randomUUID;
   const randomId =
     typeof randomUuid === 'function' ? randomUuid.call(globalThis.crypto) : undefined;
   return randomId === undefined

@@ -440,7 +440,7 @@ textarea.alteditor-lite-field__control {
   color: var(--alteditor-lite-error-color);
 }
 
-.alteditor-lite-search-select[aria-busy='true'] {
+.alteditor-lite-search-select__listbox[aria-busy='true'] {
   cursor: progress;
 }
 

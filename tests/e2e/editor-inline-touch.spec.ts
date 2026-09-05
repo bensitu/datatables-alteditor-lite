@@ -195,7 +195,7 @@ test('loads and commits a remote option on touch', async ({ page }, testInfo) =>
   await cell.tap();
   await cell.getByRole('button', { name: 'Edit cell' }).tap();
   const input = page.getByRole('combobox', { name: 'Rank' });
-  await expect(cell.locator('.alteditor-lite-search-select')).toHaveAttribute(
+  await expect(cell.locator('.alteditor-lite-search-select__listbox')).toHaveAttribute(
     'aria-busy',
     'false',
   );

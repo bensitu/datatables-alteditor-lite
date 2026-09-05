@@ -3,6 +3,7 @@ import { EditorConfigurationError } from '../core/alt-editor-lite-error.js';
 import {
   createNativeControlController,
   type NativeControlAdapter,
+  type NativeControlControllerArguments,
 } from './native-control-controller.js';
 import { normalizeNumberValue } from './number-value.js';
 
@@ -91,30 +92,34 @@ export function createInputFieldController<TFormValues extends object>(
   });
 }
 
-function createUndefinedNumberController<TFormValues extends object>(
-  config: Extract<NumberFieldConfig<TFormValues>, { readonly emptyValue?: undefined }>,
+function createNumberController<
+  TFormValues extends object,
+  TEmpty extends null | undefined,
+>(
+  config: NativeControlControllerArguments<TFormValues, number | TEmpty>['config'],
   fieldId: string,
   invalidMessage: string,
   requiredMessage: string,
   onUserChange: () => void,
+  emptyValue: TEmpty,
 ): ManagedFieldController<TFormValues> {
   const inputElement = document.createElement('input');
   inputElement.type = 'number';
 
-  const readValue = (): number | undefined => {
-    const normalizedValue = normalizeNumberValue(inputElement.value, undefined);
+  const readValue = (): number | TEmpty => {
+    const normalizedValue = normalizeNumberValue(inputElement.value, emptyValue);
     if (!normalizedValue.valid) {
-      return undefined;
+      return emptyValue;
     }
 
-    return normalizedValue.value ?? undefined;
+    return normalizedValue.value ?? emptyValue;
   };
 
-  const adapter: NativeControlAdapter<number | undefined> = {
+  const adapter: NativeControlAdapter<number | TEmpty> = {
     control: inputElement,
     readValue,
     writeValue: (value: unknown) => {
-      if (value === undefined) {
+      if (value === emptyValue) {
         inputElement.value = '';
         return;
       }
@@ -131,7 +136,7 @@ function createUndefinedNumberController<TFormValues extends object>(
       inputElement.readOnly = isReadOnly;
     },
     validateNative: (): FieldValidationResult => {
-      const normalizedValue = normalizeNumberValue(inputElement.value, undefined);
+      const normalizedValue = normalizeNumberValue(inputElement.value, emptyValue);
       if (!normalizedValue.valid || !inputElement.checkValidity()) {
         return {
           valid: false,
@@ -153,78 +158,7 @@ function createUndefinedNumberController<TFormValues extends object>(
   });
 }
 
-function createNullNumberController<TFormValues extends object>(
-  config: Extract<NumberFieldConfig<TFormValues>, { readonly emptyValue: null }>,
-  fieldId: string,
-  invalidMessage: string,
-  requiredMessage: string,
-  onUserChange: () => void,
-): ManagedFieldController<TFormValues> {
-  const inputElement = document.createElement('input');
-  inputElement.type = 'number';
-
-  const readValue = (): number | null => {
-    const normalizedValue = normalizeNumberValue(inputElement.value, null);
-    if (!normalizedValue.valid) {
-      return null;
-    }
-
-    return normalizedValue.value ?? null;
-  };
-
-  const adapter: NativeControlAdapter<number | null> = {
-    control: inputElement,
-    readValue,
-    writeValue: (value: unknown) => {
-      if (value === null) {
-        inputElement.value = '';
-        return;
-      }
-
-      if (typeof value !== 'number' || !Number.isFinite(value)) {
-        throw new EditorConfigurationError(
-          `Field "${config.name}" requires a number or null.`,
-        );
-      }
-
-      inputElement.value = String(value);
-    },
-    setReadOnly: (isReadOnly: boolean) => {
-      inputElement.readOnly = isReadOnly;
-    },
-    validateNative: (): FieldValidationResult => {
-      const normalizedValue = normalizeNumberValue(inputElement.value, null);
-      if (!normalizedValue.valid || !inputElement.checkValidity()) {
-        return {
-          valid: false,
-        };
-      }
-
-      return { valid: true };
-    },
-  };
-
-  return createNativeControlController({
-    adapter,
-    config,
-    fieldId,
-    invalidMessage,
-    requiredMessage,
-    onUserChange,
-    changeEvent: 'input',
-  });
-}
-
-/**
- * Creates a number controller with explicit empty-value normalization.
- *
- * @param config - Number field configuration.
- * @param fieldId - Instance-scoped control identifier.
- * @param invalidMessage - English or overridden validation fallback.
- * @param requiredMessage - Localized required-value message.
- * @param onUserChange - Form-owned change notification.
- * @returns Managed field controller.
- */
+/** Creates a number controller with explicit empty-value normalization. */
 export function createNumberFieldController<TFormValues extends object>(
   config: NumberFieldConfig<TFormValues>,
   fieldId: string,
@@ -232,21 +166,21 @@ export function createNumberFieldController<TFormValues extends object>(
   requiredMessage: string,
   onUserChange: () => void,
 ): ManagedFieldController<TFormValues> {
-  if (config.emptyValue === null) {
-    return createNullNumberController(
-      config,
-      fieldId,
-      invalidMessage,
-      requiredMessage,
-      onUserChange,
-    );
-  }
-
-  return createUndefinedNumberController(
-    config,
-    fieldId,
-    invalidMessage,
-    requiredMessage,
-    onUserChange,
-  );
+  return config.emptyValue === null
+    ? createNumberController(
+        config,
+        fieldId,
+        invalidMessage,
+        requiredMessage,
+        onUserChange,
+        null,
+      )
+    : createNumberController(
+        config,
+        fieldId,
+        invalidMessage,
+        requiredMessage,
+        onUserChange,
+        undefined,
+      );
 }

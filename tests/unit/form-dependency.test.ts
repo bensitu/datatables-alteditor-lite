@@ -299,7 +299,7 @@ describe('form dependencies', () => {
     expect(normalizedFailures[0]).toBe(synchronousFailure);
     expect(normalizedFailures[1]).toMatchObject({
       cause: 'remote reason',
-      message: 'Resolver failed.',
+      message: 'The operation failed.',
     });
     expect(reportedFailures).toHaveLength(2);
     controller.destroy();
@@ -412,6 +412,47 @@ describe('form dependencies', () => {
     ]);
     expect(setVisible.mock.calls).toEqual([[true]]);
     controller.destroy();
+  });
+
+  it('stops initial field state updates when destroyed during an asynchronous value assignment', async () => {
+    const pending = createDeferred<undefined>();
+    const setVisible = vi.fn();
+    const applyValue = vi.fn(() => pending.promise);
+    const controller = new FormDependencyController<DependencyValues>({
+      applyValue,
+      dependencies: defineFormDependencies<DependencyValues>()({
+        country: () => ({ details: { value: 'Updated', visible: true } }),
+      }),
+      fields: new Map([
+        [
+          'details',
+          {
+            config: { name: 'details', label: 'Details', type: 'text' },
+            controller: {} as ManagedFieldController<DependencyValues>,
+            runtime: {
+              setVisible,
+            } as unknown as FieldRuntimeController<DependencyValues>,
+          },
+        ],
+      ]),
+      lifecycleSignal: new AbortController().signal,
+      normalizeError: (error) =>
+        new EditorConfigurationError('Dependency failed.', error),
+      onErrorChange: vi.fn(),
+    });
+    const initialization = controller.initialize({
+      category: '',
+      country: 'JP',
+      details: '',
+      region: undefined,
+    });
+    await vi.waitFor(() => {
+      expect(applyValue).toHaveBeenCalledOnce();
+    });
+    controller.destroy();
+    pending.resolve(undefined);
+    await initialization;
+    expect(setVisible).not.toHaveBeenCalled();
   });
 
   it('rejects conflicting initial assignments before changing field state', async () => {

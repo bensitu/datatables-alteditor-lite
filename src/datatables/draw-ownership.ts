@@ -1,4 +1,9 @@
-import { EditorDestroyedError } from '../core/alt-editor-lite-error.js';
+import {
+  AltEditorLiteError,
+  EditorDestroyedError,
+} from '../core/alt-editor-lite-error.js';
+import { mergeAbortSignals } from '../core/merge-abort-signals.js';
+import { settleWithAbort } from '../core/settle-with-abort.js';
 
 import type { Api } from 'datatables.net';
 
@@ -29,7 +34,10 @@ export class DrawOwnership<TRow extends object> {
 
   private readonly pendingDraws = new Set<() => void>();
 
-  public constructor(private readonly table: Api<TRow>) {}
+  public constructor(
+    private readonly table: Api<TRow>,
+    private readonly timeoutMs = 30_000,
+  ) {}
 
   /** Returns whether a draw event is currently owned by the editor. */
   public ownsDraw(): boolean {
@@ -54,17 +62,22 @@ export class DrawOwnership<TRow extends object> {
       let isInvokingDraw = false;
       let didDraw = false;
       const cleanup = (): void => {
+        globalThis.clearTimeout(timeoutId);
         signal.removeEventListener('abort', handleAbort);
         this.table.off('draw.altEditorLiteOwnedDraw', handleDraw);
         this.pendingDraws.delete(finish);
       };
-      const finish = (): void => {
+      const finish = (error?: Error): void => {
         if (isSettled) {
           return;
         }
         isSettled = true;
         cleanup();
-        resolve();
+        if (error === undefined) {
+          resolve();
+        } else {
+          reject(error);
+        }
       };
       const handleAbort = (): void => {
         finish();
@@ -77,6 +90,15 @@ export class DrawOwnership<TRow extends object> {
         finish();
       };
 
+      const timeoutId = globalThis.setTimeout(() => {
+        finish(
+          new AltEditorLiteError({
+            code: 'DRAW_TIMEOUT',
+            message: 'Redraw timed out. Refresh the records before continuing.',
+            retryable: false,
+          }),
+        );
+      }, this.timeoutMs);
       this.pendingDraws.add(finish);
       signal.addEventListener('abort', handleAbort, { once: true });
       this.table.one('draw.altEditorLiteOwnedDraw', handleDraw);
@@ -95,9 +117,7 @@ export class DrawOwnership<TRow extends object> {
         }
       } catch (error: unknown) {
         isInvokingDraw = false;
-        isSettled = true;
-        cleanup();
-        reject(
+        finish(
           error instanceof Error
             ? error
             : new Error('DataTables draw failed.', { cause: error }),
@@ -117,50 +137,21 @@ export class DrawOwnership<TRow extends object> {
   ): Promise<void> {
     this.assertActive();
     const token = this.acquire(reason);
+    const mergedSignal = mergeAbortSignals([
+      signal,
+      this.lifecycleAbortController.signal,
+    ]);
     try {
       if (signal.aborted) {
         return;
       }
-      await new Promise<void>((resolve, reject) => {
-        let isSettled = false;
-        const lifecycleSignal = this.lifecycleAbortController.signal;
-        const cleanup = (): void => {
-          signal.removeEventListener('abort', handleAbort);
-          lifecycleSignal.removeEventListener('abort', handleAbort);
-        };
-        const settle = (callback: () => void): void => {
-          if (isSettled) {
-            return;
-          }
-          isSettled = true;
-          cleanup();
-          callback();
-        };
-        const handleAbort = (): void => {
-          settle(resolve);
-        };
-
-        signal.addEventListener('abort', handleAbort, { once: true });
-        lifecycleSignal.addEventListener('abort', handleAbort, { once: true });
-        void action().then(
-          () => {
-            settle(resolve);
-          },
-          (error: unknown) => {
-            settle(() => {
-              reject(
-                error instanceof Error
-                  ? error
-                  : new Error('Asynchronous refresh failed.', { cause: error }),
-              );
-            });
-          },
-        );
-        if (signal.aborted || lifecycleSignal.aborted) {
-          handleAbort();
-        }
-      });
+      await settleWithAbort(action(), mergedSignal.signal);
+    } catch (error: unknown) {
+      if (!mergedSignal.signal.aborted) {
+        throw error;
+      }
     } finally {
+      mergedSignal.dispose();
       this.release(token);
     }
   }

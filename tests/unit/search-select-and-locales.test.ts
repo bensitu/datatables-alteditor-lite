@@ -465,7 +465,10 @@ describe('SearchSelect remote request ownership', () => {
     await vi.waitFor(() => {
       expect(searchSelect.listboxElement.textContent).toContain('Load error');
     });
-    expect(searchSelect.element.getAttribute('aria-busy')).toBe('false');
+    expect(searchSelect.element.hasAttribute('aria-busy')).toBe(false);
+    expect(
+      searchSelect.element.querySelector('[role="listbox"]')?.getAttribute('aria-busy'),
+    ).toBe('false');
     searchSelect.destroy();
   });
 });

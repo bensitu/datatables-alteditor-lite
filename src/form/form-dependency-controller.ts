@@ -108,15 +108,6 @@ function isAbortError(error: unknown): boolean {
   }
 }
 
-function settleDependencyResult<TValue>(
-  value: PromiseLike<TValue> | TValue,
-  signal: AbortSignal,
-): Promise<TValue> {
-  return settleWithAbort(value, signal, (error) =>
-    error instanceof Error ? error : new Error('Resolver failed.', { cause: error }),
-  );
-}
-
 function isObjectRecord(value: unknown): value is Readonly<Record<string, unknown>> {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     return false;
@@ -390,7 +381,7 @@ export class FormDependencyController<TFormValues extends object> {
     revision: number,
   ): Promise<DependencyResolution<TFormValues>> {
     try {
-      const result = await settleDependencyResult(
+      const result = await settleWithAbort(
         resolver(
           getPathValue(values, sourcePath) as never,
           Object.freeze({ signal, values }),
@@ -593,7 +584,8 @@ export class FormDependencyController<TFormValues extends object> {
 
   private async applyPatches(
     patches: readonly ValidatedFieldPatch<TFormValues>[],
-    isCurrent: () => boolean = () => true,
+    isCurrent: () => boolean = () =>
+      !this.isDestroyed && !this.arguments_.lifecycleSignal.aborted,
   ): Promise<void> {
     for (const patch of patches) {
       if (!isCurrent()) {

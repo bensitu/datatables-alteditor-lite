@@ -137,7 +137,7 @@ export class DataTablesHost<TRow extends object>
 
     this.eventTarget = tableElement;
     this.ownershipKey = tableElement;
-    this.drawOwnership = new DrawOwnership(table);
+    this.drawOwnership = new DrawOwnership(table, refreshTimeout);
     this.selectIntegration = new SelectIntegration(table, () => {
       this.notifyEditorStateChange();
     });

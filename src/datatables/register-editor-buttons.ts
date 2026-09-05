@@ -305,7 +305,9 @@ function createButtonDefinition(
             : createEditorButtonState(editor.getIntegrationButtonStateInput());
         const buttonState = selectButtonState(currentState, operation);
         this.enable(buttonState.enabled);
-        this.text(buttonState.text);
+        const textElement = document.createElement('span');
+        textElement.textContent = buttonState.text;
+        this.text(textElement.innerHTML);
         buttonNode.css('display', buttonState.visible ? '' : 'none');
         buttonNode.attr('aria-hidden', String(!buttonState.visible));
         buttonNode.attr('aria-disabled', String(!buttonState.enabled));

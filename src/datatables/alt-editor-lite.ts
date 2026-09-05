@@ -17,7 +17,7 @@ export interface DataTablesAltEditorLiteOptions<
   TRow extends object,
   TFormValues extends object = DeepPartial<TRow>,
 > extends AltEditorLiteOptions<TRow, TFormValues> {
-  /** Maximum wait for an Ajax refresh callback, in milliseconds. */
+  /** Maximum wait for an Ajax refresh callback or commit redraw, in milliseconds. */
   readonly refreshTimeout?: number;
 }
 

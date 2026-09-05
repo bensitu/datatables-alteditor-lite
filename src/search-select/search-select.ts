@@ -233,7 +233,6 @@ export class SearchSelect<TValue extends string | number> {
 
     this.element = document.createElement('div');
     this.element.className = 'alteditor-lite-search-select';
-    this.element.setAttribute('aria-busy', 'false');
 
     this.inputElement = document.createElement('input');
     this.inputElement.type = 'text';
@@ -251,6 +250,7 @@ export class SearchSelect<TValue extends string | number> {
     this.listboxElement.className = 'alteditor-lite-search-select__listbox';
     this.listboxElement.id = this.listboxId;
     this.listboxElement.hidden = true;
+    this.listboxElement.setAttribute('aria-busy', 'false');
 
     const instructionsElement = document.createElement('div');
     instructionsElement.className = 'alteditor-lite-visually-hidden';
@@ -1161,6 +1161,9 @@ export class SearchSelect<TValue extends string | number> {
   }
 
   private updateBusyState(): void {
-    this.element.setAttribute('aria-busy', String(this.isLoading || this.isResolving));
+    this.listboxElement.setAttribute(
+      'aria-busy',
+      String(this.isLoading || this.isResolving),
+    );
   }
 }

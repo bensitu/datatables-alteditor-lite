@@ -23,6 +23,45 @@ describeEditorHostContract('DataTablesHost', () => {
 });
 
 describe('DataTablesHost', () => {
+  it('releases draw ownership when a committed redraw never completes', async () => {
+    const { api } = createTestTable('host-draw-timeout');
+    const host = new DataTablesHost(api, 1250);
+    const draw = vi.spyOn(api, 'draw').mockReturnValue(api);
+    vi.useFakeTimers();
+    try {
+      const update = host.applyUpdate(
+        host.resolveRecordTarget('#row-a'),
+        { id: 'row-a', name: 'Updated', rank: 2 },
+        {
+          signal: new AbortController().signal,
+          mode: 'dialog',
+          operation: 'edit',
+        },
+      );
+      const rejection = expect(update).rejects.toMatchObject({
+        retryable: false,
+        code: 'DRAW_TIMEOUT',
+      });
+      await vi.advanceTimersByTimeAsync(1250);
+      await rejection;
+      expect(vi.getTimerCount()).toBe(0);
+      draw.mockRestore();
+      await host.applyUpdate(
+        host.resolveRecordTarget('#row-a'),
+        { id: 'row-a', name: 'Recovered', rank: 2 },
+        {
+          signal: new AbortController().signal,
+          mode: 'dialog',
+          operation: 'edit',
+        },
+      );
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+      host.destroy();
+    }
+  });
+
   it.each([0, -1, NaN, Infinity, -Infinity])(
     'rejects an invalid refresh timeout (%s)',
     (timeout) => {
