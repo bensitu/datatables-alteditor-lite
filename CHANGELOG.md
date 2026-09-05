@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the supported Node.js runtime.
 - Prevented automatic updates for development tools that require Node.js 22 or
   later.
+- Kept Node.js type declarations on the Node 20 API surface until newer runtime
+  support is adopted.
 - Synchronized development dependency ranges with the lockfile without changing
   resolved versions.
 - Clarified cancellation, refresh, immutable-value boundaries, supported browser

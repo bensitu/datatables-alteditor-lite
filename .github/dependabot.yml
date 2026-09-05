@@ -32,7 +32,7 @@ updates:
           - '>=29.0.0'
       - dependency-name: '@types/node'
         versions:
-          - '>=23.0.0'
+          - '>=21.0.0'
       - dependency-name: 'vitest'
         versions:
           - '>=5.0.0'
