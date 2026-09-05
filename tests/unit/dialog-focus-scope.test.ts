@@ -23,6 +23,19 @@ function createScope(): {
 }
 
 describe('DialogFocusScope', () => {
+  it('focuses the dialog when all controls become disabled', () => {
+    const { dialogElement, scope } = createScope();
+    const button = document.createElement('button');
+    dialogElement.append(button);
+    scope.activate(dialogElement);
+    button.disabled = true;
+    dialogElement.dispatchEvent(
+      new KeyboardEvent('keydown', { bubbles: true, cancelable: true, key: 'Tab' }),
+    );
+    expect(document.activeElement).toBe(dialogElement);
+    scope.destroy();
+  });
+
   it('focuses an invalid nested control and restores the opening trigger', () => {
     const { dialogElement, scope } = createScope();
     const triggerElement = document.createElement('button');

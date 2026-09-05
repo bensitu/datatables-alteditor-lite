@@ -1749,6 +1749,47 @@ describe('AltEditorLite inline interaction and redraw behavior', () => {
     await editor.cancelInlineEdit();
   });
 
+  it('moves to the next Tab target without saving an unchanged cell', async () => {
+    const { api, editor } = createInlineEditor();
+    const before = api.row('#row-a').data();
+    await editor.openInlineEdit('#row-a', 0);
+    document
+      .querySelector('.alteditor-lite-inline input')
+      ?.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Tab' }));
+    await vi.waitFor(() => {
+      expect(editor.getInlineState()).toMatchObject({
+        status: 'editing',
+        target: { columnIndex: 1, rowId: 'row-a' },
+      });
+    });
+    expect(api.row('#row-a').data()).toBe(before);
+    await editor.cancelInlineEdit();
+  });
+
+  it('preserves newer focus when an asynchronous opening request fails', async () => {
+    const pending = createDeferred<undefined>();
+    const { editor } = createInlineEditor({
+      editing: inlineEditing(),
+      fields,
+      hooks: {
+        beforeOpen: async () => {
+          await pending.promise;
+          throw new Error('Opening unavailable.');
+        },
+      },
+    });
+    const original = document.createElement('button');
+    const current = document.createElement('button');
+    document.body.append(original, current);
+    original.focus();
+    const opening = editor.openInlineEdit('#row-a', 0);
+    const rejection = expect(opening).rejects.toThrow();
+    current.focus();
+    pending.resolve(undefined);
+    await rejection;
+    expect(document.activeElement).toBe(current);
+  });
+
   it('cancels on an external draw and ignores a late persistence result', async () => {
     const deferred = createDeferred<TestRow>();
     let operationSignal: AbortSignal | undefined;

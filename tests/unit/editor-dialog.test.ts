@@ -48,6 +48,18 @@ function getButton(
 }
 
 describe('EditorDialog', () => {
+  it('keeps focus inside the dialog when retrying becomes unavailable', () => {
+    const { controller, dialogElement } = createDialog();
+    controller.openConfirmation(document.createElement('div'), 'Remove', 'Remove', {
+      onRequestClose: vi.fn(),
+      onSubmit: vi.fn(),
+    });
+    getButton(dialogElement, 'submit').focus();
+    controller.setSubmitAvailable(false);
+    expect(document.activeElement).toBe(getButton(dialogElement, 'cancel'));
+    controller.destroy();
+  });
+
   it('applies consumer classes to the owned dialog element', () => {
     const tableElement = document.createElement('table');
     document.body.append(tableElement);

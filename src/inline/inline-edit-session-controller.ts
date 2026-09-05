@@ -329,12 +329,17 @@ export class InlineEditSessionController<
         this.transitionTo({ status: 'idle' });
       }
       if (
-        originalActiveElement instanceof HTMLElement &&
-        originalActiveElement.isConnected
+        document.activeElement === document.body ||
+        document.activeElement === originalActiveElement
       ) {
-        originalActiveElement.focus();
-      } else {
-        this.arguments_.host.focusInlineCell(undefined);
+        if (
+          originalActiveElement instanceof HTMLElement &&
+          originalActiveElement.isConnected
+        ) {
+          originalActiveElement.focus();
+        } else {
+          this.arguments_.host.focusInlineCell(undefined);
+        }
       }
       const error = normalizeOperationError(
         rawError,
@@ -433,7 +438,17 @@ export class InlineEditSessionController<
         session.normalizedOriginalValue,
       )
     ) {
-      this.cleanupSession('unchanged', true, true);
+      this.cleanupSession('unchanged', true, navigationIntent === undefined);
+      if (navigationIntent !== undefined) {
+        await this.focusCoordinator.restoreAfterCommit(
+          session,
+          navigationIntent,
+          undefined,
+          async (rowIndex, columnIndex) => {
+            await this.open(rowIndex, columnIndex);
+          },
+        );
+      }
       return;
     }
     session.candidate = candidate;

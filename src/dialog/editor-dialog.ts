@@ -146,8 +146,16 @@ export class EditorDialog {
    * @param isAvailable - Whether retrying can be meaningful.
    */
   public setSubmitAvailable(isAvailable: boolean): void {
+    const didHaveSubmitFocus = document.activeElement === this.shell.submitButton;
     this.isSubmitAvailable = isAvailable;
     this.shell.submitButton.disabled = this.isBusy || !isAvailable;
+    if (!isAvailable && !this.isBusy) {
+      if (didHaveSubmitFocus) {
+        this.shell.cancelButton.focus();
+      } else {
+        this.ensureFocus();
+      }
+    }
   }
 
   /**

@@ -239,6 +239,7 @@ export class DialogFocusScope {
 
     if (focusableElements.length === 0) {
       event.preventDefault();
+      this.dialogElement.tabIndex = -1;
       this.dialogElement.focus();
       return;
     }
