@@ -84,6 +84,51 @@ function createRunArguments(presentation: ReturnType<typeof createPresentation>)
 }
 
 describe('batch edit operation runner', () => {
+  it.each(['invalid', 'vetoed', 'unchanged'] as const)(
+    'reports presentation failures when a submission is %s',
+    async (outcome) => {
+      const runner = new BatchEditOperationRunner<TestRow, TestValues>(
+        new OperationOwner(),
+        ENGLISH_LANGUAGE,
+        undefined,
+        undefined,
+      );
+      const failure = new Error('Presentation could not be restored.');
+      const presentation = createPresentation(
+        outcome === 'invalid'
+          ? {
+              valid: false,
+              error: new AltEditorLiteError({ message: 'Invalid values.' }),
+            }
+          : outcome === 'unchanged'
+            ? {
+                valid: true,
+                changes: {},
+                changedFields: [],
+                collectedFieldValues: new Map(),
+              }
+            : validChanges(),
+      );
+      presentation.restoreAfterValidationFailure.mockImplementation(() => {
+        throw failure;
+      });
+      presentation.completeUnchanged.mockRejectedValue(failure);
+      const runArguments = createRunArguments(presentation);
+      const result = await runner.run({
+        ...runArguments,
+        beforeSubmit: () => Promise.resolve(false),
+      });
+
+      expect(result.status).toBe('failed');
+      expect(runArguments.reportError).toHaveBeenCalledWith(
+        expect.objectContaining({ cause: failure }),
+        expect.objectContaining({ committed: false }),
+        true,
+      );
+      expect(runArguments.commit).not.toHaveBeenCalled();
+    },
+  );
+
   it('persists one ordered change set before committing canonical rows', async () => {
     const lifecycle: string[] = [];
     const canonicalRows = originals.map((row) => ({ ...row, name: 'Updated' }));

@@ -72,6 +72,7 @@ export class RefreshOperationRunner<TRow extends object, TFormValues extends obj
   }
 
   private assertReady(): void {
+    this.arguments_.stateCoordinator.assertActive();
     if (
       this.arguments_.stateCoordinator.getState().status !== 'ready' ||
       this.arguments_.interactionCoordinator.current() !== 'none'

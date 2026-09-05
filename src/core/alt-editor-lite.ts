@@ -236,6 +236,10 @@ export class AltEditorLite<
           stateCoordinator: this.stateCoordinator,
         });
       }
+      this.inlineController = inlineController;
+      this.dialogController = dialogController;
+      this.refreshOperationRunner = refreshOperationRunner;
+      this.notifyIntegration();
     } catch (error: unknown) {
       try {
         runCleanupSteps([
@@ -263,11 +267,6 @@ export class AltEditorLite<
       }
       throw error;
     }
-
-    this.inlineController = inlineController;
-    this.dialogController = dialogController;
-    this.refreshOperationRunner = refreshOperationRunner;
-    this.notifyIntegration();
   }
 
   /** Opens the Create dialog with optional partial form values. */

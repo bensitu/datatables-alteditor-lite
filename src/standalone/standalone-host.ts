@@ -148,7 +148,12 @@ export class StandaloneHost<TRow extends object, TTarget>
     this.assertActive();
     signal.throwIfAborted();
     if (action === undefined) {
-      await this.options.refresh?.(signal);
+      if (this.options.refresh === undefined) {
+        throw new EditorConfigurationError(
+          'StandaloneHost requires a refresh callback or an operation action.',
+        );
+      }
+      await this.options.refresh(signal);
     } else {
       await action();
     }

@@ -106,8 +106,8 @@ export class BatchEditOperationRunner<TRow extends object, TFormValues extends o
         return { status: 'aborted' };
       }
       if (!validation.valid) {
-        this.operationOwner.complete(request);
         runArguments.presentation.restoreAfterValidationFailure();
+        this.operationOwner.complete(request);
         return { error: validation.error, status: 'validation-failed' };
       }
 
@@ -125,8 +125,8 @@ export class BatchEditOperationRunner<TRow extends object, TFormValues extends o
         transaction.changedFields.length === 0 ||
         Object.keys(transaction.changes).length === 0
       ) {
-        this.operationOwner.complete(request);
         await runArguments.presentation.completeUnchanged();
+        this.operationOwner.complete(request);
         return { status: 'unchanged' };
       }
 
@@ -149,8 +149,8 @@ export class BatchEditOperationRunner<TRow extends object, TFormValues extends o
           return { status: 'aborted' };
         }
         if (!shouldContinue) {
-          this.operationOwner.complete(request);
           runArguments.presentation.restoreAfterValidationFailure();
+          this.operationOwner.complete(request);
           return { status: 'vetoed' };
         }
       }

@@ -118,8 +118,10 @@ describe('Host record reader', () => {
     const releaseReads = createDeferred<undefined>();
     const targets = Array.from({ length: 40 }, (_, index) => `record-${String(index)}`);
     const reads: string[] = [];
-    const host = createHost(async (target) => {
+    const signals: AbortSignal[] = [];
+    const host = createHost(async (target, context) => {
       reads.push(target);
+      if (context !== undefined) signals.push(context.signal);
       if (target === 'record-0') {
         return await failedRead.promise;
       }
@@ -134,6 +136,7 @@ describe('Host record reader', () => {
     failedRead.reject(new Error('Record 0 is unavailable.'));
 
     await expect(result).rejects.toThrow('Record 0 is unavailable.');
+    expect(signals.every((signal) => signal.aborted)).toBe(true);
     expect(reads).toEqual(targets.slice(0, 16));
     releaseReads.resolve(undefined);
   });

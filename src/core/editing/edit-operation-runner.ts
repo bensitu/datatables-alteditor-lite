@@ -99,8 +99,8 @@ export class EditOperationRunner<TRow extends object, TFormValues extends object
         return { status: 'aborted' };
       }
       if (!validation.valid) {
-        this.operationOwner.complete(request);
         runArguments.presentation.restoreAfterValidationFailure();
+        this.operationOwner.complete(request);
         return { error: validation.error, status: 'validation-failed' };
       }
 
@@ -129,8 +129,8 @@ export class EditOperationRunner<TRow extends object, TFormValues extends object
           return { status: 'aborted' };
         }
         if (!shouldContinue) {
-          this.operationOwner.complete(request);
           runArguments.presentation.restoreAfterValidationFailure();
+          this.operationOwner.complete(request);
           return { status: 'vetoed' };
         }
       }

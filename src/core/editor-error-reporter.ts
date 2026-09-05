@@ -30,6 +30,9 @@ export class EditorErrorReporter<TRow extends object, TFormValues extends object
     context: EditorErrorHookContext,
     publishEvent: boolean,
   ): void {
+    if (this.isDestroyed()) {
+      return;
+    }
     try {
       this.hooks?.onError?.(error, context);
     } catch (hookError: unknown) {

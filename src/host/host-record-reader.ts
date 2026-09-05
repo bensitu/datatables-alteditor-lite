@@ -1,3 +1,4 @@
+import { mergeAbortSignals } from '../core/merge-abort-signals.js';
 import { settleWithAbort } from '../core/settle-with-abort.js';
 
 import type { EditorHost } from './editor-host.js';
@@ -22,20 +23,31 @@ export async function readHostRecords<TRow extends object, TTarget>(
   signal: AbortSignal,
 ): Promise<readonly Readonly<TRow>[]> {
   const rows = new Array<Readonly<TRow>>(targets.length);
+  const readAbortController = new AbortController();
+  const mergedSignal = mergeAbortSignals([signal, readAbortController.signal]);
   let nextIndex = 0;
   const readNext = async (): Promise<void> => {
     let index = nextIndex;
     while (index < targets.length) {
       nextIndex += 1;
       try {
-        rows[index] = await readHostRecord(host, targets[index] as TTarget, signal);
+        rows[index] = await readHostRecord(
+          host,
+          targets[index] as TTarget,
+          mergedSignal.signal,
+        );
       } catch (error: unknown) {
         nextIndex = targets.length;
+        readAbortController.abort(error);
         throw error;
       }
       index = nextIndex;
     }
   };
-  await Promise.all(targets.slice(0, MAX_CONCURRENT_READS).map(readNext));
-  return rows;
+  try {
+    await Promise.all(targets.slice(0, MAX_CONCURRENT_READS).map(readNext));
+    return rows;
+  } finally {
+    mergedSignal.dispose();
+  }
 }

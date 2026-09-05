@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { EditorDestroyedError } from '../../src/core/alt-editor-lite-error.js';
+import { AltEditorLite } from '../../src/core/alt-editor-lite.js';
 import { hasHostBatchUpdateCapability } from '../../src/host/editor-host.js';
 import { StandaloneHost } from '../../src/standalone/standalone-host.js';
 
@@ -65,6 +66,60 @@ describeEditorHostContract('StandaloneHost', () => {
 });
 
 describe('StandaloneHost lifecycle', () => {
+  it('releases editor ownership when the initial presentation notification fails', () => {
+    const host = Object.assign(createRecordHost(), {
+      completeEditorPresentation: vi.fn(),
+      notifyEditorStateChange: vi.fn<() => void>(() => {
+        throw new Error('Presentation unavailable.');
+      }),
+    });
+    const options = {
+      fields: [{ type: 'text' as const, name: 'name' as const, label: 'Name' }],
+    };
+    expect(() => new AltEditorLite(host, options)).toThrow('Presentation unavailable.');
+    host.notifyEditorStateChange.mockImplementation(() => undefined);
+    const editor = new AltEditorLite(host, options);
+    editor.destroy();
+  });
+
+  it('requires a refresh callback unless an operation supplies the action', async () => {
+    const host = createRecordHost();
+    const signal = new AbortController().signal;
+    await expect(host.refresh(signal)).rejects.toThrow('refresh');
+    const action = vi.fn(() => Promise.resolve());
+    await host.refresh(signal, action);
+    expect(action).toHaveBeenCalledOnce();
+    host.destroy();
+  });
+
+  it('reports destruction while refresh is preparing', async () => {
+    const editor = new AltEditorLite(createRecordHost(), { fields: [] });
+    const refresh = editor.refresh();
+    editor.destroy();
+    await expect(refresh).rejects.toBeInstanceOf(EditorDestroyedError);
+  });
+
+  it('does not notify error observers after destruction during a success callback', async () => {
+    let rejectSuccess: ((error: Error) => void) | undefined;
+    const pendingSuccess = new Promise<void>((_resolve, reject) => {
+      rejectSuccess = reject;
+    });
+    const afterSuccess = vi.fn(() => pendingSuccess);
+    const onError = vi.fn();
+    const editor = new AltEditorLite(createRecordHost({ refresh: () => undefined }), {
+      fields: [],
+      hooks: { afterSuccess, onError },
+    });
+    const refresh = editor.refresh();
+    await vi.waitFor(() => {
+      expect(afterSuccess).toHaveBeenCalledOnce();
+    });
+    editor.destroy();
+    rejectSuccess?.(new Error('Observer unavailable.'));
+    await refresh;
+    expect(onError).not.toHaveBeenCalled();
+  });
+
   it('settles an application only after the consumer callback completes', async () => {
     let completeApplication: (() => void) | undefined;
     const callbackCompletion = new Promise<void>((resolve) => {
