@@ -39,6 +39,15 @@ updates:
       - dependency-name: '@vitest/coverage-v8'
         versions:
           - '>=5.0.0'
+      - dependency-name: '@commitlint/cli'
+        versions:
+          - '>=21.0.0'
+      - dependency-name: '@commitlint/config-conventional'
+        versions:
+          - '>=21.0.0'
+      - dependency-name: 'lint-staged'
+        versions:
+          - '>=17.0.0'
     groups:
       npm-development-minor-and-patch:
         dependency-type: 'development'
