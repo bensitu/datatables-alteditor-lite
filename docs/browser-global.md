@@ -137,6 +137,13 @@ callbacks. Both standalone files are published with source maps and neither
 imports, registers, or requires DataTables. See [Standalone
 usage](standalone.md) for the Host and record ownership contract.
 
+The standalone global exposes `AltEditorLite`, `StandaloneHost`,
+`AltEditorLiteError`, `EditorConfigurationError`, and `EditorTargetUnavailableError`.
+It does not include the main global's language registry or custom field helper;
+use the ESM entry for the complete neutral API.
+
+Retain the package's `LICENSE` file when redistributing self-hosted assets.
+
 ## Languages
 
 Included language registration bundles must load after the main browser bundle:

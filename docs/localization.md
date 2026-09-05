@@ -146,3 +146,6 @@ setups and register themselves after the main bundle loads.
 Changing an active editor's language in place is not supported. Destroy and
 recreate the editor and its Host adapter with the selected language. The backing
 records remain owned by DataTables or the application data store.
+The `/datatables` facade constructs its replacement Host internally; applications
+using the neutral constructor must construct a new Host explicitly, because
+destroying the editor also destroys its existing Host adapter.

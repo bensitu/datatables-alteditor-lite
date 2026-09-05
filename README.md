@@ -231,7 +231,8 @@ const editor = new AltEditorLite<UserRow, UserForm, string>(host, {
 
 The `records` provider is optional unless a configured field uses local
 uniqueness validation. An optional `refresh` callback defines consumer-owned
-refresh work; without it, refresh completes without changing records. Events are
+refresh work. Without that callback or `operations.refresh`, refresh rejects with
+`EditorConfigurationError`. Events are
 dispatched on `host.eventTarget`, which can be supplied by the application or
 left as the host's private `EventTarget`.
 

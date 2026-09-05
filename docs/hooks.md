@@ -63,6 +63,9 @@ validation. Plain objects and arrays in `values` are recursively frozen, while
 browser host objects such as `File` retain their normal identity. Return `false`
 to keep the presentation open without publishing submit or calling persistence.
 
+This freezing applies to plain data containers, not mutable methods on `Date`,
+`Map`, `Set`, or custom class instances. Treat all supplied values as read-only.
+
 The hook is veto-only: it cannot return replacement values and cannot bypass validation.
 
 ## beforeClose

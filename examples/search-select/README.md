@@ -1,5 +1,9 @@
 # SearchSelect example
 
+The snippets assume an application-defined `EmployeeForm` with an `officeId`
+property and an editor configured with the illustrated field. Open its dialog
+before calling `getField()`, because controllers exist only while a form is open.
+
 ```ts
 import {
   isChoiceFieldController,

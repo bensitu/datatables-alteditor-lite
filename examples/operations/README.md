@@ -9,6 +9,7 @@ const editor = new AltEditorLite(table, {
     async create(values, context) {
       const response = await fetch('/users', {
         body: JSON.stringify(values),
+        headers: { 'Content-Type': 'application/json' },
         method: 'POST',
         signal: context.signal,
       });
@@ -19,6 +20,9 @@ const editor = new AltEditorLite(table, {
           retryable: true,
         });
       }
+      if (!response.ok) {
+        throw new Error('Create request failed.');
+      }
       return await response.json();
     },
     async updateMany(changes, originals, context) {
@@ -28,6 +32,7 @@ const editor = new AltEditorLite(table, {
           ids: originals.map((row) => row.id),
         }),
         method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
         signal: context.signal,
       });
       if (!response.ok) {
@@ -43,3 +48,6 @@ const editor = new AltEditorLite(table, {
 ```
 
 DataTables changes only after the callback resolves with a complete row.
+Validate the response against the application's record schema before returning
+it. These examples send JSON values; upload `File` values using an
+application-owned `FormData` request instead of `JSON.stringify`.

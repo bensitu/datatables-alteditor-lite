@@ -111,6 +111,8 @@ source values. Invalid types, unavailable choice values, and unsupported file
 values throw `EditorConfigurationError`; values are never accepted through
 coercion. Runtime setters change only the active rendered form and do not modify
 the original field configuration.
+Number assignments must be finite; `NaN` and either infinity are rejected without
+clearing the current valid input.
 
 Runtime changes that alter whether a field participates in submission can affect
 Dialog dirty state even when its stored value is unchanged. Restoring the
@@ -330,6 +332,9 @@ string-valued configurations; manual numeric parsing is not supported. Current
 non-empty manual text is available to form collection and programmatic submission
 before Tab or a focus change commits its presentation state. Canceling IME
 composition retains the previously selected value.
+Escape while searching restores the last committed selection. Leaving a
+choice-only field with unmatched text clears the uncommitted query instead of
+presenting text that has no selected value.
 
 Set `search: { enabled: false }` for a choice-only combobox. Its focusable control
 remains keyboard accessible, opens with Enter, Space, or ArrowDown, and exposes

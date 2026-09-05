@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Expanded automatic dependency updates to all npm development tools and GitHub Actions.
 - Retained successful forms now rebase dirty tracking from the latest canonical
   result when `closeOnSuccess` is false.
 - KeyTable restoration now preserves external state changes made while Inline
@@ -33,6 +34,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Released partially constructed editor and inline resources, cancelled sibling
+  record reads after failures, and suppressed error callbacks after destruction.
+- Preserved validation and presentation failures without misclassifying them as
+  cancelled requests.
+- Rejected non-finite numeric assignments without clearing valid input, cleared
+  obsolete feedback after form population, and stopped stale dependency updates.
+- Reinitialized retained multi-record dependencies and protected restricted
+  fields from custom-widget change notifications.
+- Restored SearchSelect selections on Escape, preserved IME input, and kept
+  loading announcements outside the busy result list.
+- Preserved unchanged Inline keyboard navigation, newer external focus after
+  failed opening, and accessible error descriptions and dialog focus.
+- Bounded missing DataTables commit draws, rendered translated button labels as
+  text, and supported instance IDs when Web Crypto is unavailable.
+- Rejected Standalone refresh requests without a configured implementation.
 - Invalidated pending asynchronous close decisions when form state changes or
   submission begins; cancelled decisions no longer keep the editor waiting.
 - Made `closeDialog()` cancel an active Dialog submission without invoking

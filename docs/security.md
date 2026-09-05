@@ -24,6 +24,11 @@ cloned without sanitization, so externally sourced markup must be sanitized befo
 configuration. Patterns should avoid expressions with excessive backtracking on
 long input.
 
+DOM nodes returned by `removeConfirmation` and custom field adapters are also
+trusted application content. Use `textContent` for external values and sanitize
+external markup before constructing those nodes. The editor does not sanitize
+application-owned DOM.
+
 File selectors and `accept` attributes do not establish trust. Servers must
 validate uploaded content, size, and media type. Data URLs returned by file fields
 must not be inserted into active HTML or executable frames without an

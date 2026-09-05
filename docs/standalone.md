@@ -153,7 +153,7 @@ refresh: async (signal) => {
 ```
 
 `editor.refresh()` invokes this callback when `operations.refresh` is not
-configured. Without either callback, refresh completes without changing records.
+configured. Without either callback, refresh rejects with `EditorConfigurationError`.
 When `operations.refresh` is configured, it owns the refresh and any resulting
 record or UI changes. The Host callback receives its `AbortSignal` directly;
 `operations.refresh` receives the same signal through its operation context.

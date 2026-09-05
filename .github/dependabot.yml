@@ -8,14 +8,11 @@ updates:
       day: 'monday'
       time: '00:00'
       timezone: 'America/New_York'
-    allow:
-      - dependency-name: 'datatables.net'
-      - dependency-name: 'datatables.net-autofill'
-      - dependency-name: 'datatables.net-buttons'
-      - dependency-name: 'datatables.net-colreorder'
-      - dependency-name: 'datatables.net-columncontrol'
-      - dependency-name: 'datatables.net-keytable'
-      - dependency-name: 'datatables.net-responsive'
-      - dependency-name: 'datatables.net-rowreorder'
-      - dependency-name: 'datatables.net-searchbuilder'
-      - dependency-name: 'datatables.net-select'
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    open-pull-requests-limit: 5
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '00:00'
+      timezone: 'America/New_York'

@@ -260,6 +260,10 @@ Visibility, options, and required state belong to the rendered Dialog form. Use
 `validateForm` for cross-field data constraints that must also protect Inline
 updates.
 
+When a successful multi-record dialog stays open, initial dependencies run again
+against its new canonical values. Restricted fields remain protected even if a
+custom widget emits a change notification while disabled.
+
 Starting a new validation aborts the preceding validation signal. Closing an
 editor presentation or destroying the editor also aborts validation. Aborted and
 superseded results do not change field state, display errors, or submit data.

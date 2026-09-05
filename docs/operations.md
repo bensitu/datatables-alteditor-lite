@@ -35,6 +35,10 @@ applications can retain `table` in application scope or retain a
 presentation or destroying the editor aborts the signal. Results from an aborted,
 replaced, or destroyed request are ignored.
 
+Cancellation stops editor-owned continuation, not an already completed remote
+write. Callbacks must observe their signal before applying application-owned
+state. Reconcile from the authoritative data source when completion is uncertain.
+
 Consumer-owned callbacks also own their request deadlines. Apply an
 application-appropriate timeout in the callback and use the supplied signal to
 cancel underlying network work. The editor does not impose a fixed deadline on
@@ -82,6 +86,9 @@ tolerate unrelated external table changes; AltEditorLite never retargets by valu
 The `original` callback argument is a detached snapshot captured before opening.
 Plain nested records and arrays are recursively copied and frozen, so callback code
 cannot mutate the corresponding live row data through the snapshot.
+Built-in objects such as `Date`, `Map`, `Set`, and `File`, and custom class
+instances retain their identity; their mutable methods are not blocked. Treat
+them as read-only or copy them before making application-owned changes.
 The default update implementation copies only configured and collected field
 paths. Edited nested branches become new plain objects, unrelated properties are
 preserved, and the original row is not mutated. An enabled field explicitly
@@ -130,6 +137,8 @@ operations: {
 order, and a `batchEdit` / `dialog` context. It must return the same number of
 complete canonical rows in the same order. All results are checked before the
 Host mutates any record.
+Return an independent row object for each distinct record. Do not reuse one
+mutable object for multiple results or mutate the supplied originals.
 
 Resolution order is `operations.updateMany`, then synchronous
 `clientSide.updateRow(original, changes)` for each original, then the safe
@@ -170,8 +179,8 @@ the editor reports a normalized error and releases refresh ownership.
 DataTables does not expose an
 `AbortSignal` parameter for `ajax.reload()`, so aborting editor ownership cannot
 guarantee cancellation of that transport. `StandaloneHost` invokes its optional
-consumer-provided refresh callback and otherwise completes without changing
-records.
+consumer-provided refresh callback. Without that callback or `operations.refresh`,
+refresh rejects with `EditorConfigurationError`.
 
 Configure `operations.refresh(context)` when network-level cancellation is
 required. The callback receives the owned signal, replaces the Host's default
@@ -190,8 +199,12 @@ const editor = new AltEditorLite(table, {
 });
 ```
 
-This applies only to the built-in DataTables Ajax reload wait. It does not set a
-deadline for `operations.refresh` or any other consumer callback.
+This bounds the built-in DataTables Ajax reload wait and the draw event awaited
+after Create, Edit, or Remove application. A missing commit draw reports
+`DRAW_TIMEOUT`, releases draw ownership, and is not retryable: persistence or row
+application may already have completed. Refresh from authoritative records before
+continuing. It does not set a deadline for `operations.refresh` or any other
+consumer callback.
 
 ## Errors and retry
 

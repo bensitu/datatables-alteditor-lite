@@ -41,7 +41,7 @@ their normal label and error relationships.
 | Arrow Down / Arrow Up | Open and move through enabled options                               |
 | Home / End            | Move to the first or last enabled option                            |
 | Enter                 | Select the active option; never submit the dialog from the combobox |
-| Escape                | Close the listbox without closing the dialog                        |
+| Escape                | Restore the committed selection and close the listbox               |
 | Tab                   | Commit a valid option or manual string and leave                    |
 | Backspace             | Clear an empty clearable field                                      |
 
@@ -50,9 +50,11 @@ The input uses `role="combobox"`, `aria-autocomplete="list"`, `aria-expanded`,
 states. Result counts and no-result states use a polite live region. The clear
 button has a localized accessible name.
 
-Remote loading exposes `aria-busy` on the SearchSelect root and a non-selectable
+Remote loading exposes `aria-busy` on the SearchSelect listbox and a non-selectable
 loading row. Threshold guidance, load failures, and resolved selection labels use
 the same polite live status; query failures do not open an editor-level modal.
+The live status remains outside the busy listbox so loading announcements are not
+deferred with its results.
 
 Composition pauses filtering. Enter during Japanese or Chinese IME composition is
 consumed by the combobox and cannot be mistaken for option selection or dialog
@@ -158,6 +160,8 @@ These mappings are CSS-only and do not require a framework adapter.
 Inline Edit mounts one native control in the owned cell. Its label remains
 available to assistive technology while visual error text is presented through a
 plain-text modal alert. The focused control supplies the visible focus outline.
+Inline errors retain their visually hidden descriptions and `aria-describedby`
+association after the alert closes.
 The cell editing border becomes transparent while a valid descendant has visible
 focus, while an invalid cell retains its error border. Checkbox and text-like
 controls use compact dimensions that retain the surrounding row height.

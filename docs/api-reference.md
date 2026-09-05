@@ -124,8 +124,8 @@ const editor = new AltEditorLite<TRow, TFormValues>(table, options);
 The DataTables constructor accepts
 `DataTablesAltEditorLiteOptions<TRow, TFormValues>`, which extends the neutral
 options with an optional finite positive `refreshTimeout` in milliseconds. The
-default is `30_000` and applies only while waiting for the built-in
-`ajax.reload()` callback.
+default is `30_000` and bounds the built-in `ajax.reload()` callback and commit
+draw waits. It does not impose a timeout on consumer callbacks.
 
 `AltEditorLite` extends the neutral editor and accepts public DataTables
 selectors through these overloads:
@@ -185,8 +185,9 @@ const editor = new AltEditorLite<TRow, TFormValues, TTarget>(host, options);
 `read` is required and may return a record or a promise-like record. It receives
 an optional `HostReadContext`. The apply callbacks are required only for
 operations the application invokes, and each callback may return a value or a
-promise-like value. `refresh` defines consumer-owned refresh work; without it,
-`refresh()` completes without changing records. `eventTarget` defaults to a new
+promise-like value. `refresh` defines consumer-owned refresh work. Without it or
+`operations.refresh`, `refresh()` rejects with `EditorConfigurationError`.
+`eventTarget` defaults to a new
 private `EventTarget`, while `ownershipKey` defaults to the Host instance.
 
 `applyUpdates` enables multi-record editing and receives ordered `{ target, row }`

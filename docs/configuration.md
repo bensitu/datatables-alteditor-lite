@@ -40,7 +40,7 @@ delegates storage and refresh work to consumer callbacks and is exported from
 `datatables-alteditor-lite/standalone`.
 
 The `/datatables` facade additionally accepts `refreshTimeout`, a finite positive
-number of milliseconds to wait for an Ajax reload callback. It defaults to
+number of milliseconds to wait for an Ajax reload callback or a commit draw. It defaults to
 `30_000`. This integration setting is not part of the neutral or standalone
 option types.
 
@@ -258,7 +258,7 @@ presentation reaches a stable state.
 
 ## Migrating from v0.7.x
 
-v0.8.0 is additive. Existing v0.7.2 configuration retains its default close,
+v0.8.0 adds optional editing behavior. Existing v0.7.2 configuration retains its default close,
 submit validation, F2 activation, generated/static template, Remove text, theme,
 and 30-second DataTables Ajax refresh behavior.
 
@@ -271,7 +271,9 @@ and 30-second DataTables Ajax refresh behavior.
   and elements remain unchanged.
 - Dialog classes, custom Remove content, and semantic CSS variables are opt-in.
 - The `/datatables` `refreshTimeout` setting is optional and defaults to
-  `30_000` milliseconds.
+  `30_000` milliseconds. It also bounds commit draw waits.
+- Standalone refresh without a Host callback or `operations.refresh` now rejects
+  with `EditorConfigurationError` instead of completing without changing records.
 
 ## Migrating from v0.6.x
 
