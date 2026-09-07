@@ -30,11 +30,11 @@ export interface OwnedOperationRequest<
 
 /** Owns one asynchronous editor operation at a time. */
 export class OperationOwner {
-  private readonly sequence = new RequestSequence();
+  readonly #sequence = new RequestSequence();
 
-  private activeRequest: OwnedOperationRequest | undefined;
+  #activeRequest: OwnedOperationRequest | undefined;
 
-  private isDestroyed = false;
+  #isDestroyed = false;
 
   /** Begins a request and invalidates any earlier request. */
   public begin(operation: 'create', mode: 'dialog'): OwnedOperationRequest<'create'>;
@@ -56,15 +56,15 @@ export class OperationOwner {
     targetOrTargets?:
       Readonly<EditorOperationTarget> | readonly Readonly<EditorOperationTarget>[],
   ): OwnedOperationRequest {
-    if (this.isDestroyed) {
+    if (this.#isDestroyed) {
       throw new EditorDestroyedError();
     }
-    this.activeRequest?.abortController.abort();
+    this.#activeRequest?.abortController.abort();
     const request: OwnedOperationRequest = {
       abortController: new AbortController(),
       mode,
       operation,
-      sequence: this.sequence.next(),
+      sequence: this.#sequence.next(),
       ...(Array.isArray(targetOrTargets)
         ? {
             targets: Object.freeze([
@@ -75,16 +75,16 @@ export class OperationOwner {
           ? {}
           : { target: targetOrTargets as Readonly<EditorOperationTarget> }),
     };
-    this.activeRequest = request;
+    this.#activeRequest = request;
     return request;
   }
 
   /** Returns whether a request still owns every asynchronous continuation. */
   public owns(request: OwnedOperationRequest): boolean {
     return (
-      !this.isDestroyed &&
-      this.activeRequest === request &&
-      this.sequence.isCurrent(request.sequence) &&
+      !this.#isDestroyed &&
+      this.#activeRequest === request &&
+      this.#sequence.isCurrent(request.sequence) &&
       !request.abortController.signal.aborted
     );
   }
@@ -105,7 +105,8 @@ export class OperationOwner {
   ): OperationContext {
     const signal = request.abortController.signal;
     switch (operation) {
-      case 'create': {
+      case 'create':
+      case 'remove': {
         return Object.freeze({ mode: 'dialog', operation, signal });
       }
       case 'edit': {
@@ -130,9 +131,6 @@ export class OperationOwner {
           targets: request.targets,
         });
       }
-      case 'remove': {
-        return Object.freeze({ mode: 'dialog', operation, signal });
-      }
       case 'refresh': {
         return request.mode === 'inline' && request.target !== undefined
           ? Object.freeze({
@@ -153,20 +151,20 @@ export class OperationOwner {
 
   /** Completes a request only when it still owns the operation. */
   public complete(request: OwnedOperationRequest): void {
-    if (this.activeRequest === request) {
-      this.activeRequest = undefined;
+    if (this.#activeRequest === request) {
+      this.#activeRequest = undefined;
     }
   }
 
   /** Aborts the current request, optionally limited to one presentation mode. */
   public abort(mode?: EditorOperationMode): void {
-    if (mode !== undefined && this.activeRequest?.mode !== mode) {
+    if (mode !== undefined && this.#activeRequest?.mode !== mode) {
       return;
     }
 
-    this.activeRequest?.abortController.abort();
-    this.activeRequest = undefined;
-    this.sequence.invalidate();
+    this.#activeRequest?.abortController.abort();
+    this.#activeRequest = undefined;
+    this.#sequence.invalidate();
   }
 
   /** Invalidates late continuations without changing the destroyed state. */
@@ -176,11 +174,11 @@ export class OperationOwner {
 
   /** Permanently aborts and rejects ownership for every request. */
   public destroy(): void {
-    if (this.isDestroyed) {
+    if (this.#isDestroyed) {
       return;
     }
 
     this.abort();
-    this.isDestroyed = true;
+    this.#isDestroyed = true;
   }
 }

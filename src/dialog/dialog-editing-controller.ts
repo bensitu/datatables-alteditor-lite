@@ -689,6 +689,7 @@ export class DialogEditingController<
     this.arguments_.stateCoordinator.transitionTo({ action, status: 'opening' });
     let form: EditorFormController<TFormValues> | undefined;
     try {
+      signal.throwIfAborted();
       form = buildEditorForm(
         this.arguments_.options.fields,
         this.arguments_.instanceId,
@@ -715,6 +716,7 @@ export class DialogEditingController<
         },
       );
       this.#provisionalForm = form;
+      signal.throwIfAborted();
       form.onMutation = () => {
         this.#handleFormMutation();
       };
@@ -723,7 +725,7 @@ export class DialogEditingController<
       }
       await settleWithAbort(form.initializeDependencies(), signal);
       await settleWithAbort(form.rebaseDirtyState(), signal);
-      this.arguments_.stateCoordinator.assertActive();
+      signal.throwIfAborted();
       this.#dialog.openForm(
         form.element,
         action === 'create'
@@ -747,7 +749,7 @@ export class DialogEditingController<
       this.#activeSession = session;
     } catch (rawError: unknown) {
       if (signal.aborted) {
-        this.arguments_.stateCoordinator.assertActive();
+        this.#finishCancelledOpening(form);
         return;
       }
       this.#failOpening(rawError, form, errorContext);
@@ -769,6 +771,7 @@ export class DialogEditingController<
     });
     let form: BatchEditorFormController<TFormValues> | undefined;
     try {
+      signal.throwIfAborted();
       form = new BatchEditorFormController(
         this.arguments_.options.fields,
         originals,
@@ -795,11 +798,12 @@ export class DialogEditingController<
         },
       );
       this.#provisionalForm = form;
+      signal.throwIfAborted();
       form.onMutation = () => {
         this.#handleFormMutation();
       };
       await settleWithAbort(form.initializeDependencies(), signal);
-      this.arguments_.stateCoordinator.assertActive();
+      signal.throwIfAborted();
       this.#dialog.openForm(
         form.element,
         this.arguments_.language.dialog.batchEditTitle,
@@ -826,7 +830,7 @@ export class DialogEditingController<
       };
     } catch (rawError: unknown) {
       if (signal.aborted) {
-        this.arguments_.stateCoordinator.assertActive();
+        this.#finishCancelledOpening(form);
         return;
       }
       this.#failOpening(rawError, form, {
@@ -843,6 +847,17 @@ export class DialogEditingController<
       status: 'open',
     });
     this.#dispatchOpen(this.#requireSession('batchEdit'));
+  }
+
+  #finishCancelledOpening(
+    form:
+      | EditorFormController<TFormValues>
+      | BatchEditorFormController<TFormValues>
+      | undefined,
+  ): void {
+    if (this.#provisionalForm === form) this.#provisionalForm = undefined;
+    form?.destroy();
+    this.arguments_.stateCoordinator.assertActive();
   }
 
   #failOpening(

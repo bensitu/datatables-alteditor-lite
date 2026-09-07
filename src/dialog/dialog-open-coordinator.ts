@@ -33,7 +33,7 @@ export class DialogOpenCoordinator<
   TFormValues extends object,
   TTarget,
 > {
-  private activeRequest: AbortController | undefined;
+  #activeRequest: AbortController | undefined;
 
   public constructor(
     private readonly arguments_: DialogOpenCoordinatorArguments<
@@ -46,30 +46,30 @@ export class DialogOpenCoordinator<
   public begin(): AbortController {
     this.cancel();
     const request = new AbortController();
-    this.activeRequest = request;
+    this.#activeRequest = request;
     return request;
   }
 
   public get signal(): AbortSignal {
-    if (this.activeRequest === undefined) {
+    if (this.#activeRequest === undefined) {
       throw new DOMException('The open request was cancelled.', 'AbortError');
     }
-    return this.activeRequest.signal;
+    return this.#activeRequest.signal;
   }
 
   public complete(request: AbortController | undefined): void {
-    if (this.activeRequest === request) {
-      this.activeRequest = undefined;
+    if (this.#activeRequest === request) {
+      this.#activeRequest = undefined;
     }
   }
 
   public cancel(): void {
-    this.activeRequest?.abort();
-    this.activeRequest = undefined;
+    this.#activeRequest?.abort();
+    this.#activeRequest = undefined;
   }
 
   public assertCurrent(request: AbortController): void {
-    if (this.activeRequest !== request || request.signal.aborted) {
+    if (this.#activeRequest !== request || request.signal.aborted) {
       throw new DOMException('The open request was cancelled.', 'AbortError');
     }
   }

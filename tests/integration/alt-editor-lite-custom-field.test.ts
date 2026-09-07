@@ -122,6 +122,40 @@ describe('AltEditorLite custom fields', () => {
     document.body.replaceChildren();
   });
 
+  it('releases custom controls when the template callback cancels opening', async () => {
+    const observer: TagsObserver = { contexts: [], destroy: vi.fn() };
+    const definition = createTagsDefinition(observer);
+    let closeRequest: Promise<void> | undefined;
+    const host = new StandaloneHost<RecordRow, string>({
+      read: () => ({ id: 'record-a', summary: 'Alpha', tags: [] }),
+    });
+    editor = new AltEditorLite(host, {
+      clientSide: { createRow: () => ({ id: 'created', summary: '', tags: [] }) },
+      editing: {
+        dialog: {
+          template: () => {
+            closeRequest = editor?.closeDialog();
+            return undefined;
+          },
+        },
+      },
+      fields: [
+        definition.field<RecordValues>({
+          defaultValue: [],
+          label: 'Tags',
+          name: 'tags',
+          options: { maximum: 2 },
+        }),
+      ],
+    });
+
+    await editor.openCreateDialog();
+    await closeRequest;
+    expect(editor.getState()).toEqual({ status: 'ready' });
+    expect(document.querySelector('dialog[open]')).toBeNull();
+    expect(observer.destroy).toHaveBeenCalledOnce();
+  });
+
   it('supports dialog creation, editing, dependencies, validation, and cleanup', async () => {
     const records = new Map<string, RecordRow>([
       ['record-a', { id: 'record-a', summary: 'Alpha', tags: ['existing'] }],

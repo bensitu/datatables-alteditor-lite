@@ -250,19 +250,12 @@ export class DataTablesHost<TRow extends object>
 
     const committedRowIndexById = createUniqueRowIndexById(this.table);
     for (const update of resolvedUpdates) {
-      const rowId = this.table.row(update.rowIndex).id();
-      const stableRowId =
-        typeof rowId === 'string' &&
-        rowId.length > 0 &&
-        committedRowIndexById.get(rowId) === update.rowIndex
-          ? rowId
-          : undefined;
       this.#rememberRecordTarget(
         update.target,
         captureEditTargetWithValidatedRowId(
           this.table,
           update.rowIndex,
-          stableRowId,
+          this.#validatedRowId(update.rowIndex, committedRowIndexById),
           'The edited record is no longer available.',
         ),
       );
@@ -748,16 +741,24 @@ export class DataTablesHost<TRow extends object>
 
   #createRecordTargets(rowIndexes: readonly number[]): readonly DataTablesRecordTarget[] {
     const rowIndexById = createUniqueRowIndexById(this.table);
-    return rowIndexes.map((rowIndex) => {
-      const rowId = this.table.row(rowIndex).id();
-      const stableRowId =
-        typeof rowId === 'string' &&
-        rowId.length > 0 &&
-        rowIndexById.get(rowId) === rowIndex
-          ? rowId
-          : undefined;
-      return this.#createRecordTargetWithValidatedRowId(rowIndex, stableRowId);
-    });
+    return rowIndexes.map((rowIndex) =>
+      this.#createRecordTargetWithValidatedRowId(
+        rowIndex,
+        this.#validatedRowId(rowIndex, rowIndexById),
+      ),
+    );
+  }
+
+  #validatedRowId(
+    rowIndex: number,
+    rowIndexById: ReadonlyMap<string, number>,
+  ): string | undefined {
+    const rowId = this.table.row(rowIndex).id();
+    return typeof rowId === 'string' &&
+      rowId.length > 0 &&
+      rowIndexById.get(rowId) === rowIndex
+      ? rowId
+      : undefined;
   }
 
   #createRecordTargetWithValidatedRowId(
