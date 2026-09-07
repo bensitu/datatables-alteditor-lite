@@ -61,8 +61,9 @@ export class LocalUniquenessValidator<
 
     for (const { row, target } of this.collection.entries()) {
       if (
-        (exclusion?.target !== undefined && Object.is(target, exclusion.target)) ||
-        (exclusion?.row !== undefined && Object.is(row, exclusion.row))
+        exclusion?.target !== undefined
+          ? Object.is(target, exclusion.target)
+          : exclusion?.row !== undefined && Object.is(row, exclusion.row)
       ) {
         continue;
       }

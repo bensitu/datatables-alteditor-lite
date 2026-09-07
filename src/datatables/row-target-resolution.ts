@@ -188,12 +188,7 @@ function resolveSnapshotRowIndex<TRow extends object>(
     }
     const rowById = table.row(resolvedRowIndex);
     const resolvedIndex = rowById.index();
-    if (
-      rowById.any() &&
-      typeof resolvedIndex === 'number' &&
-      resolvedIndex === rowIndex &&
-      isSameRowIdentity(table, resolvedIndex, rowId, sourceRow)
-    ) {
+    if (rowById.any() && resolvedIndex === resolvedRowIndex && rowById.id() === rowId) {
       return resolvedIndex;
     }
 

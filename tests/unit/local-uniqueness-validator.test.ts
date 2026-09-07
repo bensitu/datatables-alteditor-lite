@@ -28,6 +28,22 @@ function collection(rows: readonly Row[]) {
 }
 
 describe('LocalUniquenessValidator', () => {
+  it('excludes stable targets when each read returns fresh row data', () => {
+    const validator = new LocalUniquenessValidator(
+      {
+        entries: () => [
+          { target: 'row-a', row: { name: 'Alpha' } },
+          { target: 'row-b', row: { name: 'Beta' } },
+        ],
+      },
+      [{ name: 'name', label: 'Name', type: 'text', unique: true }],
+      ENGLISH_LANGUAGE,
+    );
+    expect(validator.validate({ name: 'Alpha' }, { target: 'row-a' })).toEqual({});
+    expect(validator.validate({ name: 'Beta' }, { target: 'row-a' })).toHaveProperty(
+      'name',
+    );
+  });
   it('uses custom field equality for structured values', () => {
     const tags = defineCustomField<readonly string[]>({
       createController: () => {

@@ -258,7 +258,7 @@ describe('DataTables server-side materialized rows', () => {
     expect(api.rows().count()).toBe(2);
   });
 
-  it('rejects an editor whose materialized target was replaced by a server draw', async () => {
+  it('preserves a uniquely identified target across a server draw', async () => {
     const rows: TestRow[] = [
       { id: 'row-a', name: 'Alpha', rank: 1 },
       { id: 'row-b', name: 'Beta', rank: 2 },
@@ -292,10 +292,9 @@ describe('DataTables server-side materialized rows', () => {
     document.querySelector<HTMLFormElement>('.alteditor-lite-form')?.requestSubmit();
 
     await vi.waitFor(() => {
-      expect(currentEditor.getState().status).toBe('open');
-      expect(currentEditor.getState()).toHaveProperty('submissionError');
+      expect(currentEditor.getState().status).toBe('ready');
     });
-    expect(update).not.toHaveBeenCalled();
+    expect(update).toHaveBeenCalledOnce();
     expect(rows[0].name).toBe('Server replacement');
   });
 });

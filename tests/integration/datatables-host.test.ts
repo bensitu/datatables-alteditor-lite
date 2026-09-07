@@ -23,6 +23,32 @@ describeEditorHostContract('DataTablesHost', () => {
 });
 
 describe('DataTablesHost', () => {
+  it('preserves unique targets across external replacement and detaches read values', () => {
+    const { api } = createTestTable('host-external-replacement');
+    const host = new DataTablesHost(api);
+    const target = host.resolveRecordTarget('#row-a');
+    const original = host.read(target);
+    api.row('#row-a').data({ id: 'row-a', name: 'Replacement', rank: 2 });
+    expect(host.read(target).name).toBe('Replacement');
+    expect(host.resolveRecordTarget('#row-a')).toBe(target);
+    expect([...host.entries()].find(({ row }) => row.id === 'row-a')?.target).toBe(
+      target,
+    );
+    expect(original.name).toBe('Alpha');
+    host.destroy();
+  });
+
+  it('does not share targets between duplicate row ids', () => {
+    const { api } = createTestTable('host-duplicate-identities');
+    api.row(1).data({ ...api.row(1).data(), id: 'row-a' });
+    const host = new DataTablesHost(api);
+    const first = host.resolveRecordTarget(0);
+    const second = host.resolveRecordTarget(1);
+    expect(first).not.toBe(second);
+    api.row(0).data({ ...api.row(0).data() });
+    expect(() => host.read(first)).toThrow();
+    host.destroy();
+  });
   it('releases draw ownership when a committed redraw never completes', async () => {
     const { api } = createTestTable('host-draw-timeout');
     const host = new DataTablesHost(api, 1250);
@@ -119,7 +145,8 @@ describe('DataTablesHost', () => {
 
     expect(host.findRecordTarget(previousRow)).toBeUndefined();
     expect(host.findRecordTarget(replacementRow)).toBe(target);
-    expect(host.read(target)).toBe(replacementRow);
+    expect(host.read(target)).toEqual(replacementRow);
+    expect(host.read(target)).not.toBe(replacementRow);
 
     await host.applyRemove([target], { ...context, operation: 'remove' });
 
@@ -200,8 +227,8 @@ describe('DataTablesHost', () => {
     );
 
     expect(draw).toHaveBeenCalledOnce();
-    expect(host.read(firstTarget)).toBe(firstReplacement);
-    expect(host.read(secondTarget)).toBe(secondReplacement);
+    expect(host.read(firstTarget)).toEqual(firstReplacement);
+    expect(host.read(secondTarget)).toEqual(secondReplacement);
     expect(host.findRecordTarget(first)).toBeUndefined();
     expect(host.findRecordTarget(second)).toBeUndefined();
     host.destroy();
@@ -285,8 +312,8 @@ describe('DataTablesHost', () => {
       },
     );
 
-    expect(host.read(firstTarget)).toBe(firstReplacement);
-    expect(host.read(secondTarget)).toBe(secondReplacement);
+    expect(host.read(firstTarget)).toEqual(firstReplacement);
+    expect(host.read(secondTarget)).toEqual(secondReplacement);
     host.destroy();
   });
 });

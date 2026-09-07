@@ -246,12 +246,6 @@ describe('row target resolution', () => {
       },
       name: 'changed row-id index',
     },
-    {
-      mutate: (row: MutableMockRow) => {
-        row.data = { id: 'row-a', name: 'Replacement' };
-      },
-      name: 'changed row-id object',
-    },
   ])('rejects a row-id target with $name', ({ mutate }) => {
     const tableElement = document.createElement('table');
     const mockRow: MutableMockRow = {
