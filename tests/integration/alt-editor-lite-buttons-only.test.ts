@@ -214,6 +214,6 @@ describe('Buttons without Select', () => {
 
     expect(refresh).toHaveBeenCalledOnce();
     expect(refreshSignal?.aborted).toBe(true);
-    expect(refreshEvents).toEqual(['start', 'complete']);
+    expect(refreshEvents).toEqual(['start']);
   });
 });

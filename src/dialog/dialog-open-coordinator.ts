@@ -50,6 +50,13 @@ export class DialogOpenCoordinator<
     return request;
   }
 
+  public get signal(): AbortSignal {
+    if (this.activeRequest === undefined) {
+      throw new DOMException('The open request was cancelled.', 'AbortError');
+    }
+    return this.activeRequest.signal;
+  }
+
   public complete(request: AbortController | undefined): void {
     if (this.activeRequest === request) {
       this.activeRequest = undefined;

@@ -61,12 +61,13 @@ export class DialogRemoveOperation<
     rows: readonly Readonly<TRow>[],
     presentation: DialogRemovePresentation,
   ): Promise<void> {
-    presentation.startSubmission();
     const request = this.arguments_.operationOwner.begin('remove', 'dialog');
     let phase: EditorErrorHookContext['phase'] = 'submit';
     let hasPersistenceCompleted = false;
 
     try {
+      presentation.startSubmission();
+      if (!this.owns(request)) return;
       await readHostRecords(
         this.arguments_.host,
         targets,
@@ -92,9 +93,12 @@ export class DialogRemoveOperation<
 
       phase = 'persistence';
       if (this.arguments_.options.operations?.remove !== undefined) {
-        await this.arguments_.options.operations.remove(
-          rows,
-          this.arguments_.operationOwner.context(request),
+        await this.arguments_.operationOwner.wait(
+          request,
+          this.arguments_.options.operations.remove(
+            rows,
+            this.arguments_.operationOwner.context(request),
+          ),
         );
         hasPersistenceCompleted = true;
       }
@@ -103,11 +107,14 @@ export class DialogRemoveOperation<
       }
 
       phase = 'commit';
-      await this.arguments_.host.applyRemove(targets, {
-        mode: 'dialog',
-        operation: 'remove',
-        signal: request.abortController.signal,
-      });
+      await this.arguments_.operationOwner.wait(
+        request,
+        this.arguments_.host.applyRemove(targets, {
+          mode: 'dialog',
+          operation: 'remove',
+          signal: request.abortController.signal,
+        }),
+      );
       if (!this.owns(request)) {
         return;
       }
@@ -126,16 +133,17 @@ export class DialogRemoveOperation<
         return;
       }
 
-      this.arguments_.operationOwner.complete(request);
       try {
         presentation.completeSuccess();
       } catch (rawError: unknown) {
-        this.reportCommittedFailure(rawError, request);
+        this.reportPresentationFailure(rawError, request, true, 'commit');
       }
+      if (!this.owns(request)) return;
+      this.arguments_.operationOwner.complete(request);
       try {
         this.arguments_.onPresentationComplete();
       } catch (rawError: unknown) {
-        this.reportCommittedFailure(rawError, request);
+        this.reportPresentationFailure(rawError, request, true, 'commit');
       }
       await this.arguments_.errorReporter.runAfterSuccess({
         mode: 'dialog',
@@ -212,30 +220,6 @@ export class DialogRemoveOperation<
         mode: 'dialog',
         operation: 'remove',
         phase,
-      },
-      false,
-    );
-  }
-
-  private reportCommittedFailure(
-    rawError: unknown,
-    request: OwnedOperationRequest<'remove'>,
-  ): void {
-    const operationError = normalizeOperationError(
-      rawError,
-      request.abortController.signal,
-      this.arguments_.language,
-    );
-    if (operationError instanceof InternalOperationAbort) {
-      return;
-    }
-    this.arguments_.errorReporter.report(
-      operationError,
-      {
-        committed: true,
-        mode: 'dialog',
-        operation: 'remove',
-        phase: 'commit',
       },
       false,
     );

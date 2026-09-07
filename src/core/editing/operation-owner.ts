@@ -1,5 +1,6 @@
 import { EditorDestroyedError } from '../alt-editor-lite-error.js';
 import { RequestSequence } from '../request-sequence.js';
+import { settleWithAbort } from '../settle-with-abort.js';
 
 import type {
   BatchEditOperationContext,
@@ -143,6 +144,11 @@ export class OperationOwner {
           : Object.freeze({ mode: 'api', operation, signal });
       }
     }
+  }
+
+  /** Stops waiting when the owning request is cancelled or destroyed. */
+  public wait<T>(request: OwnedOperationRequest, value: T | PromiseLike<T>): Promise<T> {
+    return settleWithAbort(value, request.abortController.signal);
   }
 
   /** Completes a request only when it still owns the operation. */

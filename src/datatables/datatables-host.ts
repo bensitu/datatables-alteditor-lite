@@ -102,22 +102,22 @@ export class DataTablesHost<TRow extends object>
 
   public readonly ownershipKey: object;
 
-  private readonly drawOwnership: DrawOwnership<TRow>;
+  readonly #drawOwnership: DrawOwnership<TRow>;
 
-  private readonly selectIntegration: SelectIntegration<TRow>;
+  readonly #selectIntegration: SelectIntegration<TRow>;
 
-  private isDestroyed = false;
+  #isDestroyed = false;
 
-  private readonly recordCaptures = new WeakMap<
+  readonly #recordCaptures = new WeakMap<
     DataTablesRecordTarget,
     EditTargetCapture<TRow>
   >();
 
-  private readonly recordTargets = new WeakMap<TRow, DataTablesRecordTarget>();
+  readonly #recordTargets = new WeakMap<TRow, DataTablesRecordTarget>();
 
-  private readonly targetsByRowId = new Map<string, DataTablesRecordTarget>();
+  readonly #targetsByRowId = new Map<string, DataTablesRecordTarget>();
 
-  private readonly inlineSelectors = new WeakMap<
+  readonly #inlineSelectors = new WeakMap<
     DataTablesInlineTarget,
     InlineSelectorPair<TRow>
   >();
@@ -140,8 +140,8 @@ export class DataTablesHost<TRow extends object>
 
     this.eventTarget = tableElement;
     this.ownershipKey = tableElement;
-    this.drawOwnership = new DrawOwnership(table, refreshTimeout);
-    this.selectIntegration = new SelectIntegration(table, () => {
+    this.#drawOwnership = new DrawOwnership(table, refreshTimeout);
+    this.#selectIntegration = new SelectIntegration(table, () => {
       this.notifyEditorStateChange();
     });
   }
@@ -153,7 +153,7 @@ export class DataTablesHost<TRow extends object>
 
   /** Reads one DataTables record by its resolved internal index. */
   public read(target: DataTablesRecordTarget): Readonly<TRow> {
-    const rowIndex = this.resolveRecordTargetCapture(target);
+    const rowIndex = this.#resolveRecordTargetCapture(target);
     return createReadonlyRowView(this.table.row(rowIndex).data());
   }
 
@@ -163,14 +163,14 @@ export class DataTablesHost<TRow extends object>
     context: Readonly<HostApplyContext>,
   ): Promise<DataTablesRecordTarget | undefined> {
     let createdTarget: number | undefined;
-    await this.drawOwnership.runWithDraw('create-success', context.signal, () => {
+    await this.#drawOwnership.runWithDraw('create-success', context.signal, () => {
       const addedRows = this.table.rows.add([row]);
       createdTarget = addedRows.indexes().toArray()[0];
       addedRows.draw(false);
     });
     return createdTarget === undefined
       ? undefined
-      : this.createRecordTarget(createdTarget);
+      : this.#createRecordTarget(createdTarget);
   }
 
   /** Replaces a record and waits for the editor-owned draw to complete. */
@@ -179,9 +179,8 @@ export class DataTablesHost<TRow extends object>
     row: TRow,
     context: Readonly<HostApplyContext>,
   ): Promise<DataTablesRecordTarget> {
-    const rowIndex = this.resolveRecordTargetCapture(target);
-    const previousRow = this.table.row(rowIndex).data();
-    const didApply = await this.drawOwnership.runWithDraw(
+    const rowIndex = this.#resolveRecordTargetCapture(target);
+    const didApply = await this.#drawOwnership.runWithDraw(
       context.mode === 'inline' ? 'inline-edit-success' : 'dialog-edit-success',
       context.signal,
       () => {
@@ -192,8 +191,7 @@ export class DataTablesHost<TRow extends object>
     if (!didApply) {
       return target;
     }
-    this.recordTargets.delete(previousRow);
-    this.rememberRecordTarget(
+    this.#rememberRecordTarget(
       target,
       captureEditTarget(
         this.table,
@@ -201,7 +199,6 @@ export class DataTablesHost<TRow extends object>
         'The edited record is no longer available.',
       ),
     );
-    this.recordTargets.set(row, target);
     return target;
   }
 
@@ -210,11 +207,11 @@ export class DataTablesHost<TRow extends object>
     updates: readonly Readonly<HostBatchUpdate<TRow, DataTablesRecordTarget>>[],
     context: Readonly<HostApplyContext>,
   ): Promise<void> {
-    const rowIndexById = this.createRowIdIndexForTargets(
+    const rowIndexById = this.#createRowIdIndexForTargets(
       updates.map(({ target }) => target),
     );
     const resolvedUpdates = updates.map((update) => {
-      const rowIndex = this.resolveRecordTargetCapture(update.target, rowIndexById);
+      const rowIndex = this.#resolveRecordTargetCapture(update.target, rowIndexById);
       return {
         previousRow: this.table.row(rowIndex).data(),
         row: update.row,
@@ -231,7 +228,7 @@ export class DataTablesHost<TRow extends object>
       );
     }
 
-    const didApply = await this.drawOwnership.runWithDraw(
+    const didApply = await this.#drawOwnership.runWithDraw(
       'batch-edit-success',
       context.signal,
       () => {
@@ -260,8 +257,7 @@ export class DataTablesHost<TRow extends object>
         committedRowIndexById.get(rowId) === update.rowIndex
           ? rowId
           : undefined;
-      this.recordTargets.delete(update.previousRow);
-      this.rememberRecordTarget(
+      this.#rememberRecordTarget(
         update.target,
         captureEditTargetWithValidatedRowId(
           this.table,
@@ -270,7 +266,6 @@ export class DataTablesHost<TRow extends object>
           'The edited record is no longer available.',
         ),
       );
-      this.recordTargets.set(update.row, update.target);
     }
   }
 
@@ -279,14 +274,14 @@ export class DataTablesHost<TRow extends object>
     targets: readonly DataTablesRecordTarget[],
     context: Readonly<HostApplyContext>,
   ): Promise<void> {
-    const rowIndexById = this.createRowIdIndexForTargets(targets);
+    const rowIndexById = this.#createRowIdIndexForTargets(targets);
     const rowIndexes = targets.map((target) =>
-      this.resolveRecordTargetCapture(target, rowIndexById),
+      this.#resolveRecordTargetCapture(target, rowIndexById),
     );
     const removedRows = targets.map(
-      (target) => this.recordCaptures.get(target)?.sourceRow,
+      (target) => this.#recordCaptures.get(target)?.sourceRow,
     );
-    const didApply = await this.drawOwnership.runWithDraw(
+    const didApply = await this.#drawOwnership.runWithDraw(
       'remove-success',
       context.signal,
       () => {
@@ -302,13 +297,13 @@ export class DataTablesHost<TRow extends object>
     for (const [position, target] of targets.entries()) {
       const removedRow = removedRows[position];
       if (removedRow !== undefined) {
-        this.recordTargets.delete(removedRow);
+        this.#recordTargets.delete(removedRow);
       }
-      const rowId = this.recordCaptures.get(target)?.snapshot.rowId;
-      if (rowId !== undefined && this.targetsByRowId.get(rowId) === target) {
-        this.targetsByRowId.delete(rowId);
+      const rowId = this.#recordCaptures.get(target)?.snapshot.rowId;
+      if (rowId !== undefined && this.#targetsByRowId.get(rowId) === target) {
+        this.#targetsByRowId.delete(rowId);
       }
-      this.recordCaptures.delete(target);
+      this.#recordCaptures.delete(target);
     }
   }
 
@@ -319,8 +314,8 @@ export class DataTablesHost<TRow extends object>
     context: Readonly<HostApplyContext>,
   ): Promise<number> {
     const previousRow = this.table.row(rowIndex).data();
-    const recordTarget = this.recordTargets.get(previousRow);
-    const didApply = await this.drawOwnership.runWithDraw(
+    const recordTarget = this.#recordTargets.get(previousRow);
+    const didApply = await this.#drawOwnership.runWithDraw(
       'inline-edit-success',
       context.signal,
       () => {
@@ -332,8 +327,7 @@ export class DataTablesHost<TRow extends object>
       return rowIndex;
     }
     if (recordTarget !== undefined) {
-      this.recordTargets.delete(previousRow);
-      this.rememberRecordTarget(
+      this.#rememberRecordTarget(
         recordTarget,
         captureEditTarget(
           this.table,
@@ -341,14 +335,13 @@ export class DataTablesHost<TRow extends object>
           'The edited record is no longer available.',
         ),
       );
-      this.recordTargets.set(row, recordTarget);
     }
     return rowIndex;
   }
 
   /** Refreshes DataTables while marking any resulting redraw as editor-owned. */
   public async refresh(signal: AbortSignal, action?: () => Promise<void>): Promise<void> {
-    await this.drawOwnership.runWhile('refresh', signal, async () => {
+    await this.#drawOwnership.runWhile('refresh', signal, async () => {
       if (action === undefined) {
         await refreshDataTable(this.table, signal, this.refreshTimeout);
       } else {
@@ -369,8 +362,8 @@ export class DataTablesHost<TRow extends object>
         rowIdCounts.set(rowId, (rowIdCounts.get(rowId) ?? 0) + 1);
       }
     }
-    for (const rowId of this.targetsByRowId.keys()) {
-      if (rowIdCounts.get(rowId) !== 1) this.targetsByRowId.delete(rowId);
+    for (const rowId of this.#targetsByRowId.keys()) {
+      if (rowIdCounts.get(rowId) !== 1) this.#targetsByRowId.delete(rowId);
     }
     for (let position = 0; position < rowIndexes.length; position += 1) {
       const rowIndex = rowIndexes[position];
@@ -384,7 +377,7 @@ export class DataTablesHost<TRow extends object>
           : undefined;
       entries.push({
         row: createReadonlyRowView(this.table.row(rowIndex).data()),
-        target: this.createRecordTargetWithValidatedRowId(rowIndex, stableRowId),
+        target: this.#createRecordTargetWithValidatedRowId(rowIndex, stableRowId),
       });
     }
     return entries;
@@ -392,13 +385,13 @@ export class DataTablesHost<TRow extends object>
 
   /** Finds the loaded record target for one live DataTables row object. */
   public findRecordTarget(row: TRow): DataTablesRecordTarget | undefined {
-    const knownTarget = this.recordTargets.get(row);
+    const knownTarget = this.#recordTargets.get(row);
     if (knownTarget !== undefined) {
       return knownTarget;
     }
     for (const rowIndex of this.table.rows().indexes().toArray()) {
       if (this.table.row(rowIndex).data() === row) {
-        return this.createRecordTarget(rowIndex);
+        return this.#createRecordTarget(rowIndex);
       }
     }
     return undefined;
@@ -406,15 +399,15 @@ export class DataTablesHost<TRow extends object>
 
   /** Reports whether the optional Select integration is available. */
   public selectionAvailable(): boolean {
-    return this.selectIntegration.available();
+    return this.#selectIntegration.available();
   }
 
   /** Returns the current DataTables Select targets. */
   public getSelectedTargets(
     unavailableMessage?: string,
   ): readonly DataTablesRecordTarget[] {
-    return this.createRecordTargets(
-      this.selectIntegration.selectedRowIndexes(unavailableMessage),
+    return this.#createRecordTargets(
+      this.#selectIntegration.selectedRowIndexes(unavailableMessage),
     );
   }
 
@@ -439,7 +432,7 @@ export class DataTablesHost<TRow extends object>
     unavailableMessage: string,
   ): readonly number[] {
     return rowSelector === undefined
-      ? this.selectIntegration.selectedRowIndexes(unavailableMessage)
+      ? this.#selectIntegration.selectedRowIndexes(unavailableMessage)
       : this.table.rows(rowSelector).indexes().toArray();
   }
 
@@ -454,7 +447,7 @@ export class DataTablesHost<TRow extends object>
         'Exactly one record must match the DataTables selector.',
       );
     }
-    return this.createRecordTarget(rowIndex);
+    return this.#createRecordTarget(rowIndex);
   }
 
   /** Resolves a DataTables selector to opaque record targets. */
@@ -462,7 +455,7 @@ export class DataTablesHost<TRow extends object>
     rowSelector: RowSelector<TRow>,
   ): readonly DataTablesRecordTarget[] {
     const rowIndexes = this.table.rows(rowSelector).indexes().toArray();
-    return this.createRecordTargets([...new Set(rowIndexes)]);
+    return this.#createRecordTargets([...new Set(rowIndexes)]);
   }
 
   /** Reports whether an opaque record target belongs to this Host wrapper. */
@@ -470,7 +463,7 @@ export class DataTablesHost<TRow extends object>
     return (
       typeof target === 'object' &&
       target !== null &&
-      this.recordCaptures.has(target as DataTablesRecordTarget)
+      this.#recordCaptures.has(target as DataTablesRecordTarget)
     );
   }
 
@@ -480,7 +473,7 @@ export class DataTablesHost<TRow extends object>
     columnSelector: ColumnSelector,
   ): DataTablesInlineTarget {
     const target = Object.freeze({}) as DataTablesInlineTarget;
-    this.inlineSelectors.set(target, { column: columnSelector, row: rowSelector });
+    this.#inlineSelectors.set(target, { column: columnSelector, row: rowSelector });
     return target;
   }
 
@@ -531,7 +524,7 @@ export class DataTablesHost<TRow extends object>
       open: (target) => {
         const selectors =
           typeof target === 'object' && target !== null
-            ? this.inlineSelectors.get(target as DataTablesInlineTarget)
+            ? this.#inlineSelectors.get(target as DataTablesInlineTarget)
             : undefined;
         if (selectors === undefined) {
           return Promise.reject(
@@ -700,35 +693,35 @@ export class DataTablesHost<TRow extends object>
         cellApi.focus();
         return;
       }
-      this.focusElement(cellNode);
+      this.#focusElement(cellNode);
       return;
     }
-    this.focusElement(this.eventTarget);
+    this.#focusElement(this.eventTarget);
   }
 
   /** Reports whether the editor currently owns a DataTables presentation update. */
   public ownsPresentationChange(): boolean {
-    return this.drawOwnership.ownsDraw();
+    return this.#drawOwnership.ownsDraw();
   }
 
   /** Releases owned DataTables listeners without destroying the table. */
   public destroy(): void {
-    if (this.isDestroyed) {
+    if (this.#isDestroyed) {
       return;
     }
-    this.isDestroyed = true;
-    this.targetsByRowId.clear();
+    this.#isDestroyed = true;
+    this.#targetsByRowId.clear();
     runCleanupSteps([
       () => {
-        this.selectIntegration.destroy();
+        this.#selectIntegration.destroy();
       },
       () => {
-        this.drawOwnership.destroy();
+        this.#drawOwnership.destroy();
       },
     ]);
   }
 
-  private focusElement(element: HTMLElement): void {
+  #focusElement(element: HTMLElement): void {
     const existingTabIndex = element.getAttribute('tabindex');
     const didAddTemporaryTabIndex = element.tabIndex < 0 && existingTabIndex === null;
     if (didAddTemporaryTabIndex) {
@@ -743,8 +736,8 @@ export class DataTablesHost<TRow extends object>
     }
   }
 
-  private createRecordTarget(rowIndex: number): DataTablesRecordTarget {
-    return this.storeRecordTarget(
+  #createRecordTarget(rowIndex: number): DataTablesRecordTarget {
+    return this.#storeRecordTarget(
       captureEditTarget(
         this.table,
         rowIndex,
@@ -753,9 +746,7 @@ export class DataTablesHost<TRow extends object>
     );
   }
 
-  private createRecordTargets(
-    rowIndexes: readonly number[],
-  ): readonly DataTablesRecordTarget[] {
+  #createRecordTargets(rowIndexes: readonly number[]): readonly DataTablesRecordTarget[] {
     const rowIndexById = createUniqueRowIndexById(this.table);
     return rowIndexes.map((rowIndex) => {
       const rowId = this.table.row(rowIndex).id();
@@ -765,15 +756,15 @@ export class DataTablesHost<TRow extends object>
         rowIndexById.get(rowId) === rowIndex
           ? rowId
           : undefined;
-      return this.createRecordTargetWithValidatedRowId(rowIndex, stableRowId);
+      return this.#createRecordTargetWithValidatedRowId(rowIndex, stableRowId);
     });
   }
 
-  private createRecordTargetWithValidatedRowId(
+  #createRecordTargetWithValidatedRowId(
     rowIndex: number,
     rowId: string | undefined,
   ): DataTablesRecordTarget {
-    return this.storeRecordTarget(
+    return this.#storeRecordTarget(
       captureEditTargetWithValidatedRowId(
         this.table,
         rowIndex,
@@ -783,60 +774,55 @@ export class DataTablesHost<TRow extends object>
     );
   }
 
-  private storeRecordTarget(capture: EditTargetCapture<TRow>): DataTablesRecordTarget {
+  #storeRecordTarget(capture: EditTargetCapture<TRow>): DataTablesRecordTarget {
     const row = capture.sourceRow;
     const rowId = capture.snapshot.rowId;
     const existingTarget =
       rowId === undefined
-        ? this.recordTargets.get(row)
-        : (this.targetsByRowId.get(rowId) ?? this.recordTargets.get(row));
-    if (existingTarget !== undefined) {
-      this.rememberRecordTarget(existingTarget, capture);
-      this.recordTargets.set(row, existingTarget);
-      return existingTarget;
-    }
-    const target = Object.freeze({}) as DataTablesRecordTarget;
-    this.rememberRecordTarget(target, capture);
-    this.recordTargets.set(row, target);
+        ? this.#recordTargets.get(row)
+        : (this.#targetsByRowId.get(rowId) ?? this.#recordTargets.get(row));
+    const target = existingTarget ?? (Object.freeze({}) as DataTablesRecordTarget);
+    this.#rememberRecordTarget(target, capture);
     return target;
   }
 
-  private rememberRecordTarget(
+  #rememberRecordTarget(
     target: DataTablesRecordTarget,
     capture: EditTargetCapture<TRow>,
   ): void {
-    const previous = this.recordCaptures.get(target);
+    const previous = this.#recordCaptures.get(target);
     const previousId = previous?.snapshot.rowId;
     const rowId = capture.snapshot.rowId;
     if (
       previousId !== undefined &&
       previousId !== rowId &&
-      this.targetsByRowId.get(previousId) === target
+      this.#targetsByRowId.get(previousId) === target
     ) {
-      this.targetsByRowId.delete(previousId);
+      this.#targetsByRowId.delete(previousId);
     }
     if (previous !== undefined && previous.sourceRow !== capture.sourceRow) {
-      this.recordTargets.delete(previous.sourceRow);
+      this.#recordTargets.delete(previous.sourceRow);
     }
-    this.recordCaptures.set(target, capture);
-    if (rowId !== undefined) this.targetsByRowId.set(rowId, target);
+    this.#recordCaptures.set(target, capture);
+    this.#recordTargets.set(capture.sourceRow, target);
+    if (rowId !== undefined) this.#targetsByRowId.set(rowId, target);
   }
 
-  private createRowIdIndexForTargets(
+  #createRowIdIndexForTargets(
     targets: readonly DataTablesRecordTarget[],
   ): ReadonlyMap<string, number> | undefined {
     return targets.some(
-      (target) => this.recordCaptures.get(target)?.snapshot.rowId !== undefined,
+      (target) => this.#recordCaptures.get(target)?.snapshot.rowId !== undefined,
     )
       ? createUniqueRowIndexById(this.table)
       : undefined;
   }
 
-  private resolveRecordTargetCapture(
+  #resolveRecordTargetCapture(
     target: DataTablesRecordTarget,
     rowIndexById?: ReadonlyMap<string, number>,
   ): number {
-    const capture = this.recordCaptures.get(target);
+    const capture = this.#recordCaptures.get(target);
     if (capture === undefined) {
       throw new EditorTargetUnavailableError(
         'The record target was not created by this DataTables host.',

@@ -111,13 +111,16 @@ export class RefreshOperationRunner<TRow extends object, TFormValues extends obj
         return;
       }
       if (options.operations?.refresh === undefined) {
-        await host.refresh(request.abortController.signal);
+        await operationOwner.wait(request, host.refresh(request.abortController.signal));
       } else {
-        await host.refresh(request.abortController.signal, async () => {
-          await Promise.resolve(
-            options.operations?.refresh?.(operationOwner.context(request)),
-          );
-        });
+        await operationOwner.wait(
+          request,
+          host.refresh(request.abortController.signal, async () => {
+            await Promise.resolve(
+              options.operations?.refresh?.(operationOwner.context(request)),
+            );
+          }),
+        );
       }
       if (!operationOwner.owns(request)) {
         return;
@@ -156,22 +159,24 @@ export class RefreshOperationRunner<TRow extends object, TFormValues extends obj
         );
       }
     } finally {
+      const didOwn = operationOwner.owns(request);
       operationOwner.complete(request);
       this.releaseInteraction();
       if (stateCoordinator.getState().status === 'refreshing') {
         stateCoordinator.transitionTo({ status: 'ready' });
       }
-      dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:refresh'>(
-        eventTarget,
-        'alteditor-lite:refresh',
-        {
-          editor,
-          mode: 'api',
-          operation: 'refresh',
-          phase: 'complete',
-          type: 'refresh',
-        },
-      );
+      if (didOwn)
+        dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:refresh'>(
+          eventTarget,
+          'alteditor-lite:refresh',
+          {
+            editor,
+            mode: 'api',
+            operation: 'refresh',
+            phase: 'complete',
+            type: 'refresh',
+          },
+        );
     }
 
     if (didSucceed) {

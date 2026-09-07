@@ -92,8 +92,9 @@ export class EditOperationRunner<TRow extends object, TFormValues extends object
 
     try {
       runArguments.presentation.startValidation();
-      const validation = await runArguments.presentation.validate(
-        request.abortController.signal,
+      const validation = await this.operationOwner.wait(
+        request,
+        runArguments.presentation.validate(request.abortController.signal),
       );
       if (!this.operationOwner.owns(request)) {
         return { status: 'aborted' };
@@ -121,9 +122,9 @@ export class EditOperationRunner<TRow extends object, TFormValues extends object
 
       phase = 'submit';
       if (runArguments.beforeSubmit !== undefined) {
-        const shouldContinue = await runArguments.beforeSubmit(
-          transaction,
-          this.operationOwner.context(request),
+        const shouldContinue = await this.operationOwner.wait(
+          request,
+          runArguments.beforeSubmit(transaction, this.operationOwner.context(request)),
         );
         if (!this.operationOwner.owns(request)) {
           return { status: 'aborted' };
@@ -162,7 +163,10 @@ export class EditOperationRunner<TRow extends object, TFormValues extends object
       }
 
       phase = 'commit';
-      const result = await runArguments.commit(row, request);
+      const result = await this.operationOwner.wait(
+        request,
+        runArguments.commit(row, request),
+      );
       if (!this.operationOwner.owns(request)) {
         return { status: 'aborted' };
       }
@@ -279,10 +283,13 @@ export class EditOperationRunner<TRow extends object, TFormValues extends object
     onPersistenceCompleted: () => void,
   ): Promise<TRow> {
     if (this.operations?.update !== undefined) {
-      const rowCandidate: unknown = await this.operations.update(
-        transaction.values,
-        transaction.original,
-        this.operationOwner.context(request),
+      const rowCandidate: unknown = await this.operationOwner.wait(
+        request,
+        this.operations.update(
+          transaction.values,
+          transaction.original,
+          this.operationOwner.context(request),
+        ),
       );
       onPersistenceCompleted();
       assertCompleteRow(rowCandidate, 'operations.update');

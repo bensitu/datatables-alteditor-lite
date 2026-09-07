@@ -26,6 +26,148 @@ describe('dialog lifecycle coordination', () => {
     restore();
   });
 
+  it.each(['create', 'edit', 'batchEdit', 'remove'] as const)(
+    'suppresses late %s results after destruction',
+    async (operation) => {
+      let finish!: () => void;
+      let signal: AbortSignal | undefined;
+      const pending = new Promise<void>((resolve) => {
+        finish = resolve;
+      });
+      const wait = async (context: { readonly signal: AbortSignal }) => {
+        signal = context.signal;
+        await pending;
+      };
+      const onError = vi.fn();
+      const afterSuccess = vi.fn();
+      const { editor, eventTarget, records } = createStandaloneTestFixture(
+        {
+          hooks: { onError, afterSuccess },
+          operations: {
+            create: async (values, context) => {
+              await wait(context);
+              return { id: 'created', name: values.name ?? '' };
+            },
+            update: async (values, row, context) => {
+              await wait(context);
+              return { ...row, ...values };
+            },
+            updateMany: async (values, rows, context) => {
+              await wait(context);
+              return rows.map((row) => ({ ...row, ...values }));
+            },
+            remove: async (_rows, context) => {
+              await wait(context);
+            },
+          },
+        },
+        { applyUpdates: vi.fn() },
+      );
+      records.set('record-b', { id: 'record-b', name: 'Beta' });
+      const events = vi.fn();
+      for (const name of ['success', 'error', 'close'])
+        eventTarget.addEventListener(`alteditor-lite:${name}`, events);
+      if (operation === 'create') await editor.openCreateDialog({ name: 'Saved' });
+      else if (operation === 'edit') await editor.openEditDialog('record-a');
+      else if (operation === 'batchEdit')
+        await editor.openBatchEditDialog(['record-a', 'record-b']);
+      else await editor.openRemoveDialog(['record-a']);
+      if (operation === 'remove')
+        document
+          .querySelector<HTMLButtonElement>('.alteditor-lite-dialog__button--submit')
+          ?.click();
+      else {
+        editor.getField('name')?.setValue('Saved');
+        submit();
+      }
+      await vi.waitFor(() => {
+        expect(signal).toBeDefined();
+      });
+      await expect(editor.closeDialog()).rejects.toBeInstanceOf(EditorOperationBusyError);
+      expect(signal?.aborted).toBe(false);
+      editor.destroy();
+      editor.destroy();
+      expect(signal?.aborted).toBe(true);
+      finish();
+      await pending;
+      await Promise.resolve();
+      expect(events).not.toHaveBeenCalled();
+      expect(onError).not.toHaveBeenCalled();
+      expect(afterSuccess).not.toHaveBeenCalled();
+      expect(records.get('record-a')?.name).toBe('Alpha');
+      expect(document.querySelector('dialog')).toBeNull();
+      expect(() => editor.getState()).toThrow('destroyed');
+    },
+  );
+
+  it('closes a successful batch edit by default', async () => {
+    const { editor, records } = createStandaloneTestFixture(
+      {},
+      {
+        applyUpdates: (updates) => {
+          for (const { target, row } of updates) records.set(target, row);
+        },
+      },
+    );
+    records.set('record-b', { id: 'record-b', name: 'Beta' });
+    await editor.openBatchEditDialog(['record-a', 'record-b']);
+    editor.getField('name')?.setValue('Shared');
+    submit();
+    await vi.waitFor(() => {
+      expect(editor.getState().status).toBe('ready');
+    });
+    expect([...records.values()].map((row) => row.name)).toEqual(['Shared', 'Shared']);
+    expect(document.querySelector('dialog')?.open).toBe(false);
+  });
+
+  it('does not restore a retained form destroyed after persistence', async () => {
+    let prepare!: () => void;
+    let isCommitted = false;
+    const pending = new Promise<void>((resolve) => {
+      prepare = resolve;
+    });
+    const onError = vi.fn();
+    const afterSuccess = vi.fn();
+    const { editor, eventTarget, records } = createStandaloneTestFixture(
+      {
+        editing: { dialog: { closeOnSuccess: false, enabled: true } },
+        dependencies: {
+          name: async () => {
+            if (isCommitted) await pending;
+            return {};
+          },
+        },
+        hooks: { onError, afterSuccess },
+        operations: { create: () => ({ id: 'saved', name: 'Saved' }) },
+      },
+      {
+        applyCreate: (row) => {
+          records.set(row.id, row);
+          isCommitted = true;
+          return row.id;
+        },
+      },
+    );
+    const success = vi.fn();
+    const closed = vi.fn();
+    eventTarget.addEventListener('alteditor-lite:success', success);
+    eventTarget.addEventListener('alteditor-lite:close', closed);
+    await editor.openCreateDialog({ name: 'Saved' });
+    submit();
+    await vi.waitFor(() => {
+      expect(success).toHaveBeenCalledOnce();
+    });
+    editor.destroy();
+    prepare();
+    await pending;
+    await Promise.resolve();
+    expect(records.get('saved')?.name).toBe('Saved');
+    expect(closed).not.toHaveBeenCalled();
+    expect(onError).not.toHaveBeenCalled();
+    expect(afterSuccess).not.toHaveBeenCalled();
+    expect(document.querySelector('dialog')).toBeNull();
+  });
+
   it.each(['create', 'edit'] as const)(
     'rejects close during %s persistence and completes normally',
     async (operation) => {

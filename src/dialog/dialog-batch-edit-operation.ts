@@ -194,7 +194,8 @@ export class DialogBatchEditOperation<
             }
             await presentation.completeSuccess(result.rows);
           } finally {
-            this.arguments_.onPresentationComplete();
+            if (committedSignal?.aborted !== true)
+              this.arguments_.onPresentationComplete();
           }
         },
         completeUnchanged: async () => {

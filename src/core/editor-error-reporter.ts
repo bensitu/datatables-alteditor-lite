@@ -43,59 +43,11 @@ export class EditorErrorReporter<TRow extends object, TFormValues extends object
       return;
     }
 
-    const commonDetail = { editor: this.editor, error, type: 'error' } as const;
-    switch (context.operation) {
-      case 'create':
-      case 'remove': {
-        dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:error'>(
-          this.eventTarget,
-          'alteditor-lite:error',
-          { ...commonDetail, mode: 'dialog', operation: context.operation },
-        );
-        break;
-      }
-      case 'edit': {
-        dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:error'>(
-          this.eventTarget,
-          'alteditor-lite:error',
-          {
-            ...commonDetail,
-            mode: context.mode,
-            operation: 'edit',
-            target: context.target,
-          },
-        );
-        break;
-      }
-      case 'batchEdit': {
-        dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:error'>(
-          this.eventTarget,
-          'alteditor-lite:error',
-          {
-            ...commonDetail,
-            mode: 'dialog',
-            operation: 'batchEdit',
-            targets: context.targets,
-          },
-        );
-        break;
-      }
-      case 'refresh': {
-        dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:error'>(
-          this.eventTarget,
-          'alteditor-lite:error',
-          context.mode === 'inline'
-            ? {
-                ...commonDetail,
-                mode: 'inline',
-                operation: 'refresh',
-                target: context.target,
-              }
-            : { ...commonDetail, mode: 'api', operation: 'refresh' },
-        );
-        break;
-      }
-    }
+    dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:error'>(
+      this.eventTarget,
+      'alteditor-lite:error',
+      { editor: this.editor, error, type: 'error', ...this.operationContext(context) },
+    );
   }
 
   /** Runs the optional success observer after the canonical commit. */
@@ -116,49 +68,48 @@ export class EditorErrorReporter<TRow extends object, TFormValues extends object
         this.language,
       );
       if (!(error instanceof InternalOperationAbort)) {
-        this.report(error, this.createAfterSuccessErrorContext(context), false);
+        this.report(
+          error,
+          { committed: true, phase: 'afterSuccess', ...this.operationContext(context) },
+          false,
+        );
       }
     }
   }
 
-  private createAfterSuccessErrorContext(
-    context: AfterSuccessContext<TRow, TFormValues>,
-  ): EditorErrorHookContext {
-    const errorContextBase = { committed: true, phase: 'afterSuccess' } as const;
+  private operationContext(
+    context: AfterSuccessContext<TRow, TFormValues> | EditorErrorHookContext,
+  ) {
     switch (context.operation) {
       case 'create':
       case 'remove': {
         return {
-          ...errorContextBase,
-          mode: 'dialog',
+          mode: 'dialog' as const,
           operation: context.operation,
         };
       }
       case 'edit': {
         return {
-          ...errorContextBase,
           mode: context.mode,
-          operation: 'edit',
+          operation: 'edit' as const,
           target: context.target,
         };
       }
       case 'batchEdit': {
         return {
-          ...errorContextBase,
-          mode: 'dialog',
-          operation: 'batchEdit',
+          mode: 'dialog' as const,
+          operation: 'batchEdit' as const,
           targets: context.targets,
         };
       }
       case 'refresh': {
         return context.mode === 'inline' && context.target !== undefined
           ? {
-              ...errorContextBase,
-              mode: 'inline',
-              operation: 'refresh',
+              mode: 'inline' as const,
+              operation: 'refresh' as const,
               target: context.target,
             }
-          : { ...errorContextBase, mode: 'api', operation: 'refresh' };
+          : { mode: 'api' as const, operation: 'refresh' as const };
       }
     }
   }

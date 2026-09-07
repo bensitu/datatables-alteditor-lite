@@ -7,6 +7,26 @@ interface TestRow {
 }
 
 describe('DataTables row replacements', () => {
+  it('restores detached values when a writer mutates a record before failing', () => {
+    const records = [{ value: 'first' }, { value: 'second' }];
+    const failure = new Error('Replacement failed.');
+
+    expect(() => {
+      applyRowReplacements<TestRow>(
+        records.map((record, index) => ({
+          previousRow: record,
+          row: { value: 'updated' },
+          write: (row) => {
+            Object.assign(record, row);
+            if (index === 1 && row.value === 'updated') throw failure;
+          },
+        })),
+      );
+    }).toThrow(failure);
+
+    expect(records).toEqual([{ value: 'first' }, { value: 'second' }]);
+  });
+
   it('applies each canonical row through its resolved writer', () => {
     const firstWrite = vi.fn();
     const secondWrite = vi.fn();

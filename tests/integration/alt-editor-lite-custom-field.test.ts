@@ -506,7 +506,7 @@ describe('AltEditorLite custom fields', () => {
     expect(observer.contexts[1]?.signal.aborted).toBe(true);
   });
 
-  it('does not submit a late asynchronous value after the dialog closes', async () => {
+  it('does not submit a late asynchronous value after destruction', async () => {
     const pendingValue = createDeferred<readonly string[]>();
     const getValue = vi.fn(() => pendingValue.promise);
     getValue.mockResolvedValueOnce([]);
@@ -558,7 +558,7 @@ describe('AltEditorLite custom fields', () => {
       expect(getValue).toHaveBeenCalledTimes(2);
     });
 
-    await editor.closeDialog();
+    editor.destroy();
     expect(context?.signal.aborted).toBe(true);
     pendingValue.resolve(['late']);
     await Promise.resolve();
@@ -566,7 +566,7 @@ describe('AltEditorLite custom fields', () => {
 
     expect(createRow).not.toHaveBeenCalled();
     expect(applyCreate).not.toHaveBeenCalled();
-    expect(editor.getState().status).toBe('ready');
+    expect(() => editor?.getState()).toThrow('destroyed');
   });
 
   it('releases dialog ownership when custom field cleanup fails', async () => {

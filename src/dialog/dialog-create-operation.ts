@@ -72,12 +72,13 @@ export class DialogCreateOperation<
     form: EditorFormController<TFormValues>,
     presentation: DialogCreatePresentation<TFormValues>,
   ): Promise<void> {
-    presentation.startSubmission();
     const request = this.arguments_.operationOwner.begin('create', 'dialog');
     let phase: EditorErrorHookContext['phase'] = 'validation';
     let hasPersistenceCompleted = false;
 
     try {
+      presentation.startSubmission();
+      if (!this.owns(request)) return;
       const validationResult = await form.validateForSubmission(
         request.abortController.signal,
         this.arguments_.options.validateForm,
@@ -100,7 +101,8 @@ export class DialogCreateOperation<
       phase = 'submit';
       const beforeSubmit = this.arguments_.options.hooks?.beforeSubmit;
       if (beforeSubmit !== undefined) {
-        const shouldContinue = await Promise.resolve(
+        const shouldContinue = await this.arguments_.operationOwner.wait(
+          request,
           beforeSubmit(values, this.arguments_.operationOwner.context(request)),
         );
         if (!this.owns(request)) {
@@ -137,11 +139,14 @@ export class DialogCreateOperation<
       }
 
       phase = 'commit';
-      await this.arguments_.host.applyCreate(row, {
-        mode: 'dialog',
-        operation: 'create',
-        signal: request.abortController.signal,
-      });
+      await this.arguments_.operationOwner.wait(
+        request,
+        this.arguments_.host.applyCreate(row, {
+          mode: 'dialog',
+          operation: 'create',
+          signal: request.abortController.signal,
+        }),
+      );
       if (!this.owns(request)) {
         return;
       }
@@ -161,16 +166,17 @@ export class DialogCreateOperation<
         return;
       }
 
-      this.arguments_.operationOwner.complete(request);
       try {
         await presentation.completeSuccess(form, row);
       } catch (rawError: unknown) {
-        this.reportCommittedFailure(rawError, request);
+        this.reportPresentationFailure(rawError, request, true, 'commit');
       }
+      if (!this.owns(request)) return;
+      this.arguments_.operationOwner.complete(request);
       try {
         this.arguments_.onPresentationComplete();
       } catch (rawError: unknown) {
-        this.reportCommittedFailure(rawError, request);
+        this.reportPresentationFailure(rawError, request, true, 'commit');
       }
       await this.arguments_.errorReporter.runAfterSuccess({
         mode: 'dialog',
@@ -201,9 +207,9 @@ export class DialogCreateOperation<
   ): Promise<TRow> {
     const { options, operationOwner } = this.arguments_;
     if (options.operations?.create !== undefined) {
-      const rowCandidate: unknown = await options.operations.create(
-        values,
-        operationOwner.context(request),
+      const rowCandidate: unknown = await operationOwner.wait(
+        request,
+        options.operations.create(values, operationOwner.context(request)),
       );
       onPersistenceCompleted();
       assertCompleteRow(rowCandidate, 'operations.create');
@@ -288,30 +294,6 @@ export class DialogCreateOperation<
         mode: 'dialog',
         operation: 'create',
         phase,
-      },
-      false,
-    );
-  }
-
-  private reportCommittedFailure(
-    rawError: unknown,
-    request: OwnedOperationRequest<'create'>,
-  ): void {
-    const operationError = normalizeOperationError(
-      rawError,
-      request.abortController.signal,
-      this.arguments_.language,
-    );
-    if (operationError instanceof InternalOperationAbort) {
-      return;
-    }
-    this.arguments_.errorReporter.report(
-      operationError,
-      {
-        committed: true,
-        mode: 'dialog',
-        operation: 'create',
-        phase: 'commit',
       },
       false,
     );

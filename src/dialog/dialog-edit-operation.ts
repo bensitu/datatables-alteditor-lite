@@ -103,6 +103,7 @@ export class DialogEditOperation<
           operation: 'edit',
           signal: request.abortController.signal,
         });
+        request.abortController.signal.throwIfAborted();
         committedTarget = nextTarget ?? recordTarget;
         committedRow = row;
         if (!editing.closeOnSuccess) {
@@ -191,7 +192,8 @@ export class DialogEditOperation<
             }
             await presentation.completeSuccess();
           } finally {
-            this.arguments_.onPresentationComplete();
+            if (committedSignal?.aborted !== true)
+              this.arguments_.onPresentationComplete();
           }
         },
         restoreAfterOperationFailure: () => {

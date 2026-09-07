@@ -753,7 +753,7 @@ describe('AltEditorLite Standalone editor features', () => {
 
     expect(() => {
       editor.destroy();
-    }).toThrow(eventFailure);
+    }).toThrow(hostFailure);
 
     expect(hostDestroy).toHaveBeenCalledOnce();
     expect(() => editor.getState()).toThrow();

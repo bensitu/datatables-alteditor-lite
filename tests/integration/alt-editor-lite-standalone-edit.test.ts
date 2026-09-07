@@ -201,7 +201,7 @@ describe('AltEditorLite Standalone Edit', () => {
     expect(fixture.records.get('record-a')?.name).toBe('Available');
   });
 
-  it('aborts persistence when the active dialog is closed', async () => {
+  it('aborts persistence when the editor is destroyed', async () => {
     let operationSignal: AbortSignal | undefined;
     const applyUpdate = vi.fn();
     const fixture = createStandaloneTestFixture(
@@ -234,11 +234,11 @@ describe('AltEditorLite Standalone Edit', () => {
     await vi.waitFor(() => {
       expect(operationSignal).toBeDefined();
     });
-    await fixture.editor.closeDialog();
+    fixture.editor.destroy();
 
     expect(operationSignal?.aborted).toBe(true);
     expect(applyUpdate).not.toHaveBeenCalled();
     expect(fixture.records.get('record-a')?.name).toBe('Alpha');
-    expect(fixture.editor.getState().status).toBe('ready');
+    expect(() => fixture.editor.getState()).toThrow('destroyed');
   });
 });

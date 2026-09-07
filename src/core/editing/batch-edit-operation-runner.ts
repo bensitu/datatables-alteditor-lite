@@ -138,12 +138,15 @@ export class BatchEditOperationRunner<TRow extends object, TFormValues extends o
       }
       phase = 'submit';
       if (runArguments.beforeSubmit !== undefined) {
-        const shouldContinue = await runArguments.beforeSubmit(
-          transaction,
-          Object.freeze({
-            ...this.operationOwner.context(request),
-            originals: transaction.originals,
-          }),
+        const shouldContinue = await this.operationOwner.wait(
+          request,
+          runArguments.beforeSubmit(
+            transaction,
+            Object.freeze({
+              ...this.operationOwner.context(request),
+              originals: transaction.originals,
+            }),
+          ),
         );
         if (!this.operationOwner.owns(request)) {
           return { status: 'aborted' };
@@ -182,7 +185,7 @@ export class BatchEditOperationRunner<TRow extends object, TFormValues extends o
       }
 
       phase = 'commit';
-      await runArguments.commit(rows, request);
+      await this.operationOwner.wait(request, runArguments.commit(rows, request));
       if (!this.operationOwner.owns(request)) {
         return { status: 'aborted' };
       }
@@ -324,10 +327,13 @@ export class BatchEditOperationRunner<TRow extends object, TFormValues extends o
     onPersistenceCompleted: () => void,
   ): Promise<readonly TRow[]> {
     if (this.operations?.updateMany !== undefined) {
-      const rowCandidates: unknown = await this.operations.updateMany(
-        transaction.changes,
-        transaction.originals,
-        this.operationOwner.context(request),
+      const rowCandidates: unknown = await this.operationOwner.wait(
+        request,
+        this.operations.updateMany(
+          transaction.changes,
+          transaction.originals,
+          this.operationOwner.context(request),
+        ),
       );
       onPersistenceCompleted();
       return this.assertCanonicalRows(rowCandidates, transaction.originals.length);

@@ -848,7 +848,7 @@ export class InlineEditSessionController<
         this.focusCoordinator.completeCleanup();
       },
       () => {
-        if (publishClose) {
+        if (publishClose && !this.isDestroyed) {
           dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:close'>(
             this.arguments_.tableElement,
             'alteditor-lite:close',

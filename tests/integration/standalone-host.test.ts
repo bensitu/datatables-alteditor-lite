@@ -66,6 +66,78 @@ describeEditorHostContract('StandaloneHost', () => {
 });
 
 describe('StandaloneHost lifecycle', () => {
+  it.each(['read', 'create', 'update', 'batchEdit', 'remove', 'refresh'] as const)(
+    'cancels pending %s callbacks on host destruction',
+    async (operation) => {
+      let observed: AbortSignal | undefined;
+      let finish!: () => void;
+      const pending = new Promise<void>((resolve) => {
+        finish = resolve;
+      });
+      const wait = (signal: AbortSignal | undefined) => {
+        observed = signal;
+        return pending;
+      };
+      const row = { id: 'row-a', name: 'Alpha', rank: 1 };
+      const host = createRecordHost({
+        read: async (_target, context) => {
+          await wait(context?.signal);
+          return row;
+        },
+        applyCreate: async (_row, context) => {
+          await wait(context.signal);
+          return row.id;
+        },
+        applyUpdate: async (_target, _row, context) => {
+          await wait(context.signal);
+          return row.id;
+        },
+        applyUpdates: (_rows, context) => wait(context.signal),
+        applyRemove: (_targets, context) => wait(context.signal),
+        refresh: wait,
+      });
+      const context = {
+        signal: new AbortController().signal,
+        mode: 'dialog' as const,
+        operation: 'edit' as const,
+      };
+      const task =
+        operation === 'read'
+          ? host.read(row.id, context)
+          : operation === 'create'
+            ? host.applyCreate(row, { ...context, operation: 'create' })
+            : operation === 'update'
+              ? host.applyUpdate(row.id, row, context)
+              : operation === 'batchEdit'
+                ? host.applyUpdates?.([{ target: row.id, row }], {
+                    ...context,
+                    operation: 'batchEdit',
+                  })
+                : operation === 'remove'
+                  ? host.applyRemove([row.id], { ...context, operation: 'remove' })
+                  : host.refresh(context.signal);
+      const rejected = expect(Promise.resolve(task)).rejects.toMatchObject({
+        name: 'AbortError',
+      });
+      expect(observed?.aborted).toBe(false);
+      host.destroy();
+      host.destroy();
+      expect(observed?.aborted).toBe(true);
+      await rejected;
+      expect(() => host.read(row.id)).toThrow(EditorDestroyedError);
+      finish();
+      await pending;
+    },
+  );
+
+  it('releases operation-signal listeners after a successful callback', async () => {
+    const controller = new AbortController();
+    const remove = vi.spyOn(controller.signal, 'removeEventListener');
+    const host = createRecordHost({ refresh: () => Promise.resolve() });
+    await host.refresh(controller.signal);
+    expect(remove).toHaveBeenCalledWith('abort', expect.any(Function));
+    host.destroy();
+  });
   it('releases editor ownership when the initial presentation notification fails', () => {
     const host = Object.assign(createRecordHost(), {
       completeEditorPresentation: vi.fn(),

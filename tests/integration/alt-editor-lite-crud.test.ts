@@ -686,7 +686,7 @@ describe('AltEditorLite Edit snapshots', () => {
     expect(api.row('#row-a').data()).toHaveProperty('rank', undefined);
   });
 
-  it('rejects an externally removed or replaced rowId target', async () => {
+  it('keeps a uniquely identified target usable after external replacement', async () => {
     const updateOperation = vi.fn(
       (_values: Readonly<Partial<CrudValues>>, original: Readonly<TestRow>) => original,
     );
@@ -697,20 +697,16 @@ describe('AltEditorLite Edit snapshots', () => {
     tableElement.addEventListener('alteditor-lite:error', errorListener);
 
     await editor.openEditDialog('#row-a');
-    editor.getField('name')?.setValue('Must not apply');
+    editor.getField('name')?.setValue('Updated');
     api.row('#row-a').remove();
     api.rows.add([{ id: 'row-a', name: 'Replacement', rank: 99 }]).draw(false);
     submitForm();
 
     await vi.waitFor(() => {
-      expect(errorListener).toHaveBeenCalledOnce();
+      expect(editor.getState().status).toBe('ready');
     });
-    expect(updateOperation).not.toHaveBeenCalled();
-    expect(api.row('#row-a').data().name).toBe('Replacement');
-    expect(editor.getState()).toMatchObject({
-      status: 'open',
-      submissionError: { code: 'TARGET_UNAVAILABLE' },
-    });
+    expect(updateOperation).toHaveBeenCalledOnce();
+    expect(errorListener).not.toHaveBeenCalled();
   });
 
   it('reports target loss after persistence as committed', async () => {
@@ -762,7 +758,7 @@ describe('AltEditorLite Edit snapshots', () => {
     expect(api.row(0).data().name).toBe('Index target');
   });
 
-  it('aborts a pending Update when the dialog closes and ignores its result', async () => {
+  it('aborts a pending Update on destruction and ignores its result', async () => {
     const deferredRow = createDeferred<TestRow>();
     let operationSignal: AbortSignal | undefined;
     const { api, editor, tableElement } = createCrudEditor('abort-edit', {
@@ -785,7 +781,7 @@ describe('AltEditorLite Edit snapshots', () => {
       expect(operationSignal).toBeDefined();
     });
 
-    await editor.closeDialog();
+    editor.destroy();
     expect(operationSignal?.aborted).toBe(true);
     deferredRow.resolve({ id: 'row-b', name: 'Late result', rank: 2 });
     await Promise.resolve();
@@ -794,7 +790,7 @@ describe('AltEditorLite Edit snapshots', () => {
     expect(api.row('#row-b').data().name).toBe('Beta');
     expect(successListener).not.toHaveBeenCalled();
     expect(errorListener).not.toHaveBeenCalled();
-    expect(editor.getState().status).toBe('ready');
+    expect(() => editor.getState()).toThrow('destroyed');
   });
 });
 

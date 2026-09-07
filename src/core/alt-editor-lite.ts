@@ -369,22 +369,25 @@ export class AltEditorLite<
 
     runCleanupSteps([
       () => {
+        this.stateCoordinator.destroy();
+      },
+      () => {
+        this.interactionCoordinator.destroy();
+      },
+      () => {
+        this.operationOwner.destroy();
+      },
+      () => {
         this.dialogController.destroy();
       },
       () => {
         this.refreshOperationRunner?.destroy();
       },
       () => {
-        this.operationOwner.destroy();
-      },
-      () => {
         this.inlineController.destroy();
       },
       () => {
-        this.interactionCoordinator.destroy();
-      },
-      () => {
-        this.stateCoordinator.destroy();
+        this.host.destroy();
       },
       () => {
         deleteEditorInstance(this.host.ownershipKey, this);
@@ -402,9 +405,6 @@ export class AltEditorLite<
             type: 'destroy',
           },
         );
-      },
-      () => {
-        this.host.destroy();
       },
     ]);
   }

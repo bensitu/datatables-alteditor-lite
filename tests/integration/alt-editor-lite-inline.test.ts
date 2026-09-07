@@ -1851,6 +1851,37 @@ describe('AltEditorLite inline interaction and redraw behavior', () => {
     ).toBe('redraw');
   });
 
+  it('settles inline submission on destruction before an uncooperative result arrives', async () => {
+    const deferred = createDeferred<TestRow>();
+    let signal: AbortSignal | undefined;
+    const { api, editor, tableElement } = createInlineEditor({
+      editing: inlineEditing(),
+      fields,
+      operations: {
+        update: (_values, _original, context) => {
+          signal = context.signal;
+          return deferred.promise;
+        },
+      },
+    });
+    const events = vi.fn();
+    for (const name of ['success', 'error', 'close'])
+      tableElement.addEventListener(`alteditor-lite:${name}`, events);
+    await editor.openInlineEdit('#row-a', 0);
+    replaceInlineValue('Late value');
+    const submission = editor.submitInlineEdit();
+    await vi.waitFor(() => {
+      expect(signal).toBeDefined();
+    });
+    editor.destroy();
+    expect(signal?.aborted).toBe(true);
+    await submission;
+    deferred.resolve({ id: 'row-a', name: 'Late value', rank: 1 });
+    await Promise.resolve();
+    expect(api.row('#row-a').data().name).toBe('Alpha');
+    expect(events).not.toHaveBeenCalled();
+  });
+
   it('stops submission when an external draw closes the session during value reading', async () => {
     const { api, editor } = createInlineEditor();
 
