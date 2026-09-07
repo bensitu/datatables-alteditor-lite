@@ -3,6 +3,7 @@ import {
   normalizeOperationError,
 } from '../core/error-normalization.js';
 import { createReadonlyRowView } from '../core/readonly-row-view.js';
+import { settleWithAbort } from '../core/settle-with-abort.js';
 import { readHostRecords } from '../host/host-record-reader.js';
 
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
@@ -178,7 +179,7 @@ export class DialogOpenCoordinator<
     }
 
     try {
-      const shouldOpen = await Promise.resolve(hook(context));
+      const shouldOpen = await settleWithAbort(hook(context), signal);
       signal.throwIfAborted();
       this.assertCurrent(request);
       return shouldOpen !== false;

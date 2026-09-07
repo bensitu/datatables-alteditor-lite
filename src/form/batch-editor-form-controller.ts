@@ -391,6 +391,12 @@ export class BatchEditorFormController<TFormValues extends object> {
     this.renderSubmissionError();
   }
 
+  /** Clears obsolete operation-level feedback while preserving field validation. */
+  public clearSubmissionError(): void {
+    this.submissionMessages.clear();
+    this.renderSubmissionError();
+  }
+
   /** Clears field and form errors. */
   public clearErrors(): void {
     this.assertActive();

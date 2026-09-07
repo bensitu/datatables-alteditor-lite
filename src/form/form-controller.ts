@@ -669,6 +669,12 @@ export class EditorFormController<
     this.renderSubmissionError();
   }
 
+  /** Clears obsolete operation-level feedback while preserving field validation. */
+  public clearSubmissionError(): void {
+    this.operationErrorMessage = undefined;
+    this.renderSubmissionError();
+  }
+
   /** Clears all displayed errors. */
   public clearErrors(): void {
     this.assertActive();

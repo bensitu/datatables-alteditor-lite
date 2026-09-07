@@ -438,7 +438,7 @@ describe('AltEditorLite Standalone CRUD', () => {
       });
       expect(beforeClose.mock.calls[0]?.[0].signal.aborted).toBe(false);
       submitForm();
-      await closing;
+      await expect(closing).rejects.toMatchObject({ code: 'OPERATION_BUSY' });
       expect(beforeClose.mock.calls[0]?.[0].signal.aborted).toBe(true);
       await vi.waitFor(() => {
         expect(update).toHaveBeenCalledOnce();
@@ -449,14 +449,16 @@ describe('AltEditorLite Standalone CRUD', () => {
       }
       expect(fixture.editor.getState().status).toBe('submitting');
       expect(closeEvents).not.toHaveBeenCalled();
-      await fixture.editor.closeDialog();
+      await expect(fixture.editor.closeDialog()).rejects.toMatchObject({
+        code: 'OPERATION_BUSY',
+      });
       expect(beforeClose).toHaveBeenCalledOnce();
-      expect(fixture.editor.getState().status).toBe('ready');
+      expect(fixture.editor.getState().status).toBe('submitting');
       persistence.resolve();
       await vi.waitFor(() => {
-        expect(update.mock.settledResults[0]?.type).toBe('fulfilled');
+        expect(fixture.editor.getState().status).toBe('ready');
       });
-      expect(applyUpdate).not.toHaveBeenCalled();
+      expect(applyUpdate).toHaveBeenCalledOnce();
       expect(closeEvents).toHaveBeenCalledOnce();
       expect(onError).not.toHaveBeenCalled();
     },

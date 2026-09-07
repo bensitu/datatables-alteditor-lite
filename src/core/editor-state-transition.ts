@@ -29,6 +29,7 @@ export function canTransitionEditorState(
       );
     case 'open':
       return (
+        (nextState.status === 'open' && nextState.action === currentState.action) ||
         (nextState.status === 'submitting' && nextState.action === currentState.action) ||
         (nextState.status === 'closing' && nextState.action === currentState.action)
       );

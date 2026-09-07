@@ -128,6 +128,8 @@ export class DialogEditingController<
 
   private closeDecisionTask: Promise<void> | undefined;
 
+  private openingFormAbortController: AbortController | undefined;
+
   public constructor(
     private readonly arguments_: DialogEditingControllerArguments<
       TRow,
@@ -608,6 +610,7 @@ export class DialogEditingController<
 
   /** Aborts opening and submission work and removes all dialog-owned DOM. */
   public destroy(): void {
+    this.openingFormAbortController?.abort();
     const session = this.activeSession;
     const provisionalForm = this.provisionalForm;
     this.activeSession = undefined;
@@ -691,6 +694,8 @@ export class DialogEditingController<
     errorContext: EditorErrorHookContext,
     uniquenessTarget?: TTarget,
   ): Promise<void> {
+    const opening = new AbortController();
+    this.openingFormAbortController = opening;
     this.arguments_.stateCoordinator.transitionTo({ action, status: 'opening' });
     let form: EditorFormController<TFormValues> | undefined;
     try {
@@ -721,13 +726,13 @@ export class DialogEditingController<
       );
       this.provisionalForm = form;
       form.onMutation = () => {
-        this.invalidateCloseDecision();
+        this.handleFormMutation();
       };
       if (sourceValues !== undefined) {
         form.populateFromSource(sourceValues);
       }
-      await form.initializeDependencies();
-      await form.rebaseDirtyState();
+      await settleWithAbort(form.initializeDependencies(), opening.signal);
+      await settleWithAbort(form.rebaseDirtyState(), opening.signal);
       this.arguments_.stateCoordinator.assertActive();
       this.dialog.openForm(
         form.element,
@@ -751,6 +756,9 @@ export class DialogEditingController<
       this.provisionalForm = undefined;
       this.activeSession = session;
     } catch (rawError: unknown) {
+      if (opening.signal.aborted) {
+        return;
+      }
       try {
         runCleanupSteps([
           () => {
@@ -797,6 +805,8 @@ export class DialogEditingController<
     recordTargets: readonly TTarget[],
     operationTargets: readonly Readonly<EditorOperationTarget>[],
   ): Promise<void> {
+    const opening = new AbortController();
+    this.openingFormAbortController = opening;
     this.arguments_.stateCoordinator.transitionTo({
       action: 'batchEdit',
       status: 'opening',
@@ -830,9 +840,9 @@ export class DialogEditingController<
       );
       this.provisionalForm = form;
       form.onMutation = () => {
-        this.invalidateCloseDecision();
+        this.handleFormMutation();
       };
-      await form.initializeDependencies();
+      await settleWithAbort(form.initializeDependencies(), opening.signal);
       this.arguments_.stateCoordinator.assertActive();
       this.dialog.openForm(
         form.element,
@@ -859,6 +869,9 @@ export class DialogEditingController<
         recordTargets,
       };
     } catch (rawError: unknown) {
+      if (opening.signal.aborted) {
+        return;
+      }
       try {
         runCleanupSteps([
           () => {
@@ -974,7 +987,7 @@ export class DialogEditingController<
     if (state.status !== 'open') {
       return;
     }
-    this.invalidateCloseDecision();
+    this.invalidateCloseDecision(new EditorOperationBusyError());
     const session = this.activeSession;
     if (session?.action !== state.action) {
       throw new Error('Dialog state does not match its active resources.');
@@ -1037,6 +1050,20 @@ export class DialogEditingController<
         );
         break;
       }
+    }
+  }
+
+  private handleFormMutation(): void {
+    this.invalidateCloseDecision();
+    const state = this.arguments_.stateCoordinator.getState();
+    if (state.status === 'open' && state.submissionError !== undefined) {
+      this.getActiveSessionForm()?.clearSubmissionError();
+      this.dialog.clearError();
+      this.dialog.setSubmitAvailable(true);
+      this.arguments_.stateCoordinator.transitionTo({
+        action: state.action,
+        status: 'open',
+      });
     }
   }
 
@@ -1274,7 +1301,10 @@ export class DialogEditingController<
 
   private requestClose(reason: BeforeCloseReason): Promise<void> {
     const state = this.arguments_.stateCoordinator.getState();
-    if (state.status === 'ready' || state.status === 'submitting') {
+    if (state.status === 'submitting') {
+      return Promise.reject(new EditorOperationBusyError());
+    }
+    if (state.status === 'ready' || state.status === 'opening') {
       this.closeNow(reason);
       return Promise.resolve();
     }
@@ -1314,6 +1344,9 @@ export class DialogEditingController<
       form?.revision === revision;
     try {
       if (!isCurrent()) {
+        if (abortController.signal.reason instanceof EditorOperationBusyError) {
+          throw abortController.signal.reason;
+        }
         return;
       }
       const beforeClose = this.arguments_.options.hooks?.beforeClose;
@@ -1347,6 +1380,9 @@ export class DialogEditingController<
       }
       this.closeNow(reason);
     } catch (rawError: unknown) {
+      if (abortController.signal.reason instanceof EditorOperationBusyError) {
+        throw abortController.signal.reason;
+      }
       if (!isCurrent()) {
         return;
       }
@@ -1403,8 +1439,8 @@ export class DialogEditingController<
     }
   }
 
-  private invalidateCloseDecision(): void {
-    this.closeDecisionAbortController?.abort();
+  private invalidateCloseDecision(reason?: Error): void {
+    this.closeDecisionAbortController?.abort(reason);
     this.closeDecisionAbortController = undefined;
     this.closeDecisionTask = undefined;
   }
@@ -1419,14 +1455,20 @@ export class DialogEditingController<
       }
       return;
     }
-    if (state.status !== 'open' && state.status !== 'submitting') {
+    if (state.status === 'opening') {
+      this.openCoordinator.cancel();
+      this.openingFormAbortController?.abort();
+      this.provisionalForm?.destroy();
+      this.provisionalForm = undefined;
+      this.arguments_.stateCoordinator.transitionTo({ status: 'ready' });
+      this.releaseInteraction();
+      return;
+    }
+    if (state.status !== 'open') {
       throw new EditorOperationBusyError();
     }
 
     const action = state.action;
-    if (state.status === 'submitting') {
-      this.arguments_.operationOwner.abort('dialog');
-    }
     this.arguments_.stateCoordinator.transitionTo({ action, status: 'closing' });
     this.finishClose(action, reason);
   }
