@@ -1,10 +1,12 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 
+import { openDemo } from './demo-navigation.js';
+
 test('runs Standalone CRUD, recovery, validation, and keyboard focus', async ({
   page,
 }) => {
-  await page.goto('http://127.0.0.1:4173/examples/demo/#standalone-example');
+  await openDemo(page, '#standalone-example');
 
   const standaloneExample = page.locator('#standalone-example');
   await expect(standaloneExample.locator('table')).toHaveCount(0);

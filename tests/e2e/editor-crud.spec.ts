@@ -4,6 +4,8 @@ import { fileURLToPath } from 'node:url';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 
+import { openDemo } from './demo-navigation.js';
+
 const testDirectory = dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = resolve(testDirectory, '../..');
 const dataTablesScriptPath = resolve(
@@ -661,7 +663,7 @@ test('integrates Buttons and Select while preserving the opening target', async 
 test('keeps Hybrid Dialog Edit available while changing employee selection', async ({
   page,
 }) => {
-  await page.goto('http://127.0.0.1:4173/examples/demo/');
+  await openDemo(page);
   const employeeDirectory = page.getByRole('region', {
     exact: true,
     name: 'Employee directory',
@@ -722,7 +724,7 @@ test('keeps Hybrid Dialog Edit available while changing employee selection', asy
 });
 
 test('applies a common value through desktop multi-row editing', async ({ page }) => {
-  await page.goto('http://127.0.0.1:4173/examples/demo/');
+  await openDemo(page);
   const employeeDirectory = page.getByRole('region', {
     exact: true,
     name: 'Employee directory',
@@ -760,7 +762,7 @@ test('demonstrates initial values, close decisions, and retryable field errors',
     closePrompts += 1;
     await prompt.dismiss();
   });
-  await page.goto('http://127.0.0.1:4173/examples/demo/');
+  await openDemo(page);
   await page.getByRole('button', { name: 'Create with preset values' }).click();
   const dialog = page.getByRole('dialog', { name: 'Create row' });
   const name = dialog.getByRole('textbox', { exact: true, name: 'Name' });
