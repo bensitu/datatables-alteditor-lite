@@ -430,7 +430,6 @@ function createEmployeeEditor(table, inlineActivation, language, dialogEnabled =
     editing: {
       dialog: {
         className: 'demo-editor-theme',
-        closeOnSuccess: !dialogEnabled,
         enabled: dialogEnabled,
         removeConfirmation: renderEmployeeRemoval,
         template: ({ operation }) =>

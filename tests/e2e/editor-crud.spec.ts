@@ -743,15 +743,13 @@ test('applies a common value through desktop multi-row editing', async ({ page }
     .fill('Shared team member');
   await dialog.getByRole('button', { name: 'Submit' }).click();
 
-  await expect(dialog).toBeVisible();
+  await expect(dialog).toBeHidden();
   await expect(employeeDirectory.locator('#employee-1')).toContainText(
     'Shared team member',
   );
   await expect(employeeDirectory.locator('#employee-5')).toContainText(
     'Shared team member',
   );
-  await dialog.getByRole('button', { name: 'Cancel' }).click();
-  await expect(dialog).toBeHidden();
 });
 
 test('demonstrates initial values, close decisions, and retryable field errors', async ({
@@ -793,8 +791,6 @@ test('demonstrates initial values, close decisions, and retryable field errors',
   await expect(page.locator('#employees #employee-1000')).toContainText(
     'Created employee',
   );
-  await expect(dialog).toBeVisible();
-  await dialog.getByRole('button', { name: 'Cancel' }).click();
   await expect(dialog).toBeHidden();
   expect(closePrompts).toBe(1);
 
