@@ -256,6 +256,21 @@ table state are synchronized through public APIs. ColumnControl SearchList
 options are refreshed and Responsive recalculates its layout after the editor
 presentation reaches a stable state.
 
+## Migrating from v0.8.1
+
+v0.8.2 retains existing public signatures and configuration defaults.
+
+- `closeDialog()` rejects with `EditorOperationBusyError` during submission.
+  Starting submission also rejects a pending asynchronous close request with
+  that error. A `beforeClose` veto still resolves normally and keeps the form open.
+- The demo now follows the default successful-dialog closing behavior. Configure
+  `editing.dialog.closeOnSuccess: false` explicitly when forms should remain open.
+- A unique, nonempty DataTables `rowId` preserves a target across replacement
+  objects. Host reads return detached plain-data snapshots rather than live rows.
+- Destruction cancels owned waiting and suppresses subsequent normal lifecycle
+  events, including close and refresh completion. Consumer callbacks must observe
+  their signals to stop application-owned work.
+
 ## Migrating from v0.8.0
 
 v0.8.1 retains the existing public API and adds corrections to cancellation,

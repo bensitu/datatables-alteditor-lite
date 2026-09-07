@@ -35,8 +35,8 @@ native browser controls. It has no jQuery or UI-framework runtime dependency.
 - Create, Edit, Remove, and Ajax-aware or local Refresh operations
 - Non-optimistic asynchronous persistence and asynchronous Host reads with
   `AbortSignal`
-- Stable Edit and Remove target snapshots that fail closed when row identity
-  changes
+- Stable Edit and Remove targets across row replacement with a unique DataTables
+  `rowId`, with detached plain-data snapshots and rejection of ambiguous targets
 - Text, email, password, number, date, time, datetime-local, textarea, checkbox,
   radio, select, local or remote SearchSelect, file, hidden, and custom fields
 - Typed option identity, safe nested field paths, custom validation, and optional
@@ -147,7 +147,12 @@ const editor = new AltEditorLite<UserRow, UserForm>(table, {
     },
   },
   fields: [
-    { label: 'Name', name: 'name', required: true, type: 'text' },
+    {
+      label: 'Name',
+      name: 'name',
+      required: true,
+      type: 'text',
+    },
     {
       attributes: { min: '1' },
       label: 'Rank',
@@ -450,7 +455,7 @@ extensions remain separate dependencies distributed under their own terms.
 
 ## Buy Me A Coffee
 
-<a href="https://www.buymeacoffee.com/bensitu">
+<a href="https://www.buymeacoffee.com/bensitu" rel="nofollow">
     <img src="https://cdn.buymeacoffee.com/buttons/v2/arial-yellow.png" alt="Buy Me A Coffee" width="200" />
 </a>
 

@@ -68,6 +68,12 @@ while capturing and revalidating single Edit, multi-record Edit, and Remove
 targets. A successful Edit with `editing.dialog.closeOnSuccess: false` reads the
 canonical record again and updates the retained form.
 
+Reads and `records()` entries return detached, recursively frozen plain objects
+and arrays. Nested `Date`, `Map`, `Set`, browser objects, and class instances keep
+their existing identity and must be treated as read-only. Use stable targets for
+the same logical record, even when callbacks return fresh row objects; uniqueness
+excludes the edited target rather than relying on row-object identity.
+
 When `applyUpdate` returns a target, that target identifies the committed record
 for the retained form, its canonical reload, and later submissions. If the
 canonical reload fails after the update was applied, success observers still run
@@ -182,6 +188,13 @@ Call `editor.destroy()` before discarding the owning screen, replacing the Host,
 or constructing another editor for the same `ownershipKey`. Destruction aborts
 owned work, removes editor DOM and listeners, releases ownership, and destroys
 the Host wrapper. It does not delete records from the application data store.
+
+The Host combines its lifetime signal with each operation signal for reads,
+Create, Update, multi-record Update, Remove, and Refresh. It releases signal
+listeners when each call settles. Direct `host.destroy()` is idempotent, rejects
+new work, and promptly rejects pending calls even when a callback ignores its
+signal. Consumer work may continue independently; observe the supplied signal
+before changing application data or UI. Already completed writes are not undone.
 
 See the [Standalone example](../examples/standalone/README.md) for a complete
 in-memory setup.

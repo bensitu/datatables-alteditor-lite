@@ -40,10 +40,18 @@ Its context reports whether current values differ from that baseline. Returning
 `false` keeps the dialog active. Successful forms retained by
 `closeOnSuccess: false` use their canonical result as a new clean baseline.
 
+Successful Create, Edit, and multi-record Edit submissions close the dialog by
+default. Set `editing.dialog.closeOnSuccess: false` to retain the form.
+
 Form changes invalidate a pending asynchronous close decision. Starting a
-submission also supersedes it. During submission, `closeDialog()` immediately
-cancels editor-owned work and closes without invoking `beforeClose`; this does
-not guarantee cancellation of work already committed by a remote service.
+submission rejects that pending close request with `EditorOperationBusyError`.
+During submission, `closeDialog()` also rejects with `EditorOperationBusyError`
+without cancelling persistence or invoking `beforeClose`. Correcting a form
+after a failed submission clears its obsolete operation feedback.
+
+Closing while record loading, `beforeOpen`, or initial dependencies are pending
+cancels opening and returns to `ready` without publishing open or close events.
+An invisible opening form does not enter the `closing` state.
 
 An explicit row selector does not require Select. When the Edit selector is
 omitted, Select must identify exactly one row. Remove accepts one or more explicit
@@ -424,6 +432,8 @@ restored.
 `destroy()` aborts activation, validation, persistence, and presentation waiting;
 removes inline listeners and controls; safely restores a still-valid undrawn cell
 when possible; and prevents late DOM, Host, focus, or event work.
+Cancellation stops editor-owned waiting. Consumer callbacks must observe their
+signal to stop their own work; completed backend writes are not rolled back.
 
 ## Host boundaries
 
@@ -441,9 +451,10 @@ that require DataTables-native work keep the `DataTablesHost` in scope and call
 With DataTables server-side processing, Dialog Edit, Inline Edit, multi-record
 Edit, and Remove are limited to rows materialized on the current page. Configure
 a stable `rowId`; the editor captures each current row identity and revalidates
-it before persistence and application. A server draw that replaces a captured
-row causes the pending operation to fail as an unavailable target, so stale
-client values are not applied to the replacement. Unloaded pages are not a
+it before persistence and application. A unique, nonempty `rowId` preserves the
+logical target across replacement row objects and changed indexes. Without a
+trustworthy ID, changed row references or ambiguous targets are rejected rather
+than matched by value. Unloaded pages are not a
 client-side record source and cannot be targeted by these operations.
 
 Persistence callbacks must update the server-owned source before the Host draw

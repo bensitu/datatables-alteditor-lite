@@ -70,7 +70,7 @@ omitted, Select must resolve exactly one selected row.
 The target is captured before the dialog opens. Later selection changes do not
 change it. At submission, AltEditorLite resolves identity in this order:
 
-1. public row-id selector, with index and live-object validation;
+1. unique, nonempty public row ID, validated against the current loaded records;
 2. connected row node owned by the same table;
 3. captured row index only while the same live row object still occupies it.
 
@@ -148,8 +148,9 @@ callback is never called repeatedly. Applications performing remote updates own
 their service-side transaction and partial-failure policy.
 
 `DataTablesHost` validates every target before replacement, performs one draw,
-and attempts to restore earlier synchronous replacements if a later setter
-throws. `StandaloneHost` exposes the capability only when `applyUpdates` is
+and attempts to restore independent plain-data snapshots for all attempted writes
+if a setter throws, including a setter that mutates its input before failing.
+`StandaloneHost` exposes the capability only when `applyUpdates` is
 configured. These Host guarantees do not roll back remote persistence that has
 already completed.
 
@@ -187,8 +188,8 @@ required. The callback receives the owned signal, replaces the Host's default
 refresh behavior, and is responsible for applying its result. Retain the
 DataTables API or call `DataTablesHost.unwrap()` when that implementation uses
 public DataTables methods. Aborted or superseded callback results do not publish
-AltEditorLite success events. Every started refresh emits its completion
-notification, including work canceled by replacement or destruction.
+AltEditorLite success events. Refresh completion is published only while the
+request still owns the operation; destruction suppresses that notification.
 
 The `/datatables` facade can use another finite positive timeout in milliseconds:
 

@@ -80,7 +80,7 @@ Remove has no editable form and reports `dirty: false`.
 If the form changes while an asynchronous decision is pending, that decision
 cannot close the changed form. A new dismissal request starts a new decision;
 the hook is not automatically repeated. Starting a submission supersedes any
-pending close decision.
+pending close decision and rejects its request with `EditorOperationBusyError`.
 
 The signal is aborted when the decision loses ownership, including form
 changes, submission, and destruction. Observe it for expensive asynchronous
@@ -97,10 +97,11 @@ If the callback throws or rejects, the dialog stays open and the normalized erro
 is reported to `onError`. Forced cleanup after `destroy()` and automatic closing
 after success are not intercepted.
 
-During an active submission, `closeDialog()` immediately cancels editor-owned
-work and closes the dialog without invoking `beforeClose`. Cancellation cannot
-guarantee that a remote service has not already committed work. Reopening or
-refreshing should use authoritative Host/backend state.
+During an active submission, `closeDialog()` rejects with
+`EditorOperationBusyError` without invoking `beforeClose` or cancelling the
+submission. Destruction stops editor-owned waiting and suppresses subsequent
+normal events and hooks. It cannot undo remote work already committed or stop
+consumer callbacks that ignore their cancellation signal.
 
 ## afterSuccess
 

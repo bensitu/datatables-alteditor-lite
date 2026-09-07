@@ -57,9 +57,11 @@ cleans up and returns to `ready`, then publishes `error` without a preceding
 `open` or a following `close` event.
 
 `submit` occurs after validation, collection, and target validation but before the
-persistence callback. `success` occurs after canonical Host application and
-stable presentation. `error` occurs after safe normalization without an editor
-Host mutation. `close` occurs after dialog cleanup, focus restoration, and target
+persistence callback. `success` occurs after canonical Host application; retained
+form preparation and final presentation cleanup can still be pending. `error`
+occurs after safe normalization; consult the error hook's `committed` flag before
+retrying because persistence or Host application may already have completed.
+`close` occurs after dialog cleanup, focus restoration, and target
 release.
 
 Refresh publishes:
@@ -70,7 +72,8 @@ success | error
 refresh { phase: 'complete' }
 ```
 
-Aborted or stale requests do not publish success or error. Destroy is published
+Aborted or stale requests do not publish success or error. Destruction also
+suppresses subsequent close and refresh-completion events. Destroy is published
 once after owned DOM, listeners, operations, snapshots, and instance storage are
 cleaned up.
 
