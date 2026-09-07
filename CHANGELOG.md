@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.2] - 2026-09-08
+
+### Changed
+
+- Documented close-request outcomes, stable record identity, snapshot boundaries,
+  and cooperative cancellation without adding public APIs or dependencies.
+- Consolidated internal lifecycle handling and private storage while retaining
+  the existing compressed distribution limits.
+
+### Fixed
+
+- Restored default dialog closing after successful Create, Edit, and multi-record
+  Edit in the demo while preserving explicit `closeOnSuccess: false` behavior.
+- Cleared obsolete submission feedback when the active form changes and allowed
+  same-action open-state updates without permitting cross-action transitions.
+- Cancelled pending dialog opening during record reads, hooks, and initial
+  dependencies without mounting stale forms or publishing close events.
+- Released custom controls created during synchronous opening cancellation.
+- Rejected close requests during submission with `EditorOperationBusyError` and
+  consistently rejected pending close decisions superseded by submission.
+- Preserved DataTables record targets across replacement objects and changed
+  indexes when a unique, nonempty `rowId` remains available.
+- Detached plain-data Host snapshots, excluded edited targets from uniqueness
+  checks, and restored snapshot values after failed synchronous batch writes.
+- Cancelled pending Standalone Host work on destruction, released cancellation
+  listeners, and suppressed subsequent editor events, hooks, and presentation
+  work for destroyed Dialog, Inline, and Refresh operations.
+
 ## [0.8.1] - 2026-09-06
 
 ### Changed
