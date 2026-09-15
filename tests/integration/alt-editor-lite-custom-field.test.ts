@@ -232,6 +232,8 @@ describe('AltEditorLite custom fields', () => {
     expect(control?.closest('[data-alteditor-lite-field="tags"]')).not.toBeNull();
     expect(observer.contexts[0]?.language.locale).toBe('ja-JP');
     expect(observer.contexts[0]?.presentation).toBe('dialog');
+    expect(observer.contexts[0]?.operation).toBe('create');
+    expect(Object.isFrozen(observer.contexts[0])).toBe(true);
     editor.getField('tags')?.focus();
     expect(document.activeElement).toBe(control);
 
@@ -293,6 +295,9 @@ describe('AltEditorLite custom fields', () => {
       'existing',
     );
     await editor.closeDialog();
+    expect(observer.contexts[1]?.operation).toBe('edit');
+    expect(observer.contexts[0]?.operation).toBe('create');
+    expect(observer.contexts).toHaveLength(2);
     expect(observer.destroy).toHaveBeenCalledTimes(2);
     expect(observer.contexts[1]?.signal.aborted).toBe(true);
   });
@@ -402,6 +407,7 @@ describe('AltEditorLite custom fields', () => {
     const control = document.querySelector<HTMLInputElement>('[data-tags-control]');
     expect(control?.value).toBe('shared');
     expect(observer.contexts[0]?.presentation).toBe('batch');
+    expect(observer.contexts[0]?.operation).toBe('batchEdit');
     expect(
       document.querySelector<HTMLElement>(
         '[data-alteditor-lite-batch-field="tags"] .alteditor-lite-batch-field__state',

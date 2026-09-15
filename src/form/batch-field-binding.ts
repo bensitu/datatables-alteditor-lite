@@ -130,6 +130,7 @@ export class BatchFieldBinding<TFormValues extends object> {
         },
         BATCH_FIELD_PRESENTATION,
         configuration.lifecycleSignal,
+        'batchEdit',
       );
       presentation = new BatchFieldPresentation({
         fieldElement: controller.element,

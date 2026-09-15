@@ -714,6 +714,7 @@ export class DialogEditingController<
             true,
           );
         },
+        action,
       );
       this.#provisionalForm = form;
       signal.throwIfAborted();

@@ -230,7 +230,14 @@ detection and does not transfer DOM ownership to the editor.
 
 `CustomFieldControllerContext` supplies the resolved language, the owning
 `presentation` (`dialog`, `batch`, or `inline`), a lifecycle `AbortSignal`, and
-`onUserChange()`. Call `onUserChange()` for logical user changes so dependencies
+`onUserChange()`. The frozen, readonly context also supplies `operation`: Create
+Dialog uses `create`, Edit Dialog uses `edit`, multi-record Edit uses `batchEdit`,
+and Inline Edit uses `edit`. This value stays constant for the controller lifetime.
+The context does not expose current or original rows. Use field options,
+dependencies, hooks, or application composition for initialization that needs
+broader application state.
+
+Call `onUserChange()` for logical user changes so dependencies
 and configured change callbacks receive current values.
 
 The adapter state setters own the widget's actual disabled, read-only, and

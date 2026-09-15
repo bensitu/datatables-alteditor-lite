@@ -27,6 +27,7 @@ export function buildEditorForm<TFormValues extends object>(
   template?: DialogTemplateSource,
   dependencies?: Readonly<FormDependencies<TFormValues>>,
   onDependencyError?: (sourcePath: string, error: AltEditorLiteError) => void,
+  operation: 'create' | 'edit' = 'edit',
 ): EditorFormController<TFormValues> {
   return new EditorFormController(
     fields,
@@ -36,5 +37,6 @@ export function buildEditorForm<TFormValues extends object>(
     template,
     dependencies,
     onDependencyError,
+    operation,
   );
 }

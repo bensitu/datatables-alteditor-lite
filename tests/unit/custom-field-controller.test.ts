@@ -36,6 +36,8 @@ describe('custom field controller', () => {
         const control = document.createElement('div');
         const input = document.createElement('input');
         control.append(input);
+        expect(Object.isFrozen(context)).toBe(true);
+        expect(context.operation).toBe('edit');
         receivedLocale = context.language.locale;
         receivedPresentation = context.presentation;
         receivedSignal = context.signal;

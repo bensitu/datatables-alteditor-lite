@@ -12,6 +12,7 @@ import { createSelectFieldController } from './select-field-controller.js';
 import { createTextareaFieldController } from './textarea-field-controller.js';
 import { throwUnsupportedFieldType } from './unsupported-field-type.js';
 
+import type { CustomFieldControllerContext } from './custom-field.js';
 import type { FieldConfig } from './field-config.js';
 import type { FieldControllerPresentation } from './field-controller-presentation.js';
 import type { ManagedFieldController } from './managed-field-controller.js';
@@ -35,6 +36,7 @@ export function createFieldController<TFormValues extends object>(
   onUserChange: () => void,
   presentation: Readonly<FieldControllerPresentation> = DIALOG_FIELD_PRESENTATION,
   lifecycleSignal: AbortSignal = NEVER_ABORTED_SIGNAL,
+  operation: CustomFieldControllerContext['operation'] = 'edit',
 ): ManagedFieldController<TFormValues> {
   let controller: ManagedFieldController<TFormValues>;
   switch (config.type) {
@@ -46,6 +48,7 @@ export function createFieldController<TFormValues extends object>(
         onUserChange,
         presentation.kind,
         lifecycleSignal,
+        operation,
       );
       break;
     case 'hidden':

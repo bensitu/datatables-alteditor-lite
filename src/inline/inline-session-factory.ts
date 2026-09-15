@@ -53,6 +53,7 @@ export class InlineSessionFactory<TFormValues extends object> {
         this.arguments_.onUserChange,
         INLINE_FIELD_PRESENTATION,
         mergeAbortSignals([signal, lifecycleAbortController.signal]).signal,
+        'edit',
       );
 
       controller.setValue(capture.originalValue);

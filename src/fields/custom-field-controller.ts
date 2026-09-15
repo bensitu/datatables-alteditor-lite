@@ -115,10 +115,12 @@ export function createCustomFieldController<TFormValues extends object>(
   onUserChange: () => void,
   presentation: CustomFieldPresentation,
   lifecycleSignal: AbortSignal,
+  operation: CustomFieldControllerContext['operation'],
 ): ManagedFieldController<TFormValues> {
   const context: Readonly<CustomFieldControllerContext> = Object.freeze({
     language,
     onUserChange,
+    operation,
     presentation,
     signal: lifecycleSignal,
   });

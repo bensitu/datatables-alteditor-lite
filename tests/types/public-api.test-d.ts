@@ -296,6 +296,9 @@ const tagsDefinition = defineCustomField<readonly string[], TagOptions>({
     expectType<string>(context.language.locale);
     expectType<CustomFieldPresentation>(context.presentation);
     expectType<'dialog' | 'batch' | 'inline'>(context.presentation);
+    expectType<'create' | 'edit' | 'batchEdit'>(context.operation);
+    // @ts-expect-error Controller operation is readonly.
+    context.operation = 'create';
     expectType<AbortSignal>(context.signal);
     const adapter: CustomFieldAdapter<readonly string[]> = {
       containsFocusTarget: (target) => {

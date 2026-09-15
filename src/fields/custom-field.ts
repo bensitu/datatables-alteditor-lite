@@ -27,6 +27,8 @@ export interface CustomFieldControllerContext {
   readonly language: Readonly<AltEditorLiteLanguage>;
   /** Editing surface that created this controller. */
   readonly presentation: CustomFieldPresentation;
+  /** Editing operation that created this controller. */
+  readonly operation: 'create' | 'edit' | 'batchEdit';
   /** Signal aborted when the rendered field is cancelled or destroyed. */
   readonly signal: AbortSignal;
   /** Notification that the user changed the widget value. */

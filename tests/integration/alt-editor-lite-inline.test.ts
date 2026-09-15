@@ -172,6 +172,8 @@ describe('AltEditorLite programmatic inline editing', () => {
       capabilities: { inline: true },
       createController: (_options, context) => {
         presentation = context.presentation;
+        expect(context.operation).toBe('edit');
+        expect(Object.isFrozen(context)).toBe(true);
         const control = document.createElement('input');
         control.dataset['customInline'] = '';
         const handleInput = (): void => {
