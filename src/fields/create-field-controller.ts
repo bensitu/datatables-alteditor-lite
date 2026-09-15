@@ -41,15 +41,13 @@ export function createFieldController<TFormValues extends object>(
   let controller: ManagedFieldController<TFormValues>;
   switch (config.type) {
     case 'custom':
-      controller = createCustomFieldController(
-        config,
-        fieldId,
+      controller = createCustomFieldController(config, fieldId, {
         language,
         onUserChange,
-        presentation.kind,
-        lifecycleSignal,
         operation,
-      );
+        presentation: presentation.kind,
+        signal: lifecycleSignal,
+      });
       break;
     case 'hidden':
     case 'text':

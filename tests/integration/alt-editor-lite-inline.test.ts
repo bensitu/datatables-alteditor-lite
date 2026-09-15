@@ -1971,40 +1971,50 @@ describe('external record presentation changes', () => {
     },
   );
 
-  it('cancels asynchronous opening when records are redrawn', async () => {
-    const pending = createDeferred<boolean>();
-    let signal: AbortSignal | undefined;
-    const { api, editor, tableElement } = createInlineEditor({
-      fields,
-      editing: inlineEditing(),
-      hooks: {
-        beforeOpen: (context) => {
-          signal = context.signal;
-          return pending.promise;
+  it.each(['redraw', 'destroy'] as const)(
+    'settles asynchronous opening after %s without restoring stale focus',
+    async (action) => {
+      const pending = createDeferred<boolean>();
+      let signal: AbortSignal | undefined;
+      const { api, editor, tableElement } = createInlineEditor({
+        fields,
+        editing: inlineEditing(),
+        hooks: {
+          beforeOpen: (context) => {
+            signal = context.signal;
+            return pending.promise;
+          },
         },
-      },
-    });
-    const events = vi.fn();
-    for (const name of ['open', 'close', 'success', 'error'])
-      tableElement.addEventListener('alteditor-lite:' + name, events);
-    let isSettled = false;
-    const opening = editor.openInlineEdit('#row-a', 0).then(() => {
-      isSettled = true;
-    });
-    await vi.waitFor(() => {
-      expect(signal).toBeDefined();
-    });
-    api.draw(false);
-    expect(signal?.aborted).toBe(true);
-    await vi.waitFor(() => {
-      expect(isSettled).toBe(true);
-    });
-    pending.resolve(true);
-    await opening;
-    expect(editor.getInlineState().status).toBe('idle');
-    expect(document.querySelector('.alteditor-lite-inline')).toBeNull();
-    expect(events).not.toHaveBeenCalled();
-  });
+      });
+      const events = vi.fn();
+      for (const name of ['open', 'close', 'success', 'error'])
+        tableElement.addEventListener('alteditor-lite:' + name, events);
+      const originalFocus = document.createElement('button');
+      document.body.append(originalFocus);
+      originalFocus.focus();
+      const restoreFocus = vi.spyOn(originalFocus, 'focus');
+      let isSettled = false;
+      const opening = editor.openInlineEdit('#row-a', 0).then(() => {
+        isSettled = true;
+      });
+      await vi.waitFor(() => {
+        expect(signal).toBeDefined();
+      });
+      originalFocus.blur();
+      if (action === 'redraw') api.draw(false);
+      else editor.destroy();
+      expect(signal?.aborted).toBe(true);
+      await vi.waitFor(() => {
+        expect(isSettled).toBe(true);
+      });
+      pending.resolve(true);
+      await opening;
+      expect(restoreFocus).not.toHaveBeenCalled();
+      if (action === 'redraw') expect(editor.getInlineState().status).toBe('idle');
+      expect(document.querySelector('.alteditor-lite-inline')).toBeNull();
+      expect(events).not.toHaveBeenCalled();
+    },
+  );
 
   it('aborts validation on target removal and settles safely after destruction', async () => {
     const pending = createDeferred<{ valid: boolean }>();
@@ -2043,5 +2053,37 @@ describe('external record presentation changes', () => {
     expect(update).not.toHaveBeenCalled();
     expect(outcome).not.toHaveBeenCalled();
     expect(close).toHaveBeenCalledOnce();
+  });
+});
+
+describe('inline opening replacement', () => {
+  it('keeps a new target active when an earlier opening is cancelled by redraw', async () => {
+    const pending = createDeferred<boolean>();
+    const beforeOpen = vi
+      .fn()
+      .mockImplementationOnce(() => pending.promise)
+      .mockReturnValue(true);
+    const { api, editor } = createInlineEditor({
+      fields,
+      editing: inlineEditing(),
+      hooks: { beforeOpen },
+    });
+    const opening = editor.openInlineEdit('#row-a', 0);
+    await vi.waitFor(() => {
+      expect(beforeOpen).toHaveBeenCalledOnce();
+    });
+    api.draw(false);
+    const replacement = editor.openInlineEdit('#row-b', 0);
+    await opening;
+    await replacement;
+    pending.resolve(true);
+    expect(editor.getInlineState()).toMatchObject({
+      status: 'editing',
+      target: { rowId: 'row-b' },
+    });
+    expect(
+      document.querySelector<HTMLInputElement>('.alteditor-lite-inline input')?.value,
+    ).toBe('Beta');
+    await editor.cancelInlineEdit();
   });
 });

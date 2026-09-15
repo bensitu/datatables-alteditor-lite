@@ -179,7 +179,7 @@ export class EditorFormController<
     template?: DialogTemplateSource,
     dependencies?: Readonly<FormDependencies<TFormValues>>,
     onDependencyError?: (sourcePath: string, error: AltEditorLiteError) => void,
-    operation: 'create' | 'edit' = 'edit',
+    operation?: 'create' | 'edit',
   ) {
     this.configuredFieldNames = new Set(fields.map(({ name }) => name));
     this.element = document.createElement('form');

@@ -8,13 +8,11 @@ import type {
   CustomFieldAdapter,
   CustomFieldConfig,
   CustomFieldControllerContext,
-  CustomFieldPresentation,
 } from './custom-field.js';
 import type { FieldChangeContext, FieldValidationContext } from './field-config.js';
 import type { FieldControllerShell } from './field-controller-shell.js';
 import type { FieldValidationResult } from './field-controller.js';
 import type { ManagedFieldController } from './managed-field-controller.js';
-import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type { EditorValues } from '../core/editor-values.js';
 
 function assertAdapter<TValue>(
@@ -111,20 +109,12 @@ function assertValidationResult(result: FieldValidationResult, fieldName: string
 export function createCustomFieldController<TFormValues extends object>(
   config: Readonly<CustomFieldConfig<TFormValues>>,
   fieldId: string,
-  language: Readonly<AltEditorLiteLanguage>,
-  onUserChange: () => void,
-  presentation: CustomFieldPresentation,
-  lifecycleSignal: AbortSignal,
-  operation: CustomFieldControllerContext['operation'],
+  context: Readonly<CustomFieldControllerContext>,
 ): ManagedFieldController<TFormValues> {
-  const context: Readonly<CustomFieldControllerContext> = Object.freeze({
-    language,
-    onUserChange,
-    operation,
-    presentation,
-    signal: lifecycleSignal,
-  });
-  const adapter = config.definition.createController(config.options, context);
+  const adapter = config.definition.createController(
+    config.options,
+    Object.freeze(context),
+  );
   let shell: FieldControllerShell | undefined;
 
   try {
@@ -163,7 +153,7 @@ export function createCustomFieldController<TFormValues extends object>(
     return {
       name: config.name,
       element: initializedShell.element,
-      getValue: (signal = lifecycleSignal) => settleWithAbort(adapter.getValue(), signal),
+      getValue: (signal = context.signal) => settleWithAbort(adapter.getValue(), signal),
       setValue: (value) => {
         adapter.setValue(value);
       },

@@ -32,11 +32,9 @@ import type { InlineEditState } from './inline-edit-state.js';
 import type { InlineEditViewFactory } from './inline-edit-view-factory.js';
 import type { ResolvedInlineInteractionBehavior } from './inline-interaction-behavior.js';
 import type { InlineNavigationIntent } from './inline-navigation.js';
-import type { InlineTargetCapture } from './inline-target-capture.js';
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type {
   AltEditorLiteOptions,
-  BeforeOpenContext,
   EditorErrorHookContext,
 } from '../core/alt-editor-lite-options.js';
 import type { AltEditorLite } from '../core/alt-editor-lite.js';
@@ -226,19 +224,26 @@ export class InlineEditSessionController<
     const interactionToken = this.arguments_.interactionCoordinator.acquire('inline');
     this.activationInteractionToken = interactionToken;
     const activationAbortController = new AbortController();
+    const { signal } = activationAbortController;
     this.activationAbortController = activationAbortController;
     this.transitionTo({ status: 'activating', target: capture.summary });
     let createdSession: InlineEditSession<TRow, TFormValues> | undefined;
 
     try {
-      const shouldOpen = await this.runBeforeOpen(capture, activationAbortController);
-      if (activationAbortController.signal.aborted || this.isDestroyed) {
-        this.releaseActivationInteraction();
-        if ((this.state as InlineEditState).status === 'activating') {
-          this.transitionTo({ status: 'idle' });
-        }
-        return;
-      }
+      const shouldOpen =
+        (await settleWithAbort(
+          this.arguments_.editorOptions.hooks?.beforeOpen?.(
+            Object.freeze({
+              mode: 'inline',
+              operation: 'edit',
+              row: capture.rowCapture.snapshot.original,
+              signal,
+              target: createInlineOperationTarget(capture.summary),
+            }),
+          ),
+          signal,
+        )) !== false;
+      signal.throwIfAborted();
       if (!shouldOpen) {
         this.releaseActivationInteraction();
         this.transitionTo({ status: 'idle' });
@@ -256,19 +261,9 @@ export class InlineEditSessionController<
         interactionToken,
         originalActiveElement,
         sessionId: (this.nextSessionId += 1),
-        signal: activationAbortController.signal,
+        signal,
       });
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Cancellation can occur while an asynchronous controller resolves.
-      if (activationAbortController.signal.aborted || this.isDestroyed) {
-        createdSession.host.destroy();
-        createdSession.controller.destroy();
-        createdSession = undefined;
-        this.releaseActivationInteraction();
-        if ((this.state as InlineEditState).status === 'activating') {
-          this.transitionTo({ status: 'idle' });
-        }
-        return;
-      }
+      signal.throwIfAborted();
       this.arguments_.host.resolveInlineTarget(
         capture,
         this.arguments_.mappings,
@@ -318,14 +313,13 @@ export class InlineEditSessionController<
             () => {
               createdSession?.controller.destroy();
             },
-            () => {
-              this.releaseActivationInteraction();
-            },
           ]);
         } catch {
           // Preserve the activation failure.
         }
       }
+      if (signal.aborted) return;
+      this.releaseActivationInteraction();
       if ((this.state as InlineEditState).status === 'activating') {
         this.transitionTo({ status: 'idle' });
       }
@@ -342,11 +336,7 @@ export class InlineEditSessionController<
           this.arguments_.host.focusInlineCell(undefined);
         }
       }
-      const error = normalizeOperationError(
-        rawError,
-        activationAbortController.signal,
-        this.arguments_.language,
-      );
+      const error = normalizeOperationError(rawError, signal, this.arguments_.language);
       if (!(error instanceof InternalOperationAbort)) {
         this.arguments_.reportError(
           error,
@@ -605,24 +595,6 @@ export class InlineEditSessionController<
       validate: async (signal: AbortSignal) =>
         await this.validationController.validate(session, signal),
     });
-  }
-
-  private async runBeforeOpen(
-    capture: InlineTargetCapture<TRow, TFormValues>,
-    abortController: AbortController,
-  ): Promise<boolean> {
-    const hook = this.arguments_.editorOptions.hooks?.beforeOpen;
-    if (hook === undefined) {
-      return true;
-    }
-    const context: BeforeOpenContext<TRow, TFormValues> = Object.freeze({
-      mode: 'inline',
-      operation: 'edit',
-      row: capture.rowCapture.snapshot.original,
-      signal: abortController.signal,
-      target: createInlineOperationTarget(capture.summary),
-    });
-    return (await settleWithAbort(hook(context), abortController.signal)) !== false;
   }
 
   private readonly handleExternalDraw = (): void => {
