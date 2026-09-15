@@ -426,6 +426,9 @@ describe('SearchSelect remote request ownership', () => {
     });
 
     searchSelect.setValue(7);
+    searchSelect.setOptions([{ label: 'Other', value: 8 }]);
+    expect(searchSelect.getValue()).toBe(7);
+    expect(resolveSignal?.aborted).toBe(false);
     searchSelect.setOptions([{ label: 'Seed seven', value: 7 }]);
     expect(resolveSignal?.aborted).toBe(true);
     expect(searchSelect.inputElement.value).toBe('Seed seven');

@@ -1929,3 +1929,113 @@ describe('AltEditorLite inline interaction and redraw behavior', () => {
     expect(tableElement.contains(document.activeElement)).toBe(true);
   });
 });
+
+describe('external record presentation changes', () => {
+  it.each(['retained', 'removed', 'reordered', 'ambiguous'] as const)(
+    'releases the inline control when the target is %s after redraw',
+    async (change) => {
+      const update = vi.fn((_values, original: Readonly<TestRow>) => original);
+      const { api, editor, tableElement } = createInlineEditor({
+        fields,
+        editing: inlineEditing(),
+        operations: { update },
+      });
+      const close = vi.fn();
+      const success = vi.fn();
+      tableElement.addEventListener('alteditor-lite:close', close);
+      tableElement.addEventListener('alteditor-lite:success', success);
+      await editor.openInlineEdit('#row-a', 0);
+      const control = replaceInlineValue('Discarded');
+      const originalRows = api.rows().data().toArray();
+      const nextRows =
+        change === 'removed'
+          ? originalRows.filter((row) => row.id !== 'row-a')
+          : change === 'reordered'
+            ? [...originalRows].reverse()
+            : change === 'ambiguous'
+              ? [...originalRows, { id: 'row-a', name: 'Duplicate', rank: 3 }]
+              : originalRows;
+      api.clear().rows.add(nextRows).draw(false);
+      expect(editor.getInlineState().status).toBe('idle');
+      expect(control.isConnected).toBe(false);
+      expect(document.activeElement).not.toBe(api.cell(0, 0).node());
+      expect(close).toHaveBeenCalledOnce();
+      expect(success).not.toHaveBeenCalled();
+      expect(update).not.toHaveBeenCalled();
+      expect(api.rows({ order: 'index' }).data().toArray()).toEqual(nextRows);
+      if (change === 'retained' || change === 'reordered') {
+        await editor.openInlineEdit('#row-a', 0);
+        expect(replaceInlineValue('New value').value).toBe('New value');
+        await editor.cancelInlineEdit();
+      }
+    },
+  );
+
+  it('cancels asynchronous opening when records are redrawn', async () => {
+    const pending = createDeferred<boolean>();
+    let signal: AbortSignal | undefined;
+    const { api, editor, tableElement } = createInlineEditor({
+      fields,
+      editing: inlineEditing(),
+      hooks: {
+        beforeOpen: (context) => {
+          signal = context.signal;
+          return pending.promise;
+        },
+      },
+    });
+    const events = vi.fn();
+    for (const name of ['open', 'close', 'success', 'error'])
+      tableElement.addEventListener('alteditor-lite:' + name, events);
+    const opening = editor.openInlineEdit('#row-a', 0);
+    await vi.waitFor(() => {
+      expect(signal).toBeDefined();
+    });
+    api.draw(false);
+    expect(signal?.aborted).toBe(true);
+    pending.resolve(true);
+    await opening;
+    expect(editor.getInlineState().status).toBe('idle');
+    expect(document.querySelector('.alteditor-lite-inline')).toBeNull();
+    expect(events).not.toHaveBeenCalled();
+  });
+
+  it('aborts validation on target removal and settles safely after destruction', async () => {
+    const pending = createDeferred<{ valid: boolean }>();
+    let signal: AbortSignal | undefined;
+    const update = vi.fn((_values, original: Readonly<TestRow>) => original);
+    const { api, editor, tableElement } = createInlineEditor({
+      fields: [
+        {
+          ...fields[0],
+          validate: (_value, context) => {
+            signal = context.signal;
+            return pending.promise;
+          },
+        },
+        fields[1],
+      ],
+      editing: inlineEditing(),
+      operations: { update },
+    });
+    const close = vi.fn();
+    const outcome = vi.fn();
+    tableElement.addEventListener('alteditor-lite:close', close);
+    tableElement.addEventListener('alteditor-lite:success', outcome);
+    tableElement.addEventListener('alteditor-lite:error', outcome);
+    await editor.openInlineEdit('#row-a', 0);
+    replaceInlineValue('Discarded');
+    const submission = editor.submitInlineEdit();
+    await vi.waitFor(() => {
+      expect(signal).toBeDefined();
+    });
+    api.row('#row-a').remove().draw(false);
+    expect(signal?.aborted).toBe(true);
+    editor.destroy();
+    pending.resolve({ valid: true });
+    await submission;
+    expect(update).not.toHaveBeenCalled();
+    expect(outcome).not.toHaveBeenCalled();
+    expect(close).toHaveBeenCalledOnce();
+  });
+});

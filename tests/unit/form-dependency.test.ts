@@ -505,3 +505,76 @@ describe('form dependencies', () => {
     expect(form.getField('region')?.isVisible()).toBe(false);
   });
 });
+
+describe('dependent choice values', () => {
+  it.each(['select', 'search-select'] as const)(
+    'keeps %s values and labels synchronized without recursive notifications',
+    async (type) => {
+      const onChange = vi.fn();
+      const regionDependency = vi.fn(() => ({}));
+      const form = ownForm(
+        buildEditorForm<DependencyValues>(
+          [
+            { type: 'text', name: 'country', label: 'Country', defaultValue: 'retained' },
+            {
+              ...(type === 'select'
+                ? { type: 'select' as const }
+                : { type: 'search-select' as const }),
+              name: 'region',
+              label: 'Region',
+              required: true,
+              allowClear: true,
+              defaultValue: 'tokyo',
+              options: [{ label: 'Tokyo', value: 'tokyo' }],
+              onChange,
+            },
+          ],
+          'dependent-choice',
+          ENGLISH_LANGUAGE,
+          undefined,
+          undefined,
+          {
+            country: (value) => ({
+              region: {
+                options: [
+                  {
+                    label: value === 'retained' ? 'Tokyo updated' : 'Osaka',
+                    value: value === 'retained' ? 'tokyo' : 'osaka',
+                  },
+                ],
+                ...(value === 'explicit' ? { value: 'osaka' } : {}),
+              },
+            }),
+            region: regionDependency,
+          },
+        ),
+      );
+      await form.initializeDependencies();
+      const region = form.getField('region');
+      await expect(region?.getValue()).resolves.toBe('tokyo');
+      const visibleLabel = () =>
+        type === 'select'
+          ? region?.element.querySelector('select')?.selectedOptions[0]?.textContent
+          : region?.element.querySelector('input')?.value;
+      expect(visibleLabel()).toBe('Tokyo updated');
+      const source = form.getField('country')?.element.querySelector('input');
+      if (source === null || source === undefined)
+        throw new Error('Expected country input.');
+      source.value = 'removed';
+      source.dispatchEvent(new Event('input', { bubbles: true }));
+      await vi.waitFor(async () => {
+        await expect(region?.getValue()).resolves.toBeUndefined();
+      });
+      expect(visibleLabel()).toBe('');
+      await expect(region?.validate()).resolves.toMatchObject({ valid: false });
+      source.value = 'explicit';
+      source.dispatchEvent(new Event('input', { bubbles: true }));
+      await vi.waitFor(async () => {
+        await expect(region?.getValue()).resolves.toBe('osaka');
+      });
+      expect(visibleLabel()).toBe('Osaka');
+      expect(onChange).not.toHaveBeenCalled();
+      expect(regionDependency).toHaveBeenCalledOnce();
+    },
+  );
+});

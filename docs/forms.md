@@ -280,3 +280,20 @@ DOM order meaningful at narrow widths, ensure every revealed field remains
 reachable by keyboard, and preserve visible focus indicators in custom themes.
 AltEditorLite continues to own label associations, `aria-invalid`, alert regions,
 dialog focus containment, invalid-field focus, and focus restoration.
+
+### Replacing choice options
+
+An options-only dependency patch retains a native Select or local SearchSelect
+selection when its exact domain value remains available, updating the displayed
+label. Otherwise it clears the collected value to `undefined`. A native Select
+uses its empty option when `allowClear` is enabled, or has no selected option;
+it never selects the first replacement automatically. Required validation then
+rejects that empty selection.
+
+Remote SearchSelect values are independent of seed options. Replacing seeds does
+not discard a selected remote value; the existing resolver hydrates it when
+needed. A matching replacement seed updates its label and cancels obsolete
+resolution. When a patch includes both `options` and `value`, the value is
+validated against the candidate choices before options and then the explicit
+value are applied. Remote scalar values can still be resolved outside the seeds.
+These programmatic changes do not emit user changes or recursively run dependencies.
