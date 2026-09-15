@@ -210,6 +210,43 @@ describe('dialog lifecycle coordination', () => {
     },
   );
 
+  it('coalesces close requests and isolates decisions invalidated by field changes', async () => {
+    const decisions: ((allowed: boolean) => void)[] = [];
+    const beforeClose = vi.fn(
+      () =>
+        new Promise<boolean>((resolve) => {
+          decisions.push(resolve);
+        }),
+    );
+    const { editor } = createStandaloneTestFixture({ hooks: { beforeClose } });
+    await editor.openEditDialog('record-a');
+    const first = editor.closeDialog();
+    const duplicate = editor.closeDialog();
+    await vi.waitFor(() => {
+      expect(beforeClose).toHaveBeenCalledOnce();
+    });
+    editor.getField('name')?.setValue('Changed');
+    await Promise.all([first, duplicate]);
+    const current = editor.closeDialog();
+    await vi.waitFor(() => {
+      expect(beforeClose).toHaveBeenCalledTimes(2);
+    });
+    decisions[0]?.(true);
+    await Promise.resolve();
+    expect(editor.getState().status).toBe('open');
+    expect(document.querySelector('dialog')?.open).toBe(true);
+    decisions[1]?.(false);
+    await current;
+    expect(editor.getState().status).toBe('open');
+    const finalRequest = editor.closeDialog();
+    await vi.waitFor(() => {
+      expect(beforeClose).toHaveBeenCalledTimes(3);
+    });
+    decisions[2]?.(true);
+    await finalRequest;
+    expect(editor.getState().status).toBe('ready');
+  });
+
   it('rejects a pending close decision superseded by submission', async () => {
     let decide!: (allowed: boolean) => void;
     const beforeClose = vi.fn(

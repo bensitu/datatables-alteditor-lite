@@ -133,12 +133,7 @@ export function createNativeControlController<TFormValues extends object, TValue
         signal,
         values,
       };
-      return await Promise.resolve(
-        config.validate(
-          await Promise.resolve(adapter.readValue(signal)),
-          validationContext,
-        ),
-      );
+      return await config.validate(await adapter.readValue(signal), validationContext);
     },
     runOnChange: async (
       values: Readonly<EditorValues<TFormValues>>,
@@ -152,9 +147,7 @@ export function createNativeControlController<TFormValues extends object, TValue
         signal,
         values,
       };
-      await Promise.resolve(
-        config.onChange(await Promise.resolve(adapter.readValue(signal)), changeContext),
-      );
+      await config.onChange(await adapter.readValue(signal), changeContext);
     },
     clearError: () => {
       shell.clearError();

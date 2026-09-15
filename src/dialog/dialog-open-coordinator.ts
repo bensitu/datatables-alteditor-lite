@@ -9,12 +9,29 @@ import { readHostRecords } from '../host/host-record-reader.js';
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type {
   AltEditorLiteOptions,
-  BeforeOpenContext,
   EditorErrorHookContext,
 } from '../core/alt-editor-lite-options.js';
 import type { EditorErrorReporter } from '../core/editor-error-reporter.js';
 import type { EditorOperationTarget } from '../core/editor-operation.js';
 import type { EditorHost } from '../host/editor-host.js';
+
+type DialogOpenDetails<TRow extends object> =
+  | { readonly operation: 'create' }
+  | {
+      readonly operation: 'edit';
+      readonly row: Readonly<TRow>;
+      readonly target: Readonly<EditorOperationTarget>;
+    }
+  | {
+      readonly operation: 'batchEdit';
+      readonly originals: readonly Readonly<TRow>[];
+      readonly targets: readonly Readonly<EditorOperationTarget>[];
+    }
+  | {
+      readonly operation: 'remove';
+      readonly rows: readonly Readonly<TRow>[];
+      readonly targets: readonly Readonly<EditorOperationTarget>[];
+    };
 
 export interface DialogOpenCoordinatorArguments<
   TRow extends object,
@@ -93,97 +110,24 @@ export class DialogOpenCoordinator<
     }
   }
 
-  public runBeforeOpen(operation: 'create', request: AbortController): Promise<boolean>;
-  public runBeforeOpen(
-    operation: 'edit',
-    request: AbortController,
-    row: Readonly<TRow>,
-    target: Readonly<EditorOperationTarget>,
-  ): Promise<boolean>;
-  public runBeforeOpen(
-    operation: 'batchEdit' | 'remove',
-    request: AbortController,
-    rows: readonly Readonly<TRow>[],
-    targets: readonly Readonly<EditorOperationTarget>[],
-  ): Promise<boolean>;
   public async runBeforeOpen(
-    operation: 'create' | 'edit' | 'batchEdit' | 'remove',
+    details: DialogOpenDetails<TRow>,
     request: AbortController,
-    rowOrRows?: Readonly<TRow> | readonly Readonly<TRow>[],
-    targetOrTargets?:
-      Readonly<EditorOperationTarget> | readonly Readonly<EditorOperationTarget>[],
   ): Promise<boolean> {
     const hook = this.arguments_.options.hooks?.beforeOpen;
-    if (hook === undefined) {
-      return true;
-    }
-
+    if (hook === undefined) return true;
     const { signal } = request;
-    let context: BeforeOpenContext<TRow, TFormValues>;
-    let errorContext: EditorErrorHookContext;
-    if (operation === 'edit') {
-      const row = rowOrRows as Readonly<TRow>;
-      const target = targetOrTargets as Readonly<EditorOperationTarget>;
-      context = Object.freeze({
-        mode: 'dialog',
-        operation,
-        row,
-        signal,
-        target,
-      });
-      errorContext = {
-        committed: false,
-        mode: 'dialog',
-        operation,
-        phase: 'open',
-        target,
-      };
-    } else if (operation === 'batchEdit') {
-      const originals = rowOrRows as readonly Readonly<TRow>[];
-      const targets = targetOrTargets as readonly Readonly<EditorOperationTarget>[];
-      context = Object.freeze({
-        mode: 'dialog',
-        operation,
-        originals,
-        signal,
-        targets,
-      });
-      errorContext = {
-        committed: false,
-        mode: 'dialog',
-        operation,
-        phase: 'open',
-        targets,
-      };
-    } else if (operation === 'remove') {
-      const rows = rowOrRows as readonly Readonly<TRow>[];
-      const targets = targetOrTargets as readonly Readonly<EditorOperationTarget>[];
-      context = Object.freeze({
-        mode: 'dialog',
-        operation,
-        rows,
-        signal,
-        targets,
-      });
-      errorContext = {
-        committed: false,
-        mode: 'dialog',
-        operation,
-        phase: 'open',
-      };
-    } else {
-      context = Object.freeze({
-        mode: 'dialog',
-        operation,
-        signal,
-      });
-      errorContext = {
-        committed: false,
-        mode: 'dialog',
-        operation,
-        phase: 'open',
-      };
-    }
+    const context = Object.freeze({ ...details, mode: 'dialog' as const, signal });
+    const errorContext: EditorErrorHookContext = {
+      committed: false,
+      mode: 'dialog',
+      phase: 'open',
+      ...(details.operation === 'edit'
+        ? { operation: details.operation, target: details.target }
+        : details.operation === 'batchEdit'
+          ? { operation: details.operation, targets: details.targets }
+          : { operation: details.operation }),
+    };
 
     try {
       const shouldOpen = await settleWithAbort(hook(context), signal);

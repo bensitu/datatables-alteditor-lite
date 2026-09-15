@@ -11,6 +11,7 @@ import { setPathValue } from '../object-path/set-path-value.js';
 
 import { BatchFieldBinding, type BatchFieldConfig } from './batch-field-binding.js';
 import { buildBatchEffectiveValues } from './build-batch-effective-values.js';
+import { createFormView } from './create-form-view.js';
 import { FieldValidationController } from './field-validation-controller.js';
 import {
   FormDependencyController,
@@ -18,8 +19,6 @@ import {
   type DependencyPatchApplication,
 } from './form-dependency-controller.js';
 import { FormValidationRunner } from './form-validation-runner.js';
-import { DefaultFormLayout } from './layout/default-form-layout.js';
-import { TemplateFormLayout } from './layout/template-form-layout.js';
 
 import type { FormDependencies } from './form-dependency.js';
 import type { FormValidator } from './form-validation.js';
@@ -97,23 +96,14 @@ export class BatchEditorFormController<TFormValues extends object> {
     this.invalidMessage = language.validation.invalid;
     this.batchValidationMessage = language.batchEdit.validationInvalid;
     this.originals = Object.freeze([...originals]);
-    this.element = document.createElement('form');
-    this.element.className = 'alteditor-lite-form alteditor-lite-batch-form';
-    this.element.id = `${instanceId}-batch-form`;
-    this.element.noValidate = true;
+    const view = createFormView(fields, instanceId, template, true);
+    this.element = view.element;
+    this.layout = view.layout;
+    this.submissionErrorElement = view.submissionErrorElement;
     this.fieldValidation = new FieldValidationController(
       this.element,
       this.invalidMessage,
     );
-    this.layout =
-      template === undefined
-        ? new DefaultFormLayout()
-        : new TemplateFormLayout(template, fields, instanceId);
-    this.submissionErrorElement = document.createElement('div');
-    this.submissionErrorElement.className = 'alteditor-lite-form__submission-error';
-    this.submissionErrorElement.hidden = true;
-    this.submissionErrorElement.setAttribute('role', 'alert');
-    this.element.append(this.layout.element, this.submissionErrorElement);
 
     try {
       for (const [fieldIndex, config] of fields.entries()) {
@@ -298,15 +288,13 @@ export class BatchEditorFormController<TFormValues extends object> {
             controllers: [],
             invalidMessage: this.batchValidationMessage,
             validateForm: async (values, currentSignal) =>
-              await Promise.resolve(
-                formValidator(
-                  values,
-                  Object.freeze({
-                    mode: 'dialog',
-                    operation: 'batchEdit',
-                    signal: currentSignal,
-                  }),
-                ),
+              await formValidator(
+                values,
+                Object.freeze({
+                  mode: 'dialog',
+                  operation: 'batchEdit',
+                  signal: currentSignal,
+                }),
               ),
           }).run(signal);
           if (!result.valid) {
@@ -506,7 +494,7 @@ export class BatchEditorFormController<TFormValues extends object> {
     binding.revision += 1;
     const { revision } = binding;
     this.startUserChange(binding, revision, async (signal) => {
-      const value = await Promise.resolve(binding.controller.getValue(signal));
+      const value = await binding.controller.getValue(signal);
       if (this.isDestroyed || signal.aborted || binding.revision !== revision) {
         return;
       }
@@ -642,8 +630,8 @@ export class BatchEditorFormController<TFormValues extends object> {
       !application.hasValue &&
       binding.state.current.status !== 'mixed'
     ) {
-      const value = await Promise.resolve(
-        binding.controller.getValue(this.lifecycleAbortController.signal),
+      const value = await binding.controller.getValue(
+        this.lifecycleAbortController.signal,
       );
       if (this.isDestroyed || !application.isCurrent()) {
         return;

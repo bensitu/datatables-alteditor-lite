@@ -47,3 +47,28 @@ export function destroyDialogSession<
     }
   }
 }
+
+/** Returns the operation metadata associated with a dialog session. */
+export function getDialogSessionOperation<
+  TRow extends object,
+  TFormValues extends object,
+  TTarget,
+>(
+  session: DialogSession<TRow, TFormValues, TTarget>,
+):
+  | { readonly operation: 'create' | 'remove' }
+  | { readonly operation: 'edit'; readonly target: Readonly<EditorOperationTarget> }
+  | {
+      readonly operation: 'batchEdit';
+      readonly targets: readonly Readonly<EditorOperationTarget>[];
+    } {
+  switch (session.action) {
+    case 'edit':
+      return { operation: session.action, target: session.operationTarget } as const;
+    case 'batchEdit':
+      return { operation: session.action, targets: session.operationTargets } as const;
+    case 'create':
+    case 'remove':
+      return { operation: session.action } as const;
+  }
+}

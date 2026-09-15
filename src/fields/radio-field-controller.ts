@@ -225,7 +225,7 @@ export function createRadioFieldController<
         signal,
         values,
       };
-      return await Promise.resolve(config.validate(readValue(), validationContext));
+      return await config.validate(readValue(), validationContext);
     },
     runOnChange: async (
       values: Readonly<EditorValues<TFormValues>>,
@@ -235,7 +235,7 @@ export function createRadioFieldController<
         return;
       }
       const changeContext: FieldChangeContext<TFormValues> = { signal, values };
-      await Promise.resolve(config.onChange(readValue(), changeContext));
+      await config.onChange(readValue(), changeContext);
     },
     clearError: () => {
       groupElement.removeAttribute('aria-invalid');

@@ -16,6 +16,7 @@ import {
   collectFormValues,
   type CollectedFormState,
 } from './collect-form-values.js';
+import { createFormView } from './create-form-view.js';
 import { FieldRuntimeController } from './field-runtime-controller.js';
 import { FieldValidationController } from './field-validation-controller.js';
 import {
@@ -26,8 +27,6 @@ import {
   FormValidationRunner,
   type ValidationExecutionResult,
 } from './form-validation-runner.js';
-import { DefaultFormLayout } from './layout/default-form-layout.js';
-import { TemplateFormLayout } from './layout/template-form-layout.js';
 import { populateFormValues } from './populate-form-values.js';
 import {
   type EditorFormValidationResult,
@@ -182,25 +181,15 @@ export class EditorFormController<
     operation?: 'create' | 'edit',
   ) {
     this.configuredFieldNames = new Set(fields.map(({ name }) => name));
-    this.element = document.createElement('form');
-    this.element.className = 'alteditor-lite-form';
-    this.element.id = `${instanceId}-form`;
-    this.element.noValidate = true;
+    const view = createFormView(fields, instanceId, template);
+    this.element = view.element;
+    this.layout = view.layout;
+    this.submissionErrorElement = view.submissionErrorElement;
     this.invalidMessage = language.validation.invalid;
     this.fieldValidation = new FieldValidationController(
       this.element,
       this.invalidMessage,
     );
-    this.layout =
-      template === undefined
-        ? new DefaultFormLayout()
-        : new TemplateFormLayout(template, fields, instanceId);
-
-    this.submissionErrorElement = document.createElement('div');
-    this.submissionErrorElement.className = 'alteditor-lite-form__submission-error';
-    this.submissionErrorElement.hidden = true;
-    this.submissionErrorElement.setAttribute('role', 'alert');
-    this.element.append(this.layout.element, this.submissionErrorElement);
 
     try {
       for (const [fieldIndex, config] of fields.entries()) {
@@ -510,11 +499,9 @@ export class EditorFormController<
             ? {}
             : {
                 validateForm: async (values, currentSignal) =>
-                  await Promise.resolve(
-                    validateForm(
-                      values,
-                      Object.freeze({ ...context, signal: currentSignal }),
-                    ),
+                  await validateForm(
+                    values,
+                    Object.freeze({ ...context, signal: currentSignal }),
                   ),
               }),
         }).run(signal);
@@ -560,9 +547,7 @@ export class EditorFormController<
     const getOptions = managedController.getOptions;
     const setOptions = managedController.setOptions;
     let isFieldDestroyed = false;
-    const fieldController: FieldController<unknown> = {
-      element: managedController.element,
-      getValue: async () => await Promise.resolve(managedController.getValue()),
+    const fieldController = runtime.createFacade({
       setValue: (value: unknown) => {
         this.recordMutation(name);
         managedController.setValue(value);
@@ -576,25 +561,9 @@ export class EditorFormController<
               setOptions(options);
             },
           }),
-      isVisible: () => runtime.isVisible(),
-      setVisible: (isVisible: boolean) => {
-        runtime.setVisible(isVisible);
-      },
-      isDisabled: () => runtime.isDisabled(),
       setDisabled: (isDisabled: boolean) => {
         this.recordMutation(name);
         runtime.setDisabled(isDisabled);
-      },
-      isReadOnly: () => runtime.isReadOnly(),
-      setReadOnly: (isReadOnly: boolean) => {
-        runtime.setReadOnly(isReadOnly);
-      },
-      isRequired: () => runtime.isRequired(),
-      setRequired: (isRequired: boolean) => {
-        runtime.setRequired(isRequired);
-      },
-      focus: () => {
-        managedController.focus();
       },
       validate: async () => await this.fieldValidation.validate(name, 'manual'),
       clearError: () => {
@@ -633,7 +602,7 @@ export class EditorFormController<
           },
         ]);
       },
-    };
+    });
     this.fieldControllerByName.set(name, fieldController);
     return fieldController as FieldController<FieldPathValue<TFormValues, TPath>>;
   }

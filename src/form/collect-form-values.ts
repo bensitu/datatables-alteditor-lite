@@ -29,7 +29,7 @@ export async function collectFormState<TFormValues extends object>(
       .filter((controller) => !controller.isDisabled())
       .map(async (controller) => ({
         name: controller.name,
-        value: await Promise.resolve(controller.getValue(signal)),
+        value: await controller.getValue(signal),
       })),
   );
   signal.throwIfAborted();

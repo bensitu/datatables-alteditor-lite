@@ -19,7 +19,7 @@ import { FieldRuntimeController } from './field-runtime-controller.js';
 
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type { BatchFieldState } from '../core/batch-field-state.js';
-import type { FieldConfig, SelectOption } from '../fields/field-config.js';
+import type { FieldConfig } from '../fields/field-config.js';
 import type {
   FieldController,
   FieldValidationResult,
@@ -182,9 +182,7 @@ export class BatchFieldBinding<TFormValues extends object> {
             : undefined;
       this.runtime = runtime;
       this.state = state;
-      const getOptions = this.controller.getOptions;
-      const setOptions = this.controller.setOptions;
-      this.field = {
+      this.field = runtime.createFacade({
         clearError: () => {
           configuration.onErrorChange();
           this.controller.clearError();
@@ -192,23 +190,6 @@ export class BatchFieldBinding<TFormValues extends object> {
         destroy: () => {
           configuration.onDestroyRequest(this);
         },
-        element: this.controller.element,
-        focus: () => {
-          this.controller.focus();
-        },
-        getValue: async () => await Promise.resolve(this.controller.getValue()),
-        ...(getOptions === undefined || setOptions === undefined
-          ? {}
-          : {
-              getOptions: () => getOptions(),
-              setOptions: (options: readonly SelectOption[]) => {
-                setOptions(options);
-              },
-            }),
-        isDisabled: () => runtime.isDisabled(),
-        isReadOnly: () => runtime.isReadOnly(),
-        isRequired: () => runtime.isRequired(),
-        isVisible: () => runtime.isVisible(),
         setDisabled: (isDisabled) => {
           runtime.setDisabled(isDisabled);
           this.render();
@@ -216,21 +197,15 @@ export class BatchFieldBinding<TFormValues extends object> {
         setReadOnly: (isReadOnly) => {
           runtime.setReadOnly(restriction === 'unique' || isReadOnly);
         },
-        setRequired: (isRequired) => {
-          runtime.setRequired(isRequired);
-        },
         setValue: (value) => {
           this.#setProgrammaticValue(value);
-        },
-        setVisible: (isVisible) => {
-          runtime.setVisible(isVisible);
         },
         showError: (message) => {
           configuration.onErrorChange();
           this.controller.showError(message);
         },
         validate: async () => await configuration.validate(this),
-      };
+      });
 
       runtime.setDisabled(runtime.isDisabled());
       runtime.setReadOnly(runtime.isReadOnly());

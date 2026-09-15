@@ -25,6 +25,7 @@ import {
   DialogBatchEditOperation,
   type DialogBatchEditPresentation,
 } from './dialog-batch-edit-operation.js';
+import { DialogCloseCoordinator } from './dialog-close-coordinator.js';
 import {
   DialogCreateOperation,
   type DialogCreatePresentation,
@@ -38,8 +39,12 @@ import {
   DialogRemoveOperation,
   type DialogRemovePresentation,
 } from './dialog-remove-operation.js';
-import { destroyDialogSession, type DialogSession } from './dialog-session.js';
-import { EditorDialog } from './editor-dialog.js';
+import {
+  destroyDialogSession,
+  getDialogSessionOperation,
+  type DialogSession,
+} from './dialog-session.js';
+import { EditorDialog, type EditorDialogCallbacks } from './editor-dialog.js';
 
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type {
@@ -101,6 +106,15 @@ export class DialogEditingController<
 > {
   readonly #dialog: EditorDialog;
 
+  readonly #dialogCallbacks: EditorDialogCallbacks = {
+    onRequestClose: (reason) => {
+      void this.#requestClose(reason).catch(() => undefined);
+    },
+    onSubmit: () => {
+      this.#beginSubmission();
+    },
+  };
+
   readonly #createOperation: DialogCreateOperation<TRow, TFormValues, TTarget>;
 
   readonly #editOperation: DialogEditOperation<TRow, TFormValues, TTarget>;
@@ -120,9 +134,7 @@ export class DialogEditingController<
     | BatchEditorFormController<TFormValues>
     | undefined;
 
-  #closeDecisionAbortController: AbortController | undefined;
-
-  #closeDecisionTask: Promise<void> | undefined;
+  readonly #closeCoordinator: DialogCloseCoordinator<TRow, TFormValues, TTarget>;
 
   public constructor(
     private readonly arguments_: DialogEditingControllerArguments<
@@ -146,6 +158,15 @@ export class DialogEditingController<
       host: arguments_.host,
       language: arguments_.language,
       options: arguments_.options,
+    });
+    this.#closeCoordinator = new DialogCloseCoordinator({
+      options: arguments_.options,
+      language: arguments_.language,
+      errorReporter: arguments_.errorReporter,
+      dialog: this.#dialog,
+      onClose: (reason) => {
+        this.#closeNow(reason);
+      },
     });
     const sharedOperationArguments = {
       editor: arguments_.editor,
@@ -200,7 +221,12 @@ export class DialogEditingController<
       this.#assertReady();
       interactionToken = this.#acquireInteraction();
       openAbortController = this.#openCoordinator.begin();
-      if (!(await this.#openCoordinator.runBeforeOpen('create', openAbortController))) {
+      if (
+        !(await this.#openCoordinator.runBeforeOpen(
+          { operation: 'create' },
+          openAbortController,
+        ))
+      ) {
         this.#releaseInteraction(interactionToken);
         return;
       }
@@ -275,10 +301,8 @@ export class DialogEditingController<
       }
       if (
         !(await this.#openCoordinator.runBeforeOpen(
-          'edit',
+          { operation: 'edit', row: original, target: operationTarget },
           openAbortController,
-          original,
-          operationTarget,
         ))
       ) {
         this.#releaseInteraction(interactionToken);
@@ -367,9 +391,10 @@ export class DialogEditingController<
         throw new EditorConfigurationError('Batch Edit targets must be distinct.');
       }
 
+      const fieldNames = this.#resolveOperationFieldNames(true);
       const operationTargets = Object.freeze(
         requestedTargets.map((recordTarget) =>
-          this.#createBatchEditOperationTarget(recordTarget),
+          this.#createEditOperationTarget(recordTarget, fieldNames),
         ),
       );
       const originals = Object.freeze(
@@ -383,10 +408,8 @@ export class DialogEditingController<
       );
       if (
         !(await this.#openCoordinator.runBeforeOpen(
-          'batchEdit',
+          { operation: 'batchEdit', originals, targets: operationTargets },
           openAbortController,
-          originals,
-          operationTargets,
         ))
       ) {
         this.#releaseInteraction(interactionToken);
@@ -453,10 +476,8 @@ export class DialogEditingController<
       );
       if (
         !(await this.#openCoordinator.runBeforeOpen(
-          'remove',
+          { operation: 'remove', rows: originals, targets: operationTargets },
           openAbortController,
-          originals,
-          operationTargets,
         ))
       ) {
         this.#releaseInteraction(interactionToken);
@@ -508,14 +529,7 @@ export class DialogEditingController<
           confirmationElement,
           this.arguments_.language.dialog.removeTitle,
           this.arguments_.language.actions.remove,
-          {
-            onRequestClose: (reason) => {
-              this.#observeCloseRequest(reason);
-            },
-            onSubmit: () => {
-              this.#beginSubmission();
-            },
-          },
+          this.#dialogCallbacks,
         );
       } catch (error: unknown) {
         confirmationElement.remove();
@@ -613,7 +627,7 @@ export class DialogEditingController<
         this.#openCoordinator.destroy();
       },
       () => {
-        this.#invalidateCloseDecision();
+        this.#closeCoordinator.cancel();
       },
       () => {
         this.arguments_.operationOwner.abort('dialog');
@@ -647,7 +661,7 @@ export class DialogEditingController<
   #acquireInteraction(): InteractionToken {
     const token = this.arguments_.interactionCoordinator.acquire('dialog');
     this.#interactionToken = token;
-    this.#notifyIntegration();
+    this.arguments_.notifyIntegration();
     return token;
   }
 
@@ -655,7 +669,7 @@ export class DialogEditingController<
     if (token !== undefined && this.#interactionToken === token) {
       this.arguments_.interactionCoordinator.release(token);
       this.#interactionToken = undefined;
-      this.#notifyIntegration();
+      this.arguments_.notifyIntegration();
     }
   }
 
@@ -716,32 +730,8 @@ export class DialogEditingController<
         },
         action,
       );
-      this.#provisionalForm = form;
-      signal.throwIfAborted();
-      form.onMutation = () => {
-        this.#handleFormMutation();
-      };
-      if (sourceValues !== undefined) {
-        form.populateFromSource(sourceValues);
-      }
-      await settleWithAbort(form.initializeDependencies(), signal);
-      await settleWithAbort(form.rebaseDirtyState(), signal);
-      signal.throwIfAborted();
-      this.#dialog.openForm(
-        form.element,
-        action === 'create'
-          ? this.arguments_.language.dialog.createTitle
-          : this.arguments_.language.dialog.editTitle,
-        this.arguments_.language.actions.submit,
-        {
-          onRequestClose: (reason) => {
-            this.#observeCloseRequest(reason);
-          },
-          onSubmit: () => {
-            this.#beginSubmission();
-          },
-        },
-      );
+      await this.#prepareForm(form, signal, sourceValues);
+      this.#showForm(form, action, signal);
       const session = createSession(form);
       if (session.action !== action || this.#activeSession !== undefined) {
         throw new Error('Dialog resources do not match the opening action.');
@@ -798,26 +788,8 @@ export class DialogEditingController<
           );
         },
       );
-      this.#provisionalForm = form;
-      signal.throwIfAborted();
-      form.onMutation = () => {
-        this.#handleFormMutation();
-      };
-      await settleWithAbort(form.initializeDependencies(), signal);
-      signal.throwIfAborted();
-      this.#dialog.openForm(
-        form.element,
-        this.arguments_.language.dialog.batchEditTitle,
-        this.arguments_.language.actions.submit,
-        {
-          onRequestClose: (reason) => {
-            this.#observeCloseRequest(reason);
-          },
-          onSubmit: () => {
-            this.#beginSubmission();
-          },
-        },
-      );
+      await this.#prepareForm(form, signal);
+      this.#showForm(form, 'batchEdit', signal);
       if (this.#activeSession !== undefined) {
         throw new Error('Dialog resources are already active.');
       }
@@ -848,6 +820,37 @@ export class DialogEditingController<
       status: 'open',
     });
     this.#dispatchOpen(this.#requireSession('batchEdit'));
+  }
+
+  async #prepareForm(
+    form: EditorFormController<TFormValues> | BatchEditorFormController<TFormValues>,
+    signal: AbortSignal,
+    sourceValues?: Readonly<object>,
+  ): Promise<void> {
+    this.#provisionalForm = form;
+    signal.throwIfAborted();
+    form.onMutation = () => {
+      this.#handleFormMutation();
+    };
+    if ('populateFromSource' in form && sourceValues !== undefined)
+      form.populateFromSource(sourceValues);
+    await settleWithAbort(form.initializeDependencies(), signal);
+    if ('rebaseDirtyState' in form)
+      await settleWithAbort(form.rebaseDirtyState(), signal);
+  }
+
+  #showForm(
+    form: EditorFormController<TFormValues> | BatchEditorFormController<TFormValues>,
+    action: 'create' | 'edit' | 'batchEdit',
+    signal: AbortSignal,
+  ): void {
+    signal.throwIfAborted();
+    this.#dialog.openForm(
+      form.element,
+      this.arguments_.language.dialog[`${action}Title`],
+      this.arguments_.language.actions.submit,
+      this.#dialogCallbacks,
+    );
   }
 
   #finishCancelledOpening(
@@ -906,18 +909,6 @@ export class DialogEditingController<
     throw rawError;
   }
 
-  #sessionOperation(session: DialogSession<TRow, TFormValues, TTarget>) {
-    switch (session.action) {
-      case 'edit':
-        return { operation: session.action, target: session.operationTarget } as const;
-      case 'batchEdit':
-        return { operation: session.action, targets: session.operationTargets } as const;
-      case 'create':
-      case 'remove':
-        return { operation: session.action } as const;
-    }
-  }
-
   #dispatchOpen(session: DialogSession<TRow, TFormValues, TTarget>): void {
     if (this.arguments_.stateCoordinator.getState().status === 'destroyed') return;
     dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:open'>(
@@ -954,7 +945,7 @@ export class DialogEditingController<
     if (state.status !== 'open') {
       return;
     }
-    this.#invalidateCloseDecision(new EditorOperationBusyError());
+    this.#closeCoordinator.cancel(new EditorOperationBusyError());
     const session = this.#activeSession;
     if (session?.action !== state.action) {
       throw new Error('Dialog state does not match its active resources.');
@@ -1021,7 +1012,7 @@ export class DialogEditingController<
   }
 
   #handleFormMutation(): void {
-    this.#invalidateCloseDecision();
+    this.#closeCoordinator.cancel();
     const state = this.arguments_.stateCoordinator.getState();
     if (state.status === 'open' && state.submissionError !== undefined) {
       this.#getActiveSessionForm()?.clearSubmissionError();
@@ -1047,7 +1038,7 @@ export class DialogEditingController<
     return {
       completeSuccess: async (form, row) => {
         if (this.arguments_.editing.closeOnSuccess) {
-          this.#closeAfterSuccess('create');
+          this.#closeAfterResult('create', 'success');
           return;
         }
         try {
@@ -1077,20 +1068,7 @@ export class DialogEditingController<
       completeSuccess: async () => {
         await this.#completeFormSuccess('edit', form);
       },
-      restoreAfterOperationFailure: () => undefined,
-      restoreAfterValidationFailure: () => {
-        this.#restoreOpen('edit', form, true);
-      },
-      setBusy: (isBusy) => {
-        form.setBusy(isBusy);
-        this.#dialog.setBusy(isBusy);
-      },
-      showOperationError: (error) => {
-        this.#showOperationError('edit', error, form);
-      },
-      startValidation: () => {
-        this.#setSubmitting('edit');
-      },
+      ...this.#updatePresentation('edit', form),
     };
   }
 
@@ -1100,7 +1078,7 @@ export class DialogEditingController<
     return {
       completeSuccess: async () => {
         if (this.arguments_.editing.closeOnSuccess) {
-          this.#closeAfterSuccess('batchEdit');
+          this.#closeAfterResult('batchEdit', 'success');
         } else {
           try {
             await form.rebase(this.#requireSession('batchEdit').originals);
@@ -1113,19 +1091,28 @@ export class DialogEditingController<
         this.#closeAfterResult('batchEdit', 'unchanged');
         return Promise.resolve();
       },
+      ...this.#updatePresentation('batchEdit', form),
+    };
+  }
+
+  #updatePresentation(
+    action: 'edit' | 'batchEdit',
+    form: EditorFormController<TFormValues> | BatchEditorFormController<TFormValues>,
+  ): Omit<DialogEditPresentation, 'completeSuccess'> {
+    return {
       restoreAfterOperationFailure: () => undefined,
       restoreAfterValidationFailure: () => {
-        this.#restoreOpen('batchEdit', form, true);
+        this.#restoreOpen(action, form, true);
       },
       setBusy: (isBusy) => {
         form.setBusy(isBusy);
         this.#dialog.setBusy(isBusy);
       },
       showOperationError: (error) => {
-        this.#showOperationError('batchEdit', error, form);
+        this.#showOperationError(action, error, form);
       },
       startValidation: () => {
-        this.#setSubmitting('batchEdit');
+        this.#setSubmitting(action);
       },
     };
   }
@@ -1133,7 +1120,7 @@ export class DialogEditingController<
   #removePresentation(): DialogRemovePresentation {
     return {
       completeSuccess: () => {
-        this.#closeAfterSuccess('remove');
+        this.#closeAfterResult('remove', 'success');
       },
       restoreAfterAbort: () => {
         this.#restoreOpen('remove');
@@ -1196,7 +1183,7 @@ export class DialogEditingController<
   ): Promise<void> {
     if (this.#getActiveSessionForm() !== form) return;
     if (this.arguments_.editing.closeOnSuccess) {
-      this.#closeAfterSuccess(action);
+      this.#closeAfterResult(action, 'success');
     } else {
       try {
         await form.rebaseDirtyState();
@@ -1204,10 +1191,6 @@ export class DialogEditingController<
         this.#restoreOpen(action, form);
       }
     }
-  }
-
-  #closeAfterSuccess(action: DialogAction): void {
-    this.#closeAfterResult(action, 'success');
   }
 
   #closeAfterResult(
@@ -1222,10 +1205,6 @@ export class DialogEditingController<
     this.#finishClose(action, reason);
   }
 
-  #observeCloseRequest(reason: BeforeCloseReason): void {
-    void this.#requestClose(reason).catch(() => undefined);
-  }
-
   #requestClose(reason: BeforeCloseReason): Promise<void> {
     const state = this.arguments_.stateCoordinator.getState();
     if (state.status === 'submitting') {
@@ -1238,9 +1217,6 @@ export class DialogEditingController<
     if (state.status !== 'open') {
       return Promise.reject(new EditorOperationBusyError());
     }
-    if (this.#closeDecisionTask !== undefined) {
-      return this.#closeDecisionTask;
-    }
     const session = this.#activeSession;
     if (session?.action !== state.action) {
       return Promise.reject(
@@ -1248,112 +1224,7 @@ export class DialogEditingController<
       );
     }
 
-    const abortController = new AbortController();
-    this.#closeDecisionAbortController = abortController;
-    const task = Promise.resolve().then(() =>
-      this.#evaluateCloseRequest(session, reason, abortController),
-    );
-    this.#closeDecisionTask = task;
-    return task;
-  }
-
-  async #evaluateCloseRequest(
-    session: DialogSession<TRow, TFormValues, TTarget>,
-    reason: BeforeCloseReason,
-    abortController: AbortController,
-  ): Promise<void> {
-    const form = session.action === 'remove' ? undefined : session.form;
-    const revision = form?.revision;
-    const isCurrent = (): boolean => {
-      if (abortController.signal.reason instanceof EditorOperationBusyError) {
-        throw abortController.signal.reason;
-      }
-      return (
-        !abortController.signal.aborted &&
-        this.#activeSession === session &&
-        this.#closeDecisionAbortController === abortController &&
-        form?.revision === revision
-      );
-    };
-    try {
-      if (!isCurrent()) {
-        return;
-      }
-      const beforeClose = this.arguments_.options.hooks?.beforeClose;
-      if (beforeClose !== undefined) {
-        const isDirty = await settleWithAbort(
-          form?.isDirty() ?? false,
-          abortController.signal,
-        );
-        if (!isCurrent()) {
-          return;
-        }
-        const shouldClose = await settleWithAbort(
-          beforeClose(
-            Object.freeze({
-              dirty: isDirty,
-              mode: 'dialog',
-              operation: session.action,
-              reason,
-              signal: abortController.signal,
-            }),
-          ),
-          abortController.signal,
-        );
-        if (!isCurrent()) {
-          return;
-        }
-        if (shouldClose === false) {
-          this.#dialog.ensureFocus();
-          return;
-        }
-      }
-      this.#closeNow(reason);
-    } catch (rawError: unknown) {
-      if (abortController.signal.reason instanceof EditorOperationBusyError) {
-        throw abortController.signal.reason;
-      }
-      if (!isCurrent()) {
-        return;
-      }
-      const error = normalizeOperationError(
-        rawError,
-        abortController.signal,
-        this.arguments_.language,
-      );
-      if (error instanceof InternalOperationAbort) {
-        return;
-      }
-      this.#dialog.showError(error.message);
-      this.#dialog.ensureFocus();
-      this.arguments_.errorReporter.report(
-        error,
-        this.#createCloseErrorContext(session),
-        true,
-      );
-      throw error;
-    } finally {
-      if (this.#closeDecisionAbortController === abortController) {
-        this.#invalidateCloseDecision();
-      }
-    }
-  }
-
-  #createCloseErrorContext(
-    session: DialogSession<TRow, TFormValues, TTarget>,
-  ): EditorErrorHookContext {
-    return {
-      committed: false,
-      mode: 'dialog',
-      phase: 'close',
-      ...this.#sessionOperation(session),
-    };
-  }
-
-  #invalidateCloseDecision(reason?: Error): void {
-    this.#closeDecisionAbortController?.abort(reason);
-    this.#closeDecisionAbortController = undefined;
-    this.#closeDecisionTask = undefined;
+    return this.#closeCoordinator.request(session, reason);
   }
 
   #closeNow(reason: Exclude<EditorCloseReason, 'success'>): void {
@@ -1395,7 +1266,7 @@ export class DialogEditingController<
 
   #finishClose(action: DialogAction, reason: EditorCloseReason): void {
     const session = this.#requireSession(action);
-    this.#invalidateCloseDecision();
+    this.#closeCoordinator.cancel();
     this.#activeSession = undefined;
     runCleanupSteps([
       () => {
@@ -1431,38 +1302,28 @@ export class DialogEditingController<
         mode: 'dialog',
         type: 'close',
         reason,
-        ...this.#sessionOperation(session),
+        ...getDialogSessionOperation(session),
       },
     );
   }
 
-  #createEditOperationTarget(target: TTarget): Readonly<EditorOperationTarget> {
-    return Object.freeze({
-      fieldNames: Object.freeze(
-        this.arguments_.options.fields
-          .filter(
-            (field) => resolveFieldCapabilities(field).dialog && field.disabled !== true,
-          )
-          .map((field) => field.name),
-      ),
-      key: target,
-    });
+  #createEditOperationTarget(
+    target: TTarget,
+    fieldNames = this.#resolveOperationFieldNames(),
+  ): Readonly<EditorOperationTarget> {
+    return Object.freeze({ fieldNames, key: target });
   }
 
-  #createBatchEditOperationTarget(target: TTarget): Readonly<EditorOperationTarget> {
-    return Object.freeze({
-      fieldNames: Object.freeze(
-        this.arguments_.options.fields
-          .filter(
-            (field) =>
-              resolveFieldCapabilities(field).batch &&
-              field.disabled !== true &&
-              field.type !== 'hidden',
-          )
-          .map((field) => field.name),
-      ),
-      key: target,
-    });
+  #resolveOperationFieldNames(isBatch = false): readonly string[] {
+    return Object.freeze(
+      this.arguments_.options.fields
+        .filter(
+          (field) =>
+            resolveFieldCapabilities(field)[isBatch ? 'batch' : 'dialog'] &&
+            field.disabled !== true,
+        )
+        .map((field) => field.name),
+    );
   }
 
   #getActiveSessionForm():
@@ -1487,9 +1348,5 @@ export class DialogEditingController<
       DialogSession<TRow, TFormValues, TTarget>,
       { readonly action: TAction }
     >;
-  }
-
-  #notifyIntegration(): void {
-    this.arguments_.notifyIntegration();
   }
 }

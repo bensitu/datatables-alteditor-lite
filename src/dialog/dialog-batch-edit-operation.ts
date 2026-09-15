@@ -86,15 +86,16 @@ export class DialogBatchEditOperation<
         ? {}
         : {
             afterSuccess: async (context) => {
-              await Promise.resolve(options.hooks?.afterSuccess?.(context));
+              await options.hooks?.afterSuccess?.(context);
             },
           }),
       ...(options.hooks?.beforeSubmit === undefined
         ? {}
         : {
             beforeSubmit: async (transaction, context) => {
-              const shouldContinue = await Promise.resolve(
-                options.hooks?.beforeSubmit?.(transaction.changes, context),
+              const shouldContinue = await options.hooks?.beforeSubmit?.(
+                transaction.changes,
+                context,
               );
               return shouldContinue !== false;
             },

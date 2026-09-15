@@ -118,6 +118,11 @@ describe('dialog form layouts', () => {
   it.each([
     ['<div id="duplicate"></div><div id="duplicate"></div>', 'duplicate id'],
     ['<div id="layout-invalid-form"></div>', 'already in use or reserved'],
+    ['<div id="layout-invalid-batch-form"></div>', 'already in use or reserved'],
+    [
+      '<div data-alteditor-lite-field="profile.name"><div data-alteditor-lite-field="notes"></div></div>',
+      'cannot be nested',
+    ],
     ['<div id="layout-invalid-field-0"></div>', 'already in use or reserved'],
     [
       '<div data-alteditor-lite-field="unknown"></div>',

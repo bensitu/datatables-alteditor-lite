@@ -1,3 +1,5 @@
+import { NEVER_ABORTED_SIGNAL } from '../core/error-normalization.js';
+
 import { createCheckboxFieldController } from './checkbox-field-controller.js';
 import { createCustomFieldController } from './custom-field-controller.js';
 import { DIALOG_FIELD_PRESENTATION } from './field-controller-presentation.js';
@@ -17,8 +19,6 @@ import type { FieldConfig } from './field-config.js';
 import type { FieldControllerPresentation } from './field-controller-presentation.js';
 import type { ManagedFieldController } from './managed-field-controller.js';
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
-
-const NEVER_ABORTED_SIGNAL = new AbortController().signal;
 
 /**
  * Creates the controller corresponding to a field discriminant.

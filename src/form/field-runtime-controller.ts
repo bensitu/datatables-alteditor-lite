@@ -1,4 +1,5 @@
 import type { FieldConfig } from '../fields/field-config.js';
+import type { FieldController } from '../fields/field-controller.js';
 import type { ManagedFieldController } from '../fields/managed-field-controller.js';
 import type { FieldMountPoint } from './layout/form-layout.js';
 
@@ -13,9 +14,47 @@ export interface FormFieldRuntimeEntry<TFormValues extends object> {
   required: boolean;
 }
 
+type FieldFacadeOverrides = Pick<
+  FieldController<unknown>,
+  'destroy' | 'validate' | 'setValue' | 'clearError' | 'showError' | 'setDisabled'
+> &
+  Partial<FieldController<unknown>>;
+
 /** Applies form field state through controller and layout boundaries. */
 export class FieldRuntimeController<TFormValues extends object> {
   public constructor(private readonly entry: FormFieldRuntimeEntry<TFormValues>) {}
+
+  /** Adapts shared field behavior while the form supplies mutation and validation ownership. */
+  public createFacade(overrides: FieldFacadeOverrides): FieldController<unknown> {
+    const { controller } = this.entry;
+    const { getOptions, setOptions } = controller;
+    return {
+      element: controller.element,
+      getValue: async () => await controller.getValue(),
+      focus: () => {
+        controller.focus();
+      },
+
+      isVisible: () => this.isVisible(),
+      isDisabled: () => this.isDisabled(),
+      isReadOnly: () => this.isReadOnly(),
+      isRequired: () => this.isRequired(),
+      setVisible: (value) => {
+        this.setVisible(value);
+      },
+
+      setReadOnly: (value) => {
+        this.setReadOnly(value);
+      },
+      setRequired: (value) => {
+        this.setRequired(value);
+      },
+      ...(getOptions === undefined || setOptions === undefined
+        ? {}
+        : { getOptions, setOptions }),
+      ...overrides,
+    };
+  }
 
   public isVisible(): boolean {
     return this.entry.visible;

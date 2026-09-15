@@ -30,6 +30,7 @@ function assertSafeIdentifiers(element: HTMLElement, instanceId: string): void {
     if (
       document.getElementById(identifier) !== null ||
       identifier === `${instanceId}-form` ||
+      identifier === `${instanceId}-batch-form` ||
       identifier.startsWith(`${instanceId}-field-`)
     ) {
       throw new EditorConfigurationError(
@@ -76,6 +77,11 @@ export class TemplateFormLayout<TFormValues extends object> implements FormLayou
       if (!(slot instanceof HTMLElement)) {
         throw new EditorConfigurationError(
           'Dialog form template field slots must be HTML elements.',
+        );
+      }
+      if (slot.parentElement?.closest(`[${FIELD_SLOT_ATTRIBUTE}]`) != null) {
+        throw new EditorConfigurationError(
+          'Dialog form template field slots cannot be nested.',
         );
       }
       const fieldName = slot.getAttribute(FIELD_SLOT_ATTRIBUTE) ?? '';
