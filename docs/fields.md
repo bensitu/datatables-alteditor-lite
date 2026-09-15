@@ -83,6 +83,23 @@ control. For example, `min`, `max`, and `step` are accepted for number and tempo
 inputs, while a radio field rejects unrelated attributes such as `placeholder`.
 Event handlers, styles, and arbitrary data attributes are not applied.
 
+Text and email fields accept `attributes.list` to reference a native datalist:
+
+```html
+<datalist id="cities">
+  <option value="Tokyo"></option>
+  <option value="Osaka"></option>
+</datalist>
+```
+
+```ts
+{ label: 'City', name: 'city', type: 'text', attributes: { list: 'cities' } }
+```
+
+The application owns the datalist and its options; the editor only sets the
+reference. Password, textarea, and SearchSelect fields do not accept `list`.
+Use SearchSelect for managed searchable local or remote choices.
+
 ## Change callbacks
 
 Text-like and number controls notify `onChange` for each native input event.

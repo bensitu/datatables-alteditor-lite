@@ -163,6 +163,15 @@ describe('field runtime configuration', () => {
 });
 
 describe('field attribute allowlist', () => {
+  it.each(['password', 'textarea', 'search-select'] as const)(
+    'rejects native list suggestions for %s',
+    (type) => {
+      expect(() => {
+        assertAllowedFieldAttributes({ list: 'suggestions' }, type);
+      }).toThrow(EditorConfigurationError);
+    },
+  );
+
   it('applies allowlisted attributes case-insensitively', () => {
     const inputElement = document.createElement('input');
 

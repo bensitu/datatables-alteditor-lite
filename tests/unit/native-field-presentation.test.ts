@@ -187,3 +187,33 @@ describe('native field presentation', () => {
     expect(checkboxRow?.lastElementChild?.textContent).toBe('Active');
   });
 });
+
+describe('native input suggestions', () => {
+  it.each(['text', 'email'] as const)(
+    'references application-owned datalist for %s',
+    (type) => {
+      const controller = createFieldController<RequiredFieldValues>(
+        {
+          type,
+          name: 'name',
+          label: 'Name',
+          description: 'Choose or enter a value.',
+          attributes: { list: 'application-suggestions', placeholder: 'Enter a value' },
+        },
+        'suggested-name',
+        language,
+        () => undefined,
+      );
+      document.body.append(controller.element);
+      const input = controller.element.querySelector('input');
+      expect(input?.getAttribute('list')).toBe('application-suggestions');
+      expect(input?.placeholder).toBe('Enter a value');
+      expect(input?.getAttribute('aria-describedby')).toContain(
+        'suggested-name-description',
+      );
+      expect(controller.element.querySelector('label')?.htmlFor).toBe(input?.id);
+      expect(document.querySelector('datalist')).toBeNull();
+      controller.destroy();
+    },
+  );
+});

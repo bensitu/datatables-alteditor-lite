@@ -28,6 +28,7 @@ const TEXT_FIELD_ATTRIBUTES = new Set([
   'placeholder',
   'spellcheck',
 ]);
+const DATALIST_FIELD_ATTRIBUTES = new Set([...TEXT_FIELD_ATTRIBUTES, 'list']);
 const NUMBER_FIELD_ATTRIBUTES = new Set([
   'aria-label',
   'autocomplete',
@@ -50,7 +51,7 @@ const ALLOWED_ATTRIBUTES_BY_TARGET: Readonly<
   checkbox: new Set(['aria-label', 'autocomplete']),
   date: TEMPORAL_FIELD_ATTRIBUTES,
   'datetime-local': TEMPORAL_FIELD_ATTRIBUTES,
-  email: TEXT_FIELD_ATTRIBUTES,
+  email: DATALIST_FIELD_ATTRIBUTES,
   file: new Set(['accept', 'aria-label', 'capture']),
   hidden: new Set(['autocomplete']),
   number: NUMBER_FIELD_ATTRIBUTES,
@@ -58,7 +59,7 @@ const ALLOWED_ATTRIBUTES_BY_TARGET: Readonly<
   radio: new Set(['aria-label', 'autocomplete']),
   'search-select': TEXT_FIELD_ATTRIBUTES,
   select: new Set(['aria-label', 'autocomplete']),
-  text: TEXT_FIELD_ATTRIBUTES,
+  text: DATALIST_FIELD_ATTRIBUTES,
   textarea: TEXT_FIELD_ATTRIBUTES,
   time: TEMPORAL_FIELD_ATTRIBUTES,
 };
