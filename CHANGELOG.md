@@ -18,6 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Reference examples share responsive navigation, consistent controls, and clearly
+  separated operation results using the main demonstration theme.
+- Updated DataTables development packages and CDN examples, with development tools
+  selected for Node.js 20.19 compatibility.
+- Separated asynchronous dialog close decisions from presentation coordination,
+  shared form rendering and field adaptation, and reused batch field metadata.
 - Documented option replacement behavior: native Select and local SearchSelect
   preserve valid selections and clear removed values; remote selections remain
   independent of seed options.
@@ -26,6 +32,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Templates reject nested field slots and identifiers reserved for batch forms.
+- Browser tests reuse versioned CDN resources and retry interrupted transfers.
 - Cancelled Inline opening requests now settle without waiting for an unfinished
   `beforeOpen` hook after redraw or destruction. Obsolete opening cleanup no longer
   changes a newly opened inline target or restores cancelled focus.

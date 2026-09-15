@@ -69,10 +69,11 @@ by the application, or sanitize externally sourced markup before configuration.
 
 Each editable non-hidden field needs exactly one
 `data-alteditor-lite-field="path"` slot. Slots must use configured safe field
-paths. Duplicate, unknown, or missing slots are configuration errors. Hidden
+paths. Slots cannot be nested inside other field slots. Duplicate, unknown, or
+missing slots are configuration errors. Hidden
 fields do not need slots and are appended to editor-owned layout space. A
 template cannot contain another `<form>`, and cloned identifiers must remain
-unique in the document.
+unique in the document and cannot use the editor's form, batch form, or field identifiers.
 
 The application owns layout markup and CSS. AltEditorLite owns every field node,
 label association, control identifier, validation message, busy state, and

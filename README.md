@@ -446,6 +446,9 @@ See [SECURITY.md](SECURITY.md) for private vulnerability reporting.
 
 ## Development
 
+See [Development](docs/development.md) for runtime compatibility, internal
+responsibilities, dependency updates, and adding reference examples.
+
 Run `npm run check` for the complete local verification suite. The compressed
 distribution check runs after the build and compares the main JavaScript,
 Standalone JavaScript, and shared CSS outputs with the documented limits in
