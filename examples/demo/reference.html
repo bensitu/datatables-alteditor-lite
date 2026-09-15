@@ -10,61 +10,81 @@
     <link rel="stylesheet" href="./reference.css" />
   </head>
   <body>
+    <a class="demo-skip-link" href="#examples">Skip to examples</a>
+    <header class="demo-topbar">
+      <a class="demo-brand" href="./"
+        ><span class="demo-brand__mark" aria-hidden="true">A</span>AltEditorLite</a
+      >
+      <a href="./">Main demonstration &rarr;</a>
+    </header>
     <main class="reference-page">
-      <h1>Reference examples</h1>
-      <p>Custom controls, related records, and file transport through public APIs.</p>
-      <nav aria-label="Examples">
-        <a href="./">Main demonstration</a>
-        <a href="#multichoice">MultiChoice</a>
-        <a href="#parent-child">Orders and order lines</a>
-        <a href="#multipart">Multipart upload</a>
-      </nav>
-      <section id="multichoice" aria-labelledby="multichoice-title">
-        <h2 id="multichoice-title">MultiChoice custom field</h2>
-        <p>
-          Choose ordered categories using native checkboxes. A batch edit replaces the
-          complete selection.
-        </p>
-        <div class="reference-actions">
-          <button type="button" data-action="create">Create article</button>
-          <button type="button" data-action="edit">Edit article</button>
-          <button type="button" data-action="batch">Edit both articles</button>
-          <button type="button" data-action="readonly">Read-only categories</button>
-          <button type="button" data-action="disabled">Disabled categories</button>
+      <header class="reference-heading">
+        <p class="demo-eyebrow">Explore the editor</p>
+        <h1>Reference examples</h1>
+        <p>Custom controls, related records, and file transport through public APIs.</p>
+      </header>
+      <div class="reference-layout">
+        <nav class="reference-nav" aria-label="Examples">
+          <h2>On this page</h2>
+          <a href="#multichoice">MultiChoice</a>
+          <a href="#parent-child">Orders and order lines</a>
+          <a href="#multipart">Multipart upload</a>
+        </nav>
+        <div id="examples" class="reference-examples">
+          <section id="multichoice" aria-labelledby="multichoice-title">
+            <h2 id="multichoice-title">MultiChoice custom field</h2>
+            <p>
+              Choose ordered categories using native checkboxes. A batch edit replaces the
+              complete selection.
+            </p>
+            <div class="reference-actions">
+              <button type="button" data-action="create">Create article</button>
+              <button type="button" data-action="edit">Edit article</button>
+              <button type="button" data-action="batch">Edit both articles</button>
+              <button type="button" data-action="readonly">Read-only categories</button>
+              <button type="button" data-action="disabled">Disabled categories</button>
+            </div>
+            <h3 class="reference-result-title">Articles</h3>
+            <output aria-label="Articles"></output>
+          </section>
+          <section id="parent-child" aria-labelledby="orders-title">
+            <h2 id="orders-title">Orders and order lines</h2>
+            <p>Manage related records with a separate editor for each order.</p>
+            <div class="reference-selector">
+              <label for="selected-order">Current order</label>
+              <select id="selected-order"></select>
+            </div>
+            <div class="reference-actions">
+              <button type="button" data-action="create-parent">Create order</button>
+              <button type="button" data-action="edit-parent">Edit order</button>
+              <button type="button" data-action="create-child">Create line</button>
+              <button type="button" data-action="edit-child">Edit first line</button>
+            </div>
+            <p>
+              Use “Unavailable” as a product to simulate a service error. Changing orders
+              cancels the previous line editor.
+            </p>
+            <h3 class="reference-result-title">Order lines</h3>
+            <output aria-label="Order lines"></output>
+            <p role="status"></p>
+          </section>
+          <section id="multipart" aria-labelledby="multipart-title">
+            <h2 id="multipart-title">Multipart file upload</h2>
+            <p>
+              Save a document and optional attachment using FormData. This example uses an
+              in-memory endpoint; no file leaves the browser.
+            </p>
+            <p>Use “Unavailable” as the name to simulate a service error.</p>
+            <div class="reference-actions">
+              <button type="button" data-action="create">Create document</button>
+              <button type="button" data-action="edit" disabled>Edit document</button>
+            </div>
+            <h3 class="reference-result-title">Saved document</h3>
+            <output aria-label="Saved document">No document saved.</output>
+            <p role="status"></p>
+          </section>
         </div>
-        <output aria-label="Articles"></output>
-      </section>
-      <section id="parent-child" aria-labelledby="orders-title">
-        <h2 id="orders-title">Orders and order lines</h2>
-        <label for="selected-order">Current order</label>
-        <select id="selected-order"></select>
-        <div class="reference-actions">
-          <button type="button" data-action="create-parent">Create order</button>
-          <button type="button" data-action="edit-parent">Edit order</button>
-          <button type="button" data-action="create-child">Create line</button>
-          <button type="button" data-action="edit-child">Edit first line</button>
-        </div>
-        <p>
-          Use “Unavailable” as a product to simulate a service error. Changing orders
-          cancels the previous line editor.
-        </p>
-        <output aria-label="Order lines"></output>
-        <p role="status"></p>
-      </section>
-      <section id="multipart" aria-labelledby="multipart-title">
-        <h2 id="multipart-title">Multipart file upload</h2>
-        <p>
-          Save a document and optional attachment using FormData. This example uses an
-          in-memory endpoint; no file leaves the browser.
-        </p>
-        <p>Use “Unavailable” as the name to simulate a service error.</p>
-        <div class="reference-actions">
-          <button type="button" data-action="create">Create document</button>
-          <button type="button" data-action="edit" disabled>Edit document</button>
-        </div>
-        <output aria-label="Saved document">No document saved.</output>
-        <p role="status"></p>
-      </section>
+      </div>
     </main>
     <script type="module" src="./multichoice.js"></script>
     <script type="module" src="./parent-child.js"></script>

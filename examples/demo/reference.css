@@ -1,36 +1,156 @@
 .reference-page {
-  max-width: 68rem;
-  margin-inline: auto;
-  padding: 2rem;
+  max-width: 76rem;
+  padding-block: 2rem 4rem;
 }
 
-.reference-page section {
-  padding: 1.5rem;
-  margin-block: 1.5rem;
+.reference-heading {
+  padding-block: 1rem 2rem;
+}
+
+.reference-heading h1 {
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.25rem);
+  letter-spacing: -0.04em;
+}
+
+.reference-examples p {
+  color: var(--demo-muted);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+.reference-heading > p:last-child {
+  max-width: 44rem;
+  margin-bottom: 0;
+  color: var(--demo-muted);
+  line-height: 1.6;
+}
+
+.reference-layout {
+  display: grid;
+  grid-template-columns: 14rem minmax(0, 1fr);
+  gap: 2rem;
+  align-items: start;
+}
+
+.reference-nav {
+  position: sticky;
+  top: 1.5rem;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.reference-nav h2 {
+  margin: 0 0 0.75rem;
+  padding-inline: 0.75rem;
+  color: var(--demo-muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.reference-nav a {
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  text-decoration: none;
+}
+
+.reference-nav a:hover {
+  color: var(--demo-accent-strong);
+  background: var(--demo-accent-soft);
+}
+
+.reference-examples {
+  display: grid;
+  min-width: 0;
+  gap: 1.5rem;
+}
+
+.reference-examples section {
+  padding: clamp(1.25rem, 3vw, 2rem);
   border: 1px solid var(--demo-border);
-  border-radius: 0.75rem;
+  border-radius: 1rem;
   background: var(--demo-card);
+  scroll-margin-top: 1.5rem;
 }
 
-.reference-page nav,
-.reference-actions {
+.reference-examples section:target {
+  border-color: var(--demo-accent-strong);
+}
+
+.reference-examples h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.375rem;
+  letter-spacing: -0.025em;
+}
+
+.reference-actions,
+.reference-selector {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-block: 1rem;
+  align-items: center;
+  gap: 0.625rem;
+  margin-block: 1.25rem;
 }
 
 .reference-page button,
 .reference-page select {
-  padding: 0.5rem 0.75rem;
+  min-height: 2.75rem;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid var(--demo-border);
+  border-radius: 0.5rem;
+  color: var(--demo-text);
+  background: var(--demo-card-subtle);
   font: inherit;
+  font-size: 0.8125rem;
+}
+
+.reference-page button {
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.reference-page button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.reference-page button:hover:not(:disabled) {
+  border-color: var(--demo-accent-strong);
+  color: var(--demo-accent-strong);
+  background: var(--demo-accent-soft);
+}
+
+.reference-page :is(a, button, select):focus-visible {
+  outline: 3px solid var(--demo-accent-strong);
+  outline-offset: 3px;
+}
+
+.reference-result-title {
+  margin: 1.5rem 0 0;
+  padding-block: 1rem 0.625rem;
+  border-top: 1px solid var(--demo-border);
+  color: var(--demo-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
 }
 
 .reference-page output {
   display: block;
-  margin-block: 1rem;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  background: var(--demo-card-subtle);
+  font-family: ui-monospace, monospace;
+  font-size: 0.8125rem;
+  line-height: 1.7;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+.reference-page [role='status']:empty {
+  display: none;
 }
 
 .reference-choice {
@@ -42,4 +162,24 @@
 
 .reference-choice input {
   width: auto;
+}
+
+@media (width <= 48rem) {
+  .reference-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.5rem;
+  }
+
+  .reference-nav {
+    position: static;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--demo-border);
+  }
+
+  .reference-nav h2 {
+    width: 100%;
+  }
 }
