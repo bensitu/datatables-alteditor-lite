@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AltEditorLite reference examples</title>
+    <link rel="icon" href="./favicon.ico" />
+    <link rel="stylesheet" href="../../dist/umd/alt-editor-lite.css" />
+    <link rel="stylesheet" href="./demo.css" />
+    <link rel="stylesheet" href="./reference.css" />
+  </head>
+  <body>
+    <main class="reference-page">
+      <h1>Reference examples</h1>
+      <p>Custom controls, related records, and file transport through public APIs.</p>
+      <nav aria-label="Examples">
+        <a href="./">Main demonstration</a>
+        <a href="#multichoice">MultiChoice</a>
+        <a href="#parent-child">Orders and order lines</a>
+        <a href="#multipart">Multipart upload</a>
+      </nav>
+      <section id="multichoice" aria-labelledby="multichoice-title">
+        <h2 id="multichoice-title">MultiChoice custom field</h2>
+        <p>
+          Choose ordered categories using native checkboxes. A batch edit replaces the
+          complete selection.
+        </p>
+        <div class="reference-actions">
+          <button type="button" data-action="create">Create article</button>
+          <button type="button" data-action="edit">Edit article</button>
+          <button type="button" data-action="batch">Edit both articles</button>
+          <button type="button" data-action="readonly">Read-only categories</button>
+          <button type="button" data-action="disabled">Disabled categories</button>
+        </div>
+        <output aria-label="Articles"></output>
+      </section>
+      <section id="parent-child" aria-labelledby="orders-title">
+        <h2 id="orders-title">Orders and order lines</h2>
+        <label for="selected-order">Current order</label>
+        <select id="selected-order"></select>
+        <div class="reference-actions">
+          <button type="button" data-action="create-parent">Create order</button>
+          <button type="button" data-action="edit-parent">Edit order</button>
+          <button type="button" data-action="create-child">Create line</button>
+          <button type="button" data-action="edit-child">Edit first line</button>
+        </div>
+        <p>
+          Use “Unavailable” as a product to simulate a service error. Changing orders
+          cancels the previous line editor.
+        </p>
+        <output aria-label="Order lines"></output>
+        <p role="status"></p>
+      </section>
+      <section id="multipart" aria-labelledby="multipart-title">
+        <h2 id="multipart-title">Multipart file upload</h2>
+        <p>
+          Save a document and optional attachment using FormData. This example uses an
+          in-memory endpoint; no file leaves the browser.
+        </p>
+        <p>Use “Unavailable” as the name to simulate a service error.</p>
+        <div class="reference-actions">
+          <button type="button" data-action="create">Create document</button>
+          <button type="button" data-action="edit" disabled>Edit document</button>
+        </div>
+        <output aria-label="Saved document">No document saved.</output>
+        <p role="status"></p>
+      </section>
+    </main>
+    <script type="module" src="./multichoice.js"></script>
+    <script type="module" src="./parent-child.js"></script>
+    <script type="module" src="./multipart.js"></script>
+  </body>
+</html>

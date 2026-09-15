@@ -1,0 +1,45 @@
+.reference-page {
+  max-width: 68rem;
+  margin-inline: auto;
+  padding: 2rem;
+}
+
+.reference-page section {
+  padding: 1.5rem;
+  margin-block: 1.5rem;
+  border: 1px solid var(--demo-border);
+  border-radius: 0.75rem;
+  background: var(--demo-card);
+}
+
+.reference-page nav,
+.reference-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-block: 1rem;
+}
+
+.reference-page button,
+.reference-page select {
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+}
+
+.reference-page output {
+  display: block;
+  margin-block: 1rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.reference-choice {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-block: 0.5rem;
+}
+
+.reference-choice input {
+  width: auto;
+}

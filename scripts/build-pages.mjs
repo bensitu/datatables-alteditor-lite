@@ -12,6 +12,12 @@ const demoAssetPaths = [
   'demo.js',
   'favicon.ico',
   'index.html',
+  'reference.html',
+  'reference.css',
+  'multichoice.js',
+  'parent-child.js',
+  'multipart.js',
+  'mock-request.js',
 ];
 if (dirname(outputDirectory) !== projectRoot) {
   throw new Error('Refusing to replace a Pages directory outside the project root.');
