@@ -1987,12 +1987,18 @@ describe('external record presentation changes', () => {
     const events = vi.fn();
     for (const name of ['open', 'close', 'success', 'error'])
       tableElement.addEventListener('alteditor-lite:' + name, events);
-    const opening = editor.openInlineEdit('#row-a', 0);
+    let isSettled = false;
+    const opening = editor.openInlineEdit('#row-a', 0).then(() => {
+      isSettled = true;
+    });
     await vi.waitFor(() => {
       expect(signal).toBeDefined();
     });
     api.draw(false);
     expect(signal?.aborted).toBe(true);
+    await vi.waitFor(() => {
+      expect(isSettled).toBe(true);
+    });
     pending.resolve(true);
     await opening;
     expect(editor.getInlineState().status).toBe('idle');

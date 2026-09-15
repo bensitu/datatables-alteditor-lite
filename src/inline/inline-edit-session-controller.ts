@@ -10,6 +10,7 @@ import {
   normalizeOperationError,
 } from '../core/error-normalization.js';
 import { runCleanupSteps } from '../core/run-cleanup-steps.js';
+import { settleWithAbort } from '../core/settle-with-abort.js';
 import { resolveFieldValueComparator } from '../fields/field-value-comparator.js';
 
 import { InlineCommitCoordinator } from './inline-commit-coordinator.js';
@@ -621,7 +622,7 @@ export class InlineEditSessionController<
       signal: abortController.signal,
       target: createInlineOperationTarget(capture.summary),
     });
-    return (await Promise.resolve(hook(context))) !== false;
+    return (await settleWithAbort(hook(context), abortController.signal)) !== false;
   }
 
   private readonly handleExternalDraw = (): void => {

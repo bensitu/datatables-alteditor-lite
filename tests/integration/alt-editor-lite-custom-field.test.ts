@@ -122,6 +122,49 @@ describe('AltEditorLite custom fields', () => {
     document.body.replaceChildren();
   });
 
+  it('keeps operation and cancellation independent across editor instances', async () => {
+    const observer: TagsObserver = { contexts: [], destroy: vi.fn() };
+    const definition = createTagsDefinition(observer);
+    const options = {
+      fields: [
+        definition.field<RecordValues>({
+          name: 'tags',
+          label: 'Tags',
+          options: { maximum: 3 },
+        }),
+      ],
+      clientSide: { createRow: (): RecordRow => ({ id: 'new', summary: '', tags: [] }) },
+    };
+    editor = new AltEditorLite(
+      new StandaloneHost<RecordRow, string>({
+        read: () => ({ id: 'first', summary: '', tags: [] }),
+      }),
+      options,
+    );
+    const second = new AltEditorLite(
+      new StandaloneHost<RecordRow, string>({
+        read: () => ({ id: 'second', summary: '', tags: ['existing'] }),
+      }),
+      options,
+    );
+    try {
+      await editor.openCreateDialog();
+      await second.openEditDialog('second');
+      expect(observer.contexts.map(({ operation }) => operation)).toEqual([
+        'create',
+        'edit',
+      ]);
+      editor.destroy();
+      expect(observer.contexts[0]?.signal.aborted).toBe(true);
+      expect(observer.contexts[1]?.signal.aborted).toBe(false);
+      expect(observer.contexts[1]?.operation).toBe('edit');
+      await expect(second.getField('tags')?.getValue()).resolves.toEqual(['existing']);
+    } finally {
+      second.destroy();
+    }
+    expect(observer.destroy).toHaveBeenCalledTimes(2);
+  });
+
   it('releases custom controls when the template callback cancels opening', async () => {
     const observer: TagsObserver = { contexts: [], destroy: vi.fn() };
     const definition = createTagsDefinition(observer);
