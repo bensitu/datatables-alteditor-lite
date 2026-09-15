@@ -429,6 +429,17 @@ cancels an active inline session with close reason `redraw`. Validation and
 persistence are aborted, late results are ignored, and detached content is not
 restored.
 
+This includes Ajax reloads and row replacement, even when a unique `rowId`
+still identifies the record. Reopen the cell to edit its current presentation.
+An opening request that has not mounted emits no open or close event and settles
+on cancellation without waiting for an unfinished `beforeOpen` callback. Its
+cleanup cannot reset a newer session or restore cancelled focus. A mounted
+session emits one close event and releases its control and keyboard ownership.
+
+Record identity is never inferred from an old index after replacement. A
+replacement cell does not inherit pending changes or stale focus. Editor-owned
+successful update and refresh draws use the existing commit lifecycle.
+
 `destroy()` aborts activation, validation, persistence, and presentation waiting;
 removes inline listeners and controls; safely restores a still-valid undrawn cell
 when possible; and prevents late DOM, Host, focus, or event work.
@@ -495,17 +506,3 @@ current server-side page through the normal DataTables Ajax path.
   uniqueness covers only loaded rows.
 
 Only public DataTables APIs and public lifecycle events are used.
-
-### External DataTables redraws
-
-An external draw, including an Ajax reload or row replacement, cancels an active
-or opening Inline Edit. Pending validation and persistence signals are aborted;
-late results do not update records or emit success. A mounted session emits one
-close event with reason `redraw` and releases its control and keyboard ownership.
-An opening request that has not mounted emits no open or close event.
-
-This also applies when a unique `rowId` still identifies the record. Reopen the
-cell to edit its current presentation. Record identity is never inferred from an
-old row index after replacement, and a replacement cell does not inherit stale
-focus or pending changes. Editor-owned successful update and refresh draws use
-the existing commit lifecycle instead.

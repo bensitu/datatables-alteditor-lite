@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2026-09-16
+
+### Added
+
+- Custom field controllers receive a readonly, stable `operation` identifying
+  Create, Edit, or multi-record Edit independently of their presentation.
+- Text and email fields support `attributes.list` for application-owned native
+  datalist suggestions.
+- Runnable MultiChoice, parent/child editor, and multipart file submission
+  examples demonstrate widget behavior and application persistence with public APIs.
+
+### Changed
+
+- Documented option replacement behavior: native Select and local SearchSelect
+  preserve valid selections and clear removed values; remote selections remain
+  independent of seed options.
+- Documented and verified cancellation and record identity during external
+  DataTables redraws, including pending inline editing work.
+
+### Fixed
+
+- Cancelled Inline opening requests now settle without waiting for an unfinished
+  `beforeOpen` hook after redraw or destruction. Obsolete opening cleanup no longer
+  changes a newly opened inline target or restores cancelled focus.
+
 ## [0.8.2] - 2026-09-08
 
 ### Changed

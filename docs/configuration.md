@@ -256,6 +256,16 @@ table state are synchronized through public APIs. ColumnControl SearchList
 options are refreshed and Responsive recalculates its layout after the editor
 presentation reaches a stable state.
 
+## Migrating from v0.8.2
+
+v0.9.0 adds `CustomFieldControllerContext.operation` and native datalist references
+for text and email fields. Existing configuration defaults remain unchanged.
+Custom field controllers still receive no row data in their context.
+
+External DataTables redraws cancel active or opening Inline Edit. Cancelled
+opening requests now settle promptly even if a `beforeOpen` callback ignores
+its signal. See [Editing](editing.md) and [Fields](fields.md).
+
 ## Migrating from v0.8.1
 
 v0.8.2 retains existing public signatures and configuration defaults.

@@ -437,6 +437,11 @@ Additional examples demonstrate
 hover/touch interaction, remote SearchSelect, extension integration, and
 consumer-owned records without a table or grid.
 
+The [reference examples](https://bensitu.github.io/datatables-alteditor-lite/examples/demo/reference.html)
+include [MultiChoice custom fields](examples/multichoice/README.md),
+[parent and child editors](examples/parent-child/README.md), and
+[multipart file submissions](examples/multipart-upload/README.md).
+
 See [SECURITY.md](SECURITY.md) for private vulnerability reporting.
 
 ## Development
