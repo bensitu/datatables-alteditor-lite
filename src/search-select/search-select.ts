@@ -163,6 +163,8 @@ export class SearchSelect<TValue extends string | number> {
 
   private readonly resultStatusElement: HTMLDivElement;
 
+  private readonly resolveErrorElement: HTMLDivElement;
+
   private readonly shouldAllowClear: boolean;
 
   private readonly shouldAllowManualValue: boolean;
@@ -257,6 +259,11 @@ export class SearchSelect<TValue extends string | number> {
     instructionsElement.id = this.instructionsId;
     instructionsElement.textContent = this.messages.instructions;
 
+    this.resolveErrorElement = document.createElement('div');
+    this.resolveErrorElement.className = 'alteditor-lite-field__error';
+    this.resolveErrorElement.textContent = this.messages.loadError;
+    this.resolveErrorElement.hidden = true;
+
     this.resultStatusElement = document.createElement('div');
     this.resultStatusElement.className = 'alteditor-lite-visually-hidden';
     this.resultStatusElement.setAttribute('role', 'status');
@@ -273,6 +280,7 @@ export class SearchSelect<TValue extends string | number> {
       this.listboxElement,
       instructionsElement,
       this.resultStatusElement,
+      this.resolveErrorElement,
     );
 
     this.inputElement.addEventListener('focus', this.handleFocus);
@@ -1100,6 +1108,8 @@ export class SearchSelect<TValue extends string | number> {
 
   private cancelResolveRequest(): void {
     this.#remoteDataController?.cancel(1);
+    this.resolveErrorElement.hidden = true;
+    this.element.classList.remove('alteditor-lite-search-select--error');
     this.isResolving = false;
     this.updateBusyState();
   }
@@ -1129,6 +1139,7 @@ export class SearchSelect<TValue extends string | number> {
       }
       const option = result[1];
       if (option === undefined) {
+        this.showResolveError();
         return;
       }
       try {
@@ -1153,6 +1164,7 @@ export class SearchSelect<TValue extends string | number> {
   }
 
   private showResolveError(): void {
+    this.resolveErrorElement.hidden = false;
     this.element.classList.add('alteditor-lite-search-select--error');
     this.resultStatusElement.textContent = this.messages.loadError;
     if (this.isOpen) {

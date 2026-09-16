@@ -271,6 +271,55 @@ describe('SearchSelect document events', () => {
 });
 
 describe('SearchSelect remote request ownership', () => {
+  it.each(['throw', 'missing', 'mismatch'] as const)(
+    'shows unresolved selection feedback for %s and clears it after recovery',
+    async (failure) => {
+      const onCommit = vi.fn();
+      const searchSelect = new SearchSelect<number>({
+        allowClear: true,
+        allowManualValue: false,
+        debounceMs: 0,
+        fieldId: 'resolve-feedback',
+        locale: 'en',
+        messages: searchSelectMessages,
+        loadOptions: () => [],
+        onCommit,
+        searchThreshold: 0,
+        sortOptions: false,
+        resolveOption: () => {
+          if (failure === 'throw') throw new Error('Unavailable');
+          return failure === 'missing' ? undefined : { label: 'Other', value: 8 };
+        },
+      });
+      document.body.append(searchSelect.element);
+      try {
+        searchSelect.setValue(7);
+        const feedback = searchSelect.element.querySelector<HTMLElement>(
+          '.alteditor-lite-field__error',
+        );
+        await vi.waitFor(() => {
+          expect(feedback?.hidden).toBe(false);
+          expect(feedback?.textContent).toBe('Load error');
+        });
+        expect(searchSelect.listboxElement.hidden).toBe(true);
+        expect(searchSelect.getValue()).toBe(7);
+        searchSelect.setOptions([{ label: 'Seven', value: 7 }]);
+        expect(feedback?.hidden).toBe(true);
+        expect(searchSelect.inputElement.value).toBe('Seven');
+        searchSelect.setValue(9);
+        await vi.waitFor(() => {
+          expect(feedback?.hidden).toBe(false);
+        });
+        searchSelect.setValue(undefined);
+        expect(feedback?.hidden).toBe(true);
+        expect(searchSelect.getValue()).toBeUndefined();
+        expect(onCommit).not.toHaveBeenCalled();
+      } finally {
+        searchSelect.destroy();
+      }
+    },
+  );
+
   it('keeps synchronous value identity while stale resolutions are ignored', async () => {
     const first = createDeferred<{ readonly label: string; readonly value: number }>();
     const second = createDeferred<{ readonly label: string; readonly value: number }>();

@@ -23,6 +23,28 @@ describeEditorHostContract('DataTablesHost', () => {
 });
 
 describe('DataTablesHost', () => {
+  it('releases unloaded row mappings on redraw while retained handles remain usable', () => {
+    const { api } = createTestTable('host-unloaded-records');
+    const host = new DataTablesHost(api);
+    const previousRow = api.row('#row-a').data();
+    const target = host.resolveRecordTarget('#row-a');
+    api
+      .clear()
+      .rows.add([{ id: 'other', name: 'Other', rank: 3 }])
+      .draw(false);
+    expect(host.findRecordTarget(previousRow)).toBeUndefined();
+    expect(() => host.read(target)).toThrow();
+    api
+      .clear()
+      .rows.add([{ ...previousRow, name: 'Returned' }])
+      .draw(false);
+    expect(host.read(target).name).toBe('Returned');
+    const currentTarget = host.resolveRecordTarget('#row-a');
+    expect(currentTarget).not.toBe(target);
+    expect(host.read(currentTarget)).toEqual(host.read(target));
+    host.destroy();
+  });
+
   it('preserves unique targets across external replacement and detaches read values', () => {
     const { api } = createTestTable('host-external-replacement');
     const host = new DataTablesHost(api);

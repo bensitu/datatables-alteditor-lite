@@ -141,6 +141,7 @@ export class DataTablesHost<TRow extends object>
     this.eventTarget = tableElement;
     this.ownershipKey = tableElement;
     this.#drawOwnership = new DrawOwnership(table, refreshTimeout);
+    table.on('draw.altEditorLiteRecordTargets', this.#pruneRecordTargets);
     this.#selectIntegration = new SelectIntegration(table, () => {
       this.notifyEditorStateChange();
     });
@@ -704,6 +705,7 @@ export class DataTablesHost<TRow extends object>
     }
     this.#isDestroyed = true;
     this.#targetsByRowId.clear();
+    this.table.off('draw.altEditorLiteRecordTargets', this.#pruneRecordTargets);
     runCleanupSteps([
       () => {
         this.#selectIntegration.destroy();
@@ -728,6 +730,17 @@ export class DataTablesHost<TRow extends object>
       }
     }
   }
+
+  readonly #pruneRecordTargets = (): void => {
+    if (this.#targetsByRowId.size === 0) return;
+    const rowIndexById = createUniqueRowIndexById(this.table);
+    for (const [rowId, target] of this.#targetsByRowId) {
+      if (rowIndexById.has(rowId)) continue;
+      this.#targetsByRowId.delete(rowId);
+      const capture = this.#recordCaptures.get(target);
+      if (capture !== undefined) this.#recordTargets.delete(capture.sourceRow);
+    }
+  };
 
   #createRecordTarget(rowIndex: number): DataTablesRecordTarget {
     return this.#storeRecordTarget(
