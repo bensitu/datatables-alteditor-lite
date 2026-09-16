@@ -379,10 +379,6 @@ export class DataTablesHost<TRow extends object>
 
   /** Finds the loaded record target for one live DataTables row object. */
   public findRecordTarget(row: TRow): DataTablesRecordTarget | undefined {
-    const knownTarget = this.#recordTargets.get(row);
-    if (knownTarget !== undefined) {
-      return knownTarget;
-    }
     for (const rowIndex of this.table.rows().indexes().toArray()) {
       if (this.table.row(rowIndex).data() === row) {
         return this.#createRecordTarget(rowIndex);

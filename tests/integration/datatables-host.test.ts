@@ -50,7 +50,9 @@ describe('DataTablesHost', () => {
     const host = new DataTablesHost(api);
     const target = host.resolveRecordTarget('#row-a');
     const original = host.read(target);
+    const previousRow = api.row('#row-a').data();
     api.row('#row-a').data({ id: 'row-a', name: 'Replacement', rank: 2 });
+    expect(host.findRecordTarget(previousRow)).toBeUndefined();
     expect(host.read(target).name).toBe('Replacement');
     expect(host.resolveRecordTarget('#row-a')).toBe(target);
     expect([...host.entries()].find(({ row }) => row.id === 'row-a')?.target).toBe(
