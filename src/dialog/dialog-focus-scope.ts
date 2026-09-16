@@ -50,6 +50,12 @@ function isFocusable(
   element: HTMLElement,
   computedStyleByElement: WeakMap<HTMLElement, CSSStyleDeclaration>,
 ): boolean {
+  if (
+    element.matches(':disabled') ||
+    (element.hasAttribute('tabindex') && element.tabIndex < 0)
+  ) {
+    return false;
+  }
   for (
     let currentElement: HTMLElement | null = element;
     currentElement !== null;

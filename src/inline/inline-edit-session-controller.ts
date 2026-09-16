@@ -7,6 +7,7 @@ import {
 import { dispatchEditorEvent, type EditorCloseReason } from '../core/editor-event.js';
 import {
   InternalOperationAbort,
+  NEVER_ABORTED_SIGNAL,
   normalizeOperationError,
 } from '../core/error-normalization.js';
 import { runCleanupSteps } from '../core/run-cleanup-steps.js';
@@ -135,7 +136,7 @@ export class InlineEditSessionController<
       instanceId: arguments_.instanceId,
       language: arguments_.language,
       onCancel: (reason) => {
-        void this.cancel(reason);
+        void this.cancel(reason).catch(() => undefined);
       },
       onSubmit: () => {
         void this.submit().catch(() => undefined);
@@ -450,19 +451,42 @@ export class InlineEditSessionController<
   }
 
   /** Cancels activation, validation, persistence, or an open inline session. */
-  public cancel(reason: EditorCloseReason = 'api'): Promise<void> {
+  // eslint-disable-next-line @typescript-eslint/require-await -- Synchronous cleanup failures must become promise rejections.
+  public async cancel(reason: EditorCloseReason = 'api'): Promise<void> {
     this.assertActive();
     this.activationAbortController?.abort();
     this.releaseActivationInteraction();
     this.changeAbortController?.abort();
     this.arguments_.operationOwner.abort('inline');
 
-    if (this.session !== undefined) {
-      this.cleanupSession(reason, true, true);
+    const session = this.session;
+    if (session !== undefined) {
+      try {
+        this.cleanupSession(reason, true, true);
+      } catch (rawError: unknown) {
+        const error = normalizeOperationError(
+          rawError,
+          NEVER_ABORTED_SIGNAL,
+          this.arguments_.language,
+        );
+        if (!(error instanceof InternalOperationAbort)) {
+          this.arguments_.reportError(
+            error,
+            {
+              committed: false,
+              mode: 'inline',
+              operation: 'edit',
+              phase: 'close',
+              target: createInlineOperationTarget(session.capture.summary),
+            },
+            true,
+          );
+        }
+        throw error;
+      }
     } else if (this.state.status === 'activating') {
       this.transitionTo({ status: 'idle' });
     }
-    return Promise.resolve();
   }
 
   /** Returns the current immutable inline state. */
@@ -613,10 +637,11 @@ export class InlineEditSessionController<
   };
 
   private readonly handleFocusOut = (): void => {
+    const session = this.session;
     queueMicrotask(() => {
-      const session = this.session;
       if (
         session === undefined ||
+        this.session !== session ||
         !this.focusCoordinator.shouldApplyBlurAction() ||
         ownsInlineFocus(session.host.element) ||
         this.state.status !== 'editing'
@@ -626,7 +651,7 @@ export class InlineEditSessionController<
       if (this.arguments_.interactionBehavior.blurAction === 'submit') {
         void this.submit().catch(() => undefined);
       } else if (this.arguments_.interactionBehavior.blurAction === 'cancel') {
-        void this.cancel('cancel');
+        void this.cancel('cancel').catch(() => undefined);
       }
     });
   };
@@ -653,7 +678,7 @@ export class InlineEditSessionController<
     if (intent.type === 'cancel') {
       event.preventDefault();
       event.stopPropagation();
-      void this.cancel('escape');
+      void this.cancel('escape').catch(() => undefined);
       return;
     }
     if (this.state.status !== 'editing' && this.state.status !== 'error') {
@@ -694,7 +719,7 @@ export class InlineEditSessionController<
 
     event.preventDefault();
     event.stopImmediatePropagation();
-    void this.cancel('escape');
+    void this.cancel('escape').catch(() => undefined);
   };
 
   private readonly handleUserChange = (): void => {

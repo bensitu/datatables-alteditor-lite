@@ -166,6 +166,86 @@ function replaceInlineValue(value: string): HTMLInputElement {
 }
 
 describe('AltEditorLite programmatic inline editing', () => {
+  it.each(['api', 'escape', 'blur'] as const)(
+    'completes cleanup and reports custom destruction failures through %s',
+    async (action) => {
+      const onError = vi.fn();
+      const customText = defineCustomField<string>({
+        capabilities: { inline: true },
+        createController: () => {
+          const control = document.createElement('input');
+          return {
+            control,
+            destroy: () => {
+              throw new Error('Custom cleanup failed.');
+            },
+            focus: () => {
+              control.focus();
+            },
+            getValue: () => control.value,
+            setValue: (value) => {
+              control.value = value;
+            },
+            setDisabled: (disabled) => {
+              control.disabled = disabled;
+            },
+            setReadOnly: (readOnly) => {
+              control.readOnly = readOnly;
+            },
+            setRequired: (required) => {
+              control.required = required;
+            },
+          };
+        },
+      });
+      const { api, editor } = createInlineEditor({
+        editing: inlineEditing('doubleClick', { blurAction: 'cancel' }),
+        fields: [
+          customText.field<InlineValues>({
+            inlineEdit: true,
+            label: 'Name',
+            name: 'name',
+          }),
+          fields[1],
+        ],
+        hooks: { onError },
+      });
+      await editor.openInlineEdit('#row-a', 0);
+      const input = document.querySelector<HTMLInputElement>(
+        '.alteditor-lite-inline input',
+      );
+      if (action === 'api') {
+        await expect(editor.cancelInlineEdit()).rejects.toMatchObject({
+          code: 'UNKNOWN',
+        });
+      } else if (action === 'escape') {
+        input?.dispatchEvent(
+          new KeyboardEvent('keydown', {
+            bubbles: true,
+            cancelable: true,
+            key: 'Escape',
+          }),
+        );
+      } else {
+        input?.blur();
+        await Promise.resolve();
+      }
+      await vi.waitFor(() => {
+        expect(onError).toHaveBeenCalledOnce();
+      });
+      expect(onError.mock.calls[0]?.[1]).toMatchObject({
+        operation: 'edit',
+        mode: 'inline',
+        committed: false,
+      });
+      expect(editor.getInlineState().status).toBe('idle');
+      expect(input?.isConnected).toBe(false);
+      expect(api.row('#row-a').data().name).toBe('Alpha');
+      await editor.openInlineEdit('#row-a', 1);
+      await editor.cancelInlineEdit();
+    },
+  );
+
   it('uses a consumer-defined control with the existing inline transaction', async () => {
     let presentation: string | undefined;
     const customText = defineCustomField<string>({

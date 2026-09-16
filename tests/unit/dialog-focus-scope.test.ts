@@ -23,6 +23,33 @@ function createScope(): {
 }
 
 describe('DialogFocusScope', () => {
+  it('excludes negative tab stops and disabled fieldsets while preserving the first legend', () => {
+    const { dialogElement, scope } = createScope();
+    const content = document.createElement('div');
+    content.innerHTML =
+      '<button tabindex="-2" aria-invalid="true">Skip</button><fieldset disabled><legend><button>Legend</button></legend><input><legend><button>Disabled legend</button></legend></fieldset><button>Last</button><a href="#" tabindex="-1">Skip link</a><div tabindex="-3">Skip container</div>';
+    dialogElement.append(content);
+    const legend = content.querySelector('button:not([tabindex])');
+    const last = content.querySelector(':scope > button:not([tabindex])');
+    scope.activate(content);
+    expect(document.activeElement).toBe(legend);
+    (last as HTMLElement).focus();
+    dialogElement.dispatchEvent(
+      new KeyboardEvent('keydown', { bubbles: true, cancelable: true, key: 'Tab' }),
+    );
+    expect(document.activeElement).toBe(legend);
+    dialogElement.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        bubbles: true,
+        cancelable: true,
+        key: 'Tab',
+        shiftKey: true,
+      }),
+    );
+    expect(document.activeElement).toBe(last);
+    scope.destroy();
+  });
+
   it('focuses the dialog when all controls become disabled', () => {
     const { dialogElement, scope } = createScope();
     const button = document.createElement('button');
