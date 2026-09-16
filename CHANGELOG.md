@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1] - 2026-09-17
+
+### Fixed
+
+- Collected value snapshots copy plain objects and arrays before freezing them,
+  preserving caller-owned defaults, custom field values, and attachment arrays.
+- Unexpected field change failures use the configured generic error message.
+  Destroying a field or form also releases its value comparators.
+- Inline cancellation reports custom control cleanup failures through the error
+  hook and event while completing resource cleanup. Deferred blur handling only
+  applies to the session that lost focus.
+- Dialog focus excludes negative tab stops and controls disabled by a fieldset,
+  while retaining controls inside its first legend.
+- DataTables redraws release mappings for unloaded or ambiguous row IDs. Live-row
+  lookup no longer returns targets for replaced row objects.
+- Remote SearchSelect label resolution failures remain visible with the listbox
+  closed. Matching seed options, successful resolution, and clearing recover the
+  feedback without changing the selected value unexpectedly.
+
 ## [0.9.0] - 2026-09-16
 
 ### Added

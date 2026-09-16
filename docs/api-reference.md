@@ -10,6 +10,10 @@
 | `datatables-alteditor-lite/style.css`      | Shared Dialog and Inline stylesheet.                                       |
 | `datatables-alteditor-lite/locales/<name>` | Included ESM language module.                                              |
 
+Package imports use ES modules. No CommonJS `require` entry is provided; use an
+ES module import or the documented Browser Global scripts. Editor construction
+requires a browser DOM and is not a server-side rendering API.
+
 The neutral root and `/standalone` entries do not import DataTables. The
 `/datatables` entry imports and registers against its DataTables runtime.
 `datatables.net` is therefore an optional package peer, but applications using
@@ -150,6 +154,11 @@ never injected into neutral callbacks or events.
 is the exact live object for a currently loaded DataTables record. It returns
 `undefined` for detached, replaced, or unloaded row objects. Use the returned
 target with Host operations instead of retaining DataTables row indexes.
+
+On redraw, the host releases cached row-ID mappings for records no longer loaded
+or whose IDs are ambiguous. An externally retained target with a stable unique
+row ID can still resolve if that record is loaded again; a newly requested target
+object need not have the same object identity after unloading.
 
 The integration exports `DataTablesInlineEditState`, `InlineTargetSummary`,
 `EditTargetSnapshot`, and `RemoveTargetSnapshot` for DataTables-specific

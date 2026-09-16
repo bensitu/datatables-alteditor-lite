@@ -111,6 +111,18 @@ and debounce or cache application-owned network work when appropriate. A newer
 change aborts the preceding callback for the same field and prevents stale
 results from replacing current state.
 
+Callback context values are detached, recursively frozen snapshots of plain
+objects and arrays. Creating a snapshot does not freeze the application's default
+values or values returned by a custom control. Native objects and class instances
+retain their identity and must be treated as read-only.
+
+Submission waits for current change callbacks. Do not start or await a submission
+or full-form validation from inside `onChange`, because it would wait for that
+same callback. Use `editor.getField(path)?.validate()` for individual field checks,
+and trigger submission from a separate user action after the callback finishes.
+Unexpected callback failures use `language.errors.generic`; structured
+`AltEditorLiteError` messages and field errors retain their explicit text.
+
 In multi-record Dialog Edit, one logical user change invokes `onChange` once,
 regardless of the number of selected records. Its context contains known common
 values and explicit overrides; preserved differing values are omitted. Merely
@@ -395,6 +407,12 @@ cancellation and request ownership, so a consumer that ignores the signal still
 cannot let an older result overwrite current state. Loading, threshold, and query
 errors stay inside the combobox through `aria-busy`, its listbox, and a polite live
 status.
+
+An unresolved selected label displays the localized load-error message below the
+control even when the listbox is closed. The selected value remains available.
+A matching seed, successful resolution, or clearing removes the feedback without
+emitting a user change. A resolver returning `undefined` is treated as an
+unavailable label.
 
 Applications that require centralized monitoring should record remote failures
 inside these application-owned callbacks before rethrowing them.

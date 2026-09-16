@@ -13,6 +13,11 @@ of interrupting alerts when several constraints fail together. The modal exposes
 temporary fallback focusability after focus leaves. Remove always has a
 destructive confirmation step.
 
+Dialog focus entry and Tab containment exclude controls with negative
+`tabindex` values and controls disabled by an ancestor `fieldset`. Controls
+inside the disabled fieldset's first `legend` remain eligible according to native
+HTML behavior.
+
 ## Custom controls
 
 For a simple custom control, return the native control as `control`. The editor

@@ -506,3 +506,11 @@ current server-side page through the normal DataTables Ajax path.
   uniqueness covers only loaded rows.
 
 Only public DataTables APIs and public lifecycle events are used.
+
+## Inline cancellation failures
+
+Cancellation releases the active control, owned listeners, and interaction state
+even when a custom control's `destroy()` throws. The failure is reported through
+`hooks.onError` and `alteditor-lite:error`. Programmatic
+`cancelInlineEdit()` rejects with the normalized error; keyboard and blur handlers
+observe the rejection internally. A later editing session can still be opened.

@@ -83,6 +83,10 @@ external deletion or row rebuild can invalidate a captured index even when anoth
 row now has similar data. Configure a stable `rowId` when Edit or Remove must
 tolerate unrelated external table changes; AltEditorLite never retargets by value.
 
+Collected values supplied to operation callbacks copy and freeze plain objects
+and arrays, without freezing application-owned values. Native objects and custom
+class instances retain their identity and should be treated as read-only.
+
 The `original` callback argument is a detached snapshot captured before opening.
 Plain nested records and arrays are recursively copied and frozen, so callback code
 cannot mutate the corresponding live row data through the snapshot.
