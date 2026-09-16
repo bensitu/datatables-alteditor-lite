@@ -9,9 +9,15 @@ describe('freezeEditorValues', () => {
     values.self = values;
     values.values.push(values);
 
-    expect(() => freezeEditorValues(values)).not.toThrow();
-    expect(Object.isFrozen(values)).toBe(true);
-    expect(Object.isFrozen(values.values)).toBe(true);
+    const snapshot = freezeEditorValues<typeof values>(values);
+    expect(snapshot).not.toBe(values);
+    expect(snapshot.self).toBe(snapshot);
+    expect(snapshot.values?.[0]).toBe(snapshot);
+    expect(Object.isFrozen(snapshot)).toBe(true);
+    expect(Object.isFrozen(snapshot.values)).toBe(true);
+    expect(Object.isFrozen(values)).toBe(false);
+    values.values.push('Later');
+    expect(snapshot.values).toHaveLength(1);
   });
 
   it('freezes array values included in an inline edit transaction', () => {
@@ -38,7 +44,10 @@ describe('freezeEditorValues', () => {
 
     expect(values).toMatchObject({ attachments, name: 'After' });
     expect(Object.isFrozen(values)).toBe(true);
-    expect(Object.isFrozen(attachments)).toBe(true);
+    expect(Object.isFrozen(values.attachments)).toBe(true);
+    expect(values.attachments).not.toBe(attachments);
+    expect(values.attachments?.[0]).toBe(attachments[0]);
+    expect(Object.isFrozen(attachments)).toBe(false);
     expect(Object.isFrozen(attachments[0])).toBe(false);
   });
 });

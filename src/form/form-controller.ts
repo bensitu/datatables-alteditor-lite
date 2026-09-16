@@ -173,7 +173,7 @@ export class EditorFormController<
   public constructor(
     fields: readonly FieldConfig<TFormValues>[],
     instanceId: string,
-    language: Readonly<AltEditorLiteLanguage>,
+    private readonly language: Readonly<AltEditorLiteLanguage>,
     private readonly validateUnique?: LocalUniqueValidator<TFormValues>,
     template?: DialogTemplateSource,
     dependencies?: Readonly<FormDependencies<TFormValues>>,
@@ -586,6 +586,7 @@ export class EditorFormController<
         this.fieldValidation.remove(name);
         this.activeFormValidationAbortController?.abort();
         this.controllerByName.delete(name);
+        this.comparatorByName.delete(name);
         this.fieldControllerByName.delete(name);
         this.runtimeByName.delete(name);
         this.dependencyFieldByName.delete(name);
@@ -684,6 +685,7 @@ export class EditorFormController<
     const controllers = this.controllers;
     this.controllers = [];
     this.controllerByName.clear();
+    this.comparatorByName.clear();
     this.fieldControllerByName.clear();
     this.runtimeByName.clear();
     this.dependencyFieldByName.clear();
@@ -761,7 +763,7 @@ export class EditorFormController<
             : new AltEditorLiteError({
                 cause: error,
                 code: 'FIELD_CHANGE',
-                message: 'A field change callback failed.',
+                message: this.language.errors.generic,
                 retryable: true,
               });
         let didShowAssociatedError = false;

@@ -885,7 +885,10 @@ describe('BatchEditorFormController', () => {
         },
       ],
       'batch-change-error-test',
-      ENGLISH_LANGUAGE,
+      {
+        ...ENGLISH_LANGUAGE,
+        errors: { ...ENGLISH_LANGUAGE.errors, generic: 'Unable to update the field.' },
+      },
     );
     document.body.append(activeForm.element);
     const officeField = batchField('office');
@@ -905,6 +908,6 @@ describe('BatchEditorFormController', () => {
 
     expect(
       document.querySelector('.alteditor-lite-form__submission-error')?.textContent,
-    ).toContain('A field change callback failed.');
+    ).toContain('Unable to update the field.');
   });
 });

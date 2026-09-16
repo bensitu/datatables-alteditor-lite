@@ -537,7 +537,7 @@ export class BatchEditorFormController<TFormValues extends object> {
             : new AltEditorLiteError({
                 cause: error,
                 code: 'FIELD_CHANGE',
-                message: 'A field change callback failed.',
+                message: this.language.errors.generic,
                 retryable: true,
               });
         let hasKnownFieldError = false;

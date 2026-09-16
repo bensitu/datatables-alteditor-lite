@@ -648,8 +648,14 @@ describe('FormController', () => {
     expect(form.getField('profile.name')).toBeNull();
   });
 
-  it('reports field change callback failures beside the changed field', async () => {
-    const form = createForm();
+  it('reports localized field change failures and preserves structured errors', async () => {
+    const language = {
+      ...ENGLISH_LANGUAGE,
+      errors: { ...ENGLISH_LANGUAGE.errors, generic: 'Unable to update the field.' },
+    };
+    const form = buildEditorForm<FormValues>(fields, 'change-error', language);
+    activeForm = form;
+    document.body.append(form.element);
     const inputElement = form.getField('profile.name')?.element.querySelector('input');
     const submissionError = form.element.querySelector<HTMLElement>(
       '.alteditor-lite-form__submission-error',
@@ -664,7 +670,7 @@ describe('FormController', () => {
         form
           .getField('profile.name')
           ?.element.querySelector('.alteditor-lite-field__error')?.textContent,
-      ).toBe('A field change callback failed.');
+      ).toBe(language.errors.generic);
     });
     form.clearErrors();
     expect(submissionError?.hidden).toBe(true);
