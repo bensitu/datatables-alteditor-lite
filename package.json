@@ -111,15 +111,15 @@
     }
   },
   "devDependencies": {
-    "@axe-core/playwright": "4.13.0",
+    "@axe-core/playwright": "4.14.0",
     "@commitlint/cli": "20.5.3",
     "@commitlint/config-conventional": "20.5.3",
     "@eslint-community/eslint-plugin-eslint-comments": "4.8.1",
     "@eslint/js": "10.0.1",
-    "@playwright/test": "1.64.0",
+    "@playwright/test": "1.64.1",
     "@types/jquery": "4.0.1",
     "@types/node": "^20.19.43",
-    "@vitest/coverage-v8": "4.1.11",
+    "@vitest/coverage-v8": "4.1.12",
     "datatables.net": "^3.0.4",
     "datatables.net-autofill": "^3.0.1",
     "datatables.net-buttons": "^4.0.3",
@@ -140,14 +140,14 @@
     "jsdom": "29.1.1",
     "lightningcss": "1.33.0",
     "lint-staged": "16.4.0",
-    "prettier": "3.9.9",
+    "prettier": "3.9.10",
     "rolldown": "^1.2.8",
     "stylelint": "17.16.0",
     "stylelint-config-standard": "40.0.0",
     "tsd": "0.33.0",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.71.1",
-    "vitest": "4.1.11"
+    "typescript-eslint": "8.71.2",
+    "vitest": "4.1.12"
   },
   "lint-staged": {
     "*.{js,mjs,ts}": [
