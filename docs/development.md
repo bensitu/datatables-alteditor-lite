@@ -13,6 +13,7 @@ recompute integrity hashes from the exact CDN resources.
 
 The current compatible toolchain retains:
 
+- @axe-core/playwright 4.13.0: version 4.14 requires Node.js 22.12 or newer.
 - TypeScript 6.0.3: typescript-eslint 8.70 requires TypeScript below 6.1.
 - Vitest and its coverage provider 4.1.11: version 5 requires Node.js 22.12 or newer.
 - jsdom 29.1.1: version 30 requires Node.js 22.22.2 or newer.

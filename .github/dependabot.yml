@@ -21,6 +21,9 @@ updates:
       timezone: 'Asia/Tokyo'
     open-pull-requests-limit: 10
     ignore:
+      - dependency-name: '@axe-core/playwright'
+        versions:
+          - '>=4.14.0'
       - dependency-name: 'typescript'
         versions:
           - '>=7.0.0'
