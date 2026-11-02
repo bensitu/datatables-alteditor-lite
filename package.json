@@ -149,6 +149,9 @@
     "typescript-eslint": "8.72.1",
     "vitest": "4.1.12"
   },
+  "overrides": {
+    "minimatch": "11.0.4"
+  },
   "lint-staged": {
     "*.{js,mjs,ts}": [
       "prettier --write",

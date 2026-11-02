@@ -153,6 +153,32 @@ describe('editing configuration', () => {
       resolveEditingOptions({ dialog: { className: 'admin-editor unsafe!' } }),
     ).toThrow('editing.dialog.className is not valid.');
   });
+
+  it.each(['a', '_', '-a', '-_', 'a0-', 'a-b_c', 'a\t_b  -c'])(
+    'preserves valid dialog class names: %s',
+    (className) => {
+      expect(resolveEditingOptions({ dialog: { className } }).dialog.className).toBe(
+        className,
+      );
+    },
+  );
+
+  it.each(['', ' ', '-', '--a', '0a', '-0', 'a!', ' a', 'a '])(
+    'rejects invalid dialog class names: %j',
+    (className) => {
+      expect(() => resolveEditingOptions({ dialog: { className } })).toThrow(
+        'editing.dialog.className is not valid.',
+      );
+    },
+  );
+
+  it('rejects an invalid suffix after a long dialog class name', () => {
+    const className = `${'A'.repeat(100_000)}!`;
+
+    expect(() => resolveEditingOptions({ dialog: { className } })).toThrow(
+      'editing.dialog.className is not valid.',
+    );
+  });
 });
 
 describe('editor button enablement', () => {

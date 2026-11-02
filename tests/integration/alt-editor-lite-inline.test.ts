@@ -1404,6 +1404,51 @@ describe('AltEditorLite hover inline editing', () => {
 });
 
 describe('AltEditorLite inline configuration', () => {
+  it.each(['a', '_', '-a', '-_', 'a0-', 'a-b_c', 'a\t_b  -c'])(
+    'preserves valid inline class names: %s',
+    async (className) => {
+      const { editor } = createInlineEditor({
+        editing: inlineEditing('doubleClick', { className }),
+        fields,
+      });
+
+      await editor.openInlineEdit('#row-a', 0);
+
+      const inlineElement = document.querySelector('.alteditor-lite-inline');
+      for (const token of className.split(/\s+/u)) {
+        expect(inlineElement?.classList.contains(token)).toBe(true);
+      }
+    },
+  );
+
+  it.each(['', ' ', '-', '--a', '0a', '-0', 'a!', ' a', 'a '])(
+    'rejects invalid inline class names: %j',
+    (className) => {
+      const { api } = createTestTable();
+
+      expect(
+        () =>
+          new AltEditorLite<TestRow, InlineValues>(api, {
+            editing: inlineEditing('doubleClick', { className }),
+            fields,
+          }),
+      ).toThrow('editing.inline.className is not valid.');
+    },
+  );
+
+  it('rejects an invalid suffix after a long inline class name', () => {
+    const { api } = createTestTable();
+    const className = `${'A'.repeat(100_000)}!`;
+
+    expect(
+      () =>
+        new AltEditorLite<TestRow, InlineValues>(api, {
+          editing: inlineEditing('doubleClick', { className }),
+          fields,
+        }),
+    ).toThrow('editing.inline.className is not valid.');
+  });
+
   const invalidConfigurations: readonly [string, object, object?][] = [
     ['unknown activation', { editing: uncheckedInlineEditing({}, 'tap'), fields }],
     ['array editing options', { editing: [], fields }],

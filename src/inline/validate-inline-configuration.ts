@@ -12,7 +12,7 @@ const blurActions = new Set(['submit', 'cancel', 'none']);
 const enterActions = new Set(['submit', 'none']);
 const tabActions = new Set(['submit-and-move', 'submit', 'none']);
 const updateModes = new Set(['replace-row', 'refresh']);
-const classTokenPattern = /^-?[_a-zA-Z]+[_a-zA-Z0-9-]*$/u;
+const classTokenPattern = /^-?[_a-zA-Z][_a-zA-Z0-9-]*$/u;
 
 function assertChoice(
   value: unknown,

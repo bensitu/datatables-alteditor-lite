@@ -52,7 +52,7 @@ function assertOptionalObject(value: unknown, propertyName: string): void {
   }
 }
 
-const classTokenPattern = /^-?[_a-zA-Z]+[_a-zA-Z0-9-]*$/u;
+const classTokenPattern = /^-?[_a-zA-Z][_a-zA-Z0-9-]*$/u;
 
 function assertOptionalClassName(value: unknown, propertyName: string): void {
   if (value === undefined) {

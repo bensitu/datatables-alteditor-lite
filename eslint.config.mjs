@@ -1,10 +1,21 @@
 import eslint from '@eslint/js';
 import eslintComments from '@eslint-community/eslint-plugin-eslint-comments';
 import { defineConfig } from 'eslint/config';
-import importX from 'eslint-plugin-import-x';
+import noCycle from 'eslint-plugin-import-x/rules/no-cycle';
+import noDuplicates from 'eslint-plugin-import-x/rules/no-duplicates';
+import importOrder from 'eslint-plugin-import-x/rules/order';
 import tsdoc from 'eslint-plugin-tsdoc';
 import globals from 'globals';
 import typescriptEslint from 'typescript-eslint';
+
+// Load only enabled rules; the plugin entry point imports the removed minimatch makeRe API.
+const importX = {
+  rules: {
+    'no-cycle': noCycle,
+    'no-duplicates': noDuplicates,
+    order: importOrder,
+  },
+};
 
 const restrictedIdentifiers = [
   'common',
