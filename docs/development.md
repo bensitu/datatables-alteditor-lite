@@ -2,7 +2,7 @@
 
 ## Runtime and dependencies
 
-Development supports Node.js 20.19, 22.13, and 24 or newer, as declared in
+Development supports Node.js `^20.19.0 || ^22.13.0 || >=24.0.0`, as declared in
 `package.json`. CI tests the minimum supported Node.js 20 and 22 versions and
 uses Node.js 24 for coverage, browser tests, and release artifacts.
 
@@ -14,32 +14,45 @@ recompute integrity hashes from the exact CDN resources.
 The current compatible toolchain retains:
 
 - @axe-core/playwright 4.13.0: version 4.14 requires Node.js 22.12 or newer.
-- TypeScript 6.0.3: typescript-eslint 8.70 requires TypeScript below 6.1.
-- Vitest and its coverage provider 4.1.11: version 5 requires Node.js 22.12 or newer.
+- TypeScript 6.0.3: typescript-eslint 8.72.1 requires TypeScript below 6.1.
+- Vitest and its coverage provider 4.1.12: version 5 requires Node.js 22.12 or newer.
 - jsdom 29.1.1: version 30 requires Node.js 22.22.2 or newer.
 - commitlint 20.5.3 and lint-staged 16.4.0: their next major versions require Node.js 22.
 - Node.js 20 type declarations, matching the minimum supported runtime family.
 
+The npm override pins minimatch to 11.0.4 to address the glob-pattern amplification
+advisory. The import lint plugin's default entry still imports the removed
+`makeRe` API, so the ESLint configuration loads only its three enabled rules
+through exported rule paths. All configured import checks remain enabled. Review
+the override and rule imports together when upstream tools support minimatch 11.
+
 ### DataTables compatibility
 
-The current development dependency updates include:
+The lockfile resolves the following development versions. The main demo pins the
+same versions for the extensions it loads from the CDN; other extensions are
+exercised by npm-based integration tests.
 
-| Package                                                          | Version | Relevant upstream changes                                                      |
-| ---------------------------------------------------------------- | ------- | ------------------------------------------------------------------------------ |
-| [DataTables](https://cdn.datatables.net/3.0.4/)                  | 3.0.4   | Ajax column sizing, defaults merging, complex header selection and ordering    |
-| [AutoFill](https://cdn.datatables.net/autofill/3.0.1/)           | 3.0.1   | DataTables configuration type declarations                                     |
-| [Buttons](https://cdn.datatables.net/buttons/4.0.3/)             | 4.0.3   | Keyboard activation and language option declarations                           |
-| [ColReorder](https://cdn.datatables.net/colreorder/3.0.2/)       | 3.0.2   | State restoration and configuration declarations                               |
-| [ColumnControl](https://cdn.datatables.net/columncontrol/2.0.2/) | 2.0.2   | Column reordering interaction, dark theme controls and option declarations     |
-| [Responsive](https://cdn.datatables.net/responsive/4.0.3/)       | 4.0.3   | Control column offsets that could hide row data                                |
-| [SearchBuilder](https://cdn.datatables.net/searchbuilder/2.0.1/) | 2.0.1   | Localized date searches, delayed search behavior and DataTables 3 declarations |
+| Package                                                          | Locked npm version | Main demo CDN version |
+| ---------------------------------------------------------------- | ------------------ | --------------------- |
+| [DataTables](https://cdn.datatables.net/3.1.5/)                  | 3.1.5              | 3.1.5                 |
+| [AutoFill](https://cdn.datatables.net/autofill/3.1.3/)           | 3.1.3              | Not loaded            |
+| [Buttons](https://cdn.datatables.net/buttons/4.1.3/)             | 4.1.3              | 4.1.3                 |
+| [ColReorder](https://cdn.datatables.net/colreorder/3.1.2/)       | 3.1.2              | 3.1.2                 |
+| [ColumnControl](https://cdn.datatables.net/columncontrol/2.1.3/) | 2.1.3              | Not loaded            |
+| [FixedHeader](https://cdn.datatables.net/fixedheader/5.1.2/)     | 5.1.2              | Not loaded            |
+| [KeyTable](https://cdn.datatables.net/keytable/3.1.2/)           | 3.1.2              | 3.1.2                 |
+| [Responsive](https://cdn.datatables.net/responsive/4.1.1/)       | 4.1.1              | Not loaded            |
+| [RowReorder](https://cdn.datatables.net/rowreorder/2.1.1/)       | 2.1.1              | Not loaded            |
+| [Scroller](https://cdn.datatables.net/scroller/3.1.1/)           | 3.1.1              | Not loaded            |
+| [SearchBuilder](https://cdn.datatables.net/searchbuilder/2.1.1/) | 2.1.1              | Not loaded            |
+| [Select](https://cdn.datatables.net/select/4.1.1/)               | 4.1.1              | 4.1.1                 |
 
 Existing integration tests exercise installed extensions, host record updates,
 selection and redraw behavior. Browser tests exercise keyboard editing and
 column reordering against the demonstration's CDN resources. Browser test workers
-reuse downloaded versioned resources and retry interrupted transfers up to twice;
-resource contents and page integrity checks remain unchanged. Public peer ranges
-remain unchanged.
+reuse downloaded versioned resources and retry interrupted transfers up to twice
+without altering their contents. Recompute page integrity hashes whenever CDN
+versions change. Public peer ranges remain unchanged.
 
 ## Internal responsibilities
 

@@ -384,20 +384,20 @@ scripts before the AltEditorLite browser bundle:
 <!-- prettier-ignore -->
 ```html
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/umd/alt-editor-lite.min.css" />
-<script src="https://cdn.datatables.net/3.0.2/js/dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/4.0.2/js/dataTables.buttons.min.js"></script>
-<script src="https://cdn.datatables.net/select/4.0.1/js/dataTables.select.min.js"></script>
+<script src="https://cdn.datatables.net/3.1.5/js/dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/4.1.3/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/select/4.1.1/js/dataTables.select.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/umd/alt-editor-lite.min.js"></script>
 ```
 
 The neutral editor, DataTables adapters, and `StandaloneHost` are available at
 `globalThis.AltEditorLite`. The main browser bundle requires DataTables
 to load first. Use `AltEditorLite.Editor` for the DataTables constructor and
-`AltEditorLite.AltEditorLite` for the neutral constructor. A separate
+`AltEditorLite.AltEditorLite` for the neutral constructor. Separate
 `alt-editor-lite-standalone.js` and `alt-editor-lite-standalone.min.js` bundles
 expose the neutral editor and `StandaloneHost` through
 `globalThis.AltEditorLiteStandalone` without requiring DataTables.
-Included language registration bundles load after the main DataTables bundle;
+Included language registration bundles load after the AltEditorLite browser bundle;
 external JSON languages use
 `AltEditorLite.loadEditorLanguage(...)`.
 

@@ -2,15 +2,12 @@
 
 <!-- prettier-ignore -->
 ```html
-<link
-  rel="stylesheet"
-  href="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/umd/alt-editor-lite.min.css"
-/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/umd/alt-editor-lite.min.css" />
 <script src="dataTables.js"></script>
 <script src="dataTables.buttons.js"></script>
 <script src="dataTables.select.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/umd/alt-editor-lite.min.js"></script>
-<script src="app.js"></script>
+<script type="module" src="app.js"></script>
 ```
 
 ```js

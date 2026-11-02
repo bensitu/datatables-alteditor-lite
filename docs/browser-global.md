@@ -18,7 +18,7 @@ from jsDelivr:
     <title>AltEditorLite quick start</title>
     <link
       rel="stylesheet"
-      href="https://cdn.datatables.net/v/dt/dt-3.0.4/datatables.min.css"
+      href="https://cdn.datatables.net/v/dt/dt-3.1.5/datatables.min.css"
     />
     <link
       rel="stylesheet"
@@ -36,7 +36,7 @@ from jsDelivr:
       </thead>
     </table>
 
-    <script src="https://cdn.datatables.net/v/dt/dt-3.0.4/datatables.min.js"></script>
+    <script src="https://cdn.datatables.net/v/dt/dt-3.1.5/datatables.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/datatables-alteditor-lite/dist/umd/alt-editor-lite.min.js"></script>
     <script>
       const table = new DataTable('#users', {
@@ -90,8 +90,8 @@ The unversioned jsDelivr URLs follow the latest package. Pin the same
 compatible DataTables build through the
 [DataTables download builder](https://datatables.net/download/) when Buttons,
 Select, KeyTable, ColReorder, or another extension is needed. Load optional
-extensions before the AltEditorLite browser bundle; hover keyboard and live
-reorder support are detected at runtime. For externally hosted production assets, add
+extensions before the AltEditorLite browser bundle; focused-cell keyboard
+activation and live reorder support are detected at runtime. For externally hosted production assets, add
 independently verified Subresource Integrity metadata and
 `crossorigin="anonymous"`, or self-host the exact files.
 

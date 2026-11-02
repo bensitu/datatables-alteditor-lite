@@ -37,22 +37,28 @@ collected from fields and defaults to `DeepPartial<TRow>`. `TTarget` is the opaq
 identity understood by the Host. Only one active editor may own a Host's
 `ownershipKey`.
 
-| Method                          | Result                            | Description                                                                  |
-| ------------------------------- | --------------------------------- | ---------------------------------------------------------------------------- |
-| `openCreateDialog(values?)`     | `Promise<void>`                   | Opens Create with optional typed initial values.                             |
-| `openEditDialog(target?)`       | `Promise<void>`                   | Opens Edit for one explicit or Host-selected target.                         |
-| `openBatchEditDialog(targets?)` | `Promise<void>`                   | Opens Edit for at least two distinct explicit or Host-selected targets.      |
-| `openRemoveDialog(targets?)`    | `Promise<void>`                   | Opens confirmation for distinct explicit or Host-selected targets.           |
-| `openInlineEdit(target)`        | `Promise<void>`                   | Opens an inline target created by a Host that supports inline presentation.  |
-| `submitInlineEdit()`            | `Promise<void>`                   | Validates and submits the active inline value.                               |
-| `cancelInlineEdit()`            | `Promise<void>`                   | Cancels the active inline presentation.                                      |
-| `getInlineState()`              | `Readonly<InlineEditState>`       | Returns host-neutral inline lifecycle state.                                 |
-| `isInlineEditing()`             | `boolean`                         | Reports whether inline work is active.                                       |
-| `refresh()`                     | `Promise<void>`                   | Runs application refresh and the configured Host refresh behavior.           |
-| `closeDialog()`                 | `Promise<void>`                   | Requests dismissal, cancels pending opening, or rejects while submitting.    |
-| `getField<TValue>(name)`        | `FieldController<TValue> \| null` | Returns a rendered field while a form is open.                               |
-| `getState()`                    | `Readonly<EditorState>`           | Returns the current dialog and API lifecycle state.                          |
-| `destroy()`                     | `void`                            | Releases operations, presentation, listeners, Host resources, and ownership. |
+| Method                          | Result                           | Description                                                                  |
+| ------------------------------- | -------------------------------- | ---------------------------------------------------------------------------- |
+| `openCreateDialog(values?)`     | `Promise<void>`                  | Opens Create with optional typed initial values.                             |
+| `openEditDialog(target?)`       | `Promise<void>`                  | Opens Edit for one explicit or Host-selected target.                         |
+| `openBatchEditDialog(targets?)` | `Promise<void>`                  | Opens Edit for at least two distinct explicit or Host-selected targets.      |
+| `openRemoveDialog(targets?)`    | `Promise<void>`                  | Opens confirmation for distinct explicit or Host-selected targets.           |
+| `openInlineEdit(target)`        | `Promise<void>`                  | Opens an inline target created by a Host that supports inline presentation.  |
+| `submitInlineEdit()`            | `Promise<void>`                  | Validates and submits the active inline value.                               |
+| `cancelInlineEdit()`            | `Promise<void>`                  | Cancels the active inline presentation.                                      |
+| `getInlineState()`              | `Readonly<InlineEditState>`      | Returns host-neutral inline lifecycle state.                                 |
+| `isInlineEditing()`             | `boolean`                        | Reports whether inline work is active.                                       |
+| `refresh()`                     | `Promise<void>`                  | Runs application refresh when configured, otherwise the Host fallback.       |
+| `closeDialog()`                 | `Promise<void>`                  | Requests dismissal, cancels pending opening, or rejects while submitting.    |
+| `getField(name)`                | Typed field controller or `null` | Infers the value type from a rendered Dialog field's safe path.              |
+| `getState()`                    | `Readonly<EditorState>`          | Returns the current dialog and API lifecycle state.                          |
+| `destroy()`                     | `void`                           | Releases operations, presentation, listeners, Host resources, and ownership. |
+
+`getField<TPath extends FieldPath<TFormValues>>(name)` returns
+`FieldController<FieldPathValue<TFormValues, TPath>> | null`. The generic parameter
+is the field path, and the controller's value type is inferred from that path.
+It returns `null` when there is no active Dialog form or the field is not rendered;
+it does not retrieve Inline controls.
 
 Methods that cannot run in the current state reject or throw a typed
 `AltEditorLiteError`. `destroy()` is idempotent; other methods are unavailable
@@ -248,12 +254,12 @@ operation, `reason`, `dirty`, and an owned `signal`.
 interface EditorOperations<TRow extends object, TFormValues extends object> {
   create?(
     values: Readonly<EditorValues<TFormValues>>,
-    context: OperationContext,
+    context: CreateOperationContext,
   ): TRow | Promise<TRow>;
   update?(
     values: Readonly<EditorValues<TFormValues>>,
     original: Readonly<TRow>,
-    context: OperationContext,
+    context: EditOperationContext,
   ): TRow | Promise<TRow>;
   updateMany?(
     changes: Readonly<BatchChanges<TFormValues>>,
@@ -262,9 +268,9 @@ interface EditorOperations<TRow extends object, TFormValues extends object> {
   ): readonly TRow[] | Promise<readonly TRow[]>;
   remove?(
     rows: readonly Readonly<TRow>[],
-    context: OperationContext,
+    context: RemoveOperationContext,
   ): void | Promise<void>;
-  refresh?(context: OperationContext): void | Promise<void>;
+  refresh?(context: RefreshOperationContext): void | Promise<void>;
 }
 ```
 
