@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.2] - 2026-11-03
+
+### Changed
+
+- Updated DataTables and extension development packages and aligned demonstration
+  CDN assets with the lockfile, within the existing peer dependency ranges.
+- Updated build, lint, formatting, and test tools while retaining Node.js 20.19
+  and 22.13 support. Kept accessibility tests on @axe-core/playwright 4.13.0 and
+  excluded updates that require a newer Node.js runtime.
+- Loaded the configured import lint rules individually for minimatch 11
+  compatibility without changing the enabled rules.
+- Corrected API signatures, development tool versions, and Browser Global setup
+  examples in the documentation.
+
+### Security
+
+- Removed polynomial regular expression backtracking from Dialog and Inline
+  class-name validation while preserving accepted class names. Added regression
+  coverage for valid, invalid, and long adversarial inputs.
+- Patched development dependency vulnerabilities with fast-uri 3.1.9,
+  source-map-js 1.2.2, and undici 7.30.1.
+- Pinned transitive minimatch dependencies to 11.0.4 through npm overrides to
+  address glob-pattern amplification before upstream tools adopt the fixed major
+  version.
+- Updated the demonstration's DataTables runtime to include upstream prototype
+  pollution fixes.
+
 ## [0.9.1] - 2026-09-17
 
 ### Fixed
