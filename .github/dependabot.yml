@@ -21,37 +21,27 @@ updates:
       timezone: 'Asia/Tokyo'
     open-pull-requests-limit: 10
     ignore:
-      - dependency-name: '@axe-core/playwright'
-        versions:
-          - '>=4.14.0'
+      # TypeScript 7 is outside the current typescript-eslint peer range.
       - dependency-name: 'typescript'
         versions:
           - '>=7.0.0'
-      - dependency-name: 'jsdom'
-        versions:
-          - '>=30.0.0'
-      - dependency-name: '@types/jsdom'
-        versions:
-          - '>=30.0.0'
+      # Check against the types for the lowest supported Node.js major.
       - dependency-name: '@types/node'
         versions:
-          - '>=21.0.0'
-      - dependency-name: 'vitest'
-        versions:
-          - '>=5.0.0'
-      - dependency-name: '@vitest/coverage-v8'
-        versions:
-          - '>=5.0.0'
-      - dependency-name: '@commitlint/cli'
-        versions:
-          - '>=21.0.0'
-      - dependency-name: '@commitlint/config-conventional'
-        versions:
-          - '>=21.0.0'
-      - dependency-name: 'lint-staged'
-        versions:
-          - '>=17.0.0'
+          - '>=23.0.0'
     groups:
+      vitest:
+        patterns:
+          - 'vitest'
+          - '@vitest/coverage-v8'
+      commitlint:
+        patterns:
+          - '@commitlint/cli'
+          - '@commitlint/config-conventional'
+      stylelint:
+        patterns:
+          - 'stylelint'
+          - 'stylelint-config-standard'
       npm-development-minor-and-patch:
         dependency-type: 'development'
         update-types:
