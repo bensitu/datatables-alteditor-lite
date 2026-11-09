@@ -2,23 +2,14 @@
 
 ## Runtime and dependencies
 
-Development supports Node.js `^20.19.0 || ^22.13.0 || >=24.0.0`, as declared in
-`package.json`. CI tests the minimum supported Node.js 20 and 22 versions and
-uses Node.js 24 for coverage, browser tests, and release artifacts.
+Development and npm installation use Node.js `^22.22.2 || ^24.15.0 || >=26.0.0`,
+as declared in `package.json`. CI tests the minimum supported Node.js 22 and 24
+versions and uses the current Node.js 24 release for coverage and browser tests.
 
 Run `npm outdated` before updating dependencies. Check both the package's Node.js
 engine requirement and the peer requirements of the complete toolchain.
 Keep the lockfile and demonstration CDN versions aligned with dependency changes;
 recompute integrity hashes from the exact CDN resources.
-
-The current compatible toolchain retains:
-
-- @axe-core/playwright 4.13.0: version 4.14 requires Node.js 22.12 or newer.
-- TypeScript 6.0.3: typescript-eslint 8.72.1 requires TypeScript below 6.1.
-- Vitest and its coverage provider 4.1.12: version 5 requires Node.js 22.12 or newer.
-- jsdom 29.1.1: version 30 requires Node.js 22.22.2 or newer.
-- commitlint 20.5.3 and lint-staged 16.4.0: their next major versions require Node.js 22.
-- Node.js 20 type declarations, matching the minimum supported runtime family.
 
 The npm override pins minimatch to 11.0.4 to address the glob-pattern amplification
 advisory. The import lint plugin's default entry still imports the removed

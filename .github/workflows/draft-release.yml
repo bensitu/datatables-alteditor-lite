@@ -102,7 +102,7 @@ jobs:
             exit 1
           fi
 
-          npm pack
+          npm pack --ignore-scripts
 
           if [[ ! -f "${PACKAGE_TARBALL}" ]]; then
             echo "npm pack did not produce the expected package artifact." >&2

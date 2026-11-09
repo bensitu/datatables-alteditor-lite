@@ -26,7 +26,7 @@
   "type": "module",
   "license": "MIT",
   "engines": {
-    "node": "^20.19.0 || ^22.13.0 || >=24.0.0"
+    "node": "^22.22.2 || ^24.15.0 || >=26.0.0"
   },
   "sideEffects": [
     "./dist/umd/alt-editor-lite.css",
@@ -118,7 +118,7 @@
     "@eslint/js": "10.0.1",
     "@playwright/test": "1.64.1",
     "@types/jquery": "4.0.1",
-    "@types/node": "^20.19.43",
+    "@types/node": "^22.20.5",
     "@vitest/coverage-v8": "4.1.12",
     "datatables.net": "^3.0.4",
     "datatables.net-autofill": "^3.0.1",
@@ -142,8 +142,8 @@
     "lint-staged": "16.4.0",
     "prettier": "3.9.10",
     "rolldown": "^1.2.8",
-    "stylelint": "17.16.0",
-    "stylelint-config-standard": "40.0.0",
+    "stylelint": "18.0.0",
+    "stylelint-config-standard": "41.0.0",
     "tsd": "0.33.0",
     "typescript": "6.0.3",
     "typescript-eslint": "8.72.1",

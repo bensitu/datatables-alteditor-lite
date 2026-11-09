@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- Raised the minimum Node.js versions for development and npm installation to
+  22.22.2 on Node.js 22 and 24.15.0 on Node.js 24, with support for Node.js 26 or
+  newer. Updated Stylelint to 18 and its standard configuration to 41.
+
 ## [0.9.2] - 2026-11-03
 
 ### Changed
