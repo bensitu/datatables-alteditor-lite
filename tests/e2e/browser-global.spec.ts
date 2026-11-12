@@ -1,3 +1,4 @@
+import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -6,6 +7,16 @@ import { expect, test } from '@playwright/test';
 
 const testDirectory = dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = resolve(testDirectory, '../..');
+const localeDirectory = resolve(repositoryRoot, 'src/locales');
+const bundledLanguages = readdirSync(localeDirectory)
+  .filter((fileName) => fileName.endsWith('.json'))
+  .sort()
+  .map((fileName) => ({
+    name: fileName.slice(0, -'.json'.length),
+    language: JSON.parse(readFileSync(resolve(localeDirectory, fileName), 'utf8')) as {
+      readonly locale: string;
+    },
+  }));
 const dataTablesScriptPath = resolve(
   repositoryRoot,
   'node_modules/datatables.net/js/dataTables.js',
@@ -300,8 +311,11 @@ test('requires the main browser bundle before a language bundle', async ({ page 
   );
 });
 
-test('registers locale bundles through the public core registry', async ({ page }) => {
-  await page.setContent(`
+for (const suffix of ['', '.min']) {
+  test(`registers all ${suffix === '' ? 'unminified' : 'minified'} locale bundles through the public core registry`, async ({
+    page,
+  }) => {
+    await page.setContent(`
     <!doctype html>
     <html>
       <body>
@@ -309,47 +323,59 @@ test('registers locale bundles through the public core registry', async ({ page 
       </body>
     </html>
   `);
-  await page.addScriptTag({ path: dataTablesScriptPath });
-  await page.addScriptTag({ path: browserBundlePath });
-  await page.addScriptTag({ path: japaneseLocaleBundlePath });
-
-  const localeState = await page.evaluate(() => {
-    const runtimeScope = globalThis as typeof globalThis & {
-      AltEditorLite?: {
-        getLocale(localeName: string):
-          | {
-              readonly actions: { readonly create: string };
-              readonly locale: string;
-            }
-          | undefined;
-        getRegisteredLocaleNames(): readonly string[];
-        registerLocale(localeName: string, language: object): void;
-      };
-    };
-    const localeApi = runtimeScope.AltEditorLite;
-    if (localeApi === undefined) {
-      throw new Error('Expected the AltEditorLite Browser Global.');
+    await page.addScriptTag({ path: dataTablesScriptPath });
+    await page.addScriptTag({ path: browserBundlePath });
+    for (const { name } of bundledLanguages) {
+      await page.addScriptTag({
+        path: resolve(
+          repositoryRoot,
+          `dist/umd/locales/alt-editor-lite.${name}${suffix}.js`,
+        ),
+      });
     }
 
-    const japaneseLanguage = localeApi.getLocale('ja');
-    return {
-      createLabel: japaneseLanguage?.actions.create,
-      hasJQuery: 'jQuery' in globalThis,
-      locale: japaneseLanguage?.locale,
-      names: localeApi.getRegisteredLocaleNames(),
-      registryApiTypes: [
-        typeof localeApi.getLocale,
-        typeof localeApi.getRegisteredLocaleNames,
-        typeof localeApi.registerLocale,
-      ],
-    };
-  });
+    const localeState = await page.evaluate((languages) => {
+      const runtimeScope = globalThis as typeof globalThis & {
+        AltEditorLite?: {
+          getLocale(localeName: string):
+            | {
+                readonly actions: { readonly create: string };
+                readonly locale: string;
+              }
+            | undefined;
+          getRegisteredLocaleNames(): readonly string[];
+          registerLocale(localeName: string, language: object): void;
+        };
+      };
+      const localeApi = runtimeScope.AltEditorLite;
+      if (localeApi === undefined) {
+        throw new Error('Expected the AltEditorLite Browser Global.');
+      }
 
-  expect(localeState).toEqual({
-    createLabel: '新規',
-    hasJQuery: false,
-    locale: 'ja',
-    names: ['en', 'ja'],
-    registryApiTypes: ['function', 'function', 'function'],
+      return {
+        languages: languages.map(({ language }) =>
+          localeApi.getLocale(language.locale.toUpperCase()),
+        ),
+        hasJQuery: 'jQuery' in globalThis,
+        names: localeApi.getRegisteredLocaleNames(),
+        registryApiTypes: [
+          typeof localeApi.getLocale,
+          typeof localeApi.getRegisteredLocaleNames,
+          typeof localeApi.registerLocale,
+        ],
+      };
+    }, bundledLanguages);
+
+    expect(localeState).toEqual({
+      languages: bundledLanguages.map(({ language }) => language),
+      hasJQuery: false,
+      names: [
+        'en',
+        ...bundledLanguages
+          .filter(({ name }) => name !== 'en')
+          .map(({ language }) => language.locale),
+      ],
+      registryApiTypes: ['function', 'function', 'function'],
+    });
   });
-});
+}

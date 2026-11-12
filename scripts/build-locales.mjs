@@ -110,7 +110,7 @@ await Promise.all(
   localeFileNames.flatMap((fileName) => {
     const localeName = fileName.slice(0, -'.json'.length);
     const exportName = localeExportName(fileName);
-    const declaration = `import type { AltEditorLiteLanguage } from '../../core/alt-editor-lite-language.js';
+    const declaration = `import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 
 declare const language: Readonly<AltEditorLiteLanguage>;
 

@@ -4,6 +4,7 @@ import {
   mkdtemp,
   mkdir,
   readFile,
+  readdir,
   realpath,
   rm,
   writeFile,
@@ -22,6 +23,16 @@ if (npmExecutable === undefined) {
   );
 }
 const temporaryRoot = await mkdtemp(join(tmpdir(), 'datatables-alteditor-lite-package-'));
+const localeDirectory = resolve(projectRoot, 'src/locales');
+const localeFileNames = (await readdir(localeDirectory))
+  .filter((fileName) => fileName.endsWith('.json'))
+  .sort();
+const localeResources = await Promise.all(
+  localeFileNames.map(async (fileName) => ({
+    name: fileName.slice(0, -'.json'.length),
+    language: JSON.parse(await readFile(join(localeDirectory, fileName), 'utf8')),
+  })),
+);
 
 function run(command, arguments_, workingDirectory) {
   execFileSync(command, arguments_, {
@@ -114,10 +125,21 @@ try {
   await writeFile(
     runtimeEntry,
     `
+      import assert from 'node:assert/strict';
       import { AltEditorLite } from 'datatables-alteditor-lite';
       import { StandaloneHost } from 'datatables-alteditor-lite/standalone';
       if (typeof AltEditorLite !== 'function' || typeof StandaloneHost !== 'function') {
         throw new Error('Neutral runtime exports are unavailable.');
+      }
+      for (const { name, language } of ${JSON.stringify(localeResources)}) {
+        const module = await import('datatables-alteditor-lite/locales/' + name);
+        const json = await import('datatables-alteditor-lite/locales/' + name + '.json', {
+          with: { type: 'json' },
+        });
+        const exportName = name.replaceAll(/-([a-z0-9])/gu, (_, character) => character.toUpperCase());
+        assert.deepEqual(module.default, language);
+        assert.equal(module[exportName], module.default);
+        assert.deepEqual(json.default, language);
       }
     `,
   );
@@ -128,6 +150,16 @@ try {
     `
       import { AltEditorLite, type EditorHost } from 'datatables-alteditor-lite';
       import { StandaloneHost } from 'datatables-alteditor-lite/standalone';
+      import type { AltEditorLiteLanguage } from 'datatables-alteditor-lite';
+      ${localeResources
+        .map(({ name }, index) => {
+          const exportName = name.replaceAll(/-([a-z0-9])/gu, (_match, character) =>
+            character.toUpperCase(),
+          );
+          return `import language${index}, { ${exportName} as namedLanguage${index} } from 'datatables-alteditor-lite/locales/${name}';
+            const translations${index}: readonly Readonly<AltEditorLiteLanguage>[] = [language${index}, namedLanguage${index}];`;
+        })
+        .join('\n')}
       interface Row { readonly id: string; readonly name: string }
       const record: Row = { id: 'record', name: 'Example' };
       const host: EditorHost<Row, string> = new StandaloneHost({ read: () => record });
