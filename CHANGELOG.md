@@ -5,13 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.10.0] - 2026-11-16
+
+### Added
+
+- Bundled complete German (`de-DE`), French (`fr-FR`), Italian (`it`), Korean
+  (`ko`), Dutch (`nl-NL`), Brazilian Portuguese (`pt-BR`), Russian (`ru`), Turkish
+  (`tr`), and Ukrainian (`uk`) translations in JSON, ESM, and Browser Global
+  formats. Added the languages to the demo and documentation (issue #19).
+- Language checks discover all bundled resources and verify their complete message
+  sets, placeholders, canonical locale identifiers, and published outputs.
 
 ### Changed
 
 - Raised the minimum Node.js versions for development and npm installation to
   22.22.2 on Node.js 22 and 24.15.0 on Node.js 24, with support for Node.js 26 or
-  newer. Updated Stylelint to 18 and its standard configuration to 41.
+  newer. Updated Stylelint to 18 and its standard configuration to 41 together,
+  satisfying the paired upgrades in PRs #17 and #18.
+- Made Spanish instructions more precise and consistent with the existing informal
+  wording. Kept the shared `es` resource without a separate `es-ES` variant.
+
+### Fixed
+
+- Corrected the generated locale declarations' relative type import so packaged
+  ESM language modules compile in TypeScript consumer applications.
 
 ## [0.9.2] - 2026-11-03
 
