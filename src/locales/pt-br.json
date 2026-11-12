@@ -1,0 +1,76 @@
+{
+  "locale": "pt-BR",
+  "actions": {
+    "create": "Criar",
+    "edit": "Editar",
+    "remove": "Remover",
+    "refresh": "Atualizar",
+    "submit": "Salvar",
+    "cancel": "Cancelar",
+    "close": "Fechar"
+  },
+  "dialog": {
+    "createTitle": "Criar linha",
+    "editTitle": "Editar linha",
+    "batchEditTitle": "Editar várias linhas",
+    "removeTitle": "Remover linhas",
+    "removeCount": "Linhas selecionadas: {count}.",
+    "removeMessage": "Confirme a remoção das linhas selecionadas."
+  },
+  "buttons": {
+    "createUnavailable": "Configure uma operação de criação para habilitar esta ação.",
+    "selectUnavailable": "Esta ação requer o DataTables Select.",
+    "busy": "O editor está ocupado.",
+    "editSelection": "Selecione uma ou mais linhas para editar.",
+    "batchEditUnavailable": "A edição de várias linhas não está disponível para esta seleção.",
+    "removeSelection": "Selecione uma ou mais linhas para remover.",
+    "initialize": "Inicialize o AltEditorLite para usar esta ação."
+  },
+  "validation": {
+    "required": "Este campo é obrigatório.",
+    "invalid": "Insira um valor válido.",
+    "unique": "O mesmo valor já existe nos dados da tabela carregados no momento."
+  },
+  "batchEdit": {
+    "commonValue": "Valor comum",
+    "multipleValues": "Vários valores",
+    "setCommonValue": "Definir um valor comum",
+    "restoreIndividualValues": "Restaurar valores individuais",
+    "uniqueRestriction": "Não é possível atribuir o mesmo valor a campos únicos de vários registros.",
+    "fileRestriction": "Não é possível alterar os arquivos enviados ao editar várias linhas.",
+    "validationInvalid": "Revise as alterações das linhas selecionadas.",
+    "selectionRequired": "Selecione pelo menos duas linhas para editar em conjunto."
+  },
+  "searchSelect": {
+    "placeholder": "Selecione uma opção",
+    "searchPlaceholder": "Pesquisar opções",
+    "noResults": "Nenhuma opção correspondente",
+    "clear": "Limpar seleção",
+    "loading": "Carregando opções…",
+    "loadError": "Não foi possível carregar as opções. Faça uma nova pesquisa para tentar novamente.",
+    "searchTooShort": "Insira pelo menos {count} caracteres para pesquisar."
+  },
+  "accessibility": {
+    "searchSelectInstructions": "Use as teclas de seta para navegar pelas opções.",
+    "searchSelectResults": "Opções disponíveis: {count}.",
+    "searchSelectSelection": "Seleção: {label}."
+  },
+  "inline": {
+    "editCell": "Editar célula",
+    "unavailable": "A edição em linha não está disponível para esta célula.",
+    "unsupportedField": "Este campo não oferece suporte à edição em linha.",
+    "targetUnavailable": "A célula em edição não está mais disponível."
+  },
+  "alert": {
+    "validationTitle": "Verifique o valor",
+    "operationTitle": "Não foi possível concluir a edição"
+  },
+  "errors": {
+    "generic": "Não foi possível concluir a operação.",
+    "fileCount": "Foram selecionados arquivos demais.",
+    "fileSize": "Um arquivo selecionado é muito grande.",
+    "selectionRequired": "Selecione pelo menos uma linha.",
+    "singleSelectionRequired": "Selecione exatamente uma linha.",
+    "targetUnavailable": "A linha selecionada não está mais disponível."
+  }
+}

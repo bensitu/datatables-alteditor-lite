@@ -1,0 +1,76 @@
+{
+  "locale": "de-DE",
+  "actions": {
+    "create": "Erstellen",
+    "edit": "Bearbeiten",
+    "remove": "Entfernen",
+    "refresh": "Aktualisieren",
+    "submit": "Speichern",
+    "cancel": "Abbrechen",
+    "close": "Schließen"
+  },
+  "dialog": {
+    "createTitle": "Zeile erstellen",
+    "editTitle": "Zeile bearbeiten",
+    "batchEditTitle": "Mehrere Zeilen bearbeiten",
+    "removeTitle": "Zeilen entfernen",
+    "removeCount": "Ausgewählte Zeilen: {count}.",
+    "removeMessage": "Bestätigen Sie, dass die ausgewählten Zeilen entfernt werden sollen."
+  },
+  "buttons": {
+    "createUnavailable": "Konfigurieren Sie einen Erstellungsvorgang, um diese Aktion zu aktivieren.",
+    "selectUnavailable": "Für diese Aktion ist DataTables Select erforderlich.",
+    "busy": "Der Editor ist beschäftigt.",
+    "editSelection": "Wählen Sie eine oder mehrere Zeilen zum Bearbeiten aus.",
+    "batchEditUnavailable": "Die Bearbeitung mehrerer Zeilen ist für diese Auswahl nicht verfügbar.",
+    "removeSelection": "Wählen Sie eine oder mehrere Zeilen zum Entfernen aus.",
+    "initialize": "Initialisieren Sie AltEditorLite, um diese Aktion zu verwenden."
+  },
+  "validation": {
+    "required": "Dieses Feld ist erforderlich.",
+    "invalid": "Geben Sie einen gültigen Wert ein.",
+    "unique": "Dieser Wert ist bereits in den aktuell geladenen Tabellendaten vorhanden."
+  },
+  "batchEdit": {
+    "commonValue": "Gemeinsamer Wert",
+    "multipleValues": "Mehrere Werte",
+    "setCommonValue": "Gemeinsamen Wert festlegen",
+    "restoreIndividualValues": "Individuelle Werte wiederherstellen",
+    "uniqueRestriction": "Feldern mit eindeutigen Werten kann nicht derselbe Wert für mehrere Datensätze zugewiesen werden.",
+    "fileRestriction": "Dateiuploads können beim Bearbeiten mehrerer Zeilen nicht geändert werden.",
+    "validationInvalid": "Überprüfen Sie die Änderungen für die ausgewählten Zeilen.",
+    "selectionRequired": "Wählen Sie mindestens zwei Zeilen aus, um sie gemeinsam zu bearbeiten."
+  },
+  "searchSelect": {
+    "placeholder": "Option auswählen",
+    "searchPlaceholder": "Optionen suchen",
+    "noResults": "Keine passenden Optionen",
+    "clear": "Auswahl aufheben",
+    "loading": "Optionen werden geladen…",
+    "loadError": "Die Optionen konnten nicht geladen werden. Starten Sie eine neue Suche, um es erneut zu versuchen.",
+    "searchTooShort": "Geben Sie mindestens {count} Zeichen für die Suche ein."
+  },
+  "accessibility": {
+    "searchSelectInstructions": "Verwenden Sie die Pfeiltasten, um durch die Optionen zu navigieren.",
+    "searchSelectResults": "Verfügbare Optionen: {count}.",
+    "searchSelectSelection": "{label} ausgewählt."
+  },
+  "inline": {
+    "editCell": "Zelle bearbeiten",
+    "unavailable": "Die Inline-Bearbeitung ist für diese Zelle nicht verfügbar.",
+    "unsupportedField": "Dieses Feld unterstützt keine Inline-Bearbeitung.",
+    "targetUnavailable": "Die bearbeitete Zelle ist nicht mehr verfügbar."
+  },
+  "alert": {
+    "validationTitle": "Wert überprüfen",
+    "operationTitle": "Die Bearbeitung konnte nicht abgeschlossen werden"
+  },
+  "errors": {
+    "generic": "Der Vorgang konnte nicht abgeschlossen werden.",
+    "fileCount": "Es wurden zu viele Dateien ausgewählt.",
+    "fileSize": "Eine ausgewählte Datei ist zu groß.",
+    "selectionRequired": "Wählen Sie mindestens eine Zeile aus.",
+    "singleSelectionRequired": "Wählen Sie genau eine Zeile aus.",
+    "targetUnavailable": "Die ausgewählte Zeile ist nicht mehr verfügbar."
+  }
+}

@@ -1,3 +1,6 @@
+import { readFileSync, readdirSync } from 'node:fs';
+import { resolve } from 'node:path';
+
 import { describe, expect, it, vi } from 'vitest';
 
 import { EditorConfigurationError } from '../../src/core/alt-editor-lite-error.js';
@@ -21,6 +24,17 @@ import {
 import { SearchSelect } from '../../src/search-select/search-select.js';
 
 import type { AltEditorLiteLanguage } from '../../src/core/alt-editor-lite-language.js';
+
+const localeDirectory = resolve(import.meta.dirname, '../../src/locales');
+const bundledLanguages = readdirSync(localeDirectory)
+  .filter((fileName) => fileName.endsWith('.json'))
+  .sort()
+  .map((fileName) => ({
+    fileName,
+    language: JSON.parse(
+      readFileSync(resolve(localeDirectory, fileName), 'utf8'),
+    ) as AltEditorLiteLanguage,
+  }));
 
 interface Deferred<TValue> {
   readonly promise: Promise<TValue>;
@@ -526,22 +540,28 @@ describe('SearchSelect remote request ownership', () => {
 });
 
 describe('locale data', () => {
-  it('keeps exact keys, placeholder tokens, and non-empty reviewed text', () => {
-    const englishLeaves = languageLeaves(ENGLISH_LANGUAGE);
-
-    for (const locale of [ja, zhCn, es]) {
-      const localeLeaves = languageLeaves(locale);
-      expect([...localeLeaves.keys()]).toEqual([...englishLeaves.keys()]);
+  it.each(bundledLanguages)(
+    'validates every message in $fileName',
+    ({ fileName, language }) => {
+      const englishLeaves = languageLeaves(ENGLISH_LANGUAGE);
+      const localeLeaves = languageLeaves(language);
+      expect([...localeLeaves.keys()].sort()).toEqual([...englishLeaves.keys()].sort());
+      expect(Intl.getCanonicalLocales(language.locale)).toEqual([language.locale]);
+      expect(`${language.locale.toLowerCase()}.json`).toBe(fileName);
 
       for (const [key, englishMessage] of englishLeaves) {
         const translatedMessage = localeLeaves.get(key);
-        expect(translatedMessage?.trim().length).toBeGreaterThan(0);
-        expect(messageTokens(translatedMessage ?? '')).toEqual(
-          messageTokens(englishMessage),
+        expect(translatedMessage?.trim().length, key).toBeGreaterThan(0);
+        expect([...messageTokens(translatedMessage ?? '')].sort(), key).toEqual(
+          [...messageTokens(englishMessage)].sort(),
         );
       }
-    }
-  });
+      expect(resolveLanguage(language)).toEqual(language);
+      const registeredLanguage = registerLocale(language);
+      expect(getLocale(language.locale.toUpperCase())).toBe(registeredLanguage);
+      expect(registeredLanguage).toEqual(language);
+    },
+  );
 
   it('deep-merges partial language overrides over English', () => {
     const resolvedLanguage = resolveLanguage({

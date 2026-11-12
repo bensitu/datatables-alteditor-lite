@@ -1,0 +1,76 @@
+{
+  "locale": "nl-NL",
+  "actions": {
+    "create": "Aanmaken",
+    "edit": "Bewerken",
+    "remove": "Verwijderen",
+    "refresh": "Vernieuwen",
+    "submit": "Opslaan",
+    "cancel": "Annuleren",
+    "close": "Sluiten"
+  },
+  "dialog": {
+    "createTitle": "Rij aanmaken",
+    "editTitle": "Rij bewerken",
+    "batchEditTitle": "Meerdere rijen bewerken",
+    "removeTitle": "Rijen verwijderen",
+    "removeCount": "Geselecteerde rijen: {count}.",
+    "removeMessage": "Bevestig dat de geselecteerde rijen moeten worden verwijderd."
+  },
+  "buttons": {
+    "createUnavailable": "Configureer een aanmaakbewerking om deze actie in te schakelen.",
+    "selectUnavailable": "Voor deze actie is DataTables Select vereist.",
+    "busy": "De editor is bezig.",
+    "editSelection": "Selecteer een of meer rijen om te bewerken.",
+    "batchEditUnavailable": "Het bewerken van meerdere rijen is niet beschikbaar voor deze selectie.",
+    "removeSelection": "Selecteer een of meer rijen om te verwijderen.",
+    "initialize": "Initialiseer AltEditorLite om deze actie te gebruiken."
+  },
+  "validation": {
+    "required": "Dit veld is verplicht.",
+    "invalid": "Voer een geldige waarde in.",
+    "unique": "Dezelfde waarde bestaat al in de momenteel geladen tabelgegevens."
+  },
+  "batchEdit": {
+    "commonValue": "Gemeenschappelijke waarde",
+    "multipleValues": "Meerdere waarden",
+    "setCommonValue": "Gemeenschappelijke waarde instellen",
+    "restoreIndividualValues": "Afzonderlijke waarden herstellen",
+    "uniqueRestriction": "Velden met unieke waarden kunnen niet dezelfde waarde krijgen voor meerdere records.",
+    "fileRestriction": "Bestandsuploads kunnen niet worden gewijzigd bij het bewerken van meerdere rijen.",
+    "validationInvalid": "Controleer de wijzigingen voor de geselecteerde rijen.",
+    "selectionRequired": "Selecteer minstens twee rijen om samen te bewerken."
+  },
+  "searchSelect": {
+    "placeholder": "Selecteer een optie",
+    "searchPlaceholder": "Opties zoeken",
+    "noResults": "Geen overeenkomende opties",
+    "clear": "Selectie wissen",
+    "loading": "Opties laden…",
+    "loadError": "De opties konden niet worden geladen. Voer een nieuwe zoekopdracht uit om het opnieuw te proberen.",
+    "searchTooShort": "Voer minstens {count} tekens in om te zoeken."
+  },
+  "accessibility": {
+    "searchSelectInstructions": "Gebruik de pijltoetsen om door de opties te navigeren.",
+    "searchSelectResults": "Beschikbare opties: {count}.",
+    "searchSelectSelection": "{label} geselecteerd."
+  },
+  "inline": {
+    "editCell": "Cel bewerken",
+    "unavailable": "Inline bewerken is niet beschikbaar voor deze cel.",
+    "unsupportedField": "Dit veld ondersteunt geen inline bewerken.",
+    "targetUnavailable": "De cel die wordt bewerkt, is niet meer beschikbaar."
+  },
+  "alert": {
+    "validationTitle": "Controleer de waarde",
+    "operationTitle": "De bewerking kon niet worden voltooid"
+  },
+  "errors": {
+    "generic": "De actie kon niet worden voltooid.",
+    "fileCount": "Er zijn te veel bestanden geselecteerd.",
+    "fileSize": "Een geselecteerd bestand is te groot.",
+    "selectionRequired": "Selecteer minstens één rij.",
+    "singleSelectionRequired": "Selecteer precies één rij.",
+    "targetUnavailable": "De geselecteerde rij is niet meer beschikbaar."
+  }
+}

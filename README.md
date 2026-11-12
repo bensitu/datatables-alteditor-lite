@@ -43,8 +43,9 @@ native browser controls. It has no jQuery or UI-framework runtime dependency.
   local uniqueness checks
 - Optional Buttons, Select, KeyTable, and ColReorder integration, plus
   post-commit ColumnControl and Responsive synchronization
-- External JSON languages, inline overrides, and included English, Japanese,
-  Simplified Chinese, and Spanish resources
+- External JSON languages, inline overrides, and 13 included languages: English,
+  German, French, Italian, Japanese, Korean, Dutch, Brazilian Portuguese, Russian,
+  Spanish, Turkish, Ukrainian, and Simplified Chinese
 - ESM and Browser Global distributions with responsive light and dark CSS
 - A host-neutral root API, an explicit DataTables integration, and a standalone
   callback-backed host

@@ -1,0 +1,76 @@
+{
+  "locale": "ko",
+  "actions": {
+    "create": "만들기",
+    "edit": "편집",
+    "remove": "삭제",
+    "refresh": "새로 고침",
+    "submit": "저장",
+    "cancel": "취소",
+    "close": "닫기"
+  },
+  "dialog": {
+    "createTitle": "행 만들기",
+    "editTitle": "행 편집",
+    "batchEditTitle": "여러 행 편집",
+    "removeTitle": "행 삭제",
+    "removeCount": "선택한 행: {count}개.",
+    "removeMessage": "선택한 행을 삭제할지 확인하세요."
+  },
+  "buttons": {
+    "createUnavailable": "이 작업을 활성화하려면 만들기 작업을 구성하세요.",
+    "selectUnavailable": "이 작업에는 DataTables Select가 필요합니다.",
+    "busy": "편집기가 작업 중입니다.",
+    "editSelection": "편집할 행을 하나 이상 선택하세요.",
+    "batchEditUnavailable": "선택한 행은 여러 행 편집을 사용할 수 없습니다.",
+    "removeSelection": "삭제할 행을 하나 이상 선택하세요.",
+    "initialize": "이 작업을 사용하려면 AltEditorLite를 초기화하세요."
+  },
+  "validation": {
+    "required": "필수 입력 항목입니다.",
+    "invalid": "유효한 값을 입력하세요.",
+    "unique": "현재 불러온 테이블 데이터에 동일한 값이 이미 있습니다."
+  },
+  "batchEdit": {
+    "commonValue": "공통 값",
+    "multipleValues": "여러 값",
+    "setCommonValue": "공통 값 설정",
+    "restoreIndividualValues": "개별 값 복원",
+    "uniqueRestriction": "고유한 값이 필요한 필드에는 여러 레코드에 동일한 값을 지정할 수 없습니다.",
+    "fileRestriction": "여러 행을 편집할 때는 업로드 파일을 변경할 수 없습니다.",
+    "validationInvalid": "선택한 행의 변경 사항을 확인하세요.",
+    "selectionRequired": "함께 편집할 행을 두 개 이상 선택하세요."
+  },
+  "searchSelect": {
+    "placeholder": "옵션 선택",
+    "searchPlaceholder": "옵션 검색",
+    "noResults": "일치하는 옵션이 없습니다",
+    "clear": "선택 해제",
+    "loading": "옵션을 불러오는 중…",
+    "loadError": "옵션을 불러오지 못했습니다. 다시 시도하려면 새로 검색하세요.",
+    "searchTooShort": "검색하려면 {count}자 이상 입력하세요."
+  },
+  "accessibility": {
+    "searchSelectInstructions": "방향키를 사용하여 옵션을 탐색하세요.",
+    "searchSelectResults": "선택 가능한 옵션: {count}개.",
+    "searchSelectSelection": "{label} 선택됨."
+  },
+  "inline": {
+    "editCell": "셀 편집",
+    "unavailable": "이 셀은 인라인 편집을 사용할 수 없습니다.",
+    "unsupportedField": "이 필드는 인라인 편집을 지원하지 않습니다.",
+    "targetUnavailable": "편집 중인 셀을 더 이상 사용할 수 없습니다."
+  },
+  "alert": {
+    "validationTitle": "값 확인",
+    "operationTitle": "편집을 완료하지 못했습니다"
+  },
+  "errors": {
+    "generic": "작업을 완료하지 못했습니다.",
+    "fileCount": "선택한 파일이 너무 많습니다.",
+    "fileSize": "선택한 파일이 너무 큽니다.",
+    "selectionRequired": "행을 하나 이상 선택하세요.",
+    "singleSelectionRequired": "행을 하나만 선택하세요.",
+    "targetUnavailable": "선택한 행을 더 이상 사용할 수 없습니다."
+  }
+}

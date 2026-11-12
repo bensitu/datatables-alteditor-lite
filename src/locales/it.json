@@ -1,0 +1,76 @@
+{
+  "locale": "it",
+  "actions": {
+    "create": "Crea",
+    "edit": "Modifica",
+    "remove": "Elimina",
+    "refresh": "Aggiorna",
+    "submit": "Salva",
+    "cancel": "Annulla",
+    "close": "Chiudi"
+  },
+  "dialog": {
+    "createTitle": "Crea riga",
+    "editTitle": "Modifica riga",
+    "batchEditTitle": "Modifica più righe",
+    "removeTitle": "Elimina righe",
+    "removeCount": "Righe selezionate: {count}.",
+    "removeMessage": "Conferma l’eliminazione delle righe selezionate."
+  },
+  "buttons": {
+    "createUnavailable": "Configura un’operazione di creazione per abilitare questa azione.",
+    "selectUnavailable": "Questa azione richiede DataTables Select.",
+    "busy": "L’editor è occupato.",
+    "editSelection": "Seleziona una o più righe da modificare.",
+    "batchEditUnavailable": "La modifica di più righe non è disponibile per questa selezione.",
+    "removeSelection": "Seleziona una o più righe da eliminare.",
+    "initialize": "Inizializza AltEditorLite per utilizzare questa azione."
+  },
+  "validation": {
+    "required": "Questo campo è obbligatorio.",
+    "invalid": "Inserisci un valore valido.",
+    "unique": "Lo stesso valore è già presente nei dati della tabella attualmente caricati."
+  },
+  "batchEdit": {
+    "commonValue": "Valore comune",
+    "multipleValues": "Più valori",
+    "setCommonValue": "Imposta un valore comune",
+    "restoreIndividualValues": "Ripristina i valori individuali",
+    "uniqueRestriction": "Non è possibile assegnare lo stesso valore a campi univoci di più record.",
+    "fileRestriction": "Non è possibile modificare i file durante la modifica di più righe.",
+    "validationInvalid": "Controlla le modifiche per le righe selezionate.",
+    "selectionRequired": "Seleziona almeno due righe da modificare insieme."
+  },
+  "searchSelect": {
+    "placeholder": "Seleziona un’opzione",
+    "searchPlaceholder": "Cerca opzioni",
+    "noResults": "Nessuna opzione corrispondente",
+    "clear": "Cancella selezione",
+    "loading": "Caricamento delle opzioni…",
+    "loadError": "Impossibile caricare le opzioni. Esegui una nuova ricerca per riprovare.",
+    "searchTooShort": "Inserisci almeno {count} caratteri per avviare la ricerca."
+  },
+  "accessibility": {
+    "searchSelectInstructions": "Usa i tasti freccia per scorrere le opzioni.",
+    "searchSelectResults": "Opzioni disponibili: {count}.",
+    "searchSelectSelection": "Selezione: {label}."
+  },
+  "inline": {
+    "editCell": "Modifica cella",
+    "unavailable": "La modifica in linea non è disponibile per questa cella.",
+    "unsupportedField": "Questo campo non supporta la modifica in linea.",
+    "targetUnavailable": "La cella in modifica non è più disponibile."
+  },
+  "alert": {
+    "validationTitle": "Controlla il valore",
+    "operationTitle": "Impossibile completare la modifica"
+  },
+  "errors": {
+    "generic": "Impossibile completare l’operazione.",
+    "fileCount": "Sono stati selezionati troppi file.",
+    "fileSize": "Un file selezionato è troppo grande.",
+    "selectionRequired": "Seleziona almeno una riga.",
+    "singleSelectionRequired": "Seleziona una sola riga.",
+    "targetUnavailable": "La riga selezionata non è più disponibile."
+  }
+}

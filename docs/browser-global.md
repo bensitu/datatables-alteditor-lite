@@ -161,8 +161,10 @@ const editor = new AltEditorLite.Editor(table, {
 });
 ```
 
-Available locale filenames use `en`, `ja`, `zh-cn`, and `es`. A custom partial
-JSON resource can be loaded without changing the library:
+Available locale filenames use `de-de`, `en`, `es`, `fr-fr`, `it`, `ja`, `ko`,
+`nl-nl`, `pt-br`, `ru`, `tr`, `uk`, and `zh-cn`. See the
+[included languages](localization.md#included-languages) for their canonical locale
+identifiers. A custom partial JSON resource can be loaded without changing the library:
 
 ```js
 const language = await AltEditorLite.loadEditorLanguage('./languages/fr-FR.json');

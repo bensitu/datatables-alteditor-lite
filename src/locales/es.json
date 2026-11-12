@@ -51,7 +51,7 @@
     "searchTooShort": "Escribe al menos {count} caracteres para buscar."
   },
   "accessibility": {
-    "searchSelectInstructions": "Usa las flechas para recorrer las opciones.",
+    "searchSelectInstructions": "Usa las teclas de flecha para recorrer las opciones.",
     "searchSelectResults": "Hay {count} opciones disponibles.",
     "searchSelectSelection": "Se ha seleccionado {label}."
   },
@@ -62,7 +62,7 @@
     "targetUnavailable": "La celda editada ya no está disponible."
   },
   "alert": {
-    "validationTitle": "Compruebe el valor",
+    "validationTitle": "Comprueba el valor",
     "operationTitle": "No se pudo completar la edición"
   },
   "errors": {

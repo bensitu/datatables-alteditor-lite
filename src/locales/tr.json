@@ -1,0 +1,76 @@
+{
+  "locale": "tr",
+  "actions": {
+    "create": "Oluştur",
+    "edit": "Düzenle",
+    "remove": "Sil",
+    "refresh": "Yenile",
+    "submit": "Kaydet",
+    "cancel": "İptal",
+    "close": "Kapat"
+  },
+  "dialog": {
+    "createTitle": "Satır oluştur",
+    "editTitle": "Satırı düzenle",
+    "batchEditTitle": "Birden fazla satırı düzenle",
+    "removeTitle": "Satırları sil",
+    "removeCount": "Seçilen satır sayısı: {count}.",
+    "removeMessage": "Seçilen satırların silinmesini onaylayın."
+  },
+  "buttons": {
+    "createUnavailable": "Bu eylemi etkinleştirmek için bir oluşturma işlemi yapılandırın.",
+    "selectUnavailable": "Bu eylem için DataTables Select gereklidir.",
+    "busy": "Düzenleyici meşgul.",
+    "editSelection": "Düzenlemek için bir veya daha fazla satır seçin.",
+    "batchEditUnavailable": "Bu seçim için birden fazla satırı düzenleme kullanılamıyor.",
+    "removeSelection": "Silmek için bir veya daha fazla satır seçin.",
+    "initialize": "Bu eylemi kullanmak için AltEditorLite’ı başlatın."
+  },
+  "validation": {
+    "required": "Bu alan zorunludur.",
+    "invalid": "Geçerli bir değer girin.",
+    "unique": "Aynı değer, şu anda yüklü olan tablo verilerinde zaten var."
+  },
+  "batchEdit": {
+    "commonValue": "Ortak değer",
+    "multipleValues": "Birden fazla değer",
+    "setCommonValue": "Ortak değer belirle",
+    "restoreIndividualValues": "Ayrı değerleri geri yükle",
+    "uniqueRestriction": "Benzersiz değer gerektiren alanlara birden fazla kayıtta aynı değer atanamaz.",
+    "fileRestriction": "Birden fazla satır düzenlenirken dosya yüklemeleri değiştirilemez.",
+    "validationInvalid": "Seçilen satırlardaki değişiklikleri gözden geçirin.",
+    "selectionRequired": "Birlikte düzenlemek için en az iki satır seçin."
+  },
+  "searchSelect": {
+    "placeholder": "Bir seçenek seçin",
+    "searchPlaceholder": "Seçeneklerde ara",
+    "noResults": "Eşleşen seçenek yok",
+    "clear": "Seçimi temizle",
+    "loading": "Seçenekler yükleniyor…",
+    "loadError": "Seçenekler yüklenemedi. Yeniden denemek için yeni bir arama yapın.",
+    "searchTooShort": "Aramak için en az {count} karakter girin."
+  },
+  "accessibility": {
+    "searchSelectInstructions": "Seçenekler arasında gezinmek için ok tuşlarını kullanın.",
+    "searchSelectResults": "Kullanılabilir seçenek sayısı: {count}.",
+    "searchSelectSelection": "Seçilen: {label}."
+  },
+  "inline": {
+    "editCell": "Hücreyi düzenle",
+    "unavailable": "Bu hücre için satır içi düzenleme kullanılamıyor.",
+    "unsupportedField": "Bu alan satır içi düzenlemeyi desteklemiyor.",
+    "targetUnavailable": "Düzenlenen hücre artık kullanılamıyor."
+  },
+  "alert": {
+    "validationTitle": "Değeri kontrol edin",
+    "operationTitle": "Düzenleme tamamlanamadı"
+  },
+  "errors": {
+    "generic": "İşlem tamamlanamadı.",
+    "fileCount": "Çok fazla dosya seçildi.",
+    "fileSize": "Seçilen bir dosya çok büyük.",
+    "selectionRequired": "En az bir satır seçin.",
+    "singleSelectionRequired": "Yalnızca bir satır seçin.",
+    "targetUnavailable": "Seçilen satır artık kullanılamıyor."
+  }
+}

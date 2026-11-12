@@ -67,9 +67,18 @@ const japanesePrefectures = [
   { label: 'Osaka', value: 'osaka' },
 ];
 const languageFileByLocale = new Map([
+  ['de-DE', 'de-de.json'],
+  ['fr-FR', 'fr-fr.json'],
+  ['it', 'it.json'],
   ['ja', 'ja.json'],
+  ['ko', 'ko.json'],
+  ['nl-NL', 'nl-nl.json'],
+  ['pt-BR', 'pt-br.json'],
+  ['ru', 'ru.json'],
   ['zh-CN', 'zh-cn.json'],
   ['es', 'es.json'],
+  ['tr', 'tr.json'],
+  ['uk', 'uk.json'],
 ]);
 const fieldConfigurations = [
   { inlineEdit: true, label: 'Name', name: 'name', required: true, type: 'text' },

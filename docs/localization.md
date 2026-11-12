@@ -35,9 +35,31 @@ const editor = new AltEditorLite(table, {
 });
 ```
 
-The package includes English (`en`), Japanese (`ja`), Simplified Chinese
-(`zh-cn`), and Spanish (`es`). Their JSON files provide examples of the complete
-shape and required placeholders.
+| Language             | Resource filename / ESM name | BCP 47 locale |
+| -------------------- | ---------------------------- | ------------- |
+| English              | `en`                         | `en`          |
+| German               | `de-de`                      | `de-DE`       |
+| French               | `fr-fr`                      | `fr-FR`       |
+| Italian              | `it`                         | `it`          |
+| Japanese             | `ja`                         | `ja`          |
+| Korean               | `ko`                         | `ko`          |
+| Dutch                | `nl-nl`                      | `nl-NL`       |
+| Brazilian Portuguese | `pt-br`                      | `pt-BR`       |
+| Russian              | `ru`                         | `ru`          |
+| Spanish              | `es`                         | `es`          |
+| Turkish              | `tr`                         | `tr`          |
+| Ukrainian            | `uk`                         | `uk`          |
+| Simplified Chinese   | `zh-cn`                      | `zh-CN`       |
+
+For example, import Brazilian Portuguese from
+`datatables-alteditor-lite/locales/pt-br`, or load `pt-br.json`. Every resource
+contains the complete English message set and required placeholders. Existing
+import paths remain available. Spanish uses the shared `es` resource; the current
+messages do not require a separate Spain-specific `es-ES` translation.
+
+Contributors should have a fluent speaker review translation wording before
+release. Automated checks verify completeness, locale identifiers, and
+placeholders, but cannot establish linguistic quality.
 
 To contribute another included language, copy `src/locales/en.json`, use a
 lowercase locale filename such as `pt-br.json`, set its `locale` property to the

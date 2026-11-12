@@ -1,0 +1,76 @@
+{
+  "locale": "fr-FR",
+  "actions": {
+    "create": "Créer",
+    "edit": "Modifier",
+    "remove": "Supprimer",
+    "refresh": "Actualiser",
+    "submit": "Enregistrer",
+    "cancel": "Annuler",
+    "close": "Fermer"
+  },
+  "dialog": {
+    "createTitle": "Créer une ligne",
+    "editTitle": "Modifier une ligne",
+    "batchEditTitle": "Modifier plusieurs lignes",
+    "removeTitle": "Supprimer des lignes",
+    "removeCount": "Lignes sélectionnées : {count}.",
+    "removeMessage": "Confirmez la suppression des lignes sélectionnées."
+  },
+  "buttons": {
+    "createUnavailable": "Configurez une opération de création pour activer cette action.",
+    "selectUnavailable": "DataTables Select est nécessaire pour cette action.",
+    "busy": "L’éditeur est occupé.",
+    "editSelection": "Sélectionnez une ou plusieurs lignes à modifier.",
+    "batchEditUnavailable": "La modification de plusieurs lignes n’est pas disponible pour cette sélection.",
+    "removeSelection": "Sélectionnez une ou plusieurs lignes à supprimer.",
+    "initialize": "Initialisez AltEditorLite pour utiliser cette action."
+  },
+  "validation": {
+    "required": "Ce champ est obligatoire.",
+    "invalid": "Saisissez une valeur valide.",
+    "unique": "Cette valeur existe déjà dans les données du tableau actuellement chargées."
+  },
+  "batchEdit": {
+    "commonValue": "Valeur commune",
+    "multipleValues": "Plusieurs valeurs",
+    "setCommonValue": "Définir une valeur commune",
+    "restoreIndividualValues": "Rétablir les valeurs individuelles",
+    "uniqueRestriction": "Les champs à valeur unique ne peuvent pas recevoir une même valeur pour plusieurs enregistrements.",
+    "fileRestriction": "Les fichiers ne peuvent pas être modifiés lors de la modification de plusieurs lignes.",
+    "validationInvalid": "Vérifiez les modifications des lignes sélectionnées.",
+    "selectionRequired": "Sélectionnez au moins deux lignes pour les modifier ensemble."
+  },
+  "searchSelect": {
+    "placeholder": "Sélectionner une option",
+    "searchPlaceholder": "Rechercher des options",
+    "noResults": "Aucune option correspondante",
+    "clear": "Effacer la sélection",
+    "loading": "Chargement des options…",
+    "loadError": "Impossible de charger les options. Effectuez une nouvelle recherche pour réessayer.",
+    "searchTooShort": "Saisissez au moins {count} caractères pour lancer la recherche."
+  },
+  "accessibility": {
+    "searchSelectInstructions": "Utilisez les touches fléchées pour parcourir les options.",
+    "searchSelectResults": "Options disponibles : {count}.",
+    "searchSelectSelection": "Sélection : {label}."
+  },
+  "inline": {
+    "editCell": "Modifier la cellule",
+    "unavailable": "La modification en ligne n’est pas disponible pour cette cellule.",
+    "unsupportedField": "Ce champ ne prend pas en charge la modification en ligne.",
+    "targetUnavailable": "La cellule en cours de modification n’est plus disponible."
+  },
+  "alert": {
+    "validationTitle": "Vérifier la valeur",
+    "operationTitle": "La modification n’a pas pu être effectuée"
+  },
+  "errors": {
+    "generic": "L’opération n’a pas pu être effectuée.",
+    "fileCount": "Trop de fichiers ont été sélectionnés.",
+    "fileSize": "Un fichier sélectionné est trop volumineux.",
+    "selectionRequired": "Sélectionnez au moins une ligne.",
+    "singleSelectionRequired": "Sélectionnez une seule ligne.",
+    "targetUnavailable": "La ligne sélectionnée n’est plus disponible."
+  }
+}
