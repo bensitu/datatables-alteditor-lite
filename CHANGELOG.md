@@ -5,32 +5,6 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-
-### Fixed
-
-- Cancelled form validation and multi-record submissions stop waiting for
-  unfinished field change and dependency callbacks. Superseded field change
-  callbacks no longer delay subsequent validation.
-- Failed DataTables batch replacements restore writable copies of plain records
-  and arrays.
-- Invalid inline action values are rejected consistently across all hosts.
-- Instance identifier generation includes a random component when the global
-  sequence is unavailable and the environment lacks `crypto.randomUUID`.
-- Superseded file reads do not display field validation errors.
-- Trimmed text validation preserves the visible input and text selection.
-
-### Changed
-
-- DataTables record enumeration creates snapshots on demand without duplicating
-  each row copy. Local uniqueness checks stop after finding all duplicates, and
-  redraw cleanup retains counts only for tracked row identifiers.
-- Coverage includes root entry modules, and CI tests Node.js 26 in addition to
-  the supported Node.js 22 and 24 versions.
-- npm publishing uses OIDC trusted publishing instead of a long-lived token.
-  Maintainers must configure the matching trusted publisher in npm package
-  settings before running the publishing workflow.
-
 ## [0.10.0] - 2026-11-16
 
 ### Added
@@ -44,6 +18,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- DataTables record enumeration creates snapshots on demand without duplicating
+  each row copy. Local uniqueness checks stop after finding all duplicates, and
+  redraw cleanup retains counts only for tracked row identifiers.
+- Coverage includes root entry modules, and CI tests Node.js 26 in addition to
+  the supported Node.js 22 and 24 versions.
+- npm publishing uses OIDC trusted publishing instead of a long-lived token.
+  Maintainers must configure the matching trusted publisher in npm package
+  settings before running the publishing workflow.
 - Raised the minimum Node.js versions for development and npm installation to
   22.22.2 on Node.js 22 and 24.15.0 on Node.js 24, with support for Node.js 26 or
   newer. Updated Stylelint to 18 and its standard configuration to 41 together,
@@ -53,6 +35,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Cancelled form validation and multi-record submissions stop waiting for
+  unfinished field change and dependency callbacks. Superseded field change
+  callbacks no longer delay subsequent validation.
+- Failed DataTables batch replacements restore writable copies of plain records
+  and arrays.
+- Invalid inline action values are rejected consistently across all hosts.
+- Instance identifier generation includes a random component when the global
+  sequence is unavailable and the environment lacks `crypto.randomUUID`.
+- Superseded file reads do not display field validation errors.
+- Trimmed text validation preserves the visible input and text selection.
 - Corrected the generated locale declarations' relative type import so packaged
   ESM language modules compile in TypeScript consumer applications.
 
