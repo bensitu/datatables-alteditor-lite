@@ -25,6 +25,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - DataTables record enumeration creates snapshots on demand without duplicating
   each row copy. Local uniqueness checks stop after finding all duplicates, and
   redraw cleanup retains counts only for tracked row identifiers.
+- Coverage includes root entry modules, and CI tests Node.js 26 in addition to
+  the supported Node.js 22 and 24 versions.
+- npm publishing uses OIDC trusted publishing instead of a long-lived token.
+  Maintainers must configure the matching trusted publisher in npm package
+  settings before running the publishing workflow.
 
 ## [0.10.0] - 2026-11-16
 

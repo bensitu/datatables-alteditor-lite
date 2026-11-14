@@ -9,6 +9,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: [
+        'src/*.ts',
         'src/core/**/*.ts',
         'src/datatables/**/*.ts',
         'src/dialog/**/*.ts',

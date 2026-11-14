@@ -4,7 +4,8 @@
 
 Development and npm installation use Node.js `^22.22.2 || ^24.15.0 || >=26.0.0`,
 as declared in `package.json`. CI tests the minimum supported Node.js 22 and 24
-versions and uses the current Node.js 24 release for coverage and browser tests.
+versions and the current Node.js 26 release. Node.js 24 runs coverage and browser
+tests.
 
 Run `npm outdated` before updating dependencies. Check both the package's Node.js
 engine requirement and the peer requirements of the complete toolchain.
@@ -16,6 +17,10 @@ advisory. The import lint plugin's default entry still imports the removed
 `makeRe` API, so the ESLint configuration loads only its three enabled rules
 through exported rule paths. All configured import checks remain enabled. Review
 the override and rule imports together when upstream tools support minimatch 11.
+The loaded rules use the installed plugin version; loading individual rules does
+not pin separate implementations. Restoring the complete plugin import requires
+its entry point and every eagerly imported rule to support the pinned minimatch
+version.
 
 ### DataTables compatibility
 
@@ -93,8 +98,30 @@ Run `npm run check` for formatting, static analysis, maintained regression tests
 coverage, builds, compressed sizes, package boundaries, public declarations and
 browser tests. Install the supported Playwright browsers before running the
 browser suite. Use `npm run build:pages` to verify the deployable example tree.
+Coverage includes the root package entry modules as well as implementation
+directories; declaration files are excluded.
 
 Keep new tests focused on observable behavior and supported workflows. Reuse the
 existing form, lifecycle, extension and example suites rather than introducing
 checks tied to source layout. Distribution size limits are defined in
 `scripts/check-bundle-size.mjs`.
+
+## Publishing
+
+The npm workflow publishes the verified artifact attached to a published GitHub
+release. It uses OpenID Connect (OIDC) authentication on a GitHub-hosted runner and
+does not provide a long-lived npm publishing token.
+
+Before running it, configure a trusted publisher in the npm package settings for
+owner `bensitu`, repository `datatables-alteditor-lite`, workflow filename
+`publish-npm.yml`, and environment `npm`. Allow direct `npm publish` operations.
+Fork maintainers must configure their own package and repository identity. The
+workflow's `id-token: write` permission enables credential exchange; it does not
+create the npm account configuration. See the
+[npm trusted publishing documentation](https://docs.npmjs.com/trusted-publishers/).
+
+Run `draft-release.yml` from the default branch for the version already recorded
+in `package.json` and the changelog. Review and publish the resulting GitHub
+release, then run `publish-npm.yml` with the same version and distribution tag.
+After a successful trusted publication, remove unused publishing tokens from the
+package's account and repository settings.
