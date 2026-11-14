@@ -287,14 +287,17 @@ export class FormDependencyController<TFormValues extends object> {
   }
 
   /** Waits for currently owned resolver requests and patch application. */
-  public async waitForCurrent(): Promise<void> {
+  public async waitForCurrent(signal = this.arguments_.lifecycleSignal): Promise<void> {
     while (this.pendingBySource.size > 0) {
-      await Promise.allSettled([...this.pendingBySource.values()]);
+      await settleWithAbort(
+        Promise.allSettled([...this.pendingBySource.values()]),
+        signal,
+      );
     }
     let currentTail: Promise<void>;
     do {
       currentTail = this.patchApplicationTail;
-      await currentTail;
+      await settleWithAbort(currentTail, signal);
     } while (currentTail !== this.patchApplicationTail);
   }
 

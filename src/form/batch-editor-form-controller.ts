@@ -6,6 +6,7 @@ import {
 import { freezeEditorValues } from '../core/freeze-editor-values.js';
 import { mergeAbortSignals } from '../core/merge-abort-signals.js';
 import { runCleanupSteps } from '../core/run-cleanup-steps.js';
+import { settleWithAbort } from '../core/settle-with-abort.js';
 import { resolveBatchFieldRestriction } from '../fields/field-capabilities.js';
 import { setPathValue } from '../object-path/set-path-value.js';
 
@@ -232,7 +233,7 @@ export class BatchEditorFormController<TFormValues extends object> {
     ]);
     const { signal } = mergedSignal;
     try {
-      await this.waitForChanges();
+      await this.waitForChanges(signal);
       signal.throwIfAborted();
       this.clearErrors();
       const dependencyErrors =
@@ -251,7 +252,7 @@ export class BatchEditorFormController<TFormValues extends object> {
         this.showSubmissionError(error);
         return { error, valid: false };
       }
-      const collected = await this.collectChanges();
+      const collected = await settleWithAbort(this.collectChanges(), signal);
       const fieldMessages = new Map<string, Set<string>>();
       const addFieldMessage = (fieldName: string, message: string): void => {
         let messages = fieldMessages.get(fieldName);
@@ -473,7 +474,7 @@ export class BatchEditorFormController<TFormValues extends object> {
       binding.controller,
       config.validateOn,
       async (signal) => {
-        await this.waitForChanges();
+        await this.waitForChanges(signal);
         signal.throwIfAborted();
         return await this.validateBinding(binding, signal, this.collectLogicalValues());
       },
@@ -583,14 +584,19 @@ export class BatchEditorFormController<TFormValues extends object> {
       );
       signal.throwIfAborted();
     }
-    await binding.controller.runOnChange(this.collectLogicalValues(), signal);
+    await settleWithAbort(
+      binding.controller.runOnChange(this.collectLogicalValues(), signal),
+      signal,
+    );
   }
 
-  private async waitForChanges(): Promise<void> {
+  private async waitForChanges(
+    signal = this.lifecycleAbortController.signal,
+  ): Promise<void> {
     while (this.pendingChangeTasks.size > 0) {
-      await Promise.allSettled([...this.pendingChangeTasks]);
+      await settleWithAbort(Promise.allSettled([...this.pendingChangeTasks]), signal);
     }
-    await this.dependencyController?.waitForCurrent();
+    await this.dependencyController?.waitForCurrent(signal);
   }
 
   private collectLogicalValues(): Readonly<EditorValues<TFormValues>> {

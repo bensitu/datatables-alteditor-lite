@@ -7,6 +7,7 @@ import { hasOwn } from '../core/has-own.js';
 import { mergeAbortSignals } from '../core/merge-abort-signals.js';
 import { RequestSequence } from '../core/request-sequence.js';
 import { runCleanupSteps } from '../core/run-cleanup-steps.js';
+import { settleWithAbort } from '../core/settle-with-abort.js';
 import { createFieldController } from '../fields/create-field-controller.js';
 import { resolveFieldCapabilities } from '../fields/field-capabilities.js';
 import { resolveFieldValueComparator } from '../fields/field-value-comparator.js';
@@ -386,7 +387,7 @@ export class EditorFormController<
     const { signal } = mergedSignal;
     const requestSequence = this.validationSequence.next();
     try {
-      await this.waitForCurrentFieldWork();
+      await this.waitForCurrentFieldWork(signal);
       if (!this.validationSequence.isCurrent(requestSequence) || signal.aborted) {
         return { fieldErrors: {}, valid: false };
       }
@@ -429,6 +430,11 @@ export class EditorFormController<
       }
 
       return validationResult;
+    } catch (error: unknown) {
+      if (signal.aborted) {
+        return { fieldErrors: {}, valid: false };
+      }
+      throw error;
     } finally {
       resumeFieldValidation();
       mergedSignal.dispose();
@@ -455,7 +461,7 @@ export class EditorFormController<
     const requestSequence = this.validationSequence.next();
 
     try {
-      await this.waitForCurrentFieldWork();
+      await this.waitForCurrentFieldWork(signal);
       signal.throwIfAborted();
       if (!this.validationSequence.isCurrent(requestSequence)) {
         throw new DOMException('The validation request was replaced.', 'AbortError');
@@ -754,7 +760,7 @@ export class EditorFormController<
         signal.throwIfAborted();
         callbackValues = await collectFormValues(this.controllers, signal);
       }
-      await controller.runOnChange(callbackValues, signal);
+      await settleWithAbort(controller.runOnChange(callbackValues, signal), signal);
     } catch (error: unknown) {
       if (!signal.aborted) {
         const operationError =
@@ -793,11 +799,16 @@ export class EditorFormController<
     }
   }
 
-  private async waitForCurrentFieldWork(): Promise<void> {
+  private async waitForCurrentFieldWork(
+    signal = this.lifecycleAbortController.signal,
+  ): Promise<void> {
     while (this.activeChangeTasks.size > 0) {
-      await Promise.allSettled([...this.activeChangeTasks.values()]);
+      await settleWithAbort(
+        Promise.allSettled([...this.activeChangeTasks.values()]),
+        signal,
+      );
     }
-    await this.dependencyController?.waitForCurrent();
+    await this.dependencyController?.waitForCurrent(signal);
   }
 
   private renderSubmissionError(): void {

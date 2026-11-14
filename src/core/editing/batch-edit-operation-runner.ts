@@ -99,8 +99,9 @@ export class BatchEditOperationRunner<TRow extends object, TFormValues extends o
 
     try {
       runArguments.presentation.startValidation();
-      const validation = await runArguments.presentation.validate(
-        request.abortController.signal,
+      const validation = await this.operationOwner.wait(
+        request,
+        runArguments.presentation.validate(request.abortController.signal),
       );
       if (!this.operationOwner.owns(request)) {
         return { status: 'aborted' };

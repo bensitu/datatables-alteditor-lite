@@ -61,6 +61,34 @@ function batchField(name: keyof BatchFormValues): HTMLElement {
 }
 
 describe('BatchEditorFormController', () => {
+  it('cancels submission validation while a field change remains pending', async () => {
+    const onChange = vi.fn(() => new Promise<void>(() => undefined));
+    activeForm = new BatchEditorFormController<BatchFormValues>(
+      [{ name: 'office', label: 'Office', type: 'text', onChange }],
+      [{ office: 'Tokyo' }, { office: 'Tokyo' }],
+      'pending-change',
+      ENGLISH_LANGUAGE,
+    );
+    document.body.append(activeForm.element);
+    activeForm.getField('office')?.setValue('Osaka');
+    activeForm
+      .getField('office')
+      ?.element.querySelector('input')
+      ?.dispatchEvent(new Event('input', { bubbles: true }));
+    await vi.waitFor(() => {
+      expect(onChange).toHaveBeenCalledOnce();
+    });
+    const request = new AbortController();
+    const validation = activeForm.validateForSubmission(request.signal);
+    const result = expect(validation).rejects.toMatchObject({ name: 'AbortError' });
+    request.abort();
+    await result;
+    const dirty = activeForm.isDirty();
+    const dirtyResult = expect(dirty).rejects.toMatchObject({ name: 'AbortError' });
+    activeForm.destroy();
+    await dirtyResult;
+  });
+
   it('recomputes dependent presentation from committed records', async () => {
     activeForm = new BatchEditorFormController<BatchFormValues>(
       [

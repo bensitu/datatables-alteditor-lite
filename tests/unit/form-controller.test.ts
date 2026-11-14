@@ -170,6 +170,28 @@ function createForm(
 }
 
 describe('FormController', () => {
+  it('cancels submission validation while a field change remains pending', async () => {
+    changeCallback.mockImplementationOnce(() => new Promise(() => undefined));
+    const form = buildEditorForm(fields, 'pending-change', ENGLISH_LANGUAGE);
+    activeForm = form;
+    document.body.append(form.element);
+    const input = form.getField('profile.name')?.element.querySelector('input');
+    input?.dispatchEvent(new Event('input', { bubbles: true }));
+    await vi.waitFor(() => {
+      expect(changeCallback).toHaveBeenCalledOnce();
+    });
+    const request = new AbortController();
+    const validation = form.validateForSubmission(request.signal, undefined, {
+      mode: 'dialog',
+      operation: 'create',
+    });
+    const result = expect(validation).rejects.toMatchObject({ name: 'AbortError' });
+    request.abort();
+    await result;
+    input?.dispatchEvent(new Event('input', { bubbles: true }));
+    await expect(form.validate()).resolves.toMatchObject({ valid: false });
+  });
+
   it('rejects non-finite numeric values without replacing the current value', async () => {
     const form = createForm();
     for (const name of ['age', 'optionalNumber'] as const) {

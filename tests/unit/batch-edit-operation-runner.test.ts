@@ -84,6 +84,24 @@ function createRunArguments(presentation: ReturnType<typeof createPresentation>)
 }
 
 describe('batch edit operation runner', () => {
+  it('settles a cancelled submission while validation remains pending', async () => {
+    const owner = new OperationOwner();
+    const runner = new BatchEditOperationRunner<TestRow, TestValues>(
+      owner,
+      ENGLISH_LANGUAGE,
+      undefined,
+      undefined,
+    );
+    const presentation = createPresentation();
+    presentation.validate.mockImplementation(() => new Promise(() => undefined));
+    const runArguments = createRunArguments(presentation);
+    const submission = runner.run(runArguments);
+    owner.abort();
+    await expect(submission).resolves.toEqual({ status: 'aborted' });
+    expect(runArguments.commit).not.toHaveBeenCalled();
+    expect(runArguments.reportError).not.toHaveBeenCalled();
+  });
+
   it.each(['invalid', 'vetoed', 'unchanged'] as const)(
     'reports presentation failures when a submission is %s',
     async (outcome) => {

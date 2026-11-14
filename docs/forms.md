@@ -269,6 +269,12 @@ Starting a new validation aborts the preceding validation signal. Closing an
 editor presentation or destroying the editor also aborts validation. Aborted and
 superseded results do not change field state, display errors, or submit data.
 
+Cancellation also stops validation from waiting for unfinished field change and
+dependency callbacks. There is no automatic callback timeout. Callbacks should
+settle and use their context's `signal` to stop network requests and other side
+effects; cancelling the editor's wait does not stop application code that ignores
+the signal. A later change to the same field supersedes its earlier callback.
+
 ## CSS and accessibility
 
 Template CSS may arrange slots with grid, flexbox, or normal flow. Scope custom
