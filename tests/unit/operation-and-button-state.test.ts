@@ -96,6 +96,17 @@ describe('operation configuration', () => {
 });
 
 describe('editing configuration', () => {
+  it.each(['blurAction', 'enterAction', 'tabAction', 'updateMode'] as const)(
+    'rejects invalid %s before a host runtime is created',
+    (property) => {
+      expect(() =>
+        resolveEditingOptions({
+          inline: { [property]: 'invalid' },
+        }),
+      ).toThrow(`editing.inline.${property} is not valid.`);
+    },
+  );
+
   it('resolves stable dialog and inline defaults', () => {
     const editing = resolveEditingOptions(undefined);
 

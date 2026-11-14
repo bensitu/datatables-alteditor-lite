@@ -17,7 +17,7 @@ function createFallbackInstanceId(): string {
   const randomId =
     typeof randomUuid === 'function' ? randomUuid.call(globalThis.crypto) : undefined;
   return randomId === undefined
-    ? `alteditor-lite-${Date.now().toString(36)}-${String(fallbackSequence)}`
+    ? `alteditor-lite-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${String(fallbackSequence)}`
     : `alteditor-lite-${randomId}`;
 }
 

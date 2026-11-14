@@ -10,6 +10,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.restoreAllMocks();
   vi.unstubAllGlobals();
   if (originalDescriptor === undefined) {
     Reflect.deleteProperty(globalThis, instanceSequenceKey);
@@ -31,8 +32,10 @@ describe('editor instance identifiers', () => {
     expect(Reflect.get(globalThis, instanceSequenceKey)).toBe(43);
   });
 
-  it('creates distinct identifiers when the shared sequence cannot be written', () => {
+  it('creates distinct identifiers across modules when the shared sequence cannot be written', async () => {
     vi.stubGlobal('crypto', undefined);
+    vi.spyOn(Date, 'now').mockReturnValue(0);
+    vi.spyOn(Math, 'random').mockReturnValueOnce(0.25).mockReturnValueOnce(0.5);
     Object.defineProperty(globalThis, instanceSequenceKey, {
       configurable: true,
       get: () => 9,
@@ -42,7 +45,9 @@ describe('editor instance identifiers', () => {
     });
 
     const firstId = createInstanceId();
-    const secondId = createInstanceId();
+    vi.resetModules();
+    const separateModule = await import('../../src/instance/create-instance-id.js');
+    const secondId = separateModule.createInstanceId();
 
     expect(firstId).toMatch(/^alteditor-lite-/u);
     expect(secondId).toMatch(/^alteditor-lite-/u);

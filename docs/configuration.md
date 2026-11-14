@@ -1,5 +1,10 @@
 # Configuration
 
+Inline action values (`blurAction`, `enterAction`, `tabAction`, and `updateMode`)
+are validated when the editor is constructed, including with Standalone and
+custom hosts that do not provide inline editing. Invalid values throw
+`EditorConfigurationError` even when inline editing is disabled.
+
 Create one editor for an `EditorHost`. DataTables applications normally use the
 selector-friendly facade from the explicit integration entry, which registers
 the retrieval API and optional Buttons integration automatically.

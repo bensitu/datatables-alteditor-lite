@@ -8,35 +8,6 @@ import type { ResolvedEditingOptions } from '../core/resolve-editing-options.js'
 import type { FieldConfig } from '../fields/field-config.js';
 import type { Api } from 'datatables.net';
 
-const blurActions = new Set(['submit', 'cancel', 'none']);
-const enterActions = new Set(['submit', 'none']);
-const tabActions = new Set(['submit-and-move', 'submit', 'none']);
-const updateModes = new Set(['replace-row', 'refresh']);
-const classTokenPattern = /^-?[_a-zA-Z][_a-zA-Z0-9-]*$/u;
-
-function assertChoice(
-  value: unknown,
-  allowed: ReadonlySet<string>,
-  propertyName: string,
-): void {
-  if (value !== undefined && (typeof value !== 'string' || !allowed.has(value))) {
-    throw new EditorConfigurationError(`editing.inline.${propertyName} is not valid.`);
-  }
-}
-
-function assertClassName(className: unknown): void {
-  if (className === undefined) {
-    return;
-  }
-  if (
-    typeof className !== 'string' ||
-    className.trim().length === 0 ||
-    className.split(/\s+/u).some((token) => !classTokenPattern.test(token))
-  ) {
-    throw new EditorConfigurationError('editing.inline.className is not valid.');
-  }
-}
-
 function formatPropertyNames(propertyNames: readonly string[]): string {
   if (propertyNames.length < 2) {
     return propertyNames[0] ?? '';
@@ -116,11 +87,6 @@ export function validateInlineConfiguration<
 ): void {
   const inline = options.editing?.inline;
 
-  assertChoice(inline?.blurAction, blurActions, 'blurAction');
-  assertChoice(inline?.enterAction, enterActions, 'enterAction');
-  assertChoice(inline?.tabAction, tabActions, 'tabAction');
-  assertChoice(inline?.updateMode, updateModes, 'updateMode');
-  assertClassName(inline?.className);
   assertExplicitMappings(table, options.fields, inline?.columns);
 
   const incompatibleHoverActions =

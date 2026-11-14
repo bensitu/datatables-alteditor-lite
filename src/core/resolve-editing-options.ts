@@ -53,6 +53,20 @@ function assertOptionalObject(value: unknown, propertyName: string): void {
 }
 
 const classTokenPattern = /^-?[_a-zA-Z][_a-zA-Z0-9-]*$/u;
+const blurActions = new Set(['submit', 'cancel', 'none']);
+const enterActions = new Set(['submit', 'none']);
+const tabActions = new Set(['submit-and-move', 'submit', 'none']);
+const updateModes = new Set(['replace-row', 'refresh']);
+
+function assertChoice(
+  value: unknown,
+  allowed: ReadonlySet<string>,
+  propertyName: string,
+): void {
+  if (value !== undefined && (typeof value !== 'string' || !allowed.has(value))) {
+    throw new EditorConfigurationError(`editing.inline.${propertyName} is not valid.`);
+  }
+}
 
 function assertOptionalClassName(value: unknown, propertyName: string): void {
   if (value === undefined) {
@@ -88,6 +102,11 @@ export function resolveEditingOptions<TRow extends object, TFormValues extends o
     );
   }
   assertOptionalBoolean(inline?.enabled, 'editing.inline.enabled');
+  assertOptionalClassName(inline?.className, 'editing.inline.className');
+  assertChoice(inline?.blurAction, blurActions, 'blurAction');
+  assertChoice(inline?.enterAction, enterActions, 'enterAction');
+  assertChoice(inline?.tabAction, tabActions, 'tabAction');
+  assertChoice(inline?.updateMode, updateModes, 'updateMode');
 
   const configuredActivation: unknown = inline?.activation;
   const activation = configuredActivation ?? 'doubleClick';
