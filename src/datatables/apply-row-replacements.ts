@@ -1,4 +1,4 @@
-import { createReadonlyRowView } from '../core/readonly-row-view.js';
+import { createMutableRowCopy } from '../core/readonly-row-view.js';
 
 /** One synchronous row replacement with its restoration value. */
 export interface RowReplacement<TRow extends object> {
@@ -14,7 +14,7 @@ export function applyRowReplacements<TRow extends object>(
   const appliedReplacements: Readonly<RowReplacement<TRow>>[] = [];
   const snapshots = replacements.map((replacement) => ({
     ...replacement,
-    previousRow: createReadonlyRowView<TRow>(replacement.previousRow),
+    previousRow: createMutableRowCopy<TRow>(replacement.previousRow),
   }));
   try {
     for (const replacement of snapshots) {

@@ -154,6 +154,8 @@ their service-side transaction and partial-failure policy.
 `DataTablesHost` validates every target before replacement, performs one draw,
 and attempts to restore independent plain-data snapshots for all attempted writes
 if a setter throws, including a setter that mutates its input before failing.
+Restored plain records and arrays remain writable so application-owned DataTables
+updates can continue after recovery.
 `StandaloneHost` exposes the capability only when `applyUpdates` is
 configured. These Host guarantees do not roll back remote persistence that has
 already completed.

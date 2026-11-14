@@ -23,6 +23,23 @@ describeEditorHostContract('DataTablesHost', () => {
 });
 
 describe('DataTablesHost', () => {
+  it('rejects a retained target when a redraw introduces a duplicate id', () => {
+    const { api } = createTestTable('duplicate-after-draw');
+    const host = new DataTablesHost(api);
+    try {
+      const target = host.resolveRecordTarget('#row-a');
+      api
+        .row(1)
+        .data({ ...api.row(1).data(), id: 'row-a' })
+        .draw(false);
+      expect(() => host.read(target)).toThrow();
+      const entries = [...host.entries()];
+      expect(entries[0]?.target).not.toBe(entries[1]?.target);
+    } finally {
+      host.destroy();
+    }
+  });
+
   it('releases unloaded row mappings on redraw while retained handles remain usable', () => {
     const { api } = createTestTable('host-unloaded-records');
     const host = new DataTablesHost(api);

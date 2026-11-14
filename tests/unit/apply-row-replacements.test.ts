@@ -7,6 +7,28 @@ interface TestRow {
 }
 
 describe('DataTables row replacements', () => {
+  it('restores independently writable nested records after a failed replacement', () => {
+    const original = { nested: { value: 'original' }, tags: ['first'] };
+    let record = original;
+    const failure = new Error('Replacement failed.');
+    expect(() => {
+      applyRowReplacements([
+        {
+          previousRow: original,
+          row: { nested: { value: 'updated' }, tags: ['second'] },
+          write: (row) => {
+            record = row;
+            if (row.nested.value === 'updated') throw failure;
+          },
+        },
+      ]);
+    }).toThrow(failure);
+    record.nested.value = 'editable';
+    record.tags.push('third');
+    expect(original).toEqual({ nested: { value: 'original' }, tags: ['first'] });
+    expect(record).toEqual({ nested: { value: 'editable' }, tags: ['first', 'third'] });
+  });
+
   it('restores detached values when a writer mutates a record before failing', () => {
     const records = [{ value: 'first' }, { value: 'second' }];
     const failure = new Error('Replacement failed.');

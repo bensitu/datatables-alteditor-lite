@@ -28,6 +28,26 @@ function collection(rows: readonly Row[]) {
 }
 
 describe('LocalUniquenessValidator', () => {
+  it('stops reading records once every candidate has a duplicate', () => {
+    const validator = new LocalUniquenessValidator(
+      {
+        *entries() {
+          yield { row: { name: 'Alpha', rank: 1 }, target: 'first' };
+          throw new Error('No further records need to be read.');
+        },
+      },
+      [
+        { name: 'name', label: 'Name', type: 'text', unique: true },
+        { name: 'rank', label: 'Rank', type: 'number', unique: true },
+      ],
+      ENGLISH_LANGUAGE,
+    );
+    expect(validator.validate({ name: 'Alpha', rank: 1 })).toEqual({
+      name: ENGLISH_LANGUAGE.validation.unique,
+      rank: ENGLISH_LANGUAGE.validation.unique,
+    });
+  });
+
   it('excludes stable targets when each read returns fresh row data', () => {
     const validator = new LocalUniquenessValidator(
       {

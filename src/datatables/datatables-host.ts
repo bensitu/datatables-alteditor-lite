@@ -345,8 +345,9 @@ export class DataTablesHost<TRow extends object>
   }
 
   /** Enumerates the records currently loaded by DataTables. */
-  public entries(): Iterable<Readonly<HostRecordEntry<TRow, DataTablesRecordTarget>>> {
-    const entries: HostRecordEntry<TRow, DataTablesRecordTarget>[] = [];
+  public *entries(): IterableIterator<
+    Readonly<HostRecordEntry<TRow, DataTablesRecordTarget>>
+  > {
     const rows = this.table.rows();
     const rowIndexes = rows.indexes().toArray();
     const rowIds = rows.ids().toArray() as unknown[];
@@ -369,12 +370,17 @@ export class DataTablesHost<TRow extends object>
         typeof rowId === 'string' && rowId.length > 0 && rowIdCounts.get(rowId) === 1
           ? rowId
           : undefined;
-      entries.push({
-        row: createReadonlyRowView(this.table.row(rowIndex).data()),
-        target: this.#createRecordTargetWithValidatedRowId(rowIndex, stableRowId),
-      });
+      const capture = captureEditTargetWithValidatedRowId(
+        this.table,
+        rowIndex,
+        stableRowId,
+        'The selected record is no longer available.',
+      );
+      yield {
+        row: capture.snapshot.original,
+        target: this.#storeRecordTarget(capture),
+      };
     }
-    return entries;
   }
 
   /** Finds the loaded record target for one live DataTables row object. */
@@ -729,9 +735,14 @@ export class DataTablesHost<TRow extends object>
 
   readonly #pruneRecordTargets = (): void => {
     if (this.#targetsByRowId.size === 0) return;
-    const rowIndexById = createUniqueRowIndexById(this.table);
+    const counts = new Map<string, number>();
+    for (const rowId of this.table.rows().ids().toArray() as unknown[]) {
+      if (typeof rowId === 'string' && this.#targetsByRowId.has(rowId)) {
+        counts.set(rowId, (counts.get(rowId) ?? 0) + 1);
+      }
+    }
     for (const [rowId, target] of this.#targetsByRowId) {
-      if (rowIndexById.has(rowId)) continue;
+      if (counts.get(rowId) === 1) continue;
       this.#targetsByRowId.delete(rowId);
       const capture = this.#recordCaptures.get(target);
       if (capture !== undefined) this.#recordTargets.delete(capture.sourceRow);

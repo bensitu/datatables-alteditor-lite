@@ -12,6 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cancelled form validation and multi-record submissions stop waiting for
   unfinished field change and dependency callbacks. Superseded field change
   callbacks no longer delay subsequent validation.
+- Failed DataTables batch replacements restore writable copies of plain records
+  and arrays.
+
+### Changed
+
+- DataTables record enumeration creates snapshots on demand without duplicating
+  each row copy. Local uniqueness checks stop after finding all duplicates, and
+  redraw cleanup retains counts only for tracked row identifiers.
 
 ## [0.10.0] - 2026-11-16
 

@@ -59,6 +59,7 @@ export class LocalUniquenessValidator<
       return fieldErrors;
     }
 
+    let remaining = candidates.length;
     for (const { row, target } of this.collection.entries()) {
       if (
         exclusion?.target !== undefined
@@ -74,8 +75,10 @@ export class LocalUniquenessValidator<
           candidate.isEqual(lookupPathSegments(row, candidate.pathSegments).value, value)
         ) {
           fieldErrors[candidate.name] = this.language.validation.unique;
+          remaining -= 1;
         }
       }
+      if (remaining === 0) break;
     }
 
     return fieldErrors;

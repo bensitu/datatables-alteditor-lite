@@ -45,6 +45,13 @@ reuse downloaded versioned resources and retry interrupted transfers up to twice
 without altering their contents. Recompute page integrity hashes whenever CDN
 versions change. Public peer ranges remain unchanged.
 
+DataTables record enumeration creates one detached snapshot for each visited row
+and reuses it for the row value and record target. Local uniqueness checks stop
+once all supplied unique values have duplicates. Row values are read during
+iteration rather than cached across draws, so external row replacements remain
+visible. Redraw cleanup counts only retained row identifiers, but still scans all
+loaded identifiers to detect duplicates reliably.
+
 ## Internal responsibilities
 
 - `DialogEditingController` coordinates operation selection, session resources,
