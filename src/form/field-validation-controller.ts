@@ -149,7 +149,10 @@ export class FieldValidationController<TFormValues extends object> {
       }
       return result;
     } catch (error: unknown) {
-      if (!isCurrent()) {
+      if (
+        !isCurrent() ||
+        (error instanceof DOMException && error.name === 'AbortError')
+      ) {
         return { valid: false };
       }
       showError(this.invalidMessage);

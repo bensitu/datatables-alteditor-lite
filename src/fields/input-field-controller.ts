@@ -74,8 +74,20 @@ export function createInputFieldController<TFormValues extends object>(
       inputElement.readOnly = isReadOnly;
     },
     validateNative: () => {
-      if (isTrimEnabled(config)) {
-        inputElement.value = readValue();
+      const normalizedValue = readValue();
+      if (normalizedValue !== inputElement.value) {
+        const validationInput = inputElement.cloneNode(false) as HTMLInputElement;
+        validationInput.value = normalizedValue;
+        return validationInput.checkValidity()
+          ? { valid: true }
+          : {
+              valid: false,
+              message: validationInput.validity.valueMissing
+                ? requiredMessage
+                : validationInput.validationMessage.length > 0
+                  ? validationInput.validationMessage
+                  : invalidMessage,
+            };
       }
       return inputElement.checkValidity() ? { valid: true } : { valid: false };
     },

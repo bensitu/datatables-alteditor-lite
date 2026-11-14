@@ -52,6 +52,16 @@ Supported field types are:
 
 Disabled fields are omitted from collection. Fields configured with `readOnly:
 true` remain collectible.
+
+Number reads return the configured empty value when the native control does not
+contain a supported finite number. Reading a field is not validation: call its
+`validate()` method to distinguish an invalid input from an accepted empty value,
+and use native `required`, `min`, `max`, and `step` constraints as appropriate.
+Browsers may discard unsupported numeric text before the editor reads it.
+
+With `trim: true`, text, email, and password fields validate and collect normalized
+text without replacing the visible value or moving its selection. Textarea reads
+also trim the collected value when configured.
 `editable: false` omits the field from Create and Edit forms. Consumer labels,
 descriptions, options, and error messages are rendered as text, never as HTML.
 Readonly controls remain focusable for accessibility and prevent normal user
@@ -67,6 +77,11 @@ the complete validation sequence before hooks, events, persistence, or Host
 application. A newer value, another validation request, closing, or destruction
 invalidates stale asynchronous results. Backend validation remains authoritative
 for business, concurrency, and security rules.
+
+For data URL file fields, a new read cancels the preceding read. A cancelled field
+validation returns an unsuccessful result without displaying an invalid-value
+message. Callers reading values directly should handle `AbortError` when another
+read supersedes their request.
 
 Batch dialogs validate only fields with an explicit common override on blur.
 Unchanged or mixed fields are not submitted and do not trigger this validation.

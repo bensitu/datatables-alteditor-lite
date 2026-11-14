@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Invalid inline action values are rejected consistently across all hosts.
 - Instance identifier generation includes a random component when the global
   sequence is unavailable and the environment lacks `crypto.randomUUID`.
+- Superseded file reads do not display field validation errors.
+- Trimmed text validation preserves the visible input and text selection.
 
 ### Changed
 

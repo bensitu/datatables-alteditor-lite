@@ -4,7 +4,9 @@ import {
   EditorConfigurationError,
   EditorFileLimitError,
 } from '../../src/core/alt-editor-lite-error.js';
+import { ENGLISH_LANGUAGE } from '../../src/core/alt-editor-lite-language.js';
 import { createFileFieldController } from '../../src/fields/file-field-controller.js';
+import { buildEditorForm } from '../../src/form/build-editor-form.js';
 
 import type { FileFieldConfig } from '../../src/fields/field-config.js';
 import type { ManagedFieldController } from '../../src/fields/managed-field-controller.js';
@@ -64,6 +66,30 @@ function setSelectedFiles(inputElement: HTMLInputElement, files: readonly File[]
 }
 
 describe('file field controller', () => {
+  it('does not display a validation error when a file read is superseded', async () => {
+    const form = buildEditorForm<{ attachment: string | null }>(
+      [{ name: 'attachment', label: 'Attachment', type: 'file', encoding: 'data-url' }],
+      'file-validation',
+      ENGLISH_LANGUAGE,
+    );
+    document.body.append(form.element);
+    try {
+      const field = form.getField('attachment');
+      const input = field?.element.querySelector('input');
+      if (input === undefined || input === null)
+        throw new Error('Expected a file input.');
+      setSelectedFiles(input, [new File(['first'], 'first.txt')]);
+      const validation = expect(field?.validate()).resolves.toEqual({ valid: false });
+      const value = field?.getValue();
+      await Promise.all([validation, expect(value).resolves.toContain('base64,')]);
+      expect(
+        field?.element.querySelector('.alteditor-lite-field__error')?.textContent,
+      ).toBe('');
+    } finally {
+      form.destroy();
+    }
+  });
+
   it('collects single and multiple File values with native properties', async () => {
     const singleController = createController({
       accept: '.txt',

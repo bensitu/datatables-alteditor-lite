@@ -148,7 +148,7 @@ describe('native field presentation', () => {
     controller.destroy();
   });
 
-  it('normalizes trimmed text before native validation', () => {
+  it('validates trimmed text without changing its visible value or selection', () => {
     const controller = createFieldController(
       { label: 'Name', name: 'name', required: true, trim: true, type: 'text' },
       'trimmed-name',
@@ -160,12 +160,19 @@ describe('native field presentation', () => {
       throw new Error('Expected a text input.');
     }
     input.value = '   ';
+    input.setSelectionRange(1, 2);
 
     expect(controller.validateNative()).toEqual({
       message: 'Localized required value.',
       valid: false,
     });
-    expect(input.value).toBe('');
+    expect(input.value).toBe('   ');
+    expect(input.selectionStart).toBe(1);
+    expect(input.selectionEnd).toBe(2);
+    input.pattern = '[A-Z][a-z]+';
+    input.value = '  Ada  ';
+    expect(controller.validateNative()).toEqual({ valid: true });
+    expect(input.value).toBe('  Ada  ');
     controller.destroy();
   });
 
