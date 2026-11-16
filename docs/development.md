@@ -7,6 +7,8 @@ as declared in `package.json`. CI tests the minimum supported Node.js 22 and 24
 versions and the current Node.js 26 release. Node.js 24 runs coverage and browser
 tests.
 
+Git 2.32 or newer is required for the development commit hooks.
+
 Run `npm outdated` before updating dependencies. Check both the package's Node.js
 engine requirement and the peer requirements of the complete toolchain.
 Keep the lockfile and demonstration CDN versions aligned with dependency changes;

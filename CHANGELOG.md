@@ -19,7 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Updated ESLint import rules, Prettier, Rolldown, and TypeScript ESLint tooling,
-  while retaining Playwright 1.64.1 for browser tests.
+  along with Vitest 5.1, jsdom 31, commitlint 21, lint-staged 17, and axe-core
+  Playwright integration 4.14.
+- Development commit hooks now require Git 2.32 or newer.
 - DataTables record enumeration creates snapshots on demand without duplicating
   each row copy. Local uniqueness checks stop after finding all duplicates, and
   redraw cleanup retains counts only for tracked row identifiers.
