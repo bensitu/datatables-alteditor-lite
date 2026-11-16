@@ -62,6 +62,9 @@ Browsers may discard unsupported numeric text before the editor reads it.
 With `trim: true`, text, email, and password fields validate and collect normalized
 text without replacing the visible value or moving its selection. Textarea reads
 also trim the collected value when configured.
+Trimmed inputs follow native constraint validation eligibility, including the
+disabled fieldset rules and their first-legend exception.
+
 `editable: false` omits the field from Create and Edit forms. Consumer labels,
 descriptions, options, and error messages are rendered as text, never as HTML.
 Readonly controls remain focusable for accessibility and prevent normal user

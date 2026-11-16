@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Updated ESLint import rules, Prettier, Rolldown, and TypeScript ESLint tooling,
+  while retaining Playwright 1.64.1 for browser tests.
 - DataTables record enumeration creates snapshots on demand without duplicating
   each row copy. Local uniqueness checks stop after finding all duplicates, and
   redraw cleanup retains counts only for tracked row identifiers.
@@ -45,6 +47,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   sequence is unavailable and the environment lacks `crypto.randomUUID`.
 - Superseded file reads do not display field validation errors.
 - Trimmed text validation preserves the visible input and text selection.
+- Trimmed text validation respects disabled fieldsets and their first-legend
+  exception.
 - Corrected the generated locale declarations' relative type import so packaged
   ESM language modules compile in TypeScript consumer applications.
 

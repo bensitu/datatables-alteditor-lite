@@ -72,6 +72,37 @@ afterEach(() => {
 });
 
 describe('native field presentation', () => {
+  it('skips trimmed input validation inside a disabled fieldset', () => {
+    const controller = createFieldController(
+      { label: 'Name', name: 'name', required: true, trim: true, type: 'text' },
+      'disabled-name',
+      language,
+      () => undefined,
+    );
+    const fieldset = document.createElement('fieldset');
+    fieldset.disabled = true;
+    fieldset.append(controller.element);
+    document.body.append(fieldset);
+    const input = controller.element.querySelector<HTMLInputElement>('input');
+    if (input === null) throw new Error('Expected a text input.');
+    input.value = '   ';
+    try {
+      expect(input.willValidate).toBe(false);
+      expect(controller.validateNative()).toEqual({ valid: true });
+      expect(input.value).toBe('   ');
+      const legend = document.createElement('legend');
+      fieldset.prepend(legend);
+      legend.append(controller.element);
+      expect(input.willValidate).toBe(true);
+      expect(controller.validateNative()).toEqual({
+        message: 'Localized required value.',
+        valid: false,
+      });
+    } finally {
+      controller.destroy();
+    }
+  });
+
   it('keeps inline labels and error descriptions accessible without visible field feedback', () => {
     const controller = createFieldController(
       { label: 'Name', name: 'name', type: 'text' },

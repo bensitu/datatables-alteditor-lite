@@ -74,6 +74,9 @@ export function createInputFieldController<TFormValues extends object>(
       inputElement.readOnly = isReadOnly;
     },
     validateNative: () => {
+      if (!inputElement.willValidate) {
+        return { valid: true };
+      }
       const normalizedValue = readValue();
       if (normalizedValue !== inputElement.value) {
         const validationInput = inputElement.cloneNode(false) as HTMLInputElement;
