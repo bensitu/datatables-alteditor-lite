@@ -39,10 +39,6 @@ import { runCleanupSteps } from './run-cleanup-steps.js';
 import { validateHooksConfiguration } from './validate-hooks-configuration.js';
 import { validateOperationConfiguration } from './validate-operation-configuration.js';
 
-import type { AltEditorLiteOptions } from './alt-editor-lite-options.js';
-import type { EditorCapabilities } from './editor-capabilities.js';
-import type { EditorState } from './editor-state.js';
-import type { DeepPartial, EditorValues } from './editor-values.js';
 import type { FieldController } from '../fields/field-controller.js';
 import type {
   EditorHost,
@@ -51,6 +47,10 @@ import type {
 } from '../host/editor-host.js';
 import type { HostInlineState, InlineHostRuntime } from '../host/inline-host-runtime.js';
 import type { FieldPath, FieldPathValue } from '../object-path/field-path.js';
+import type { AltEditorLiteOptions } from './alt-editor-lite-options.js';
+import type { EditorCapabilities } from './editor-capabilities.js';
+import type { EditorState } from './editor-state.js';
+import type { DeepPartial, EditorValues } from './editor-values.js';
 
 function createInactiveInlineRuntime(): InlineHostRuntime {
   const unavailable = (): Promise<void> =>

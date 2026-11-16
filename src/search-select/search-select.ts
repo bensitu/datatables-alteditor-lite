@@ -20,12 +20,12 @@ import {
 } from './search-select-positioning.js';
 import { SearchSelectRemoteDataController } from './search-select-remote-data-controller.js';
 
-import type { SearchOptionEntry } from './filter-search-options.js';
 import type { SelectOption } from '../fields/field-config.js';
 import type {
   SearchSelectOptionLoader,
   SearchSelectOptionResolver,
 } from '../fields/search-select-data-source.js';
+import type { SearchOptionEntry } from './filter-search-options.js';
 
 /** Localized text consumed by a SearchSelect instance. */
 export interface SearchSelectMessages {

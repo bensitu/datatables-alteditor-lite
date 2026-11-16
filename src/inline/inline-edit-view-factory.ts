@@ -1,8 +1,8 @@
 import { InlineCellHost } from './inline-cell-host.js';
 
-import type { InlineEditView, InlineEditViewHandlers } from './inline-edit-view.js';
 import type { FieldConfig } from '../fields/field-config.js';
 import type { ManagedFieldController } from '../fields/managed-field-controller.js';
+import type { InlineEditView, InlineEditViewHandlers } from './inline-edit-view.js';
 
 /** Values needed to create one compact inline view. */
 export interface InlineEditViewContext<TFormValues extends object> {

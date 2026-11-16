@@ -11,6 +11,7 @@ import {
 import { freezeEditorValues } from '../freeze-editor-values.js';
 import { mergeDeclaredFieldValues } from '../merge-declared-field-values.js';
 
+import type { MaybePromise } from '../../fields/field-value.js';
 import type { AltEditorLiteLanguage } from '../alt-editor-lite-language.js';
 import type {
   AfterSuccessContext,
@@ -26,7 +27,6 @@ import type {
   BatchEditTransaction,
 } from './batch-edit-transaction.js';
 import type { OperationOwner, OwnedOperationRequest } from './operation-owner.js';
-import type { MaybePromise } from '../../fields/field-value.js';
 
 /** Terminal result returned to the batch dialog presentation. */
 export type BatchEditOperationResult<TRow extends object> =

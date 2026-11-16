@@ -1,12 +1,12 @@
+import type { FieldConfig } from '../fields/field-config.js';
+import type { MaybePromise } from '../fields/field-value.js';
+import type { FormDependencies } from '../form/form-dependency.js';
+import type { FormValidator } from '../form/form-validation.js';
 import type { PartialEditorLanguage } from './alt-editor-lite-language.js';
 import type { EditingOptions } from './editing-options.js';
 import type { EditorCloseReason } from './editor-event.js';
 import type { EditorOperationTarget } from './editor-operation.js';
 import type { BatchChanges, DeepPartial, EditorValues } from './editor-values.js';
-import type { FieldConfig } from '../fields/field-config.js';
-import type { MaybePromise } from '../fields/field-value.js';
-import type { FormDependencies } from '../form/form-dependency.js';
-import type { FormValidator } from '../form/form-validation.js';
 
 interface OperationContextBase {
   /** Signal aborted when the operation is closed, replaced, or destroyed. */

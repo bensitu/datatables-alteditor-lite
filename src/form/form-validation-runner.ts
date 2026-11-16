@@ -7,9 +7,9 @@ import { hasOwn } from '../core/has-own.js';
 import { settleWithAbort } from '../core/settle-with-abort.js';
 import { parseFieldPath } from '../object-path/field-path.js';
 
-import type { FormValidationResult } from './form-validation.js';
 import type { EditorValues } from '../core/editor-values.js';
 import type { ManagedFieldController } from '../fields/managed-field-controller.js';
+import type { FormValidationResult } from './form-validation.js';
 
 /** Internal callback for Host-scoped local uniqueness checks. */
 export type LocalUniqueValidator<TFormValues extends object> = (

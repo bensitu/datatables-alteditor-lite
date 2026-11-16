@@ -1,8 +1,8 @@
 import { InlineOriginalContent } from './inline-original-content.js';
 
-import type { InlineEditView } from './inline-edit-view.js';
 import type { FieldConfig } from '../fields/field-config.js';
 import type { ManagedFieldController } from '../fields/managed-field-controller.js';
+import type { InlineEditView } from './inline-edit-view.js';
 
 /** Compact control-only view mounted in one DataTables cell. */
 export class InlineCellHost<TFormValues extends object> implements InlineEditView {

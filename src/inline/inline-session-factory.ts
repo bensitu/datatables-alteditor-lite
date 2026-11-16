@@ -2,13 +2,13 @@ import { mergeAbortSignals } from '../core/merge-abort-signals.js';
 import { createFieldController } from '../fields/create-field-controller.js';
 import { INLINE_FIELD_PRESENTATION } from '../fields/field-controller-presentation.js';
 
-import type { InlineEditSession } from './inline-edit-session.js';
-import type { InlineEditViewFactory } from './inline-edit-view-factory.js';
-import type { InlineTargetCapture } from './inline-target-capture.js';
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type { InteractionToken } from '../core/editing/interaction-coordinator.js';
 import type { ResolvedInlineEditingOptions } from '../core/resolve-editing-options.js';
 import type { ManagedFieldController } from '../fields/managed-field-controller.js';
+import type { InlineEditSession } from './inline-edit-session.js';
+import type { InlineEditViewFactory } from './inline-edit-view-factory.js';
+import type { InlineTargetCapture } from './inline-target-capture.js';
 
 export interface InlineSessionFactoryArguments<TFormValues extends object> {
   readonly instanceId: string;

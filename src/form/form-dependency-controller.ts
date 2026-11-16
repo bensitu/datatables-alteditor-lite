@@ -7,18 +7,18 @@ import { SEARCH_SELECT_MAX_OPTION_COUNT } from '../fields/search-select-constant
 import { parseFieldPath } from '../object-path/field-path.js';
 import { getPathValue } from '../object-path/get-path-value.js';
 
-import type { FieldRuntimeController } from './field-runtime-controller.js';
-import type {
-  FormDependencies,
-  FormDependencyResolver,
-  FormDependencyResult,
-} from './form-dependency.js';
 import type { AltEditorLiteError } from '../core/alt-editor-lite-error.js';
 import type { EditorValues } from '../core/editor-values.js';
 import type { FieldConfig, SelectOption } from '../fields/field-config.js';
 import type { MaybePromise } from '../fields/field-value.js';
 import type { ManagedFieldController } from '../fields/managed-field-controller.js';
 import type { FieldPath } from '../object-path/field-path.js';
+import type { FieldRuntimeController } from './field-runtime-controller.js';
+import type {
+  FormDependencies,
+  FormDependencyResolver,
+  FormDependencyResult,
+} from './form-dependency.js';
 
 const PATCH_PROPERTIES = new Set([
   'disabled',

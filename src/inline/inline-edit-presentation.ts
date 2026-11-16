@@ -9,11 +9,11 @@ import {
   type ResolvedInlineInteractionBehavior,
 } from './inline-interaction-behavior.js';
 
-import type { InlineActivationStrategy } from './inline-activation-strategy.js';
-import type { InlineEditViewFactory } from './inline-edit-view-factory.js';
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type { InlineActivation } from '../core/editing-options.js';
 import type { ResolvedInlineEditingOptions } from '../core/resolve-editing-options.js';
+import type { InlineActivationStrategy } from './inline-activation-strategy.js';
+import type { InlineEditViewFactory } from './inline-edit-view-factory.js';
 
 /** How an active inline session interacts with another editor operation. */
 export type InlineConflictPolicy =
