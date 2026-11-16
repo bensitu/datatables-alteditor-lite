@@ -1,12 +1,12 @@
 import { ActionInlineEditView } from './action-inline-edit-view.js';
 import { InlineCellHost } from './inline-cell-host.js';
 
+import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type {
   InlineEditViewContext,
   InlineEditViewFactory,
 } from './inline-edit-view-factory.js';
 import type { InlineEditView, InlineEditViewHandlers } from './inline-edit-view.js';
-import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 
 /** Creates an inline view with dedicated submit and cancel buttons. */
 export class ActionInlineEditViewFactory<

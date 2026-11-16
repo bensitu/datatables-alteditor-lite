@@ -1,6 +1,6 @@
-import type { AltEditorLiteLanguage } from './alt-editor-lite-language.js';
 import type { InlineKeyboardActivation } from '../inline/inline-keyboard-shortcut.js';
 import type { FieldPath } from '../object-path/field-path.js';
+import type { AltEditorLiteLanguage } from './alt-editor-lite-language.js';
 
 /** User interaction that opens an inline editing session. */
 export type InlineActivation = 'doubleClick' | 'hover';

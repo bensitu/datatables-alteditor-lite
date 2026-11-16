@@ -1,8 +1,8 @@
 import { createInlineColumnMappings } from './inline-column-mapping.js';
 
-import type { InlineColumnMapping } from './inline-column-mapping.js';
 import type { ResolvedInlineEditingOptions } from '../core/resolve-editing-options.js';
 import type { FieldConfig } from '../fields/field-config.js';
+import type { InlineColumnMapping } from './inline-column-mapping.js';
 import type { Api } from 'datatables.net';
 
 /** Rebuilds column mappings while preserving the map identity held by consumers. */

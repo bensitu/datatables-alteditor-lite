@@ -10,6 +10,7 @@ import {
 import { freezeEditorValues } from '../freeze-editor-values.js';
 import { mergeDeclaredFieldValues } from '../merge-declared-field-values.js';
 
+import type { MaybePromise } from '../../fields/field-value.js';
 import type { AltEditorLiteLanguage } from '../alt-editor-lite-language.js';
 import type {
   AfterSuccessContext,
@@ -22,7 +23,6 @@ import type { EditorOperationTarget } from '../editor-operation.js';
 import type { EditPresentationAdapter } from './edit-presentation-adapter.js';
 import type { EditCommitResult, EditTransaction } from './edit-transaction.js';
 import type { OperationOwner, OwnedOperationRequest } from './operation-owner.js';
-import type { MaybePromise } from '../../fields/field-value.js';
 
 /** Terminal result returned to dialog and inline presentation callers. */
 export type EditOperationResult<TRow extends object> =

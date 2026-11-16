@@ -7,13 +7,13 @@ import { settleWithAbort } from '../core/settle-with-abort.js';
 
 import { getDialogSessionOperation, type DialogSession } from './dialog-session.js';
 
-import type { EditorDialog } from './editor-dialog.js';
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type {
   AltEditorLiteOptions,
   BeforeCloseReason,
 } from '../core/alt-editor-lite-options.js';
 import type { EditorErrorReporter } from '../core/editor-error-reporter.js';
+import type { EditorDialog } from './editor-dialog.js';
 
 interface DialogCloseCoordinatorArguments<
   TRow extends object,

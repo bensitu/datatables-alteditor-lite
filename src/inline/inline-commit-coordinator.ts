@@ -9,8 +9,6 @@ import {
   createInlineOperationTarget,
 } from './inline-operation-target.js';
 
-import type { InlineColumnMapping } from './inline-column-mapping.js';
-import type { InlineEditSession } from './inline-edit-session.js';
 import type { AltEditorLiteError } from '../core/alt-editor-lite-error.js';
 import type {
   AltEditorLiteOptions,
@@ -25,6 +23,8 @@ import type { EditPresentationAdapter } from '../core/editing/edit-presentation-
 import type { OperationOwner } from '../core/editing/operation-owner.js';
 import type { ResolvedInlineEditingOptions } from '../core/resolve-editing-options.js';
 import type { DataTablesHost } from '../datatables/datatables-host.js';
+import type { InlineColumnMapping } from './inline-column-mapping.js';
+import type { InlineEditSession } from './inline-edit-session.js';
 import type { Api } from 'datatables.net';
 
 export interface InlineCommitCoordinatorArguments<

@@ -5,6 +5,7 @@ import {
   normalizeOperationError,
 } from './error-normalization.js';
 
+import type { HostRefreshCapability } from '../host/editor-host.js';
 import type { AltEditorLiteLanguage } from './alt-editor-lite-language.js';
 import type { AltEditorLiteOptions } from './alt-editor-lite-options.js';
 import type { AltEditorLite } from './alt-editor-lite.js';
@@ -15,7 +16,6 @@ import type {
 import type { OperationOwner } from './editing/operation-owner.js';
 import type { EditorErrorReporter } from './editor-error-reporter.js';
 import type { EditorStateCoordinator } from './editor-state-coordinator.js';
-import type { HostRefreshCapability } from '../host/editor-host.js';
 
 export interface RefreshOperationRunnerArguments<
   TRow extends object,

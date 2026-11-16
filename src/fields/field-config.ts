@@ -1,3 +1,5 @@
+import type { EditorValues } from '../core/editor-values.js';
+import type { FieldPath } from '../object-path/field-path.js';
 import type { CustomFieldConfig } from './custom-field.js';
 import type { FieldValidationResult } from './field-controller.js';
 import type { MaybePromise } from './field-value.js';
@@ -5,8 +7,6 @@ import type {
   SearchSelectOptionLoader,
   SearchSelectOptionResolver,
 } from './search-select-data-source.js';
-import type { EditorValues } from '../core/editor-values.js';
-import type { FieldPath } from '../object-path/field-path.js';
 
 /**
  * Context supplied to field change callbacks.

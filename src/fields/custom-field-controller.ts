@@ -4,6 +4,7 @@ import { settleWithAbort } from '../core/settle-with-abort.js';
 
 import { createFieldControllerShell } from './field-controller-shell.js';
 
+import type { EditorValues } from '../core/editor-values.js';
 import type {
   CustomFieldAdapter,
   CustomFieldConfig,
@@ -13,7 +14,6 @@ import type { FieldChangeContext, FieldValidationContext } from './field-config.
 import type { FieldControllerShell } from './field-controller-shell.js';
 import type { FieldValidationResult } from './field-controller.js';
 import type { ManagedFieldController } from './managed-field-controller.js';
-import type { EditorValues } from '../core/editor-values.js';
 
 function assertAdapter<TValue>(
   adapter: CustomFieldAdapter<TValue>,

@@ -4,15 +4,15 @@ import { EditorAlertDialog } from '../dialog/editor-alert-dialog.js';
 import { restoreInlineOriginFocus } from './inline-focus-owner.js';
 import { InlineFocusStateMachine } from './inline-focus-state-machine.js';
 
-import type { InlineColumnMapping } from './inline-column-mapping.js';
-import type { InlineEditSession } from './inline-edit-session.js';
-import type { InlineFocusRestoreToken } from './inline-focus-state.js';
-import type { InlineNavigationIntent } from './inline-navigation.js';
 import type { AltEditorLiteError } from '../core/alt-editor-lite-error.js';
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type { ResolvedInlineEditingOptions } from '../core/resolve-editing-options.js';
 import type { LogicalCellTarget } from '../datatables/commit-row-update.js';
 import type { DataTablesHost } from '../datatables/datatables-host.js';
+import type { InlineColumnMapping } from './inline-column-mapping.js';
+import type { InlineEditSession } from './inline-edit-session.js';
+import type { InlineFocusRestoreToken } from './inline-focus-state.js';
+import type { InlineNavigationIntent } from './inline-navigation.js';
 
 export interface InlineFocusCoordinatorArguments<
   TRow extends object,

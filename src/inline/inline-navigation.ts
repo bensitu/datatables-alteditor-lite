@@ -3,9 +3,9 @@ import { resolveUniqueRowIndexById } from '../datatables/row-id-resolution.js';
 
 import { isInlineFieldEligible } from './inline-field-eligibility.js';
 
+import type { FieldConfig } from '../fields/field-config.js';
 import type { InlineColumnMapping } from './inline-column-mapping.js';
 import type { InlineTargetSummary } from './inline-edit-state.js';
-import type { FieldConfig } from '../fields/field-config.js';
 import type { Api, SelectorModifier } from 'datatables.net';
 
 /** Stable-enough target captured before an inline submission redraw. */

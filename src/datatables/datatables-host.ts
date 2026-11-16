@@ -33,8 +33,6 @@ import {
 import { SelectIntegration } from './select-integration.js';
 import { synchronizeExtensionStateAfterCommit } from './synchronize-extension-state.js';
 
-import type { LogicalCellTarget } from './commit-row-update.js';
-import type { EditTargetCapture, RemoveTargetCapture } from './row-target-resolution.js';
 import type { AltEditorLite } from '../core/alt-editor-lite.js';
 import type { FieldConfig } from '../fields/field-config.js';
 import type {
@@ -57,6 +55,8 @@ import type { InlineColumnMapping } from '../inline/inline-column-mapping.js';
 import type { InlineTargetSummary } from '../inline/inline-edit-state.js';
 import type { InlineNavigationIntent } from '../inline/inline-navigation.js';
 import type { InlineTargetCapture } from '../inline/inline-target-capture.js';
+import type { LogicalCellTarget } from './commit-row-update.js';
+import type { EditTargetCapture, RemoveTargetCapture } from './row-target-resolution.js';
 import type { Api, ColumnSelector, RowSelector } from 'datatables.net';
 
 declare const dataTablesRecordTargetBrand: unique symbol;

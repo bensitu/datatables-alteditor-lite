@@ -21,8 +21,6 @@ import {
 } from './form-dependency-controller.js';
 import { FormValidationRunner } from './form-validation-runner.js';
 
-import type { FormDependencies } from './form-dependency.js';
-import type { FormValidator } from './form-validation.js';
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type { BatchEditValidationResult } from '../core/editing/batch-edit-transaction.js';
 import type { DialogTemplateSource } from '../core/editing-options.js';
@@ -33,6 +31,8 @@ import type {
   FieldValidationResult,
 } from '../fields/field-controller.js';
 import type { FieldPath, FieldPathValue } from '../object-path/field-path.js';
+import type { FormDependencies } from './form-dependency.js';
+import type { FormValidator } from './form-validation.js';
 import type { FormLayout } from './layout/form-layout.js';
 
 /** DOM-backed logical form for applying common values to multiple records. */

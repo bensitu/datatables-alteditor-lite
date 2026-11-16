@@ -1,3 +1,4 @@
+import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type {
   FieldChangeContext,
   FieldValidationContext,
@@ -5,7 +6,6 @@ import type {
 } from './field-config.js';
 import type { FieldValidationResult } from './field-controller.js';
 import type { MaybePromise } from './field-value.js';
-import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 
 declare const customFieldConfigMarker: unique symbol;
 

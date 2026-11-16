@@ -35,8 +35,6 @@ import {
   validateEditorForm,
 } from './validate-editor-form.js';
 
-import type { FormDependencies } from './form-dependency.js';
-import type { FormValidationRequestContext, FormValidator } from './form-validation.js';
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type { DialogTemplateSource } from '../core/editing-options.js';
 import type { DeepPartial, EditorValues } from '../core/editor-values.js';
@@ -46,8 +44,10 @@ import type {
   FieldValidationResult,
 } from '../fields/field-controller.js';
 import type { ManagedFieldController } from '../fields/managed-field-controller.js';
-import type { FormLayout } from './layout/form-layout.js';
 import type { FieldPath, FieldPathValue } from '../object-path/field-path.js';
+import type { FormDependencies } from './form-dependency.js';
+import type { FormValidationRequestContext, FormValidator } from './form-validation.js';
+import type { FormLayout } from './layout/form-layout.js';
 
 /**
  * Public controller for one rendered editor form.
