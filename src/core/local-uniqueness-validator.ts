@@ -2,10 +2,10 @@ import { resolveFieldValueComparator } from '../fields/field-value-comparator.js
 import { parseFieldPath } from '../object-path/field-path.js';
 import { lookupPathSegments } from '../object-path/get-path-value.js';
 
-import type { AltEditorLiteLanguage } from './alt-editor-lite-language.js';
-import type { EditorValues } from './editor-values.js';
 import type { FieldConfig } from '../fields/field-config.js';
 import type { HostRowCollectionCapability } from '../host/editor-host.js';
+import type { AltEditorLiteLanguage } from './alt-editor-lite-language.js';
+import type { EditorValues } from './editor-values.js';
 
 interface UniqueFieldLookup {
   readonly isEqual: (left: unknown, right: unknown) => boolean;

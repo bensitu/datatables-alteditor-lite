@@ -2,13 +2,13 @@ import { resolveInlineKeyboardShortcut } from '../inline/inline-keyboard-shortcu
 
 import { EditorConfigurationError } from './alt-editor-lite-error.js';
 
+import type { InlineKeyboardActivation } from '../inline/inline-keyboard-shortcut.js';
+import type { FieldPath } from '../object-path/field-path.js';
 import type {
   DialogTemplateOption,
   EditingOptions,
   InlineActivation,
 } from './editing-options.js';
-import type { InlineKeyboardActivation } from '../inline/inline-keyboard-shortcut.js';
-import type { FieldPath } from '../object-path/field-path.js';
 
 /** Resolved dialog settings; operation-specific callbacks remain on editor options. */
 export interface ResolvedDialogEditingOptions {

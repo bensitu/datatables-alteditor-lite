@@ -1,11 +1,11 @@
 import { FormValidationRunner } from './form-validation-runner.js';
 
+import type { EditorValues } from '../core/editor-values.js';
+import type { ManagedFieldController } from '../fields/managed-field-controller.js';
 import type {
   LocalUniqueValidator,
   ValidationExecutionResult,
 } from './form-validation-runner.js';
-import type { EditorValues } from '../core/editor-values.js';
-import type { ManagedFieldController } from '../fields/managed-field-controller.js';
 
 export type { LocalUniqueValidator } from './form-validation-runner.js';
 

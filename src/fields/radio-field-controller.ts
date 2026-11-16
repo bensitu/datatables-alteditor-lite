@@ -3,6 +3,7 @@ import { EditorConfigurationError } from '../core/alt-editor-lite-error.js';
 import { ChoiceOptionStore } from './choice-option-store.js';
 import { applyAllowedFieldAttributes } from './field-attributes.js';
 
+import type { EditorValues } from '../core/editor-values.js';
 import type {
   FieldChangeContext,
   FieldValidationContext,
@@ -10,7 +11,6 @@ import type {
   SelectOption,
 } from './field-config.js';
 import type { ManagedFieldController } from './managed-field-controller.js';
-import type { EditorValues } from '../core/editor-values.js';
 
 /** Creates an accessible radio group with replaceable typed options. */
 export function createRadioFieldController<

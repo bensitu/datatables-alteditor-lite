@@ -14,11 +14,11 @@ import { createSelectFieldController } from './select-field-controller.js';
 import { createTextareaFieldController } from './textarea-field-controller.js';
 import { throwUnsupportedFieldType } from './unsupported-field-type.js';
 
+import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type { CustomFieldControllerContext } from './custom-field.js';
 import type { FieldConfig } from './field-config.js';
 import type { FieldControllerPresentation } from './field-controller-presentation.js';
 import type { ManagedFieldController } from './managed-field-controller.js';
-import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 
 /**
  * Creates the controller corresponding to a field discriminant.

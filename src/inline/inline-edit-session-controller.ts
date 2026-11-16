@@ -27,12 +27,6 @@ import {
 import { InlineSessionFactory } from './inline-session-factory.js';
 import { InlineValidationController } from './inline-validation-controller.js';
 
-import type { InlineColumnMapping } from './inline-column-mapping.js';
-import type { InlineEditSession } from './inline-edit-session.js';
-import type { InlineEditState } from './inline-edit-state.js';
-import type { InlineEditViewFactory } from './inline-edit-view-factory.js';
-import type { ResolvedInlineInteractionBehavior } from './inline-interaction-behavior.js';
-import type { InlineNavigationIntent } from './inline-navigation.js';
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type {
   AltEditorLiteOptions,
@@ -53,6 +47,12 @@ import type { ResolvedInlineEditingOptions } from '../core/resolve-editing-optio
 import type { LogicalCellTarget } from '../datatables/commit-row-update.js';
 import type { DataTablesHost } from '../datatables/datatables-host.js';
 import type { FieldConfig } from '../fields/field-config.js';
+import type { InlineColumnMapping } from './inline-column-mapping.js';
+import type { InlineEditSession } from './inline-edit-session.js';
+import type { InlineEditState } from './inline-edit-state.js';
+import type { InlineEditViewFactory } from './inline-edit-view-factory.js';
+import type { ResolvedInlineInteractionBehavior } from './inline-interaction-behavior.js';
+import type { InlineNavigationIntent } from './inline-navigation.js';
 import type { Api, ColumnSelector, RowSelector } from 'datatables.net';
 
 export interface InlineEditSessionControllerArguments<

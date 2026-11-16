@@ -1,11 +1,11 @@
 import { EditorFormController } from './form-controller.js';
 
-import type { FormDependencies } from './form-dependency.js';
-import type { LocalUniqueValidator } from './validate-editor-form.js';
 import type { AltEditorLiteError } from '../core/alt-editor-lite-error.js';
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type { DialogTemplateSource } from '../core/editing-options.js';
 import type { FieldConfig } from '../fields/field-config.js';
+import type { FormDependencies } from './form-dependency.js';
+import type { LocalUniqueValidator } from './validate-editor-form.js';
 
 /**
  * Builds an editor-owned form using the configured field layout.

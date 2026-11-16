@@ -1,5 +1,5 @@
-import type { ResolvedInlineInteractionBehavior } from './inline-interaction-behavior.js';
 import type { FieldConfig } from '../fields/field-config.js';
+import type { ResolvedInlineInteractionBehavior } from './inline-interaction-behavior.js';
 
 /** Action owned by the inline host for one keyboard event. */
 export type InlineKeyboardIntent =

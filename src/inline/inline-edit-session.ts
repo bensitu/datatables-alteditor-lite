@@ -1,9 +1,9 @@
-import type { InlineEditView } from './inline-edit-view.js';
-import type { InlineNavigationIntent } from './inline-navigation.js';
-import type { InlineTargetCapture } from './inline-target-capture.js';
 import type { AltEditorLiteError } from '../core/alt-editor-lite-error.js';
 import type { InteractionToken } from '../core/editing/interaction-coordinator.js';
 import type { ManagedFieldController } from '../fields/managed-field-controller.js';
+import type { InlineEditView } from './inline-edit-view.js';
+import type { InlineNavigationIntent } from './inline-navigation.js';
+import type { InlineTargetCapture } from './inline-target-capture.js';
 
 /** Latest change callback failure retained for the matching input revision. */
 export interface PendingInlineChangeError {

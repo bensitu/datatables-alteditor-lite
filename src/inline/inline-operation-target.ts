@@ -1,5 +1,5 @@
-import type { InlineTargetSummary } from './inline-edit-state.js';
 import type { EditorOperationTarget } from '../core/editor-operation.js';
+import type { InlineTargetSummary } from './inline-edit-state.js';
 
 /** Converts an inline target summary to public event metadata. */
 export function createInlineEventTarget(

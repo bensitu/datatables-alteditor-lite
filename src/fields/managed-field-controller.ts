@@ -1,7 +1,7 @@
+import type { EditorValues } from '../core/editor-values.js';
 import type { SelectOption } from './field-config.js';
 import type { FieldValidationResult } from './field-controller.js';
 import type { MaybePromise } from './field-value.js';
-import type { EditorValues } from '../core/editor-values.js';
 
 /**
  * Internal type-erased controller used by FormController.
