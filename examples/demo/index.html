@@ -233,14 +233,7 @@
         </section>
 
         <aside class="demo-controls" aria-labelledby="demo-controls-title">
-          <div>
-            <p class="demo-eyebrow">Interactive options</p>
-            <h2 id="demo-controls-title">Example controls</h2>
-            <p>
-              Try translated editor controls in the employee examples. The page and sample
-              field labels are in English.
-            </p>
-          </div>
+          <h2 id="demo-controls-title">Example controls</h2>
 
           <label class="demo-control-field">
             <span>Employee editor language</span>
@@ -269,32 +262,20 @@
             </button>
           </div>
 
-          <p>
-            Change a value and cancel to try the discard confirmation. Email validation
-            runs after leaving the field; <code>reserved@example.test</code> demonstrates
-            a retryable service field error on submission.
-          </p>
-          <p>
-            Employee changes are simulated in the browser. Refresh reloads the original
-            sample data for that table.
-          </p>
-
           <p id="demo-runtime-error" class="demo-runtime-error" role="alert" hidden></p>
 
-          <dl class="demo-status" aria-label="Runtime status">
-            <div>
-              <dt>jQuery</dt>
-              <dd id="jquery-status">Checking…</dd>
-            </div>
-            <div>
-              <dt>Editor state</dt>
-              <dd id="editor-state">ready</dd>
-            </div>
-            <div>
-              <dt>Locale registry</dt>
-              <dd id="locale-status">Checking…</dd>
-            </div>
-          </dl>
+          <details class="demo-control-tips">
+            <summary>Tips for trying the demo</summary>
+            <ul>
+              <li>The page and sample field labels are in English.</li>
+              <li>Change a value and cancel to see the discard confirmation.</li>
+              <li>
+                Email validation runs when you leave the field. Submit
+                <code>reserved@example.test</code> to see a retryable field error.
+              </li>
+              <li>Use Refresh to restore the original sample data in that table.</li>
+            </ul>
+          </details>
         </aside>
       </div>
 
@@ -446,6 +427,20 @@
             Events stay on the owned table and never bubble.
           </p>
         </div>
+        <dl class="demo-status" aria-label="Runtime status">
+          <div>
+            <dt>jQuery</dt>
+            <dd id="jquery-status">Checking…</dd>
+          </div>
+          <div>
+            <dt>Editor state</dt>
+            <dd id="editor-state">ready</dd>
+          </div>
+          <div>
+            <dt>Locale registry</dt>
+            <dd id="locale-status">Checking…</dd>
+          </div>
+        </dl>
         <ol id="event-log" aria-live="polite"></ol>
       </section>
 

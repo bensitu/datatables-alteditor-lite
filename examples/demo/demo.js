@@ -724,7 +724,7 @@ createPresetButton.addEventListener('click', () => {
 localeSelect.addEventListener('change', () => {
   const requestedLocaleName = localeSelect.value;
   localeSelect.disabled = true;
-  localeStatus.textContent = `Loading ${requestedLocaleName}…`;
+  runtimeErrorElement.hidden = true;
 
   void getOrLoadLanguage(requestedLocaleName)
     .then((language) => {
@@ -734,7 +734,9 @@ localeSelect.addEventListener('change', () => {
     })
     .catch(() => {
       localeSelect.value = currentLocaleName;
-      localeStatus.textContent = 'Language resource unavailable';
+      runtimeErrorElement.textContent =
+        'The selected language could not load. Try again.';
+      runtimeErrorElement.hidden = false;
     })
     .finally(() => {
       localeSelect.disabled = false;
