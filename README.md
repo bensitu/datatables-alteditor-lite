@@ -431,7 +431,7 @@ publishes start and complete notifications. See
 
 The [live demo](https://bensitu.github.io/datatables-alteditor-lite/examples/demo/)
 uses the Browser Global distribution, the official DataTables CDN, an Ajax JSON
-data source, asynchronous persistence, and external languages. Its employee
+data source, simulated asynchronous persistence, and 13 editor languages. Its employee
 directory combines single- and multi-record Dialog Edit, Inline Edit, a grouped
 custom layout, dependent choice fields, and cross-field date validation.
 Additional examples demonstrate

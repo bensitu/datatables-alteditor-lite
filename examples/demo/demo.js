@@ -730,7 +730,6 @@ localeSelect.addEventListener('change', () => {
     .then((language) => {
       recreateEditors(language);
       currentLocaleName = language.locale;
-      document.documentElement.lang = language.locale;
       localeStatus.textContent = getRegisteredLocaleNames().join(', ');
     })
     .catch(() => {

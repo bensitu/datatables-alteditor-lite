@@ -660,6 +660,19 @@ test('integrates Buttons and Select while preserving the opening target', async 
   await expect(page.evaluate(() => 'jQuery' in globalThis)).resolves.toBe(false);
 });
 
+test('switches employee editor language while keeping the page in English', async ({
+  page,
+}) => {
+  await openDemo(page);
+  await page.locator('#locale-select').selectOption('de-DE');
+  await expect(page.locator('#locale-status')).toContainText('de-DE');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+
+  await page.getByRole('button', { name: 'Create with preset values' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Zeile erstellen' });
+  await expect(dialog.getByRole('button', { name: 'Abbrechen' })).toBeVisible();
+});
+
 test('keeps Hybrid Dialog Edit available while changing employee selection', async ({
   page,
 }) => {

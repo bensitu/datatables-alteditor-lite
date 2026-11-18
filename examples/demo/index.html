@@ -58,7 +58,6 @@
           </p>
           <div class="demo-hero__actions">
             <a class="demo-primary-link" href="#workbench">Try the live editor</a>
-            <span>Built distribution files · restrictive CSP</span>
           </div>
           <dl class="demo-proof" aria-label="Library highlights">
             <div>
@@ -66,12 +65,12 @@
               <dd>bundled dependencies</dd>
             </div>
             <div>
-              <dt>4</dt>
+              <dt>13</dt>
               <dd>included language resources</dd>
             </div>
             <div>
               <dt>14</dt>
-              <dd>typed field modes</dd>
+              <dd>built-in field types</dd>
             </div>
           </dl>
         </div>
@@ -95,7 +94,7 @@
             </li>
             <li>
               <span class="demo-workflow-card__marker" aria-hidden="true">＋</span>
-              Update DataTables only on success
+              Update the record only on success
             </li>
           </ol>
           <p class="demo-workflow-card__result">
@@ -200,9 +199,9 @@
               <h2 id="employees-title">Employee directory</h2>
             </div>
             <p class="demo-section-heading__hint">
-              Double-click Salary or Status for a quick update, or select one or more rows
-              and use Edit for grouped fields, common values, dependencies, and date
-              validation. Successful submissions close the dialog automatically.
+              Double-click an editable cell, such as Salary or Status, for a quick update.
+              Select one row and use Edit to try the grouped form and dependent fields, or
+              select several rows to apply common values.
             </p>
           </div>
           <div class="demo-table-scroll">
@@ -228,8 +227,8 @@
             data-selection="empty"
             role="status"
           >
-            Select an employee to enable Dialog Edit. Every row is available, and
-            selecting another row moves the target.
+            Select one employee for single-row editing or several employees to apply
+            common values.
           </p>
         </section>
 
@@ -238,13 +237,13 @@
             <p class="demo-eyebrow">Interactive options</p>
             <h2 id="demo-controls-title">Example controls</h2>
             <p>
-              Change the editor language or force the next persistence request to fail
-              across the employee examples.
+              Try translated editor controls in the employee examples. The page and sample
+              field labels are in English.
             </p>
           </div>
 
           <label class="demo-control-field">
-            <span>Editor language</span>
+            <span>Employee editor language</span>
             <select id="locale-select">
               <option value="en">English</option>
               <option value="de-DE">Deutsch</option>
@@ -274,6 +273,10 @@
             Change a value and cancel to try the discard confirmation. Email validation
             runs after leaving the field; <code>reserved@example.test</code> demonstrates
             a retryable service field error on submission.
+          </p>
+          <p>
+            Employee changes are simulated in the browser. Refresh reloads the original
+            sample data for that table.
           </p>
 
           <p id="demo-runtime-error" class="demo-runtime-error" role="alert" hidden></p>
@@ -457,9 +460,8 @@
             <h2 id="standalone-example-title">Standalone</h2>
           </div>
           <p class="demo-section-heading__hint">
-            The same neutral <code>AltEditorLite</code> constructor works without a table
-            or grid. <code>StandaloneHost</code> connects the dialogs to application state
-            through small callbacks.
+            <code>StandaloneHost</code> connects the editor's dialogs to application state
+            through callbacks.
           </p>
         </div>
         <div class="demo-standalone__content">
