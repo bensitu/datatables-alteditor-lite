@@ -75,13 +75,13 @@ function selectParent(parentId) {
     return {
       id: original?.id ?? crypto.randomUUID(),
       parentId,
-      product: (values.product ?? original?.product ?? '').trim(),
+      product: values.product ?? original?.product ?? '',
       quantity: values.quantity ?? original?.quantity ?? 1,
     };
   };
   childEditor = new AltEditorLite(childHost, {
     fields: [
-      { type: 'text', name: 'product', label: 'Product', required: true },
+      { type: 'text', name: 'product', label: 'Product', required: true, trim: true },
       {
         type: 'number',
         name: 'quantity',
@@ -114,15 +114,17 @@ const parentHost = new StandaloneHost({
   },
 });
 const parentEditor = new AltEditorLite(parentHost, {
-  fields: [{ type: 'text', name: 'name', label: 'Order name', required: true }],
+  fields: [
+    { type: 'text', name: 'name', label: 'Order name', required: true, trim: true },
+  ],
   operations: {
     async create(values, context) {
       await waitForResponse(context.signal);
-      return { id: crypto.randomUUID(), name: values.name.trim() };
+      return { id: crypto.randomUUID(), name: values.name };
     },
     async update(values, original, context) {
       await waitForResponse(context.signal);
-      return { ...original, name: values.name.trim() };
+      return { ...original, name: values.name };
     },
   },
 });

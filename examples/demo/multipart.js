@@ -23,7 +23,7 @@ async function saveDocument(body, signal, original) {
   const attachment = body.get('attachment');
   return {
     id: original?.id ?? crypto.randomUUID(),
-    name: String(name).trim(),
+    name: String(name),
     attachmentName:
       attachment instanceof File ? attachment.name : (original?.attachmentName ?? ''),
     attachment: null,
@@ -57,7 +57,7 @@ const host = new StandaloneHost({
 });
 const editor = new AltEditorLite(host, {
   fields: [
-    { name: 'name', label: 'Document name', type: 'text', required: true },
+    { name: 'name', label: 'Document name', type: 'text', required: true, trim: true },
     {
       name: 'attachment',
       label: 'Attachment',

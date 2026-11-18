@@ -112,6 +112,13 @@ test('saves multipart files only after success and retains attachments during re
   const example = page.locator('#multipart');
   const dialog = page.getByRole('dialog');
   await example.getByRole('button', { name: 'Create document', exact: true }).click();
+  await dialog.getByLabel('Document name').fill('   ');
+  await dialog.getByRole('button', { name: 'Submit', exact: true }).click();
+  await expect(dialog.getByLabel('Document name')).toHaveAttribute(
+    'aria-invalid',
+    'true',
+  );
+  await expect(example.locator('output')).toHaveText('No document saved.');
   await dialog.getByLabel('Document name').fill(' Report ');
   await dialog.getByLabel('Attachment', { exact: true }).setInputFiles({
     name: 'report.txt',

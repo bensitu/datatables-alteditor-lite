@@ -49,7 +49,10 @@
           </section>
           <section id="parent-child" aria-labelledby="orders-title">
             <h2 id="orders-title">Orders and order lines</h2>
-            <p>Manage related records with a separate editor for each order.</p>
+            <p>
+              Choose an order to create or edit its lines. Each line is saved to the order
+              selected when its editor opens.
+            </p>
             <div class="reference-selector">
               <label for="selected-order">Current order</label>
               <select id="selected-order"></select>
@@ -74,7 +77,11 @@
               Save a document and optional attachment using FormData. This example uses an
               in-memory endpoint; no file leaves the browser.
             </p>
-            <p>Use “Unavailable” as the name to simulate a service error.</p>
+            <p>
+              Names are validated after trimming whitespace. Use “Unavailable” to simulate
+              a service error. Edit a saved document without choosing a new file to retain
+              its attachment.
+            </p>
             <div class="reference-actions">
               <button type="button" data-action="create">Create document</button>
               <button type="button" data-action="edit" disabled>Edit document</button>
