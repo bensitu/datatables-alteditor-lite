@@ -631,7 +631,7 @@ export class DialogEditingController<
     );
   }
 
-  async #openForm(
+  #openForm(
     action: 'create' | 'edit',
     sourceValues: Readonly<object> | undefined,
     createSession: (
@@ -643,40 +643,87 @@ export class DialogEditingController<
     errorContext: EditorErrorHookContext,
     uniquenessTarget?: TTarget,
   ): Promise<void> {
+    return this.#openWithForm(
+      action,
+      () =>
+        buildEditorForm(
+          this.arguments_.options.fields,
+          this.arguments_.instanceId,
+          this.arguments_.language,
+          (values) =>
+            this.arguments_.uniquenessValidator.validate(
+              values,
+              uniquenessTarget === undefined ? undefined : { target: uniquenessTarget },
+            ),
+          this.#resolveDialogTemplate(action),
+          this.arguments_.options.dependencies,
+          this.#reportDependencyError(errorContext),
+          action,
+        ),
+      createSession,
+      errorContext,
+      sourceValues,
+    );
+  }
+
+  #openBatchForm(
+    originals: readonly Readonly<TRow>[],
+    recordTargets: readonly TTarget[],
+    operationTargets: readonly Readonly<EditorOperationTarget>[],
+  ): Promise<void> {
+    const errorContext: EditorErrorHookContext = {
+      committed: false,
+      mode: 'dialog',
+      operation: 'batchEdit',
+      phase: 'open',
+      targets: operationTargets,
+    };
+    return this.#openWithForm(
+      'batchEdit',
+      () =>
+        new BatchEditorFormController(
+          this.arguments_.options.fields,
+          originals,
+          this.arguments_.instanceId,
+          this.arguments_.language,
+          this.#resolveDialogTemplate('batchEdit'),
+          this.arguments_.options.validateForm,
+          this.arguments_.options.dependencies,
+          this.#reportDependencyError(errorContext),
+        ),
+      (form) => ({
+        action: 'batchEdit',
+        form,
+        operationTargets,
+        originals,
+        recordTargets,
+      }),
+      errorContext,
+    );
+  }
+
+  async #openWithForm<
+    TForm extends
+      EditorFormController<TFormValues> | BatchEditorFormController<TFormValues>,
+  >(
+    action: 'create' | 'edit' | 'batchEdit',
+    constructForm: () => TForm,
+    createSession: (form: TForm) => DialogSession<TRow, TFormValues, TTarget>,
+    errorContext: EditorErrorHookContext,
+    sourceValues?: Readonly<object>,
+  ): Promise<void> {
     const signal = this.#openCoordinator.signal;
     this.arguments_.stateCoordinator.transitionTo({ action, status: 'opening' });
-    let form: EditorFormController<TFormValues> | undefined;
+    let form: TForm | undefined;
     try {
       signal.throwIfAborted();
-      form = buildEditorForm(
-        this.arguments_.options.fields,
-        this.arguments_.instanceId,
-        this.arguments_.language,
-        (values) =>
-          this.arguments_.uniquenessValidator.validate(
-            values,
-            uniquenessTarget === undefined ? undefined : { target: uniquenessTarget },
-          ),
-        this.#resolveDialogTemplate(action),
-        this.arguments_.options.dependencies,
-        (_sourcePath, error) => {
-          this.arguments_.errorReporter.report(
-            error,
-            {
-              ...errorContext,
-              phase:
-                this.arguments_.stateCoordinator.getState().status === 'opening'
-                  ? 'open'
-                  : 'validation',
-            },
-            true,
-          );
-        },
-        action,
-      );
+      form = constructForm();
       await this.#prepareForm(form, signal, sourceValues);
       this.#showForm(form, action, signal);
       const session = createSession(form);
+      if (action === 'batchEdit' && this.#activeSession !== undefined) {
+        throw new Error('Dialog resources are already active.');
+      }
       if (session.action !== action || this.#activeSession !== undefined) {
         throw new Error('Dialog resources do not match the opening action.');
       }
@@ -694,76 +741,22 @@ export class DialogEditingController<
     this.#dispatchOpen(this.#requireSession(action));
   }
 
-  async #openBatchForm(
-    originals: readonly Readonly<TRow>[],
-    recordTargets: readonly TTarget[],
-    operationTargets: readonly Readonly<EditorOperationTarget>[],
-  ): Promise<void> {
-    const signal = this.#openCoordinator.signal;
-    this.arguments_.stateCoordinator.transitionTo({
-      action: 'batchEdit',
-      status: 'opening',
-    });
-    let form: BatchEditorFormController<TFormValues> | undefined;
-    try {
-      signal.throwIfAborted();
-      form = new BatchEditorFormController(
-        this.arguments_.options.fields,
-        originals,
-        this.arguments_.instanceId,
-        this.arguments_.language,
-        this.#resolveDialogTemplate('batchEdit'),
-        this.arguments_.options.validateForm,
-        this.arguments_.options.dependencies,
-        (_sourcePath, error) => {
-          this.arguments_.errorReporter.report(
-            error,
-            {
-              committed: false,
-              mode: 'dialog',
-              operation: 'batchEdit',
-              phase:
-                this.arguments_.stateCoordinator.getState().status === 'opening'
-                  ? 'open'
-                  : 'validation',
-              targets: operationTargets,
-            },
-            true,
-          );
+  #reportDependencyError(
+    context: EditorErrorHookContext,
+  ): (sourcePath: string, error: AltEditorLiteError) => void {
+    return (_sourcePath, error) => {
+      this.arguments_.errorReporter.report(
+        error,
+        {
+          ...context,
+          phase:
+            this.arguments_.stateCoordinator.getState().status === 'opening'
+              ? 'open'
+              : 'validation',
         },
+        true,
       );
-      await this.#prepareForm(form, signal);
-      this.#showForm(form, 'batchEdit', signal);
-      if (this.#activeSession !== undefined) {
-        throw new Error('Dialog resources are already active.');
-      }
-      this.#provisionalForm = undefined;
-      this.#activeSession = {
-        action: 'batchEdit',
-        form,
-        operationTargets,
-        originals,
-        recordTargets,
-      };
-    } catch (rawError: unknown) {
-      if (signal.aborted) {
-        this.#finishCancelledOpening(form);
-        return;
-      }
-      this.#failOpening(rawError, form, {
-        committed: false,
-        mode: 'dialog',
-        operation: 'batchEdit',
-        phase: 'open',
-        targets: operationTargets,
-      });
-    }
-
-    this.arguments_.stateCoordinator.transitionTo({
-      action: 'batchEdit',
-      status: 'open',
-    });
-    this.#dispatchOpen(this.#requireSession('batchEdit'));
+    };
   }
 
   async #prepareForm(
