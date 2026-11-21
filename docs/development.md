@@ -61,9 +61,14 @@ loaded identifiers to detect duplicates reliably.
 
 ## Internal responsibilities
 
+- The editor entry implementation assembles host capabilities, configuration,
+  and editing controllers. Core modules provide host-independent operation,
+  cancellation, validation, and state logic. Shared field and form types live
+  in `src/contracts/`.
 - `DialogEditingController` coordinates operation selection, session resources,
   state transitions and submission presentation.
-- `DialogOpenCoordinator` owns cancellable reads and opening hooks.
+- `DialogOpenCoordinator` owns cancellable reads and opening hooks. Dialog and
+  inline editing both use shared dialog presentation components.
   `DialogCloseCoordinator` owns asynchronous closing decisions, coalesces repeated
   requests, and invalidates decisions when forms change or submission begins.
 - `createFormView` creates the shared form element, layout and submission error
@@ -74,6 +79,9 @@ loaded identifiers to detect duplicates reliably.
   bindings supply their own mutation, validation, error and destruction behavior.
 - Host adapters own record access and application of committed results. Dialog
   and form code use host contracts without depending on DataTables internals.
+  The DataTables record target registry maintains row identity across redraws.
+- SearchSelect keeps listbox rendering, the active option, and popup positioning
+  together. The widget owns selected values and local or remote option requests.
 
 Keep asynchronous ownership checks adjacent to presentation changes. Initializing
 fields must finish before a dialog is shown, and cancelled work must not activate

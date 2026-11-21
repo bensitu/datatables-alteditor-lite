@@ -5,7 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.10.1]
+
+### Changed
+
+- Consolidated shared editor styles for fields, validation messages, and action
+  buttons in both light and dark themes.
+- Separated host record tracking and SearchSelect listbox rendering from editing
+  orchestration. DataTables 3 and standalone hosts continue to use the existing
+  public interfaces.
+- Shared cancellation, callback result checks, and form feedback across editing
+  workflows.
+- Compacted the employee demo controls and kept its language setting scoped to
+  the employee editors.
 
 ### Fixed
 
@@ -14,8 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Invalid persistence callbacks and overlapping field paths are rejected when
   the editor is created.
 - Repeated loads of the browser bundle share ownership of a table.
+- One DataTables host no longer clears redraw notifications owned by another
+  host during cleanup.
 - The local demo server handles files that become unavailable during a request,
-  and reference examples report missing records explicitly.
+  and reference examples report missing records or required values explicitly.
 
 ## [0.10.0] - 2026-11-16
 
