@@ -28,21 +28,6 @@ function resolveStableRowId<TRow extends object>(
   return resolveUniqueRowIndexById(table, rowId) === rowIndex ? rowId : undefined;
 }
 
-/** Replaces one canonical row through the DataTables host boundary. */
-export async function commitRowUpdate<TRow extends object>(
-  host: DataTablesHost<TRow>,
-  rowIndex: number,
-  row: TRow,
-  request: OwnedOperationRequest,
-): Promise<Readonly<EditCommitResult<TRow>>> {
-  await host.applyInlineUpdate(rowIndex, row, {
-    mode: request.mode,
-    operation: 'edit',
-    signal: request.abortController.signal,
-  });
-  return Object.freeze({ row });
-}
-
 /** Commits a row and captures a logical cell target from the completed draw. */
 export async function commitRowUpdateWithFocus<TRow extends object>(
   host: DataTablesHost<TRow>,
@@ -56,7 +41,11 @@ export async function commitRowUpdateWithFocus<TRow extends object>(
     readonly focusTarget: Readonly<LogicalCellTarget<TRow>>;
   }
 > {
-  const result = await commitRowUpdate(host, rowIndex, row, request);
+  await host.applyInlineUpdate(rowIndex, row, {
+    mode: request.mode,
+    operation: 'edit',
+    signal: request.abortController.signal,
+  });
   const table = host.unwrap();
   const rowId = resolveStableRowId(table, rowIndex);
   const targetBase = {
@@ -68,7 +57,7 @@ export async function commitRowUpdateWithFocus<TRow extends object>(
   const focusTarget: Readonly<LogicalCellTarget<TRow>> = Object.freeze(
     rowId === undefined ? targetBase : { ...targetBase, rowId },
   );
-  return Object.freeze({ ...result, focusTarget });
+  return Object.freeze({ row, focusTarget });
 }
 
 /** Resolves a post-draw logical target through public row and column APIs. */
