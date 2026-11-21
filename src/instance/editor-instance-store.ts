@@ -1,6 +1,21 @@
 import { EditorAlreadyInitializedError } from '../core/alt-editor-lite-error.js';
 
-const editorByOwnershipKey = new WeakMap<object, object>();
+const INSTANCE_STORE = Symbol.for('datatables-alteditor-lite.editor-instances.v1');
+
+function resolveInstanceStore(): WeakMap<object, object> {
+  const existing: unknown = Reflect.get(globalThis, INSTANCE_STORE);
+  if (existing instanceof WeakMap) {
+    return existing as WeakMap<object, object>;
+  }
+
+  const store = new WeakMap<object, object>();
+  if (existing === undefined) {
+    Reflect.defineProperty(globalThis, INSTANCE_STORE, { value: store });
+  }
+  return store;
+}
+
+const editorByOwnershipKey = resolveInstanceStore();
 
 /**
  * Opaque instance lookup shared by idempotent registration records.

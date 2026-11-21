@@ -27,6 +27,10 @@ import { BatchEditOperationRunner } from './editing/batch-edit-operation-runner.
 import { EditOperationRunner } from './editing/edit-operation-runner.js';
 import { InteractionCoordinator } from './editing/interaction-coordinator.js';
 import { OperationOwner } from './editing/operation-owner.js';
+import {
+  READ_EDITOR_BUTTON_STATE,
+  type EditorButtonStateInput,
+} from './editor-button-integration.js';
 import { resolveEditorCapabilities } from './editor-capabilities.js';
 import { EditorErrorReporter } from './editor-error-reporter.js';
 import { dispatchEditorEvent } from './editor-event.js';
@@ -430,7 +434,8 @@ export class AltEditorLite<
     }
   }
 
-  private getIntegrationButtonStateInput(): object {
+  /** Returns the current editor capabilities and selection for button integrations. */
+  public [READ_EDITOR_BUTTON_STATE](): Readonly<EditorButtonStateInput> {
     const interactionOwner = this.interactionCoordinator.current();
     const isReady =
       this.stateCoordinator.getState().status === 'ready' &&

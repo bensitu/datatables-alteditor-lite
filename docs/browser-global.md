@@ -4,6 +4,9 @@ The primary Browser Global distribution provides the DataTables constructor, the
 neutral constructor, lifecycle APIs, and language utilities. It does not require
 jQuery or a UI framework.
 
+In the same browser window, copies of this release share ownership of each
+table. Call `destroy()` on the active editor before creating its replacement.
+
 ## Quick start
 
 This example loads DataTables from its CDN and loads both AltEditorLite assets

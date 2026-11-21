@@ -1,9 +1,10 @@
 import { ENGLISH_LANGUAGE } from '../core/alt-editor-lite-language.js';
+import { READ_EDITOR_BUTTON_STATE } from '../core/editor-button-integration.js';
 
 import { EDITOR_INTEGRATION_UPDATE_EVENT } from './editor-integration-event.js';
 
-import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
-import type { EditorCapabilities } from '../core/editor-capabilities.js';
+import type { AltEditorLite } from '../core/alt-editor-lite.js';
+import type { EditorButtonStateInput } from '../core/editor-button-integration.js';
 import type { EditorInstanceLookup } from '../instance/editor-instance-store.js';
 import type { Api, DataTablesStatic } from 'datatables.net';
 
@@ -43,24 +44,6 @@ export interface EditorButtonState {
     readonly text: string;
     readonly title: string;
   };
-}
-
-/**
- * Inputs used to derive optional Buttons state without retaining an editor.
- */
-export interface EditorButtonStateInput {
-  /** Features available for the configured edit presentation. */
-  readonly capabilities: Readonly<EditorCapabilities>;
-  /** Whether Create has a configured persistence owner. */
-  readonly hasCreate: boolean;
-  /** Whether Select extended the table API. */
-  readonly hasSelect: boolean;
-  /** Whether the editor accepts a new operation. */
-  readonly isReady: boolean;
-  /** Number of currently selected rows when Select is available. */
-  readonly selectedRowCount: number;
-  /** Resolved language for the owning editor instance. */
-  readonly language: Readonly<AltEditorLiteLanguage>;
 }
 
 /**
@@ -131,14 +114,15 @@ export function createEditorButtonState(
   };
 }
 
-interface EditorButtonAccess {
-  openCreateDialog(): Promise<void>;
-  openEditDialog(): Promise<void>;
-  openBatchEditDialog(): Promise<void>;
-  openRemoveDialog(): Promise<void>;
-  refresh(): Promise<void>;
-  getIntegrationButtonStateInput(): EditorButtonStateInput;
-}
+type EditorButtonAccess = Pick<
+  AltEditorLite<object>,
+  | typeof READ_EDITOR_BUTTON_STATE
+  | 'openBatchEditDialog'
+  | 'openCreateDialog'
+  | 'openEditDialog'
+  | 'openRemoveDialog'
+  | 'refresh'
+>;
 
 interface ButtonController {
   enable(isEnabled: boolean): void;
@@ -186,7 +170,7 @@ function findEditor(
   const tableElement = table.table().node();
   for (const lookupInstance of instanceLookups) {
     const editor = lookupInstance(tableElement);
-    if (editor !== null) {
+    if (editor !== null && READ_EDITOR_BUTTON_STATE in editor) {
       return editor as EditorButtonAccess;
     }
   }
@@ -211,7 +195,7 @@ function invokeEditor(
       break;
     case 'altEditorLiteEdit':
       request =
-        editor.getIntegrationButtonStateInput().selectedRowCount >= 2
+        editor[READ_EDITOR_BUTTON_STATE]().selectedRowCount >= 2
           ? editor.openBatchEditDialog()
           : editor.openEditDialog();
       break;
@@ -302,7 +286,7 @@ function createButtonDefinition(
         currentState =
           editor === null
             ? unavailableButtonState(currentState)
-            : createEditorButtonState(editor.getIntegrationButtonStateInput());
+            : createEditorButtonState(editor[READ_EDITOR_BUTTON_STATE]());
         const buttonState = selectButtonState(currentState, operation);
         this.enable(buttonState.enabled);
         const textElement = document.createElement('span');

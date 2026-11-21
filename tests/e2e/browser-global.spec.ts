@@ -38,7 +38,9 @@ test('requires the DataTables browser global to load first', async ({ page }) =>
   await expect(page.evaluate(() => 'jQuery' in globalThis)).resolves.toBe(false);
 });
 
-test('loads after globalThis.DataTable without introducing jQuery', async ({ page }) => {
+test('preserves editor ownership across browser bundle loads without jQuery', async ({
+  page,
+}) => {
   await page.setContent(`
     <!doctype html>
     <html>
@@ -77,9 +79,12 @@ test('loads after globalThis.DataTable without introducing jQuery', async ({ pag
   expect(typeof beforeLoadState.dataTableVersion).toBe('string');
 
   await page.addScriptTag({ path: browserBundlePath });
+  const firstBundle = await page.evaluateHandle(
+    () => (globalThis as { AltEditorLite?: unknown }).AltEditorLite,
+  );
   await page.addScriptTag({ path: browserBundlePath });
 
-  const loadedState = await page.evaluate(() => {
+  const loadedState = await page.evaluate((firstBundle) => {
     const runtimeScope = globalThis as typeof globalThis & {
       DataTable?: {
         new (selector: string): {
@@ -98,11 +103,27 @@ test('loads after globalThis.DataTable without introducing jQuery', async ({ pag
     const dataTableConstructor = runtimeScope.DataTable;
     const editorConstructor = runtimeScope.AltEditorLite?.Editor;
 
-    if (dataTableConstructor === undefined || editorConstructor === undefined) {
+    const firstEditorConstructor = (firstBundle as typeof runtimeScope.AltEditorLite)
+      ?.Editor;
+    if (
+      dataTableConstructor === undefined ||
+      editorConstructor === undefined ||
+      firstEditorConstructor === undefined
+    ) {
       throw new Error('Expected both browser globals after bundle loading.');
     }
 
     const table = new dataTableConstructor('#browser-table');
+    const firstEditor = new firstEditorConstructor(table, { fields: [] });
+    let duplicateErrorCode: unknown;
+    try {
+      new editorConstructor(table, { fields: [] }).destroy();
+    } catch (error: unknown) {
+      duplicateErrorCode = (error as { readonly code?: unknown }).code;
+    }
+    const isFirstEditorActive = table.altEditorLite() === firstEditor;
+    firstEditor.destroy();
+
     const editor = new editorConstructor(table, { fields: [] });
     const isGetterMatchedToSecondBundleInstance = table.altEditorLite() === editor;
     editor.destroy();
@@ -111,13 +132,17 @@ test('loads after globalThis.DataTable without introducing jQuery', async ({ pag
     return {
       dataTableType: typeof runtimeScope.DataTable,
       dataTableVersion: runtimeScope.DataTable?.version,
+      duplicateErrorCode,
+      isFirstEditorActive,
       isGetterMatchedToSecondBundleInstance,
       hasJQuery: 'jQuery' in globalThis,
     };
-  });
+  }, firstBundle);
 
   expect(loadedState).toEqual({
     ...beforeLoadState,
+    duplicateErrorCode: 'ALREADY_INITIALIZED',
+    isFirstEditorActive: true,
     isGetterMatchedToSecondBundleInstance: true,
   });
 });
