@@ -71,6 +71,7 @@ const server = createServer(async (request, response) => {
     const contentType =
       contentTypeByExtension.get(extname(filePath).toLowerCase()) ??
       'application/octet-stream';
+    const content = await readFile(filePath);
     response.writeHead(200, {
       'cache-control': 'no-store',
       'content-security-policy':
@@ -78,7 +79,7 @@ const server = createServer(async (request, response) => {
       'content-type': contentType,
       'x-content-type-options': 'nosniff',
     });
-    response.end(await readFile(filePath));
+    response.end(content);
   } catch (error) {
     const statusCode = error instanceof URIError ? 400 : 404;
     response.writeHead(statusCode, { 'content-type': 'text/plain; charset=utf-8' });

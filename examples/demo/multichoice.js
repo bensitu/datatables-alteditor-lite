@@ -2,6 +2,7 @@ import {
   AltEditorLite,
   defineCustomField,
   EditorConfigurationError,
+  EditorTargetUnavailableError,
   StandaloneHost,
 } from '../../dist/esm/standalone.js';
 
@@ -124,7 +125,13 @@ const renderRecords = () => {
 };
 const host = new StandaloneHost({
   eventTarget: section,
-  read: (id) => records.get(id),
+  read(id) {
+    const record = records.get(id);
+    if (record === undefined) {
+      throw new EditorTargetUnavailableError('The article is no longer available.');
+    }
+    return record;
+  },
   applyCreate(row) {
     records.set(row.id, row);
     renderRecords();

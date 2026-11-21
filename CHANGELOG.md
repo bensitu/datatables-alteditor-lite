@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Inline editing preserves unchanged unique values on the edited record and
+  still rejects duplicates in other loaded records.
+- Invalid persistence callbacks and overlapping field paths are rejected when
+  the editor is created.
+- Repeated loads of the browser bundle share ownership of a table.
+- The local demo server handles files that become unavailable during a request,
+  and reference examples report missing records explicitly.
+
 ## [0.10.0] - 2026-11-16
 
 ### Added

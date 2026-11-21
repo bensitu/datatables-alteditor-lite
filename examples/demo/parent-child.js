@@ -1,6 +1,7 @@
 import {
   AltEditorLite,
   AltEditorLiteError,
+  EditorTargetUnavailableError,
   StandaloneHost,
 } from '../../dist/esm/standalone.js';
 
@@ -101,7 +102,13 @@ function selectParent(parentId) {
 
 const parentHost = new StandaloneHost({
   eventTarget: section,
-  read: (id) => orders.get(id),
+  read(id) {
+    const order = orders.get(id);
+    if (order === undefined) {
+      throw new EditorTargetUnavailableError('The order is no longer available.');
+    }
+    return order;
+  },
   applyCreate(row) {
     orders.set(row.id, row);
     selectParent(row.id);
