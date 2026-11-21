@@ -340,7 +340,7 @@ function throwRequestedFailure() {
   }
 
   shouldFailNextOperation = false;
-  failNextButton.textContent = 'Fail the next persistence request';
+  failNextButton.textContent = 'Fail next employee change';
   delete failNextButton.dataset.armed;
   throw new AltEditorLiteError({
     code: 'PERSISTENCE_FAILURE',
@@ -560,18 +560,21 @@ function appendEvent(event) {
   }
 
   const detail = event.detail;
-  const operation =
-    typeof detail?.operation === 'string' ? detail.operation : 'lifecycle';
-  const mode = typeof detail?.mode === 'string' ? `:${detail.mode}` : '';
-  const field =
-    typeof detail?.target?.fieldName === 'string' ? `:${detail.target.fieldName}` : '';
-  const phase = typeof detail?.phase === 'string' ? `:${detail.phase}` : '';
+  const eventText = [
+    event.type,
+    detail?.operation,
+    detail?.mode,
+    detail?.target?.fieldName,
+    detail?.reason ?? detail?.phase,
+  ]
+    .filter((value) => typeof value === 'string')
+    .join(' · ');
   const source =
     event.currentTarget instanceof HTMLElement
       ? (event.currentTarget.dataset.demoSource ?? 'editor')
       : 'editor';
   const item = document.createElement('li');
-  item.textContent = `${new Date().toLocaleTimeString()} ${source} ${operation}${mode}${field}${phase} bubbles=${String(event.bubbles)}`;
+  item.textContent = `${new Date().toLocaleTimeString()} · ${source} · ${eventText} · bubbles=${String(event.bubbles)}`;
   eventLog.prepend(item);
   while (eventLog.children.length > 30) {
     eventLog.lastElementChild?.remove();
@@ -704,7 +707,7 @@ localeStatus.textContent = getRegisteredLocaleNames().join(', ');
 
 failNextButton.addEventListener('click', () => {
   shouldFailNextOperation = true;
-  failNextButton.textContent = 'Next request will fail';
+  failNextButton.textContent = 'Next employee change will fail';
   failNextButton.dataset.armed = 'true';
 });
 

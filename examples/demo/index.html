@@ -118,7 +118,10 @@
           <span class="demo-value-grid__icon" aria-hidden="true">◇</span>
           <div class="demo-value-grid__copy">
             <h2>Typed form values</h2>
-            <p>Exact option values, safe nested paths, files, and local SearchSelect.</p>
+            <p>
+              Exact option values, safe nested paths, files, and local or remote
+              SearchSelect.
+            </p>
           </div>
         </article>
         <article>
@@ -258,7 +261,7 @@
               Create with preset values
             </button>
             <button id="fail-next" class="demo-danger-button" type="button">
-              Fail the next persistence request
+              Fail next employee change
             </button>
           </div>
 
@@ -268,10 +271,13 @@
             <summary>Tips for trying the demo</summary>
             <ul>
               <li>The page and sample field labels are in English.</li>
-              <li>Change a value and cancel to see the discard confirmation.</li>
               <li>
-                Email validation runs when you leave the field. Submit
-                <code>reserved@example.test</code> to see a retryable field error.
+                Change a value in a dialog and cancel to see the discard confirmation.
+              </li>
+              <li>
+                Dialog email validation runs when you leave the field. Submit
+                <code>reserved@example.test</code> in Create or single-record Edit for a
+                retryable field error.
               </li>
               <li>Use Refresh to restore the original sample data in that table.</li>
             </ul>
@@ -385,8 +391,8 @@
             <p class="demo-eyebrow">Inline interaction</p>
             <h2 id="inline-guide-title">Editing at a glance</h2>
             <p>
-              The employee examples use matching table widths so the two editing
-              presentations can be compared directly.
+              Enter submits a single-line text edit. Use Tab to save and move to the next
+              eligible cell, or Shift+Tab to move backward.
             </p>
           </div>
           <ol class="demo-inline-steps">
@@ -410,7 +416,7 @@
             </li>
           </ol>
           <div class="demo-inline-keys" aria-label="Inline editing keys">
-            <p class="demo-inline-key"><kbd>Enter</kbd><span>Commit</span></p>
+            <p class="demo-inline-key"><kbd>Enter</kbd><span>Save text edit</span></p>
             <p class="demo-inline-key"><kbd>Tab</kbd><span>Commit and move</span></p>
             <p class="demo-inline-key"><kbd>Esc</kbd><span>Cancel</span></p>
           </div>
@@ -424,7 +430,7 @@
             <h2 id="event-log-title">Event log</h2>
           </div>
           <p class="demo-section-heading__hint">
-            Events stay on the owned table and never bubble.
+            Events are dispatched directly on each table or the standalone record section.
           </p>
         </div>
         <dl class="demo-status" aria-label="Runtime status">
@@ -433,11 +439,11 @@
             <dd id="jquery-status">Checking…</dd>
           </div>
           <div>
-            <dt>Editor state</dt>
+            <dt>Employee editor state</dt>
             <dd id="editor-state">ready</dd>
           </div>
           <div>
-            <dt>Locale registry</dt>
+            <dt>Loaded locales</dt>
             <dd id="locale-status">Checking…</dd>
           </div>
         </dl>
