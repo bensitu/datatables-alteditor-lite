@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { isChoiceFieldController } from '../../src/contracts/field-controller.js';
 import { EditorConfigurationError } from '../../src/core/alt-editor-lite-error.js';
 import { ENGLISH_LANGUAGE } from '../../src/core/alt-editor-lite-language.js';
-import { isChoiceFieldController } from '../../src/fields/field-controller.js';
 import { validateFieldConfigurations } from '../../src/fields/validate-field-configurations.js';
 import { buildEditorForm } from '../../src/form/build-editor-form.js';
 
@@ -10,8 +10,8 @@ import type {
   FieldChangeContext,
   FieldConfig,
   SelectOption,
-} from '../../src/fields/field-config.js';
-import type { SearchSelectLoadContext } from '../../src/fields/search-select-data-source.js';
+} from '../../src/contracts/field-config.js';
+import type { SearchSelectLoadContext } from '../../src/contracts/search-select-data-source.js';
 import type { FormController } from '../../src/form/form-controller.js';
 
 interface SearchFormValues {

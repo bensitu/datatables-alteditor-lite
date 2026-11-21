@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { validateEditorForm } from '../../src/form/validate-editor-form.js';
 
-import type { FieldValidationResult } from '../../src/fields/field-controller.js';
+import type { FieldValidationResult } from '../../src/contracts/field-controller.js';
 import type { ManagedFieldController } from '../../src/fields/managed-field-controller.js';
 
 interface ValidationValues {

@@ -5,7 +5,7 @@ import {
   AltEditorLiteError,
   EditorConfigurationError,
 } from '../../src/core/alt-editor-lite-error.js';
-import { AltEditorLite } from '../../src/core/alt-editor-lite.js';
+import { AltEditorLite } from '../../src/editor/alt-editor-lite.js';
 import { StandaloneHost } from '../../src/standalone/standalone-host.js';
 
 import {

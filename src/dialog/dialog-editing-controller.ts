@@ -46,13 +46,13 @@ import {
 } from './dialog-session.js';
 import { EditorDialog, type EditorDialogCallbacks } from './editor-dialog.js';
 
+import type { FieldController } from '../contracts/field-controller.js';
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type {
   AltEditorLiteOptions,
   BeforeCloseReason,
   EditorErrorHookContext,
 } from '../core/alt-editor-lite-options.js';
-import type { AltEditorLite } from '../core/alt-editor-lite.js';
 import type { BatchEditOperationRunner } from '../core/editing/batch-edit-operation-runner.js';
 import type { EditOperationRunner } from '../core/editing/edit-operation-runner.js';
 import type {
@@ -68,7 +68,7 @@ import type { EditorStateCoordinator } from '../core/editor-state-coordinator.js
 import type { EditorValues } from '../core/editor-values.js';
 import type { LocalUniquenessValidator } from '../core/local-uniqueness-validator.js';
 import type { ResolvedDialogEditingOptions } from '../core/resolve-editing-options.js';
-import type { FieldController } from '../fields/field-controller.js';
+import type { AltEditorLite } from '../editor/alt-editor-lite.js';
 import type { EditorFormController } from '../form/form-controller.js';
 import type { EditorHost } from '../host/editor-host.js';
 import type { InlineHostRuntime } from '../host/inline-host-runtime.js';

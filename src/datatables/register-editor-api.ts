@@ -1,4 +1,4 @@
-import type { AltEditorLite } from '../core/alt-editor-lite.js';
+import type { AltEditorLite } from '../editor/alt-editor-lite.js';
 import type { EditorInstanceLookup } from '../instance/editor-instance-store.js';
 import type { DataTablesRecordTarget } from './datatables-host.js';
 import type { Api, DataTablesStatic } from 'datatables.net';

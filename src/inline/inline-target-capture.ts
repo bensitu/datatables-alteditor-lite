@@ -11,7 +11,7 @@ import { getPathValue } from '../object-path/get-path-value.js';
 
 import { isInlineFieldEligible } from './inline-field-eligibility.js';
 
-import type { FieldConfig } from '../fields/field-config.js';
+import type { FieldConfig } from '../contracts/field-config.js';
 import type { InlineColumnMapping } from './inline-column-mapping.js';
 import type { InlineTargetSummary } from './inline-edit-state.js';
 import type { Api, ColumnSelector, RowSelector } from 'datatables.net';

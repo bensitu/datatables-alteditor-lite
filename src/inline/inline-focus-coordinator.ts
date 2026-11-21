@@ -1,5 +1,5 @@
 import { runCleanupSteps } from '../core/run-cleanup-steps.js';
-import { EditorAlertDialog } from '../dialog/editor-alert-dialog.js';
+import { EditorAlertDialog } from '../presentation/editor-alert-dialog.js';
 
 import { restoreInlineOriginFocus } from './inline-focus-owner.js';
 import { InlineFocusStateMachine } from './inline-focus-state-machine.js';

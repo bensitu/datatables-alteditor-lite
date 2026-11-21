@@ -33,8 +33,8 @@ import {
 import { SelectIntegration } from './select-integration.js';
 import { synchronizeExtensionStateAfterCommit } from './synchronize-extension-state.js';
 
-import type { AltEditorLite } from '../core/alt-editor-lite.js';
-import type { FieldConfig } from '../fields/field-config.js';
+import type { FieldConfig } from '../contracts/field-config.js';
+import type { AltEditorLite } from '../editor/alt-editor-lite.js';
 import type {
   EditorHost,
   HostApplyContext,

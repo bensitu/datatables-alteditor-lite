@@ -1,4 +1,4 @@
-import { AltEditorLite } from '../../src/core/alt-editor-lite.js';
+import { AltEditorLite } from '../../src/editor/alt-editor-lite.js';
 import { StandaloneHost } from '../../src/standalone/standalone-host.js';
 
 import type { AltEditorLiteOptions } from '../../src/core/alt-editor-lite-options.js';

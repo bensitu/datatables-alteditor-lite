@@ -5,7 +5,7 @@ import { createFieldController } from '../../src/fields/create-field-controller.
 import { INLINE_FIELD_PRESENTATION } from '../../src/fields/field-controller-presentation.js';
 import { buildEditorForm } from '../../src/form/build-editor-form.js';
 
-import type { FieldConfig } from '../../src/fields/field-config.js';
+import type { FieldConfig } from '../../src/contracts/field-config.js';
 import type { FormController } from '../../src/form/form-controller.js';
 
 interface RequiredFieldValues {

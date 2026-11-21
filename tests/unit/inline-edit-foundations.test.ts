@@ -7,6 +7,10 @@ import {
 } from '../../src/core/alt-editor-lite-error.js';
 import { InteractionCoordinator } from '../../src/core/editing/interaction-coordinator.js';
 import { OperationOwner } from '../../src/core/editing/operation-owner.js';
+import {
+  matchesInlineKeyboardShortcut,
+  resolveInlineKeyboardShortcut,
+} from '../../src/core/inline-keyboard-shortcut.js';
 import { isColumnVisiblyAvailable } from '../../src/datatables/column-visibility.js';
 import { DrawOwnership } from '../../src/datatables/draw-ownership.js';
 import { normalizeKeyTableEnabledState } from '../../src/datatables/key-table-inline-integration.js';
@@ -15,10 +19,6 @@ import {
   canTransitionInlineEditState,
 } from '../../src/inline/inline-edit-state-transition.js';
 import { InlineFocusStateMachine } from '../../src/inline/inline-focus-state-machine.js';
-import {
-  matchesInlineKeyboardShortcut,
-  resolveInlineKeyboardShortcut,
-} from '../../src/inline/inline-keyboard-shortcut.js';
 import { InlineOriginalContent } from '../../src/inline/inline-original-content.js';
 
 import type { Api } from 'datatables.net';

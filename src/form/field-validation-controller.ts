@@ -1,7 +1,7 @@
 import { normalizeRejectedReason } from '../core/error-normalization.js';
 
-import type { FieldValidationTrigger } from '../fields/field-config.js';
-import type { FieldValidationResult } from '../fields/field-controller.js';
+import type { FieldValidationTrigger } from '../contracts/field-config.js';
+import type { FieldValidationResult } from '../contracts/field-controller.js';
 import type { ManagedFieldController } from '../fields/managed-field-controller.js';
 
 interface FieldValidationState<TFormValues extends object> {

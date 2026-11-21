@@ -2,10 +2,10 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { FormValidationRunner } from '../../src/form/form-validation-runner.js';
 
+import type { FieldValidationResult } from '../../src/contracts/field-controller.js';
+import type { FormValidationResult } from '../../src/contracts/form-validation.js';
 import type { EditorValues } from '../../src/core/editor-values.js';
-import type { FieldValidationResult } from '../../src/fields/field-controller.js';
 import type { ManagedFieldController } from '../../src/fields/managed-field-controller.js';
-import type { FormValidationResult } from '../../src/form/form-validation.js';
 
 interface ValidationValues {
   readonly end: string;

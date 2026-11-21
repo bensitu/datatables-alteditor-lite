@@ -6,7 +6,7 @@ import {
   type NativeControlAdapter,
 } from './native-control-controller.js';
 
-import type { SelectFieldConfig, SelectOption } from './field-config.js';
+import type { SelectFieldConfig, SelectOption } from '../contracts/field-config.js';
 import type { ManagedFieldController } from './managed-field-controller.js';
 
 /**

@@ -1,8 +1,8 @@
 import { DefaultFormLayout } from './layout/default-form-layout.js';
 import { TemplateFormLayout } from './layout/template-form-layout.js';
 
+import type { FieldConfig } from '../contracts/field-config.js';
 import type { DialogTemplateSource } from '../core/editing-options.js';
-import type { FieldConfig } from '../fields/field-config.js';
 import type { FormLayout } from './layout/form-layout.js';
 
 /** Creates the shared form structure without owning field state or validation. */

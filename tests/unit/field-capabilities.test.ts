@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { defineCustomField } from '../../src/fields/custom-field.js';
+import { defineCustomField } from '../../src/contracts/custom-field.js';
+import { resolveFieldValueComparator } from '../../src/core/field-value-comparator.js';
 import {
   resolveBatchFieldRestriction,
   resolveFieldCapabilities,
 } from '../../src/fields/field-capabilities.js';
-import { resolveFieldValueComparator } from '../../src/fields/field-value-comparator.js';
 
-import type { FieldConfig } from '../../src/fields/field-config.js';
+import type { FieldConfig } from '../../src/contracts/field-config.js';
 
 interface Values {
   readonly name: string;

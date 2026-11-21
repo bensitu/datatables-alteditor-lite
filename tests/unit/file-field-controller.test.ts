@@ -8,7 +8,7 @@ import { ENGLISH_LANGUAGE } from '../../src/core/alt-editor-lite-language.js';
 import { createFileFieldController } from '../../src/fields/file-field-controller.js';
 import { buildEditorForm } from '../../src/form/build-editor-form.js';
 
-import type { FileFieldConfig } from '../../src/fields/field-config.js';
+import type { FileFieldConfig } from '../../src/contracts/field-config.js';
 import type { ManagedFieldController } from '../../src/fields/managed-field-controller.js';
 
 interface FileValues {

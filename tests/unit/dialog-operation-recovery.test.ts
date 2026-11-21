@@ -10,8 +10,8 @@ import type {
   AltEditorLiteOptions,
   EditorErrorHookContext,
 } from '../../src/core/alt-editor-lite-options.js';
-import type { AltEditorLite } from '../../src/core/alt-editor-lite.js';
 import type { EditorErrorReporter } from '../../src/core/editor-error-reporter.js';
+import type { AltEditorLite } from '../../src/editor/alt-editor-lite.js';
 import type { EditorFormController } from '../../src/form/form-controller.js';
 import type { EditorHost } from '../../src/host/editor-host.js';
 

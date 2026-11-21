@@ -1,4 +1,4 @@
-import type { FieldConfig } from './field-config.js';
+import type { FieldConfig } from '../contracts/field-config.js';
 
 /** Editing surfaces available for one validated field configuration. */
 export interface ResolvedFieldCapabilities {

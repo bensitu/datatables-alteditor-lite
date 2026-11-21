@@ -1,10 +1,10 @@
 import { EditorFormController } from './form-controller.js';
 
+import type { FieldConfig } from '../contracts/field-config.js';
+import type { FormDependencies } from '../contracts/form-dependency.js';
 import type { AltEditorLiteError } from '../core/alt-editor-lite-error.js';
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type { DialogTemplateSource } from '../core/editing-options.js';
-import type { FieldConfig } from '../fields/field-config.js';
-import type { FormDependencies } from './form-dependency.js';
 import type { LocalUniqueValidator } from './validate-editor-form.js';
 
 /**

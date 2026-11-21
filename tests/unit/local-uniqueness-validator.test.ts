@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
+import { defineCustomField } from '../../src/contracts/custom-field.js';
 import { ENGLISH_LANGUAGE } from '../../src/core/alt-editor-lite-language.js';
 import { LocalUniquenessValidator } from '../../src/core/local-uniqueness-validator.js';
-import { defineCustomField } from '../../src/fields/custom-field.js';
 
-import type { FieldConfig } from '../../src/fields/field-config.js';
+import type { FieldConfig } from '../../src/contracts/field-config.js';
 import type { HostRecordEntry } from '../../src/host/editor-host.js';
 
 interface Row {

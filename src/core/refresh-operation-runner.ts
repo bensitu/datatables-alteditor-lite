@@ -5,10 +5,10 @@ import {
   normalizeOperationError,
 } from './error-normalization.js';
 
+import type { AltEditorLite } from '../editor/alt-editor-lite.js';
 import type { HostRefreshCapability } from '../host/editor-host.js';
 import type { AltEditorLiteLanguage } from './alt-editor-lite-language.js';
 import type { AltEditorLiteOptions } from './alt-editor-lite-options.js';
-import type { AltEditorLite } from './alt-editor-lite.js';
 import type {
   InteractionCoordinator,
   InteractionToken,

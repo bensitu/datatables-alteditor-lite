@@ -1,7 +1,7 @@
-import type { FieldConfig } from '../fields/field-config.js';
-import type { MaybePromise } from '../fields/field-value.js';
-import type { FormDependencies } from '../form/form-dependency.js';
-import type { FormValidator } from '../form/form-validation.js';
+import type { FieldConfig } from '../contracts/field-config.js';
+import type { MaybePromise } from '../contracts/field-value.js';
+import type { FormDependencies } from '../contracts/form-dependency.js';
+import type { FormValidator } from '../contracts/form-validation.js';
 import type { PartialEditorLanguage } from './alt-editor-lite-language.js';
 import type { EditingOptions } from './editing-options.js';
 import type { EditorCloseReason } from './editor-event.js';

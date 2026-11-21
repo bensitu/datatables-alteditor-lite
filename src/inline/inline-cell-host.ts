@@ -1,6 +1,6 @@
 import { InlineOriginalContent } from './inline-original-content.js';
 
-import type { FieldConfig } from '../fields/field-config.js';
+import type { FieldConfig } from '../contracts/field-config.js';
 import type { ManagedFieldController } from '../fields/managed-field-controller.js';
 import type { InlineEditView } from './inline-edit-view.js';
 

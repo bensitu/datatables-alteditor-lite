@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { ENGLISH_LANGUAGE } from '../../src/core/alt-editor-lite-language.js';
-import { EditorAlertDialog } from '../../src/dialog/editor-alert-dialog.js';
+import { EditorAlertDialog } from '../../src/presentation/editor-alert-dialog.js';
 
 afterEach(() => {
   document.body.replaceChildren();

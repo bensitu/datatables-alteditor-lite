@@ -3,7 +3,7 @@ import { resolveUniqueRowIndexById } from '../datatables/row-id-resolution.js';
 
 import { isInlineFieldEligible } from './inline-field-eligibility.js';
 
-import type { FieldConfig } from '../fields/field-config.js';
+import type { FieldConfig } from '../contracts/field-config.js';
 import type { InlineColumnMapping } from './inline-column-mapping.js';
 import type { InlineTargetSummary } from './inline-edit-state.js';
 import type { Api, SelectorModifier } from 'datatables.net';

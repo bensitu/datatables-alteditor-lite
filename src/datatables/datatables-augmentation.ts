@@ -1,5 +1,5 @@
-import type { AltEditorLite } from '../core/alt-editor-lite.js';
 import type { DeepPartial } from '../core/editor-values.js';
+import type { AltEditorLite } from '../editor/alt-editor-lite.js';
 import type { DataTablesRecordTarget } from './datatables-host.js';
 import type { Api } from 'datatables.net';
 

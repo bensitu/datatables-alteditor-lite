@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { EditorDestroyedError } from '../../src/core/alt-editor-lite-error.js';
-import { AltEditorLite } from '../../src/core/alt-editor-lite.js';
+import { AltEditorLite } from '../../src/editor/alt-editor-lite.js';
 import { hasHostBatchUpdateCapability } from '../../src/host/editor-host.js';
 import { StandaloneHost } from '../../src/standalone/standalone-host.js';
 

@@ -1,6 +1,6 @@
 import type { EditorValues } from '../core/editor-values.js';
-import type { MaybePromise } from '../fields/field-value.js';
 import type { FieldPath } from '../object-path/field-path.js';
+import type { MaybePromise } from './field-value.js';
 
 /** Validation messages associated with declared form field paths. */
 export type FormFieldErrors<TFormValues extends object> = Partial<

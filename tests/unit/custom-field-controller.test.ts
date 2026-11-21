@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { defineCustomField } from '../../src/contracts/custom-field.js';
 import { EditorConfigurationError } from '../../src/core/alt-editor-lite-error.js';
 import { ENGLISH_LANGUAGE } from '../../src/core/alt-editor-lite-language.js';
 import { createFieldController } from '../../src/fields/create-field-controller.js';
-import { defineCustomField } from '../../src/fields/custom-field.js';
 
 interface Values {
   readonly tags: readonly string[];

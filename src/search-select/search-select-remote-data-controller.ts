@@ -1,10 +1,10 @@
 import { settleWithAbort } from '../core/settle-with-abort.js';
 
-import type { SelectOption } from '../fields/field-config.js';
+import type { SelectOption } from '../contracts/field-config.js';
 import type {
   SearchSelectOptionLoader,
   SearchSelectOptionResolver,
-} from '../fields/search-select-data-source.js';
+} from '../contracts/search-select-data-source.js';
 
 export type SearchSelectRemoteResult<TValue> =
   readonly ['ok', TValue] | readonly ['error'] | undefined;

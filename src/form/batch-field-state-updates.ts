@@ -1,7 +1,7 @@
 import { EditorConfigurationError } from '../core/alt-editor-lite-error.js';
 
+import type { FieldValueComparator } from '../contracts/custom-field.js';
 import type { BatchFieldBaseline, BatchFieldState } from '../core/batch-field-state.js';
-import type { FieldValueComparator } from '../fields/custom-field.js';
 
 /** Creates a common or mixed baseline from record-aligned field values. */
 export function createBatchFieldState<TValue>(

@@ -9,8 +9,8 @@ import {
 } from './form-layout.js';
 import { resolveTemplateSource } from './resolve-template-source.js';
 
+import type { FieldConfig } from '../../contracts/field-config.js';
 import type { DialogTemplateSource } from '../../core/editing-options.js';
-import type { FieldConfig } from '../../fields/field-config.js';
 
 const FIELD_SLOT_ATTRIBUTE = 'data-alteditor-lite-field';
 

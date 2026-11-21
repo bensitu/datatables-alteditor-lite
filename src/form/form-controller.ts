@@ -2,6 +2,7 @@ import {
   AltEditorLiteError,
   EditorDestroyedError,
 } from '../core/alt-editor-lite-error.js';
+import { resolveFieldValueComparator } from '../core/field-value-comparator.js';
 import { freezeEditorValues } from '../core/freeze-editor-values.js';
 import { hasOwn } from '../core/has-own.js';
 import { mergeAbortSignals } from '../core/merge-abort-signals.js';
@@ -11,7 +12,6 @@ import { settleWithAbort } from '../core/settle-with-abort.js';
 import { waitForPendingTasks } from '../core/wait-for-pending-tasks.js';
 import { createFieldController } from '../fields/create-field-controller.js';
 import { resolveFieldCapabilities } from '../fields/field-capabilities.js';
-import { resolveFieldValueComparator } from '../fields/field-value-comparator.js';
 
 import {
   collectFormState,
@@ -36,18 +36,21 @@ import {
   validateEditorForm,
 } from './validate-editor-form.js';
 
-import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
-import type { DialogTemplateSource } from '../core/editing-options.js';
-import type { DeepPartial, EditorValues } from '../core/editor-values.js';
-import type { FieldConfig, SelectOption } from '../fields/field-config.js';
+import type { FieldConfig, SelectOption } from '../contracts/field-config.js';
 import type {
   FieldController,
   FieldValidationResult,
-} from '../fields/field-controller.js';
+} from '../contracts/field-controller.js';
+import type { FormDependencies } from '../contracts/form-dependency.js';
+import type {
+  FormValidationRequestContext,
+  FormValidator,
+} from '../contracts/form-validation.js';
+import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
+import type { DialogTemplateSource } from '../core/editing-options.js';
+import type { DeepPartial, EditorValues } from '../core/editor-values.js';
 import type { ManagedFieldController } from '../fields/managed-field-controller.js';
 import type { FieldPath, FieldPathValue } from '../object-path/field-path.js';
-import type { FormDependencies } from './form-dependency.js';
-import type { FormValidationRequestContext, FormValidator } from './form-validation.js';
 import type { FormLayout } from './layout/form-layout.js';
 
 /**

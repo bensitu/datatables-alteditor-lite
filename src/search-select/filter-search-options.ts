@@ -1,4 +1,4 @@
-import type { SelectOption } from '../fields/field-config.js';
+import type { SelectOption } from '../contracts/field-config.js';
 
 /** Option paired with its stable DOM token. */
 export interface SearchOptionEntry<TValue extends string | number> {

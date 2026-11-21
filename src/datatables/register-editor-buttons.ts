@@ -3,8 +3,8 @@ import { READ_EDITOR_BUTTON_STATE } from '../core/editor-button-integration.js';
 
 import { EDITOR_INTEGRATION_UPDATE_EVENT } from './editor-integration-event.js';
 
-import type { AltEditorLite } from '../core/alt-editor-lite.js';
 import type { EditorButtonStateInput } from '../core/editor-button-integration.js';
+import type { AltEditorLite } from '../editor/alt-editor-lite.js';
 import type { EditorInstanceLookup } from '../instance/editor-instance-store.js';
 import type { Api, DataTablesStatic } from 'datatables.net';
 

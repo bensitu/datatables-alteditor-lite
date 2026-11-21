@@ -1,4 +1,5 @@
 import { EditorConfigurationError } from '../core/alt-editor-lite-error.js';
+import { resolveFieldValueComparator } from '../core/field-value-comparator.js';
 import { runCleanupSteps } from '../core/run-cleanup-steps.js';
 import { createFieldController } from '../fields/create-field-controller.js';
 import {
@@ -6,7 +7,6 @@ import {
   type FieldBatchRestriction,
 } from '../fields/field-capabilities.js';
 import { BATCH_FIELD_PRESENTATION } from '../fields/field-controller-presentation.js';
-import { resolveFieldValueComparator } from '../fields/field-value-comparator.js';
 import { getPathValue } from '../object-path/get-path-value.js';
 
 import { BatchFieldPresentation } from './batch-field-presentation.js';
@@ -17,13 +17,13 @@ import {
 } from './batch-field-state-updates.js';
 import { FieldRuntimeController } from './field-runtime-controller.js';
 
-import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
-import type { BatchFieldState } from '../core/batch-field-state.js';
-import type { FieldConfig } from '../fields/field-config.js';
+import type { FieldConfig } from '../contracts/field-config.js';
 import type {
   FieldController,
   FieldValidationResult,
-} from '../fields/field-controller.js';
+} from '../contracts/field-controller.js';
+import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
+import type { BatchFieldState } from '../core/batch-field-state.js';
 import type { ManagedFieldController } from '../fields/managed-field-controller.js';
 import type { FieldMountPoint } from './layout/form-layout.js';
 

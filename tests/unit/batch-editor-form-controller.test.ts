@@ -1,13 +1,16 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { isChoiceFieldController } from '../../src/contracts/field-controller.js';
 import { AltEditorLiteError } from '../../src/core/alt-editor-lite-error.js';
 import { ENGLISH_LANGUAGE } from '../../src/core/alt-editor-lite-language.js';
-import { isChoiceFieldController } from '../../src/fields/field-controller.js';
 import { BatchEditorFormController } from '../../src/form/batch-editor-form-controller.js';
 
-import type { FieldChangeContext, FieldConfig } from '../../src/fields/field-config.js';
-import type { FieldValidationResult } from '../../src/fields/field-controller.js';
-import type { FormDependencies } from '../../src/form/form-dependency.js';
+import type {
+  FieldChangeContext,
+  FieldConfig,
+} from '../../src/contracts/field-config.js';
+import type { FieldValidationResult } from '../../src/contracts/field-controller.js';
+import type { FormDependencies } from '../../src/contracts/form-dependency.js';
 
 interface BatchFormValues {
   readonly attachment: string | null;

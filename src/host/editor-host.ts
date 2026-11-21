@@ -1,5 +1,5 @@
+import type { MaybePromise } from '../contracts/field-value.js';
 import type { EditorOperation, EditorOperationMode } from '../core/editor-operation.js';
-import type { MaybePromise } from '../fields/field-value.js';
 
 /** Immutable cancellation context supplied while a Host reads a record. */
 export interface HostReadContext {

@@ -9,7 +9,7 @@ import type {
   FieldValidationContext,
   RadioFieldConfig,
   SelectFieldConfig,
-} from '../../src/fields/field-config.js';
+} from '../../src/contracts/field-config.js';
 import type { ManagedFieldController } from '../../src/fields/managed-field-controller.js';
 
 interface ChoiceValues {

@@ -10,7 +10,7 @@ import {
 import { freezeEditorValues } from '../freeze-editor-values.js';
 import { mergeDeclaredFieldValues } from '../merge-declared-field-values.js';
 
-import type { MaybePromise } from '../../fields/field-value.js';
+import type { MaybePromise } from '../../contracts/field-value.js';
 import type { AltEditorLiteLanguage } from '../alt-editor-lite-language.js';
 import type {
   AfterSuccessContext,

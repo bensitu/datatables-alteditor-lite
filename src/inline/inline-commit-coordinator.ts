@@ -14,7 +14,6 @@ import type {
   AltEditorLiteOptions,
   EditorErrorHookContext,
 } from '../core/alt-editor-lite-options.js';
-import type { AltEditorLite } from '../core/alt-editor-lite.js';
 import type {
   EditOperationResult,
   EditOperationRunner,
@@ -23,6 +22,7 @@ import type { EditPresentationAdapter } from '../core/editing/edit-presentation-
 import type { OperationOwner } from '../core/editing/operation-owner.js';
 import type { ResolvedInlineEditingOptions } from '../core/resolve-editing-options.js';
 import type { DataTablesHost } from '../datatables/datatables-host.js';
+import type { AltEditorLite } from '../editor/alt-editor-lite.js';
 import type { InlineColumnMapping } from './inline-column-mapping.js';
 import type { InlineEditSession } from './inline-edit-session.js';
 import type { Api } from 'datatables.net';

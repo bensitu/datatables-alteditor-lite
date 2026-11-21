@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { DialogFocusScope } from '../../src/dialog/dialog-focus-scope.js';
+import { DialogFocusScope } from '../../src/presentation/dialog-focus-scope.js';
 
 afterEach(() => {
   document.body.replaceChildren();

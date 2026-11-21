@@ -1,15 +1,18 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { defineCustomField } from '../../src/contracts/custom-field.js';
 import {
   AltEditorLiteError,
   EditorDestroyedError,
 } from '../../src/core/alt-editor-lite-error.js';
 import { ENGLISH_LANGUAGE } from '../../src/core/alt-editor-lite-language.js';
-import { defineCustomField } from '../../src/fields/custom-field.js';
 import { buildEditorForm } from '../../src/form/build-editor-form.js';
 
-import type { FieldChangeContext, FieldConfig } from '../../src/fields/field-config.js';
-import type { FieldValidationResult } from '../../src/fields/field-controller.js';
+import type {
+  FieldChangeContext,
+  FieldConfig,
+} from '../../src/contracts/field-config.js';
+import type { FieldValidationResult } from '../../src/contracts/field-controller.js';
 import type { FormController } from '../../src/form/form-controller.js';
 import type { LocalUniqueValidator } from '../../src/form/validate-editor-form.js';
 

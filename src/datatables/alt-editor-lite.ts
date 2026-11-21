@@ -1,5 +1,5 @@
 import { EditorConfigurationError } from '../core/alt-editor-lite-error.js';
-import { AltEditorLite as CoreAltEditorLite } from '../core/alt-editor-lite.js';
+import { AltEditorLite as CoreAltEditorLite } from '../editor/alt-editor-lite.js';
 
 import { DataTablesHost } from './datatables-host.js';
 

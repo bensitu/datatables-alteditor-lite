@@ -1,7 +1,7 @@
 import type { EditorValues } from '../core/editor-values.js';
-import type { SelectOption } from '../fields/field-config.js';
-import type { MaybePromise } from '../fields/field-value.js';
 import type { FieldPath, FieldPathValue } from '../object-path/field-path.js';
+import type { SelectOption } from './field-config.js';
+import type { MaybePromise } from './field-value.js';
 
 /** Immutable values and cancellation state supplied to a dependency resolver. */
 export interface FormDependencyContext<TFormValues extends object> {

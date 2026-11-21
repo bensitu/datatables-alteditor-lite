@@ -11,7 +11,9 @@ import {
 import { freezeEditorValues } from '../freeze-editor-values.js';
 import { mergeDeclaredFieldValues } from '../merge-declared-field-values.js';
 
-import type { MaybePromise } from '../../fields/field-value.js';
+import { validateBatchRows } from './validate-batch-rows.js';
+
+import type { MaybePromise } from '../../contracts/field-value.js';
 import type { AltEditorLiteLanguage } from '../alt-editor-lite-language.js';
 import type {
   AfterSuccessContext,
@@ -337,7 +339,7 @@ export class BatchEditOperationRunner<TRow extends object, TFormValues extends o
         ),
       );
       onPersistenceCompleted();
-      return this.assertCanonicalRows(rowCandidates, transaction.originals.length);
+      return validateBatchRows<TRow>(rowCandidates, transaction.originals);
     }
 
     if (this.operations?.update !== undefined) {
@@ -371,26 +373,6 @@ export class BatchEditOperationRunner<TRow extends object, TFormValues extends o
         return rowCandidate as TRow;
       }),
     );
-  }
-
-  private assertCanonicalRows(
-    rowCandidates: unknown,
-    expectedCount: number,
-  ): readonly TRow[] {
-    if (!Array.isArray(rowCandidates)) {
-      throw new EditorConfigurationError(
-        'operations.updateMany must return an array of complete row objects.',
-      );
-    }
-    if (rowCandidates.length !== expectedCount) {
-      throw new EditorConfigurationError(
-        'operations.updateMany must return one canonical row for each original row.',
-      );
-    }
-    for (const rowCandidate of rowCandidates) {
-      assertCompleteRow(rowCandidate, 'operations.updateMany');
-    }
-    return Object.freeze([...(rowCandidates as TRow[])]);
   }
 
   private normalize(

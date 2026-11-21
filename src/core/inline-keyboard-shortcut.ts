@@ -1,4 +1,4 @@
-import { EditorConfigurationError } from '../core/alt-editor-lite-error.js';
+import { EditorConfigurationError } from './alt-editor-lite-error.js';
 
 /** Configurable shortcut used to edit the focused KeyTable cell. */
 export interface InlineKeyboardShortcut {

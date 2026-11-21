@@ -1,14 +1,17 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { isChoiceFieldController } from '../../src/contracts/field-controller.js';
+import { defineFormDependencies } from '../../src/contracts/form-dependency.js';
 import { EditorConfigurationError } from '../../src/core/alt-editor-lite-error.js';
 import { ENGLISH_LANGUAGE } from '../../src/core/alt-editor-lite-language.js';
-import { isChoiceFieldController } from '../../src/fields/field-controller.js';
 import { buildEditorForm } from '../../src/form/build-editor-form.js';
 import { FormDependencyController } from '../../src/form/form-dependency-controller.js';
-import { defineFormDependencies } from '../../src/form/form-dependency.js';
 import { validateFormDependencies } from '../../src/form/validate-form-dependencies.js';
 
-import type { FieldChangeContext, FieldConfig } from '../../src/fields/field-config.js';
+import type {
+  FieldChangeContext,
+  FieldConfig,
+} from '../../src/contracts/field-config.js';
 import type { ManagedFieldController } from '../../src/fields/managed-field-controller.js';
 import type { FieldRuntimeController } from '../../src/form/field-runtime-controller.js';
 import type { EditorFormController } from '../../src/form/form-controller.js';

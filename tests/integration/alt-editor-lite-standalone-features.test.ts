@@ -1,14 +1,14 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
-import { AltEditorLite } from '../../src/core/alt-editor-lite.js';
-import { defineCustomField } from '../../src/fields/custom-field.js';
-import { isChoiceFieldController } from '../../src/fields/field-controller.js';
+import { defineCustomField } from '../../src/contracts/custom-field.js';
+import { isChoiceFieldController } from '../../src/contracts/field-controller.js';
+import { AltEditorLite } from '../../src/editor/alt-editor-lite.js';
 import { StandaloneHost } from '../../src/standalone/standalone-host.js';
 
 import { installDialogElementSupport } from './standalone-test-fixture.js';
 
+import type { FieldValidationResult } from '../../src/contracts/field-controller.js';
 import type { EditorValues } from '../../src/core/editor-values.js';
-import type { FieldValidationResult } from '../../src/fields/field-controller.js';
 import type { EditorHost } from '../../src/host/editor-host.js';
 
 interface FeatureRecord {

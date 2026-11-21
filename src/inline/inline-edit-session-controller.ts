@@ -10,9 +10,9 @@ import {
   NEVER_ABORTED_SIGNAL,
   normalizeOperationError,
 } from '../core/error-normalization.js';
+import { resolveFieldValueComparator } from '../core/field-value-comparator.js';
 import { runCleanupSteps } from '../core/run-cleanup-steps.js';
 import { settleWithAbort } from '../core/settle-with-abort.js';
-import { resolveFieldValueComparator } from '../fields/field-value-comparator.js';
 
 import { InlineCommitCoordinator } from './inline-commit-coordinator.js';
 import { InlineEditPresentationAdapter } from './inline-edit-presentation-adapter.js';
@@ -27,12 +27,12 @@ import {
 import { InlineSessionFactory } from './inline-session-factory.js';
 import { InlineValidationController } from './inline-validation-controller.js';
 
+import type { FieldConfig } from '../contracts/field-config.js';
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type {
   AltEditorLiteOptions,
   EditorErrorHookContext,
 } from '../core/alt-editor-lite-options.js';
-import type { AltEditorLite } from '../core/alt-editor-lite.js';
 import type {
   EditOperationResult,
   EditOperationRunner,
@@ -47,7 +47,7 @@ import type { ResolvedInlineEditingOptions } from '../core/resolve-editing-optio
 import type { LogicalCellTarget } from '../datatables/commit-row-update.js';
 import type { DataTablesHost } from '../datatables/datatables-host.js';
 import type { EditTargetCapture } from '../datatables/row-target-resolution.js';
-import type { FieldConfig } from '../fields/field-config.js';
+import type { AltEditorLite } from '../editor/alt-editor-lite.js';
 import type { InlineColumnMapping } from './inline-column-mapping.js';
 import type { InlineEditSession } from './inline-edit-session.js';
 import type { InlineEditState } from './inline-edit-state.js';

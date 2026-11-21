@@ -1,13 +1,13 @@
 import { applyAllowedFieldAttributes } from './field-attributes.js';
 import { createFieldControllerShell } from './field-controller-shell.js';
 
-import type { EditorValues } from '../core/editor-values.js';
 import type {
   BaseFieldConfig,
   FieldChangeContext,
   FieldValidationContext,
-} from './field-config.js';
-import type { FieldValidationResult } from './field-controller.js';
+} from '../contracts/field-config.js';
+import type { FieldValidationResult } from '../contracts/field-controller.js';
+import type { EditorValues } from '../core/editor-values.js';
 import type { ManagedFieldController } from './managed-field-controller.js';
 
 type NativeControl = HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;

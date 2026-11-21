@@ -1,4 +1,4 @@
-export { AltEditorLite } from './core/alt-editor-lite.js';
+export { AltEditorLite } from './editor/alt-editor-lite.js';
 export {
   ENGLISH_LANGUAGE,
   resolveLanguage,
@@ -130,7 +130,7 @@ export type {
   TextFieldConfig,
   TimeFieldConfig,
   VisibleFieldConfig,
-} from './fields/field-config.js';
+} from './contracts/field-config.js';
 export {
   defineCustomField,
   type CustomFieldAdapter,
@@ -142,19 +142,19 @@ export {
   type CustomFieldDefinitionOptions,
   type CustomFieldPresentation,
   type FieldValueComparator,
-} from './fields/custom-field.js';
+} from './contracts/custom-field.js';
 export type {
   SearchSelectLoadContext,
   SearchSelectOptionLoader,
   SearchSelectOptionResolver,
-} from './fields/search-select-data-source.js';
+} from './contracts/search-select-data-source.js';
 export type {
   ChoiceFieldController,
   FieldController,
   FieldValidationResult,
-} from './fields/field-controller.js';
-export { isChoiceFieldController } from './fields/field-controller.js';
-export type { FieldValue, MaybePromise } from './fields/field-value.js';
+} from './contracts/field-controller.js';
+export { isChoiceFieldController } from './contracts/field-controller.js';
+export type { FieldValue, MaybePromise } from './contracts/field-value.js';
 export type { FormController } from './form/form-controller.js';
 export {
   defineFormDependencies,
@@ -164,18 +164,18 @@ export {
   type FormDependencyContext,
   type FormDependencyResolver,
   type FormDependencyResult,
-} from './form/form-dependency.js';
+} from './contracts/form-dependency.js';
 export type {
   FormFieldErrors,
   FormValidationContext,
   FormValidationResult,
   FormValidator,
-} from './form/form-validation.js';
+} from './contracts/form-validation.js';
 export type { FieldPath, FieldPathValue } from './object-path/field-path.js';
 export type {
   InlineKeyboardActivation,
   InlineKeyboardShortcut,
-} from './inline/inline-keyboard-shortcut.js';
+} from './core/inline-keyboard-shortcut.js';
 export type {
   EditorHost,
   HostApplyContext,

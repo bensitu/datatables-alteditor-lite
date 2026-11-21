@@ -1,5 +1,5 @@
+import type { AltEditorLite } from '../editor/alt-editor-lite.js';
 import type { AltEditorLiteError } from './alt-editor-lite-error.js';
-import type { AltEditorLite } from './alt-editor-lite.js';
 import type { EditorOperationMode, EditorOperationTarget } from './editor-operation.js';
 import type { BatchChanges, EditorValues } from './editor-values.js';
 

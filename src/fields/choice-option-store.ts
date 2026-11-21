@@ -1,6 +1,6 @@
 import { EditorConfigurationError } from '../core/alt-editor-lite-error.js';
 
-import type { SelectOption } from './field-config.js';
+import type { SelectOption } from '../contracts/field-config.js';
 
 function optionIdentity(value: string | number): string {
   return typeof value === 'string'

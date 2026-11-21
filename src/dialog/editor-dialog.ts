@@ -1,8 +1,10 @@
 import { runCleanupSteps } from '../core/run-cleanup-steps.js';
-
-import { appendDialogElement } from './append-dialog-element.js';
-import { DialogFocusScope } from './dialog-focus-scope.js';
-import { createEditorDialogShell, type EditorDialogShell } from './dialog-shell.js';
+import { appendDialogElement } from '../presentation/append-dialog-element.js';
+import { DialogFocusScope } from '../presentation/dialog-focus-scope.js';
+import {
+  createEditorDialogShell,
+  type EditorDialogShell,
+} from '../presentation/dialog-shell.js';
 
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type { BeforeCloseReason } from '../core/alt-editor-lite-options.js';

@@ -11,12 +11,12 @@ import type {
   AltEditorLiteOptions,
   EditorErrorHookContext,
 } from '../core/alt-editor-lite-options.js';
-import type { AltEditorLite } from '../core/alt-editor-lite.js';
 import type {
   OperationOwner,
   OwnedOperationRequest,
 } from '../core/editing/operation-owner.js';
 import type { EditorErrorReporter } from '../core/editor-error-reporter.js';
+import type { AltEditorLite } from '../editor/alt-editor-lite.js';
 import type { EditorHost } from '../host/editor-host.js';
 
 export interface DialogRemovePresentation {

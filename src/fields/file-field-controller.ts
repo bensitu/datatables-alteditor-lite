@@ -19,8 +19,8 @@ import type {
   MultipleFileFieldConfig,
   SingleFileFieldConfig,
   VisibleFieldConfig,
-} from './field-config.js';
-import type { FieldValidationResult } from './field-controller.js';
+} from '../contracts/field-config.js';
+import type { FieldValidationResult } from '../contracts/field-controller.js';
 import type { ManagedFieldController } from './managed-field-controller.js';
 
 interface FileProperties {

@@ -22,18 +22,18 @@ import {
 } from './form-dependency-controller.js';
 import { FormValidationRunner } from './form-validation-runner.js';
 
+import type { FieldConfig } from '../contracts/field-config.js';
+import type {
+  FieldController,
+  FieldValidationResult,
+} from '../contracts/field-controller.js';
+import type { FormDependencies } from '../contracts/form-dependency.js';
+import type { FormValidator } from '../contracts/form-validation.js';
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type { BatchEditValidationResult } from '../core/editing/batch-edit-transaction.js';
 import type { DialogTemplateSource } from '../core/editing-options.js';
 import type { BatchChanges, EditorValues } from '../core/editor-values.js';
-import type { FieldConfig } from '../fields/field-config.js';
-import type {
-  FieldController,
-  FieldValidationResult,
-} from '../fields/field-controller.js';
 import type { FieldPath, FieldPathValue } from '../object-path/field-path.js';
-import type { FormDependencies } from './form-dependency.js';
-import type { FormValidator } from './form-validation.js';
 import type { FormLayout } from './layout/form-layout.js';
 
 /** DOM-backed logical form for applying common values to multiple records. */

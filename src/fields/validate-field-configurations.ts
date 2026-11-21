@@ -7,7 +7,7 @@ import { assertAllowedFieldAttributes } from './field-attributes.js';
 import { SEARCH_SELECT_MAX_OPTION_COUNT } from './search-select-constants.js';
 import { throwUnsupportedFieldType } from './unsupported-field-type.js';
 
-import type { FieldConfig } from './field-config.js';
+import type { FieldConfig } from '../contracts/field-config.js';
 
 function hasConfiguredOption(
   options: readonly { readonly value: string | number }[],

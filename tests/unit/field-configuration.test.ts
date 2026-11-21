@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
+import { defineCustomField } from '../../src/contracts/custom-field.js';
 import { EditorConfigurationError } from '../../src/core/alt-editor-lite-error.js';
-import { defineCustomField } from '../../src/fields/custom-field.js';
 import {
   applyAllowedFieldAttributes,
   assertAllowedFieldAttributes,
 } from '../../src/fields/field-attributes.js';
 import { validateFieldConfigurations } from '../../src/fields/validate-field-configurations.js';
 
-import type { FieldConfig } from '../../src/fields/field-config.js';
+import type { FieldConfig } from '../../src/contracts/field-config.js';
 
 interface ConfigurationValues {
   readonly attachment: File | null;

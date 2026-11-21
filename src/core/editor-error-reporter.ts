@@ -5,6 +5,7 @@ import {
   normalizeOperationError,
 } from './error-normalization.js';
 
+import type { AltEditorLite } from '../editor/alt-editor-lite.js';
 import type { AltEditorLiteError } from './alt-editor-lite-error.js';
 import type { AltEditorLiteLanguage } from './alt-editor-lite-language.js';
 import type {
@@ -12,7 +13,6 @@ import type {
   EditorErrorHookContext,
   EditorHooks,
 } from './alt-editor-lite-options.js';
-import type { AltEditorLite } from './alt-editor-lite.js';
 
 /** Publishes normalized operation failures through the configured observers. */
 export class EditorErrorReporter<TRow extends object, TFormValues extends object> {

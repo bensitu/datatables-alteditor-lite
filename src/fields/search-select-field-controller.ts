@@ -5,13 +5,13 @@ import {
   type NativeControlAdapter,
 } from './native-control-controller.js';
 
-import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type {
   SearchSelectFieldConfig,
   RemoteSearchSelectSource,
   SelectOption,
   VisibleFieldConfig,
-} from './field-config.js';
+} from '../contracts/field-config.js';
+import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type { ManagedFieldController } from './managed-field-controller.js';
 
 type ControllerConfig<TFormValues extends object> =

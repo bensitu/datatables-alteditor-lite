@@ -1,12 +1,12 @@
+import { matchesInlineKeyboardShortcut } from '../core/inline-keyboard-shortcut.js';
 import { resolveInlineCellTarget } from '../inline/inline-activation.js';
-import { matchesInlineKeyboardShortcut } from '../inline/inline-keyboard-shortcut.js';
 
-import type { InlineActivationTarget } from '../inline/inline-activation.js';
-import type { InlineColumnMapping } from '../inline/inline-column-mapping.js';
 import type {
   InlineKeyboardActivation,
   InlineKeyboardShortcut,
-} from '../inline/inline-keyboard-shortcut.js';
+} from '../core/inline-keyboard-shortcut.js';
+import type { InlineActivationTarget } from '../inline/inline-activation.js';
+import type { InlineColumnMapping } from '../inline/inline-column-mapping.js';
 import type { Api } from 'datatables.net';
 
 export type KeyTableEnabledState = true | false | 'navigation-only' | 'tab-only';

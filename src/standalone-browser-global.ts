@@ -1,4 +1,4 @@
-export { AltEditorLite } from './core/alt-editor-lite.js';
+export { AltEditorLite } from './editor/alt-editor-lite.js';
 export {
   AltEditorLiteError,
   EditorConfigurationError,

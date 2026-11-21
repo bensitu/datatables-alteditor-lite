@@ -2,8 +2,8 @@ import { hasOwn } from '../core/has-own.js';
 
 import { isInlineFieldEligible } from './inline-field-eligibility.js';
 
+import type { FieldConfig } from '../contracts/field-config.js';
 import type { ResolvedInlineEditingOptions } from '../core/resolve-editing-options.js';
-import type { FieldConfig } from '../fields/field-config.js';
 import type { FieldPath } from '../object-path/field-path.js';
 import type { Api } from 'datatables.net';
 

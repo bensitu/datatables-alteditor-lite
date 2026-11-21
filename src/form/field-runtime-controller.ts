@@ -1,5 +1,5 @@
-import type { FieldConfig } from '../fields/field-config.js';
-import type { FieldController } from '../fields/field-controller.js';
+import type { FieldConfig } from '../contracts/field-config.js';
+import type { FieldController } from '../contracts/field-controller.js';
 import type { ManagedFieldController } from '../fields/managed-field-controller.js';
 import type { FieldMountPoint } from './layout/form-layout.js';
 

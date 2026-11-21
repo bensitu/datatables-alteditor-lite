@@ -7,7 +7,7 @@ import { mergeAbortSignals } from '../core/merge-abort-signals.js';
 import { createReadonlyRowView } from '../core/readonly-row-view.js';
 import { settleWithAbort } from '../core/settle-with-abort.js';
 
-import type { MaybePromise } from '../fields/field-value.js';
+import type { MaybePromise } from '../contracts/field-value.js';
 import type {
   EditorHost,
   HostApplyContext,

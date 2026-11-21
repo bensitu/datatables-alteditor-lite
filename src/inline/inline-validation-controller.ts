@@ -8,14 +8,14 @@ import { FormValidationRunner } from '../form/form-validation-runner.js';
 import { createInlineOperationTarget } from './inline-operation-target.js';
 import { buildInlineValues } from './inline-values.js';
 
+import type { FieldConfig } from '../contracts/field-config.js';
+import type { FormValidator } from '../contracts/form-validation.js';
 import type { AltEditorLiteError } from '../core/alt-editor-lite-error.js';
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type { EditorErrorHookContext } from '../core/alt-editor-lite-options.js';
 import type { EditValidationResult } from '../core/editing/edit-transaction.js';
 import type { EditorValues } from '../core/editor-values.js';
 import type { EditTargetCapture } from '../datatables/row-target-resolution.js';
-import type { FieldConfig } from '../fields/field-config.js';
-import type { FormValidator } from '../form/form-validation.js';
 import type { FieldPath } from '../object-path/field-path.js';
 import type { InlineEditSession } from './inline-edit-session.js';
 import type { Api } from 'datatables.net';

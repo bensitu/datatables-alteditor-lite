@@ -5,7 +5,7 @@ import {
   type NativeControlAdapter,
 } from './native-control-controller.js';
 
-import type { CheckboxFieldConfig } from './field-config.js';
+import type { CheckboxFieldConfig } from '../contracts/field-config.js';
 import type { ManagedFieldController } from './managed-field-controller.js';
 
 /**

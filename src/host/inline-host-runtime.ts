@@ -1,3 +1,4 @@
+import type { FieldConfig } from '../contracts/field-config.js';
 import type { AltEditorLiteError } from '../core/alt-editor-lite-error.js';
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type {
@@ -10,7 +11,6 @@ import type { OperationOwner } from '../core/editing/operation-owner.js';
 import type { EditorOperationTarget } from '../core/editor-operation.js';
 import type { EditorValues } from '../core/editor-values.js';
 import type { ResolvedEditingOptions } from '../core/resolve-editing-options.js';
-import type { FieldConfig } from '../fields/field-config.js';
 
 /** Host-neutral lifecycle state for optional inline editing. */
 export type HostInlineState =

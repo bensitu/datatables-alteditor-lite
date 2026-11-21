@@ -1,6 +1,6 @@
 import { InlineCellHost } from './inline-cell-host.js';
 
-import type { FieldConfig } from '../fields/field-config.js';
+import type { FieldConfig } from '../contracts/field-config.js';
 import type { ManagedFieldController } from '../fields/managed-field-controller.js';
 import type { InlineEditView, InlineEditViewHandlers } from './inline-edit-view.js';
 

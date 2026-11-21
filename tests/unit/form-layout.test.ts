@@ -6,7 +6,7 @@ import { buildEditorForm } from '../../src/form/build-editor-form.js';
 import { resolveTemplateSource } from '../../src/form/layout/resolve-template-source.js';
 import { TemplateFormLayout } from '../../src/form/layout/template-form-layout.js';
 
-import type { FieldConfig } from '../../src/fields/field-config.js';
+import type { FieldConfig } from '../../src/contracts/field-config.js';
 import type { FormController } from '../../src/form/form-controller.js';
 
 interface LayoutValues {

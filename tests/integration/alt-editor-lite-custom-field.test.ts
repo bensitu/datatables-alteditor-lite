@@ -1,12 +1,12 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
-import { AltEditorLite } from '../../src/core/alt-editor-lite.js';
-import { defineCustomField } from '../../src/fields/custom-field.js';
+import { defineCustomField } from '../../src/contracts/custom-field.js';
+import { AltEditorLite } from '../../src/editor/alt-editor-lite.js';
 import { StandaloneHost } from '../../src/standalone/standalone-host.js';
 
 import { installDialogElementSupport } from './standalone-test-fixture.js';
 
-import type { CustomFieldControllerContext } from '../../src/fields/custom-field.js';
+import type { CustomFieldControllerContext } from '../../src/contracts/custom-field.js';
 import type { HostBatchUpdate } from '../../src/host/editor-host.js';
 
 interface RecordRow {

@@ -1,7 +1,7 @@
+import type { SelectOption } from '../contracts/field-config.js';
+import type { FieldValidationResult } from '../contracts/field-controller.js';
+import type { MaybePromise } from '../contracts/field-value.js';
 import type { EditorValues } from '../core/editor-values.js';
-import type { SelectOption } from './field-config.js';
-import type { FieldValidationResult } from './field-controller.js';
-import type { MaybePromise } from './field-value.js';
 
 /**
  * Internal type-erased controller used by FormController.

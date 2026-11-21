@@ -16,8 +16,8 @@ import type {
   PasswordFieldConfig,
   TextFieldConfig,
   TimeFieldConfig,
-} from './field-config.js';
-import type { FieldValidationResult } from './field-controller.js';
+} from '../contracts/field-config.js';
+import type { FieldValidationResult } from '../contracts/field-controller.js';
 import type { ManagedFieldController } from './managed-field-controller.js';
 
 type StringInputConfig<TFormValues extends object> =

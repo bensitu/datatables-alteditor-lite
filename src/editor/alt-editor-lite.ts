@@ -1,12 +1,22 @@
-import { DialogEditingController } from '../dialog/dialog-editing-controller.js';
-import { validateFieldConfigurations } from '../fields/validate-field-configurations.js';
-import { validateFormDependencies } from '../form/validate-form-dependencies.js';
+import { EditorConfigurationError } from '../core/alt-editor-lite-error.js';
+import { BatchEditOperationRunner } from '../core/editing/batch-edit-operation-runner.js';
+import { EditOperationRunner } from '../core/editing/edit-operation-runner.js';
+import { InteractionCoordinator } from '../core/editing/interaction-coordinator.js';
+import { OperationOwner } from '../core/editing/operation-owner.js';
 import {
-  hasHostBatchUpdateCapability,
+  READ_EDITOR_BUTTON_STATE,
+  type EditorButtonStateInput,
+} from '../core/editor-button-integration.js';
+import { EditorErrorReporter } from '../core/editor-error-reporter.js';
+import { dispatchEditorEvent } from '../core/editor-event.js';
+import { EditorStateCoordinator } from '../core/editor-state-coordinator.js';
+import { normalizeRejectedReason } from '../core/error-normalization.js';
+import { RefreshOperationRunner } from '../core/refresh-operation-runner.js';
+import { runCleanupSteps } from '../core/run-cleanup-steps.js';
+import { DialogEditingController } from '../dialog/dialog-editing-controller.js';
+import {
   hasHostRefreshCapability,
   hasHostPresentationCapability,
-  hasHostRowCollectionCapability,
-  hasHostSelectionCapability,
 } from '../host/editor-host.js';
 import { hasInlineHostRuntimeFactory } from '../host/inline-host-runtime.js';
 import { createInstanceId } from '../instance/create-instance-id.js';
@@ -15,46 +25,18 @@ import {
   storeEditorInstance,
 } from '../instance/editor-instance-store.js';
 
-import {
-  EditorConfigurationError,
-  EditorSelectionUnavailableError,
-} from './alt-editor-lite-error.js';
-import {
-  resolveLanguage,
-  type AltEditorLiteLanguage,
-} from './alt-editor-lite-language.js';
-import { BatchEditOperationRunner } from './editing/batch-edit-operation-runner.js';
-import { EditOperationRunner } from './editing/edit-operation-runner.js';
-import { InteractionCoordinator } from './editing/interaction-coordinator.js';
-import { OperationOwner } from './editing/operation-owner.js';
-import {
-  READ_EDITOR_BUTTON_STATE,
-  type EditorButtonStateInput,
-} from './editor-button-integration.js';
-import { resolveEditorCapabilities } from './editor-capabilities.js';
-import { EditorErrorReporter } from './editor-error-reporter.js';
-import { dispatchEditorEvent } from './editor-event.js';
-import { EditorStateCoordinator } from './editor-state-coordinator.js';
-import { normalizeRejectedReason } from './error-normalization.js';
-import { LocalUniquenessValidator } from './local-uniqueness-validator.js';
-import { RefreshOperationRunner } from './refresh-operation-runner.js';
-import { resolveEditingOptions } from './resolve-editing-options.js';
-import { runCleanupSteps } from './run-cleanup-steps.js';
-import { validateHooksConfiguration } from './validate-hooks-configuration.js';
-import { validateOperationConfiguration } from './validate-operation-configuration.js';
+import { readEditorButtonState } from './editor-button-state.js';
+import { resolveEditorConfiguration } from './editor-configuration.js';
 
-import type { FieldController } from '../fields/field-controller.js';
-import type {
-  EditorHost,
-  HostRecordEntry,
-  HostRowCollectionCapability,
-} from '../host/editor-host.js';
+import type { FieldController } from '../contracts/field-controller.js';
+import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
+import type { AltEditorLiteOptions } from '../core/alt-editor-lite-options.js';
+import type { EditorCapabilities } from '../core/editor-capabilities.js';
+import type { EditorState } from '../core/editor-state.js';
+import type { DeepPartial, EditorValues } from '../core/editor-values.js';
+import type { EditorHost } from '../host/editor-host.js';
 import type { HostInlineState, InlineHostRuntime } from '../host/inline-host-runtime.js';
 import type { FieldPath, FieldPathValue } from '../object-path/field-path.js';
-import type { AltEditorLiteOptions } from './alt-editor-lite-options.js';
-import type { EditorCapabilities } from './editor-capabilities.js';
-import type { EditorState } from './editor-state.js';
-import type { DeepPartial, EditorValues } from './editor-values.js';
 
 function createInactiveInlineRuntime(): InlineHostRuntime {
   const unavailable = (): Promise<void> =>
@@ -101,45 +83,14 @@ export class AltEditorLite<
     private readonly host: EditorHost<TRow, TTarget>,
     options: AltEditorLiteOptions<TRow, TFormValues>,
   ) {
-    const editing = resolveEditingOptions(options.editing);
-    validateFieldConfigurations(options.fields);
-    validateFormDependencies(options.fields, options.dependencies);
-    validateOperationConfiguration(options);
-    validateHooksConfiguration(options);
-
-    this.capabilities = resolveEditorCapabilities(editing, {
-      batchEdit:
-        hasHostBatchUpdateCapability<TRow, TTarget>(host) &&
-        (options.operations?.updateMany !== undefined ||
-          options.operations?.update === undefined),
-      create:
-        options.operations?.create !== undefined ||
-        options.clientSide?.createRow !== undefined,
-    });
-    this.language = resolveLanguage(options.language);
+    const { capabilities, editing, language, uniquenessValidator } =
+      resolveEditorConfiguration(host, options);
+    this.capabilities = capabilities;
+    this.language = language;
     this.stateCoordinator = new EditorStateCoordinator(() => {
       this.notifyIntegration();
     });
 
-    const hasRecordCollectionRequirement = options.fields.some(
-      (field) => field.unique === true,
-    );
-    if (
-      hasRecordCollectionRequirement &&
-      !hasHostRowCollectionCapability<TRow, TTarget>(host)
-    ) {
-      throw new EditorConfigurationError(
-        'Local uniqueness validation requires a Host row collection capability.',
-      );
-    }
-    const emptyCollection: HostRowCollectionCapability<TRow, TTarget> = {
-      entries: (): Iterable<Readonly<HostRecordEntry<TRow, TTarget>>> => [],
-    };
-    const uniquenessValidator = new LocalUniquenessValidator(
-      hasHostRowCollectionCapability<TRow, TTarget>(host) ? host : emptyCollection,
-      options.fields,
-      this.language,
-    );
     const editOperationRunner = new EditOperationRunner<TRow, TFormValues>(
       this.operationOwner,
       this.language,
@@ -442,25 +393,6 @@ export class AltEditorLite<
       (interactionOwner === 'none' ||
         (interactionOwner === 'inline' &&
           this.inlineController.allowsExternalOperation()));
-    let hasSelect = false;
-    let selectedRowCount = 0;
-    if (hasHostSelectionCapability<TTarget>(this.host)) {
-      try {
-        selectedRowCount = this.host.getSelectedTargets().length;
-        hasSelect = true;
-      } catch (error: unknown) {
-        if (!(error instanceof EditorSelectionUnavailableError)) {
-          throw error;
-        }
-      }
-    }
-    return {
-      capabilities: this.capabilities,
-      hasCreate: this.capabilities.createDialog,
-      hasSelect,
-      isReady,
-      language: this.language,
-      selectedRowCount,
-    };
+    return readEditorButtonState(this.host, this.capabilities, this.language, isReady);
   }
 }

@@ -3,9 +3,9 @@ import { parseFieldPath } from '../object-path/field-path.js';
 
 import { isInlineFieldEligible } from './inline-field-eligibility.js';
 
+import type { FieldConfig } from '../contracts/field-config.js';
 import type { AltEditorLiteOptions } from '../core/alt-editor-lite-options.js';
 import type { ResolvedEditingOptions } from '../core/resolve-editing-options.js';
-import type { FieldConfig } from '../fields/field-config.js';
 import type { Api } from 'datatables.net';
 
 function formatPropertyNames(propertyNames: readonly string[]): string {

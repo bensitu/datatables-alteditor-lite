@@ -1,8 +1,8 @@
 import { EditorConfigurationError } from '../core/alt-editor-lite-error.js';
 import { parseFieldPath } from '../object-path/field-path.js';
 
-import type { FieldConfig } from '../fields/field-config.js';
-import type { FormDependencies } from './form-dependency.js';
+import type { FieldConfig } from '../contracts/field-config.js';
+import type { FormDependencies } from '../contracts/form-dependency.js';
 
 function isDependencyMap(value: unknown): value is Readonly<Record<string, unknown>> {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {

@@ -2,8 +2,8 @@ import { freezeEditorValues } from '../core/freeze-editor-values.js';
 import { getPathValue } from '../object-path/get-path-value.js';
 import { setPathValue } from '../object-path/set-path-value.js';
 
+import type { FieldConfig } from '../contracts/field-config.js';
 import type { EditorValues } from '../core/editor-values.js';
-import type { FieldConfig } from '../fields/field-config.js';
 import type { FieldPath } from '../object-path/field-path.js';
 
 /** Builds complete declared values from canonical row data and one candidate. */
