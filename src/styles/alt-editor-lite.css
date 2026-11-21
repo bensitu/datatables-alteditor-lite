@@ -85,18 +85,6 @@
   overflow: auto;
 }
 
-.alteditor-lite-dialog__errors,
-.alteditor-lite-form__submission-error,
-.alteditor-lite-field__error {
-  color: var(--alteditor-lite-error-color);
-}
-
-.alteditor-lite-dialog__errors:empty,
-.alteditor-lite-form__submission-error:empty,
-.alteditor-lite-field__error:empty {
-  display: none;
-}
-
 .alteditor-lite-dialog__footer {
   display: flex;
   gap: calc(var(--alteditor-lite-spacing) / 2);
@@ -115,30 +103,15 @@
   border-radius: calc(var(--alteditor-lite-border-radius) / 1.5);
 }
 
-.alteditor-lite-dialog__button--submit {
-  color: var(--alteditor-lite-primary-text-color);
-  background: var(--alteditor-lite-primary-color);
-  border-color: var(--alteditor-lite-primary-color);
-}
-
-.alteditor-lite-dialog__button--destructive {
-  color: var(--alteditor-lite-danger-text-color, var(--alteditor-lite-error-text-color));
-  background: var(--alteditor-lite-danger-color, var(--alteditor-lite-error-color));
-  border-color: var(--alteditor-lite-danger-color, var(--alteditor-lite-error-color));
-}
-
-.alteditor-lite-dialog__button:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
 .alteditor-lite-form,
 .alteditor-lite-form__layout {
   display: grid;
   gap: var(--alteditor-lite-spacing);
 }
 
-.alteditor-lite-batch-field {
+.alteditor-lite-batch-field,
+.alteditor-lite-remove-confirmation,
+.alteditor-lite-field {
   display: grid;
   gap: calc(var(--alteditor-lite-spacing) / 2);
 }
@@ -150,7 +123,9 @@
   align-items: center;
 }
 
-.alteditor-lite-batch-field__label {
+.alteditor-lite-batch-field__label,
+.alteditor-lite-remove-confirmation__warning,
+.alteditor-lite-field__label {
   font-weight: 600;
 }
 
@@ -180,39 +155,18 @@
   justify-self: start;
 }
 
+.alteditor-lite-dialog__button:disabled,
 .alteditor-lite-batch-field__action:disabled {
   cursor: not-allowed;
   opacity: 0.6;
-}
-
-.alteditor-lite-form__slot--hidden {
-  display: none;
-}
-
-.alteditor-lite-remove-confirmation {
-  display: grid;
-  gap: calc(var(--alteditor-lite-spacing) / 2);
 }
 
 .alteditor-lite-remove-confirmation > * {
   margin: 0;
 }
 
-.alteditor-lite-remove-confirmation__warning {
-  font-weight: 600;
-}
-
 .alteditor-lite-form[aria-busy='true'] {
   opacity: 0.75;
-}
-
-.alteditor-lite-field {
-  display: grid;
-  gap: calc(var(--alteditor-lite-spacing) / 2);
-}
-
-.alteditor-lite-field__label {
-  font-weight: 600;
 }
 
 .alteditor-lite-radio {
@@ -363,10 +317,6 @@ textarea.alteditor-lite-field__control {
   place-items: center;
 }
 
-.alteditor-lite-search-select__clear[hidden] {
-  display: none;
-}
-
 .alteditor-lite-search-select__clear:disabled {
   cursor: not-allowed;
   opacity: 0.5;
@@ -396,10 +346,6 @@ textarea.alteditor-lite-field__control {
 
 .alteditor-lite-search-select__listbox--above {
   inset-block: auto calc(100% + 0.25rem);
-}
-
-.alteditor-lite-search-select__listbox[hidden] {
-  display: none;
 }
 
 .alteditor-lite-search-select__option,
@@ -435,9 +381,21 @@ textarea.alteditor-lite-field__control {
   opacity: 0.8;
 }
 
+.alteditor-lite-dialog__errors,
+.alteditor-lite-form__submission-error,
+.alteditor-lite-field__error,
 .alteditor-lite-search-select__feedback--error,
 .alteditor-lite-search-select--error > .alteditor-lite-field__control {
   color: var(--alteditor-lite-error-color);
+}
+
+.alteditor-lite-dialog__errors:empty,
+.alteditor-lite-form__submission-error:empty,
+.alteditor-lite-field__error:empty,
+.alteditor-lite-form__slot--hidden,
+.alteditor-lite-search-select__clear[hidden],
+.alteditor-lite-search-select__listbox[hidden] {
+  display: none;
 }
 
 .alteditor-lite-search-select__listbox[aria-busy='true'] {
@@ -578,10 +536,17 @@ table[class~='dataTable'] tbody td.alteditor-lite-cell--editing::after {
   place-items: center;
 }
 
+.alteditor-lite-dialog__button--submit,
 .alteditor-lite-inline__action--submit {
   color: var(--alteditor-lite-primary-text-color);
   background: var(--alteditor-lite-primary-color);
   border-color: var(--alteditor-lite-primary-color);
+}
+
+.alteditor-lite-dialog__button--destructive {
+  color: var(--alteditor-lite-danger-text-color, var(--alteditor-lite-error-text-color));
+  background: var(--alteditor-lite-danger-color, var(--alteditor-lite-error-color));
+  border-color: var(--alteditor-lite-danger-color, var(--alteditor-lite-error-color));
 }
 
 .alteditor-lite-inline__action:disabled {
