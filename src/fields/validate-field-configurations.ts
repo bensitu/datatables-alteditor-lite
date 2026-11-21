@@ -150,18 +150,18 @@ function assertNonNegativeInteger(
 export function validateFieldConfigurations<TFormValues extends object>(
   fields: readonly FieldConfig<TFormValues>[],
 ): void {
-  const configuredNames = new Set<string>();
+  const configuredPaths = new Map<string, readonly string[]>();
 
   for (const config of fields) {
     assertSupportedFieldType(config);
-    parseFieldPath(config.name);
+    const segments = parseFieldPath(config.name);
 
-    if (configuredNames.has(config.name)) {
+    if (configuredPaths.has(config.name)) {
       throw new EditorConfigurationError(
         `Field path "${config.name}" is configured more than once.`,
       );
     }
-    configuredNames.add(config.name);
+    configuredPaths.set(config.name, segments);
     const validateOn: unknown = config.validateOn;
     if (validateOn !== undefined && validateOn !== 'submit' && validateOn !== 'blur') {
       throw new EditorConfigurationError(
@@ -341,6 +341,17 @@ export function validateFieldConfigurations<TFormValues extends object>(
       throw new EditorConfigurationError(
         `rows for field "${config.name}" must be a positive integer.`,
       );
+    }
+  }
+
+  for (const [name, segments] of configuredPaths) {
+    for (let length = 1; length < segments.length; length += 1) {
+      const ancestor = segments.slice(0, length).join('.');
+      if (configuredPaths.has(ancestor)) {
+        throw new EditorConfigurationError(
+          `Field path "${name}" overlaps configured field path "${ancestor}".`,
+        );
+      }
     }
   }
 }

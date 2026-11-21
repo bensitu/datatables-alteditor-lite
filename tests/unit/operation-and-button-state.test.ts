@@ -12,6 +12,21 @@ import { validateOperationConfiguration } from '../../src/core/validate-operatio
 import { createEditorButtonState } from '../../src/datatables/register-editor-buttons.js';
 
 describe('operation configuration', () => {
+  it('rejects provided persistence callbacks that are not functions', () => {
+    expect(() => {
+      validateOperationConfiguration({
+        fields: [],
+        operations: { create: 123 as never },
+      });
+    }).toThrow('operations.create must be a function.');
+    expect(() => {
+      validateOperationConfiguration({
+        fields: [],
+        clientSide: { updateRow: null as never },
+      });
+    }).toThrow('clientSide.updateRow must be a function.');
+  });
+
   it('rejects conflicting Create owners', () => {
     expect(() => {
       validateOperationConfiguration({

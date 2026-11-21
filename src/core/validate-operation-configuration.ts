@@ -15,6 +15,22 @@ export function validateOperationConfiguration<
   if (options.validateForm !== undefined && typeof options.validateForm !== 'function') {
     throw new EditorConfigurationError('validateForm must be a function.');
   }
+  for (const name of ['create', 'update', 'updateMany', 'remove', 'refresh'] as const) {
+    if (
+      options.operations?.[name] !== undefined &&
+      typeof options.operations[name] !== 'function'
+    ) {
+      throw new EditorConfigurationError(`operations.${name} must be a function.`);
+    }
+  }
+  for (const name of ['createRow', 'updateRow'] as const) {
+    if (
+      options.clientSide?.[name] !== undefined &&
+      typeof options.clientSide[name] !== 'function'
+    ) {
+      throw new EditorConfigurationError(`clientSide.${name} must be a function.`);
+    }
+  }
 
   if (
     options.operations?.create !== undefined &&

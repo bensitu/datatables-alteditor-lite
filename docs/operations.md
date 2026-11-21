@@ -2,6 +2,8 @@
 
 AltEditorLite performs non-optimistic mutations. A persistence callback must
 finish successfully before the Host is asked to add, replace, or remove a record.
+Supply functions for configured `operations` and `clientSide` callbacks. Omit
+callbacks that the editor should handle through its defaults.
 
 ```ts
 const editor = new AltEditorLite<UserRow, UserForm>(table, {

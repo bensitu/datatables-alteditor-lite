@@ -9,7 +9,9 @@ Dialog-only. See [Editing](editing.md).
 
 Every field has a safe dot-separated `name`. Segments that can mutate object
 prototypes are rejected. Paths contain at most five property segments. Numeric
-and bracketed array indices are not supported. The default local Edit merge
+and bracketed array indices are not supported. Configure sibling paths such as
+`profile.name` and `profile.email` together. A field path cannot also be an
+ancestor of another configured field. The default local Edit merge
 recreates an edited nested branch as plain objects; applications that require a
 class instance in that branch should return the reconstructed row from an Update
 callback. Visible fields require a non-empty label.

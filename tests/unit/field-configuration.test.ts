@@ -83,6 +83,24 @@ describe('field runtime configuration', () => {
     }).toThrow('Unsupported field type "unsupported".');
   });
 
+  it('rejects overlapping paths regardless of field order and accepts sibling paths', () => {
+    const parent = { name: 'profile', label: 'Profile', type: 'text' } as const;
+    const child = { name: 'profile.name', label: 'Name', type: 'text' } as const;
+    const sibling = { name: 'profile.email', label: 'Email', type: 'text' } as const;
+
+    for (const fields of [
+      [parent, child],
+      [child, parent],
+    ]) {
+      expect(() => {
+        validateFieldConfigurations(fields);
+      }).toThrow(EditorConfigurationError);
+    }
+    expect(() => {
+      validateFieldConfigurations([child, sibling]);
+    }).not.toThrow();
+  });
+
   it('validates custom definitions and keeps control attributes adapter-owned', () => {
     const definition = defineCustomField<readonly string[]>({
       capabilities: { batch: true },
