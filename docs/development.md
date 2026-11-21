@@ -110,9 +110,13 @@ checks tied to source layout. Distribution size limits are defined in
 
 ## Publishing
 
+Workflows pin GitHub Actions to commits from their upstream repositories. Keep
+the release tag comment aligned with the commit when updating a workflow.
+
 The npm workflow publishes the verified artifact attached to a published GitHub
 release. It uses OpenID Connect (OIDC) authentication on a GitHub-hosted runner and
 does not provide a long-lived npm publishing token.
+The publishing workflow installs a specific npm CLI version for repeatable runs.
 
 Before running it, configure a trusted publisher in the npm package settings for
 owner `bensitu`, repository `datatables-alteditor-lite`, workflow filename
