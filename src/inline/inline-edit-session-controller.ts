@@ -46,6 +46,7 @@ import type { EditorValues } from '../core/editor-values.js';
 import type { ResolvedInlineEditingOptions } from '../core/resolve-editing-options.js';
 import type { LogicalCellTarget } from '../datatables/commit-row-update.js';
 import type { DataTablesHost } from '../datatables/datatables-host.js';
+import type { EditTargetCapture } from '../datatables/row-target-resolution.js';
 import type { FieldConfig } from '../fields/field-config.js';
 import type { InlineColumnMapping } from './inline-column-mapping.js';
 import type { InlineEditSession } from './inline-edit-session.js';
@@ -75,7 +76,7 @@ export interface InlineEditSessionControllerArguments<
   readonly host: DataTablesHost<TRow>;
   readonly validateUnique: (
     values: Readonly<EditorValues<TFormValues>>,
-    excludedRow: TRow,
+    rowCapture: EditTargetCapture<TRow>,
   ) => Readonly<Record<string, string>>;
   readonly reportError: (
     error: AltEditorLiteError,

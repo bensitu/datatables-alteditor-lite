@@ -13,11 +13,6 @@ interface UniqueFieldLookup {
   readonly pathSegments: readonly string[];
 }
 
-interface UniqueValidationExclusion<TRow extends object, TTarget> {
-  readonly row?: TRow;
-  readonly target?: TTarget;
-}
-
 /** Performs host-scoped uniqueness checks for configured field paths. */
 export class LocalUniquenessValidator<
   TRow extends object,
@@ -45,7 +40,7 @@ export class LocalUniquenessValidator<
   /** Returns messages for values duplicated by another loaded row. */
   public validate(
     values: Readonly<EditorValues<TFormValues>>,
-    exclusion?: Readonly<UniqueValidationExclusion<TRow, TTarget>>,
+    exclusion?: Readonly<{ target: TTarget }>,
   ): Readonly<Record<string, string>> {
     const fieldErrors: Record<string, string> = {};
     const candidates: (readonly [UniqueFieldLookup, unknown])[] = [];
@@ -61,11 +56,7 @@ export class LocalUniquenessValidator<
 
     let remaining = candidates.length;
     for (const { row, target } of this.collection.entries()) {
-      if (
-        exclusion?.target !== undefined
-          ? Object.is(target, exclusion.target)
-          : exclusion?.row !== undefined && Object.is(row, exclusion.row)
-      ) {
+      if (exclusion !== undefined && Object.is(target, exclusion.target)) {
         continue;
       }
 

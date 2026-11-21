@@ -1,5 +1,6 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
+import { ENGLISH_LANGUAGE } from '../../src/core/alt-editor-lite-language.js';
 import {
   AltEditorLite,
   AltEditorLiteError,
@@ -166,6 +167,45 @@ function replaceInlineValue(value: string): HTMLInputElement {
 }
 
 describe('AltEditorLite programmatic inline editing', () => {
+  it('excludes the edited record from uniqueness checks', async () => {
+    const { api, editor } = createInlineEditor({
+      editing: inlineEditing(),
+      fields: [{ ...fields[0], unique: true }, fields[1]],
+    });
+
+    await editor.openInlineEdit('#row-a', 1);
+    replaceInlineValue('0');
+    const saveRank = editor.submitInlineEdit();
+    await Promise.all([
+      saveRank,
+      vi.waitFor(() => {
+        expect(api.row('#row-a').data()).toMatchObject({ name: 'Alpha', rank: 0 });
+      }),
+    ]);
+
+    await editor.openInlineEdit('#row-a', 0);
+    replaceInlineValue('Beta');
+    const duplicate = expect(editor.submitInlineEdit()).rejects.toMatchObject({
+      fieldErrors: { name: ENGLISH_LANGUAGE.validation.unique },
+    });
+    await vi.waitFor(() => {
+      expect(
+        document.querySelector<HTMLDialogElement>('.alteditor-lite-dialog--alert')?.open,
+      ).toBe(true);
+    });
+    document
+      .querySelector<HTMLButtonElement>(
+        '.alteditor-lite-dialog--alert .alteditor-lite-dialog__button',
+      )
+      ?.click();
+    await duplicate;
+    expect(api.row('#row-a').data().name).toBe('Alpha');
+
+    replaceInlineValue('Updated Alpha');
+    await editor.submitInlineEdit();
+    expect(api.row('#row-a').data().name).toBe('Updated Alpha');
+  });
+
   it.each(['api', 'escape', 'blur'] as const)(
     'completes cleanup and reports custom destruction failures through %s',
     async (action) => {

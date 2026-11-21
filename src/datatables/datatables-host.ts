@@ -96,7 +96,7 @@ export class DataTablesHost<TRow extends object>
     HostRefreshCapability,
     HostRowCollectionCapability<TRow, DataTablesRecordTarget>,
     HostSelectionCapability<DataTablesRecordTarget>,
-    InlineHostRuntimeFactory<TRow>
+    InlineHostRuntimeFactory<TRow, DataTablesRecordTarget>
 {
   public readonly eventTarget: HTMLTableElement;
 
@@ -475,7 +475,7 @@ export class DataTablesHost<TRow extends object>
 
   /** Creates the DataTables-owned inline editing runtime. */
   public createInlineRuntime<TFormValues extends object>(
-    runtime: InlineHostRuntimeArguments<TRow, TFormValues>,
+    runtime: InlineHostRuntimeArguments<TRow, TFormValues, DataTablesRecordTarget>,
   ): InlineHostRuntime {
     validateInlineConfiguration(this.table, runtime.editorOptions, runtime.editing);
     const mappingRegistry = new InlineColumnMappingRegistry(
@@ -506,7 +506,8 @@ export class DataTablesHost<TRow extends object>
       reportError: runtime.reportError,
       table: this.table,
       tableElement: this.eventTarget,
-      validateUnique: runtime.validateUnique,
+      validateUnique: (values, rowCapture) =>
+        runtime.validateUnique(values, this.#storeRecordTarget(rowCapture)),
     });
 
     return {

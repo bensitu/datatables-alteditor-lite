@@ -161,7 +161,7 @@ export class AltEditorLite<
         options.hooks,
         () => this.stateCoordinator.getState().status === 'destroyed',
       );
-      if (hasInlineHostRuntimeFactory<TRow>(host)) {
+      if (hasInlineHostRuntimeFactory<TRow, TTarget>(host)) {
         inlineController = host.createInlineRuntime({
           editing,
           editor: this,
@@ -179,8 +179,8 @@ export class AltEditorLite<
           reportError: (error, context, publishEvent) => {
             errorReporter.report(error, context, publishEvent);
           },
-          validateUnique: (values, excludedRow) =>
-            uniquenessValidator.validate(values, { row: excludedRow }),
+          validateUnique: (values, target) =>
+            uniquenessValidator.validate(values, { target }),
         });
       } else {
         if (this.capabilities.inlineEdit) {

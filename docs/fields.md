@@ -339,7 +339,8 @@ currently exposed by the Host:
 }
 ```
 
-Edit excludes its captured source row, so keeping the current value is valid.
+Dialog and Inline Edit exclude the record being edited, so changing another
+field can preserve the current unique value.
 Built-in fields preserve JavaScript value identity semantics: numeric `1` and
 string `'1'` are different. Custom fields use their definition's `isEqual`
 comparator when present, allowing separately allocated structured values to be

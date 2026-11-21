@@ -40,6 +40,7 @@ export type HostInlineState =
 export interface InlineHostRuntimeArguments<
   TRow extends object,
   TFormValues extends object,
+  TTarget,
 > {
   readonly editor: object;
   readonly enabled: boolean;
@@ -59,7 +60,7 @@ export interface InlineHostRuntimeArguments<
   ) => void;
   readonly validateUnique: (
     values: Readonly<EditorValues<TFormValues>>,
-    excludedRow: TRow,
+    excludedTarget: TTarget,
   ) => Readonly<Record<string, string>>;
 }
 
@@ -76,15 +77,15 @@ export interface InlineHostRuntime {
 }
 
 /** Optional capability for Hosts that provide an inline presentation. */
-export interface InlineHostRuntimeFactory<TRow extends object> {
+export interface InlineHostRuntimeFactory<TRow extends object, TTarget> {
   createInlineRuntime<TFormValues extends object>(
-    arguments_: InlineHostRuntimeArguments<TRow, TFormValues>,
+    arguments_: InlineHostRuntimeArguments<TRow, TFormValues, TTarget>,
   ): InlineHostRuntime;
 }
 
 /** Detects inline runtime support on a concrete Host. */
-export function hasInlineHostRuntimeFactory<TRow extends object>(
+export function hasInlineHostRuntimeFactory<TRow extends object, TTarget>(
   host: object,
-): host is InlineHostRuntimeFactory<TRow> {
+): host is InlineHostRuntimeFactory<TRow, TTarget> {
   return 'createInlineRuntime' in host && typeof host.createInlineRuntime === 'function';
 }

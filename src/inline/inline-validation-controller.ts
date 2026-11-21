@@ -13,6 +13,7 @@ import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js'
 import type { EditorErrorHookContext } from '../core/alt-editor-lite-options.js';
 import type { EditValidationResult } from '../core/editing/edit-transaction.js';
 import type { EditorValues } from '../core/editor-values.js';
+import type { EditTargetCapture } from '../datatables/row-target-resolution.js';
 import type { FieldConfig } from '../fields/field-config.js';
 import type { FormValidator } from '../form/form-validation.js';
 import type { FieldPath } from '../object-path/field-path.js';
@@ -29,7 +30,7 @@ export interface InlineValidationControllerArguments<
   readonly validateForm?: FormValidator<TFormValues>;
   readonly validateUnique: (
     values: Readonly<EditorValues<TFormValues>>,
-    excludedRow: TRow,
+    rowCapture: EditTargetCapture<TRow>,
   ) => Readonly<Record<string, string>>;
   readonly reportError: (
     error: AltEditorLiteError,
@@ -89,7 +90,7 @@ export class InlineValidationController<TRow extends object, TFormValues extends
         controllers: [session.controller],
         invalidMessage: this.arguments_.language.validation.invalid,
         validateUnique: (values) =>
-          this.arguments_.validateUnique(values, session.capture.rowCapture.sourceRow),
+          this.arguments_.validateUnique(values, session.capture.rowCapture),
         ...(validateForm === undefined
           ? {}
           : {
