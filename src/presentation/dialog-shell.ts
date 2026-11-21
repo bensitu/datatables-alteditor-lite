@@ -22,7 +22,7 @@ export interface AlertDialogShell extends DialogShell {
 }
 
 /** Creates the common accessible dialog structure. */
-export function createDialogShell(dialogId: string, titleId: string): DialogShell {
+function createDialogShell(dialogId: string, titleId: string): DialogShell {
   const dialogElement = document.createElement('dialog');
   const surfaceElement = document.createElement('div');
   const headerElement = document.createElement('header');

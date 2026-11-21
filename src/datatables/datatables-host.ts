@@ -8,7 +8,7 @@ import { resolveInlineTarget } from '../inline/inline-target-resolution.js';
 import { validateInlineConfiguration } from '../inline/validate-inline-configuration.js';
 
 import { isColumnVisiblyAvailable } from './column-visibility.js';
-import { resolveLogicalCellTarget } from './commit-row-update.js';
+import { resolveLogicalCellTarget } from './commit-inline-update.js';
 import { DataTablesRecordHost } from './datatables-record-host.js';
 import { resolveUniqueRowIndexById } from './row-id-resolution.js';
 
@@ -23,7 +23,7 @@ import type { InlineColumnMapping } from '../inline/inline-column-mapping.js';
 import type { InlineTargetSummary } from '../inline/inline-edit-state.js';
 import type { InlineNavigationIntent } from '../inline/inline-navigation.js';
 import type { InlineTargetCapture } from '../inline/inline-target-capture.js';
-import type { LogicalCellTarget } from './commit-row-update.js';
+import type { LogicalCellTarget } from './commit-inline-update.js';
 import type { DataTablesRecordTarget } from './datatables-record-targets.js';
 import type { ColumnSelector, RowSelector } from 'datatables.net';
 

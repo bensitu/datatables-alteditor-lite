@@ -29,7 +29,7 @@ function resolveStableRowId<TRow extends object>(
 }
 
 /** Commits a row and captures a logical cell target from the completed draw. */
-export async function commitRowUpdateWithFocus<TRow extends object>(
+export async function commitInlineUpdateWithFocusTarget<TRow extends object>(
   host: DataTablesHost<TRow>,
   rowIndex: number,
   row: TRow,

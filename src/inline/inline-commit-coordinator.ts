@@ -1,7 +1,7 @@
 import {
-  commitRowUpdateWithFocus,
+  commitInlineUpdateWithFocusTarget,
   type LogicalCellTarget,
-} from '../datatables/commit-row-update.js';
+} from '../datatables/commit-inline-update.js';
 import { dispatchEditorEvent } from '../editor/editor-event.js';
 
 import {
@@ -110,7 +110,7 @@ export class InlineCommitCoordinator<TRow extends object, TFormValues extends ob
           return Object.freeze({ row });
         }
 
-        const commitResult = await commitRowUpdateWithFocus(
+        const commitResult = await commitInlineUpdateWithFocusTarget(
           host,
           rowIndex,
           row,

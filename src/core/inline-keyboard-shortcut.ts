@@ -21,8 +21,9 @@ const reservedKeys = new Set([
   'PageDown',
 ]);
 
-export const DEFAULT_INLINE_KEYBOARD_SHORTCUT: Readonly<InlineKeyboardShortcut> =
-  Object.freeze({ key: 'F2' });
+const DEFAULT_INLINE_KEYBOARD_SHORTCUT: Readonly<InlineKeyboardShortcut> = Object.freeze({
+  key: 'F2',
+});
 
 /** Accepted single or multiple focused-cell activation shortcuts. */
 export type InlineKeyboardActivation =

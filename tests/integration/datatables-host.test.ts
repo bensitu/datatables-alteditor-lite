@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { EditorConfigurationError } from '../../src/core/alt-editor-lite-error.js';
-import { resolveLogicalCellTarget } from '../../src/datatables/commit-row-update.js';
+import { resolveLogicalCellTarget } from '../../src/datatables/commit-inline-update.js';
 import { DataTablesHost } from '../../src/datatables/datatables-host.js';
 
 import { destroyTestTables, createTestTable } from './datatables-test-fixture.js';

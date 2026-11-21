@@ -24,7 +24,7 @@ const builtinInlineTypes = new Set([
 ]);
 
 /** Returns whether a field can provide a single-value inline control. */
-export function supportsInlineFieldType<TFormValues extends object>(
+function supportsInlineFieldType<TFormValues extends object>(
   field: Readonly<FieldConfig<TFormValues>>,
 ): boolean {
   return field.type === 'custom'
