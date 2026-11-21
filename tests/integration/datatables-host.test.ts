@@ -129,6 +129,30 @@ describe('DataTablesHost', () => {
     }
   });
 
+  it('keeps a pending redraw when another host for the table is destroyed', async () => {
+    const { api } = createTestTable('host-shared-table');
+    const host = new DataTablesHost(api, 250);
+    const secondHost = new DataTablesHost(api);
+    const target = host.resolveRecordTarget('#row-a');
+    const draw = vi.spyOn(api, 'draw').mockReturnValue(api);
+    try {
+      const update = host.applyUpdate(
+        target,
+        { id: 'row-a', name: 'Updated', rank: 2 },
+        { signal: new AbortController().signal, mode: 'dialog', operation: 'edit' },
+      );
+      secondHost.destroy();
+      draw.mockRestore();
+      api.draw(false);
+      await expect(update).resolves.toBe(target);
+      expect(host.read(target).name).toBe('Updated');
+    } finally {
+      draw.mockRestore();
+      secondHost.destroy();
+      host.destroy();
+    }
+  });
+
   it.each([0, -1, NaN, Infinity, -Infinity])(
     'rejects an invalid refresh timeout (%s)',
     (timeout) => {

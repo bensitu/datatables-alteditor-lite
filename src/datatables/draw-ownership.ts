@@ -165,7 +165,6 @@ export class DrawOwnership<TRow extends object> {
     for (const finish of [...this.pendingDraws]) {
       finish();
     }
-    this.table.off('.altEditorLiteOwnedDraw');
   }
 
   private acquire(reason: DrawOwnershipReason): DrawOwnershipToken {
