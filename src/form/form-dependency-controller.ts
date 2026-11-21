@@ -1,5 +1,6 @@
 import { EditorConfigurationError } from '../core/alt-editor-lite-error.js';
 import { hasOwn } from '../core/has-own.js';
+import { isPlainCallbackResult } from '../core/is-plain-callback-result.js';
 import { mergeAbortSignals } from '../core/merge-abort-signals.js';
 import { settleWithAbort } from '../core/settle-with-abort.js';
 import { ChoiceOptionStore } from '../fields/choice-option-store.js';
@@ -103,18 +104,6 @@ function isAbortError(error: unknown): boolean {
       error !== null &&
       Reflect.get(error, 'name') === 'AbortError'
     );
-  } catch {
-    return false;
-  }
-}
-
-function isObjectRecord(value: unknown): value is Readonly<Record<string, unknown>> {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-    return false;
-  }
-  try {
-    const prototype: unknown = Object.getPrototypeOf(value);
-    return prototype === Object.prototype || prototype === null;
   } catch {
     return false;
   }
@@ -423,13 +412,13 @@ export class FormDependencyController<TFormValues extends object> {
     const assignedProperties = new Map<string, unknown>();
 
     for (const result of results) {
-      if (!isObjectRecord(result)) {
+      if (!isPlainCallbackResult(result)) {
         throw new EditorConfigurationError(
           'A dependency resolver must return a field patch object.',
         );
       }
       for (const [targetPath, rawPatch] of Object.entries(result)) {
-        if (!isObjectRecord(rawPatch)) {
+        if (!isPlainCallbackResult(rawPatch)) {
           throw new EditorConfigurationError(
             `Dependency patch for field "${targetPath}" must be an object.`,
           );
@@ -465,7 +454,7 @@ export class FormDependencyController<TFormValues extends object> {
   private validateResult(
     result: FormDependencyResult<TFormValues>,
   ): readonly ValidatedFieldPatch<TFormValues>[] {
-    if (!isObjectRecord(result)) {
+    if (!isPlainCallbackResult(result)) {
       throw new EditorConfigurationError(
         'A dependency resolver must return a field patch object.',
       );
@@ -480,7 +469,7 @@ export class FormDependencyController<TFormValues extends object> {
           `Dependency target field "${targetPath}" is unavailable.`,
         );
       }
-      if (!isObjectRecord(rawPatch)) {
+      if (!isPlainCallbackResult(rawPatch)) {
         throw new EditorConfigurationError(
           `Dependency patch for field "${targetPath}" must be an object.`,
         );

@@ -4,6 +4,7 @@ import {
 } from '../core/alt-editor-lite-error.js';
 import { freezeEditorValues } from '../core/freeze-editor-values.js';
 import { hasOwn } from '../core/has-own.js';
+import { isPlainCallbackResult } from '../core/is-plain-callback-result.js';
 import { settleWithAbort } from '../core/settle-with-abort.js';
 import { parseFieldPath } from '../object-path/field-path.js';
 
@@ -47,18 +48,6 @@ export interface FormValidationRunnerArguments<TFormValues extends object> {
   readonly beforeFormValidation?: (
     signal: AbortSignal,
   ) => AltEditorLiteError | undefined | PromiseLike<AltEditorLiteError | undefined>;
-}
-
-function isObjectRecord(value: unknown): value is Readonly<Record<string, unknown>> {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-    return false;
-  }
-  try {
-    const prototype: unknown = Object.getPrototypeOf(value);
-    return prototype === Object.prototype || prototype === null;
-  } catch {
-    return false;
-  }
 }
 
 function isPromiseLike<TValue>(value: unknown): value is PromiseLike<TValue> {
@@ -178,7 +167,7 @@ export class FormValidationRunner<TFormValues extends object> {
   }
 
   private validateFormResult(value: unknown): FormValidationResult<TFormValues> {
-    if (!isObjectRecord(value) || typeof value['valid'] !== 'boolean') {
+    if (!isPlainCallbackResult(value) || typeof value['valid'] !== 'boolean') {
       throw new EditorConfigurationError(
         'validateForm must return an object with a boolean valid property.',
       );
@@ -201,7 +190,7 @@ export class FormValidationRunner<TFormValues extends object> {
         ...(rawMessage === undefined ? {} : { message: rawMessage }),
       };
     }
-    if (!isObjectRecord(rawFieldErrors)) {
+    if (!isPlainCallbackResult(rawFieldErrors)) {
       throw new EditorConfigurationError(
         'validateForm fieldErrors must be an object when provided.',
       );

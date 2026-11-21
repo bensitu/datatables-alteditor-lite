@@ -7,6 +7,7 @@ import { freezeEditorValues } from '../core/freeze-editor-values.js';
 import { mergeAbortSignals } from '../core/merge-abort-signals.js';
 import { runCleanupSteps } from '../core/run-cleanup-steps.js';
 import { settleWithAbort } from '../core/settle-with-abort.js';
+import { waitForPendingTasks } from '../core/wait-for-pending-tasks.js';
 import { resolveBatchFieldRestriction } from '../fields/field-capabilities.js';
 import { setPathValue } from '../object-path/set-path-value.js';
 
@@ -593,9 +594,7 @@ export class BatchEditorFormController<TFormValues extends object> {
   private async waitForChanges(
     signal = this.lifecycleAbortController.signal,
   ): Promise<void> {
-    while (this.pendingChangeTasks.size > 0) {
-      await settleWithAbort(Promise.allSettled([...this.pendingChangeTasks]), signal);
-    }
+    await waitForPendingTasks(() => this.pendingChangeTasks, signal);
     await this.dependencyController?.waitForCurrent(signal);
   }
 

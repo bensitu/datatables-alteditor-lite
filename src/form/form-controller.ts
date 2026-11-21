@@ -8,6 +8,7 @@ import { mergeAbortSignals } from '../core/merge-abort-signals.js';
 import { RequestSequence } from '../core/request-sequence.js';
 import { runCleanupSteps } from '../core/run-cleanup-steps.js';
 import { settleWithAbort } from '../core/settle-with-abort.js';
+import { waitForPendingTasks } from '../core/wait-for-pending-tasks.js';
 import { createFieldController } from '../fields/create-field-controller.js';
 import { resolveFieldCapabilities } from '../fields/field-capabilities.js';
 import { resolveFieldValueComparator } from '../fields/field-value-comparator.js';
@@ -802,12 +803,7 @@ export class EditorFormController<
   private async waitForCurrentFieldWork(
     signal = this.lifecycleAbortController.signal,
   ): Promise<void> {
-    while (this.activeChangeTasks.size > 0) {
-      await settleWithAbort(
-        Promise.allSettled([...this.activeChangeTasks.values()]),
-        signal,
-      );
-    }
+    await waitForPendingTasks(() => this.activeChangeTasks.values(), signal);
     await this.dependencyController?.waitForCurrent(signal);
   }
 
