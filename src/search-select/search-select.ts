@@ -6,18 +6,16 @@ import { filterSearchOptions } from './filter-search-options.js';
 import {
   initializeSearchSelectAria,
   updateSearchSelectAria,
-  updateSearchSelectOptionAria,
 } from './search-select-aria.js';
 import {
   isComposingEnter,
-  resolveSearchSelectActiveIndex,
   type SearchSelectNavigationKey,
 } from './search-select-keyboard.js';
+import { SearchSelectListbox } from './search-select-listbox.js';
 import {
-  positionSearchSelectListbox,
-  resetSearchSelectListboxPosition,
-  revealSearchSelectOption,
-} from './search-select-positioning.js';
+  formatAnnouncement,
+  type SearchSelectMessages,
+} from './search-select-messages.js';
 import { SearchSelectRemoteDataController } from './search-select-remote-data-controller.js';
 
 import type { SelectOption } from '../contracts/field-config.js';
@@ -25,21 +23,7 @@ import type {
   SearchSelectOptionLoader,
   SearchSelectOptionResolver,
 } from '../contracts/search-select-data-source.js';
-import type { SearchOptionEntry } from './filter-search-options.js';
-
-/** Localized text consumed by a SearchSelect instance. */
-export interface SearchSelectMessages {
-  readonly clear: string;
-  readonly instructions: string;
-  readonly noResults: string;
-  readonly placeholder: string;
-  readonly results: string;
-  readonly searchPlaceholder: string;
-  readonly selection: string;
-  readonly loading: string;
-  readonly loadError: string;
-  readonly searchTooShort: string;
-}
+export type { SearchSelectMessages } from './search-select-messages.js';
 
 /** Construction arguments for one local single-value SearchSelect. */
 export interface SearchSelectArguments<TValue extends string | number> {
@@ -88,17 +72,6 @@ function isNavigationKey(key: string): key is SearchSelectNavigationKey {
   return key === 'ArrowDown' || key === 'ArrowUp' || key === 'Home' || key === 'End';
 }
 
-function formatAnnouncement(
-  template: string,
-  replacements: Readonly<Record<string, string>>,
-): string {
-  let announcement = template;
-  for (const [tokenName, replacement] of Object.entries(replacements)) {
-    announcement = announcement.split(`{${tokenName}}`).join(replacement);
-  }
-  return announcement;
-}
-
 function assertSupportedOptionCount(optionCount: number): void {
   if (optionCount > SEARCH_SELECT_MAX_OPTION_COUNT) {
     throw new EditorConfigurationError(
@@ -119,23 +92,13 @@ export class SearchSelect<TValue extends string | number> {
 
   public readonly listboxElement: HTMLDivElement;
 
-  private activeToken: string | undefined;
-
   private debounceTimerId: ReturnType<typeof globalThis.setTimeout> | undefined;
-
-  private filteredEntries: readonly SearchOptionEntry<TValue>[] = [];
-
-  private enabledOptionIndices: readonly number[] = [];
 
   private isComposing = false;
 
   private compositionStartValue = '';
 
   private isDestroyed = false;
-
-  private isOpen = false;
-
-  private isPositionTrackingActive = false;
 
   private readOnlyState = false;
 
@@ -149,17 +112,11 @@ export class SearchSelect<TValue extends string | number> {
 
   private readonly clearButtonElement: HTMLButtonElement;
 
-  private readonly listboxId: string;
-
   private readonly messages: Readonly<SearchSelectMessages>;
 
   private readonly onCommit: () => void;
 
   readonly #remoteDataController: SearchSelectRemoteDataController<TValue> | undefined;
-
-  private readonly optionElementByToken = new Map<string, HTMLDivElement>();
-
-  private readonly optionElementCacheByToken = new Map<string, HTMLDivElement>();
 
   private readonly resultStatusElement: HTMLDivElement;
 
@@ -179,6 +136,8 @@ export class SearchSelect<TValue extends string | number> {
 
   private readonly debounceMs: number;
 
+  private readonly listenerController = new AbortController();
+
   private readonly unsubscribeDocumentPointerDown: () => void;
 
   private selectedToken: string | undefined;
@@ -192,6 +151,8 @@ export class SearchSelect<TValue extends string | number> {
   private currentRemoteOptions: readonly SelectOption<TValue>[] = [];
 
   private tokenMap: ChoiceOptionStore<TValue>;
+
+  private readonly listbox: SearchSelectListbox<TValue>;
 
   private isRequiredState = false;
 
@@ -230,7 +191,6 @@ export class SearchSelect<TValue extends string | number> {
             configuration.loadOptions,
             configuration.resolveOption,
           );
-    this.listboxId = `${configuration.fieldId}-listbox`;
     this.instructionsId = `${configuration.fieldId}-instructions`;
 
     this.element = document.createElement('div');
@@ -250,7 +210,7 @@ export class SearchSelect<TValue extends string | number> {
 
     this.listboxElement = document.createElement('div');
     this.listboxElement.className = 'alteditor-lite-search-select__listbox';
-    this.listboxElement.id = this.listboxId;
+    this.listboxElement.id = `${configuration.fieldId}-listbox`;
     this.listboxElement.hidden = true;
     this.listboxElement.setAttribute('aria-busy', 'false');
 
@@ -283,15 +243,39 @@ export class SearchSelect<TValue extends string | number> {
       this.resolveErrorElement,
     );
 
-    this.inputElement.addEventListener('focus', this.handleFocus);
-    this.element.addEventListener('focusout', this.handleFocusOut);
-    this.inputElement.addEventListener('input', this.handleInput);
-    this.inputElement.addEventListener('keydown', this.handleKeyDown);
-    this.inputElement.addEventListener('compositionstart', this.handleCompositionStart);
-    this.inputElement.addEventListener('compositionend', this.handleCompositionEnd);
-    this.clearButtonElement.addEventListener('mousedown', this.handleClearMouseDown);
-    this.clearButtonElement.addEventListener('click', this.handleClearClick);
-    this.listboxElement.addEventListener('mousedown', this.handleOptionMouseDown);
+    this.listbox = new SearchSelectListbox(
+      this.inputElement,
+      this.listboxElement,
+      this.resultStatusElement,
+      this.messages,
+    );
+
+    const listeners = { signal: this.listenerController.signal };
+    this.inputElement.addEventListener('focus', this.handleFocus, listeners);
+    this.element.addEventListener('focusout', this.handleFocusOut, listeners);
+    this.inputElement.addEventListener('input', this.handleInput, listeners);
+    this.inputElement.addEventListener('keydown', this.handleKeyDown, listeners);
+    this.inputElement.addEventListener(
+      'compositionstart',
+      this.handleCompositionStart,
+      listeners,
+    );
+    this.inputElement.addEventListener(
+      'compositionend',
+      this.handleCompositionEnd,
+      listeners,
+    );
+    this.clearButtonElement.addEventListener(
+      'mousedown',
+      this.handleClearMouseDown,
+      listeners,
+    );
+    this.clearButtonElement.addEventListener('click', this.handleClearClick, listeners);
+    this.listboxElement.addEventListener(
+      'mousedown',
+      this.handleOptionMouseDown,
+      listeners,
+    );
     this.unsubscribeDocumentPointerDown = subscribeToDocumentPointerDown(
       this.handleDocumentPointerDown,
     );
@@ -343,7 +327,7 @@ export class SearchSelect<TValue extends string | number> {
       this.inputElement.value = option.label;
       this.cancelResolveRequest();
       this.updateClearButton();
-      if (this.isOpen) {
+      if (this.listbox.isOpen) {
         this.renderOptions('');
       }
       return;
@@ -367,7 +351,7 @@ export class SearchSelect<TValue extends string | number> {
       this.manualValue = value;
       this.inputElement.value = value;
       this.updateClearButton();
-      if (this.isOpen) {
+      if (this.listbox.isOpen) {
         this.renderOptions('');
       }
       return;
@@ -391,8 +375,7 @@ export class SearchSelect<TValue extends string | number> {
       );
     }
     if (this.isRemote()) {
-      this.assertRemoteOptions(options);
-      const seedOptionStore = new ChoiceOptionStore(options);
+      const seedOptionStore = this.createRemoteOptionStore(options);
       this.seedOptions = seedOptionStore.options();
       if (this.currentRemoteOptions.length === 0) {
         this.tokenMap = seedOptionStore;
@@ -412,13 +395,9 @@ export class SearchSelect<TValue extends string | number> {
           this.startResolve(selectedValue);
         }
       }
-      if (this.isOpen && this.currentRemoteOptions.length === 0) {
-        this.setCurrentOptions(options);
-        this.filteredEntries = this.tokenMap.entries().map(([token, option]) => ({
-          option,
-          token,
-        }));
-        this.renderOptionElements();
+      if (this.listbox.isOpen && this.currentRemoteOptions.length === 0) {
+        this.setCurrentOptions(options, seedOptionStore);
+        this.renderEntries();
       }
       return;
     }
@@ -427,8 +406,7 @@ export class SearchSelect<TValue extends string | number> {
     const nextTokenMap = new ChoiceOptionStore(options);
     this.seedOptions = nextTokenMap.options();
     this.tokenMap = nextTokenMap;
-    this.optionElementByToken.clear();
-    this.optionElementCacheByToken.clear();
+    this.listbox.clearCache();
     this.listboxElement.replaceChildren();
 
     if (previousSelectedValue !== undefined) {
@@ -443,7 +421,7 @@ export class SearchSelect<TValue extends string | number> {
       }
     }
 
-    if (this.isOpen) {
+    if (this.listbox.isOpen) {
       this.renderOptions(
         this.getCommittedValue() === undefined ? this.inputElement.value : '',
       );
@@ -499,26 +477,13 @@ export class SearchSelect<TValue extends string | number> {
     this.isDestroyed = true;
     this.cancelScheduledRender();
     this.#remoteDataController?.destroy();
-    this.stopPositionTracking();
-    this.inputElement.removeEventListener('focus', this.handleFocus);
-    this.element.removeEventListener('focusout', this.handleFocusOut);
-    this.inputElement.removeEventListener('input', this.handleInput);
-    this.inputElement.removeEventListener('keydown', this.handleKeyDown);
-    this.inputElement.removeEventListener(
-      'compositionstart',
-      this.handleCompositionStart,
-    );
-    this.inputElement.removeEventListener('compositionend', this.handleCompositionEnd);
-    this.clearButtonElement.removeEventListener('mousedown', this.handleClearMouseDown);
-    this.clearButtonElement.removeEventListener('click', this.handleClearClick);
-    this.listboxElement.removeEventListener('mousedown', this.handleOptionMouseDown);
+    this.listenerController.abort();
     this.unsubscribeDocumentPointerDown();
     updateSearchSelectAria(this.inputElement, false, undefined);
     this.inputElement.removeAttribute('aria-autocomplete');
     this.inputElement.removeAttribute('aria-controls');
     this.inputElement.removeAttribute('aria-expanded');
-    this.optionElementByToken.clear();
-    this.optionElementCacheByToken.clear();
+    this.listbox.clearCache();
     this.listboxElement.replaceChildren();
   }
 
@@ -620,12 +585,12 @@ export class SearchSelect<TValue extends string | number> {
     if (isNavigationKey(event.key)) {
       event.preventDefault();
       event.stopPropagation();
-      const isListboxOpen = this.isOpen;
+      const isListboxOpen = this.listbox.isOpen;
       if (!isListboxOpen) {
         this.open();
       }
       if (isListboxOpen || event.key !== 'ArrowDown') {
-        this.moveActiveOption(event.key);
+        this.listbox.moveActiveOption(event.key);
       }
       return;
     }
@@ -633,10 +598,10 @@ export class SearchSelect<TValue extends string | number> {
     if (event.key === 'Enter') {
       event.preventDefault();
       event.stopPropagation();
-      if (!this.isOpen) {
+      if (!this.listbox.isOpen) {
         this.open();
-      } else if (this.activeToken !== undefined) {
-        this.selectToken(this.activeToken);
+      } else if (this.listbox.activeToken !== undefined) {
+        this.selectToken(this.listbox.activeToken);
       } else {
         this.commitManualValue();
         this.close();
@@ -644,7 +609,7 @@ export class SearchSelect<TValue extends string | number> {
       return;
     }
 
-    if (event.key === 'Escape' && this.isOpen) {
+    if (event.key === 'Escape' && this.listbox.isOpen) {
       event.preventDefault();
       event.stopPropagation();
       const origin = this.searchOrigin;
@@ -688,18 +653,6 @@ export class SearchSelect<TValue extends string | number> {
     this.selectToken(token);
   };
 
-  private readonly handlePositionChange = (event: Event): void => {
-    if (!this.isOpen || event.target === this.listboxElement) {
-      return;
-    }
-
-    this.updateListboxPosition();
-    revealSearchSelectOption(
-      this.listboxElement,
-      this.optionElementByToken.get(this.activeToken ?? ''),
-    );
-  };
-
   private cancelScheduledRender(): void {
     if (this.debounceTimerId !== undefined) {
       globalThis.clearTimeout(this.debounceTimerId);
@@ -715,10 +668,10 @@ export class SearchSelect<TValue extends string | number> {
     this.selectedValue = undefined;
     this.selectedResolvedOption = undefined;
     this.manualValue = undefined;
-    this.activeToken = undefined;
+    this.listbox.activeToken = undefined;
     this.inputElement.value = '';
     this.updateClearButton();
-    if (this.isOpen) {
+    if (this.listbox.isOpen) {
       this.renderOptions('');
     } else {
       updateSearchSelectAria(this.inputElement, false, undefined);
@@ -735,13 +688,7 @@ export class SearchSelect<TValue extends string | number> {
       this.inputElement.value = '';
     }
     this.cancelSearchRequest();
-    this.isOpen = false;
-    this.stopPositionTracking();
-    resetSearchSelectListboxPosition(this.listboxElement);
-    this.listboxElement.hidden = true;
-    this.inputElement.placeholder = this.messages.placeholder;
-    this.activeToken = undefined;
-    updateSearchSelectAria(this.inputElement, false, undefined);
+    this.listbox.close();
   }
 
   private commitManualValue(): void {
@@ -772,29 +719,12 @@ export class SearchSelect<TValue extends string | number> {
     return this.selectedValue ?? this.manualValue;
   }
 
-  private moveActiveOption(key: SearchSelectNavigationKey): void {
-    const activeOptionIndex = this.filteredEntries.findIndex(
-      ({ token }) => token === this.activeToken,
-    );
-    const nextIndex = resolveSearchSelectActiveIndex(
-      this.enabledOptionIndices,
-      activeOptionIndex < 0 ? undefined : activeOptionIndex,
-      key,
-    );
-    this.setActiveToken(
-      nextIndex === undefined ? undefined : this.filteredEntries[nextIndex]?.token,
-    );
-  }
-
   private open(): void {
     if (this.inputElement.disabled || this.readOnlyState) {
       return;
     }
 
-    this.isOpen = true;
-    this.listboxElement.hidden = false;
-    this.inputElement.placeholder = this.messages.searchPlaceholder;
-    this.startPositionTracking();
+    this.listbox.open();
     this.renderOptions(
       this.isSearchEnabled && this.getCommittedValue() === undefined
         ? this.inputElement.value
@@ -807,88 +737,29 @@ export class SearchSelect<TValue extends string | number> {
       this.startRemoteSearch(query);
       return;
     }
-    const entries = this.tokenMap.entries().map(([token, option]) => ({
-      option,
-      token,
-    }));
-    this.filteredEntries = filterSearchOptions(
-      entries,
-      query,
-      this.locale,
-      this.searchThreshold,
-      this.shouldSortOptions,
-    );
-    this.renderOptionElements();
+    this.renderEntries(query);
   }
 
-  private renderOptionElements(): void {
-    this.optionElementByToken.clear();
-    this.enabledOptionIndices = this.filteredEntries.flatMap(({ option }, optionIndex) =>
-      option.disabled === true ? [] : [optionIndex],
-    );
-    const optionFragment = document.createDocumentFragment();
-
-    for (const { option, token } of this.filteredEntries) {
-      let optionElement = this.optionElementCacheByToken.get(token);
-      if (optionElement === undefined) {
-        optionElement = document.createElement('div');
-        optionElement.className = 'alteditor-lite-search-select__option';
-        optionElement.dataset['optionToken'] = token;
-        optionElement.id = `${this.listboxId}-${token}`;
-        optionElement.tabIndex = -1;
-        this.optionElementCacheByToken.set(token, optionElement);
-      }
-
-      optionElement.textContent = option.label;
-      optionElement.classList.remove('alteditor-lite-search-select__option--active');
-      updateSearchSelectOptionAria(
-        optionElement,
-        token === this.selectedToken,
-        option.disabled ?? false,
-      );
-      this.optionElementByToken.set(token, optionElement);
-      optionFragment.append(optionElement);
-    }
-
-    if (this.filteredEntries.length === 0) {
-      const noResultsElement = document.createElement('div');
-      noResultsElement.className = 'alteditor-lite-search-select__no-results';
-      noResultsElement.textContent = this.messages.noResults;
-      optionFragment.append(noResultsElement);
-      this.listboxElement.replaceChildren(optionFragment);
-      this.resultStatusElement.textContent = this.messages.noResults;
-      this.updateListboxPosition();
-      this.setActiveToken(undefined);
-      return;
-    }
-
-    this.listboxElement.replaceChildren(optionFragment);
-
-    this.resultStatusElement.textContent = formatAnnouncement(this.messages.results, {
-      count: String(this.filteredEntries.length),
-    });
-    const selectedEntry = this.filteredEntries.find(
-      ({ option, token }) => token === this.selectedToken && option.disabled !== true,
-    );
-    const firstEnabledEntry = this.filteredEntries.find(
-      ({ option }) => option.disabled !== true,
-    );
-    const retainedActiveEntry = this.filteredEntries.find(
-      ({ option, token }) => token === this.activeToken && option.disabled !== true,
-    );
-    this.updateListboxPosition();
-    this.setActiveToken(
-      retainedActiveEntry?.token ?? selectedEntry?.token ?? firstEnabledEntry?.token,
+  private renderEntries(query?: string): void {
+    const entries = this.tokenMap.entries().map(([token, option]) => ({ option, token }));
+    this.listbox.render(
+      query === undefined
+        ? entries
+        : filterSearchOptions(
+            entries,
+            query,
+            this.locale,
+            this.searchThreshold,
+            this.shouldSortOptions,
+          ),
+      this.selectedToken,
     );
   }
 
   private scheduleRender(): void {
     this.cancelScheduledRender();
-    this.isOpen = true;
-    this.listboxElement.hidden = false;
-    this.inputElement.placeholder = this.messages.searchPlaceholder;
-    this.startPositionTracking();
-    this.updateListboxPosition();
+    this.listbox.open();
+    this.listbox.position();
 
     if (this.debounceMs === 0) {
       this.renderOptions(this.isSearchEnabled ? this.inputElement.value : '');
@@ -923,51 +794,6 @@ export class SearchSelect<TValue extends string | number> {
     this.onCommit();
   }
 
-  private setActiveToken(token: string | undefined): void {
-    if (this.activeToken !== token) {
-      this.optionElementByToken
-        .get(this.activeToken ?? '')
-        ?.classList.remove('alteditor-lite-search-select__option--active');
-    }
-    this.optionElementByToken
-      .get(token ?? '')
-      ?.classList.add('alteditor-lite-search-select__option--active');
-
-    this.activeToken = token;
-    const activeOptionElement =
-      token === undefined ? undefined : this.optionElementByToken.get(token);
-    updateSearchSelectAria(this.inputElement, this.isOpen, activeOptionElement?.id);
-    revealSearchSelectOption(this.listboxElement, activeOptionElement);
-  }
-
-  private startPositionTracking(): void {
-    if (this.isPositionTrackingActive) {
-      return;
-    }
-
-    this.isPositionTrackingActive = true;
-    document.addEventListener('scroll', this.handlePositionChange, true);
-    window.addEventListener('resize', this.handlePositionChange);
-    window.visualViewport?.addEventListener('resize', this.handlePositionChange);
-    window.visualViewport?.addEventListener('scroll', this.handlePositionChange);
-  }
-
-  private stopPositionTracking(): void {
-    if (!this.isPositionTrackingActive) {
-      return;
-    }
-
-    this.isPositionTrackingActive = false;
-    document.removeEventListener('scroll', this.handlePositionChange, true);
-    window.removeEventListener('resize', this.handlePositionChange);
-    window.visualViewport?.removeEventListener('resize', this.handlePositionChange);
-    window.visualViewport?.removeEventListener('scroll', this.handlePositionChange);
-  }
-
-  private updateListboxPosition(): void {
-    positionSearchSelectListbox(this.inputElement, this.listboxElement);
-  }
-
   private updateClearButton(): void {
     this.clearButtonElement.hidden =
       !this.shouldAllowClear || this.getCommittedValue() === undefined;
@@ -995,9 +821,9 @@ export class SearchSelect<TValue extends string | number> {
     );
   }
 
-  private assertRemoteOptions(
+  private createRemoteOptionStore(
     options: readonly SelectOption<TValue>[],
-  ): readonly SelectOption<TValue>[] {
+  ): ChoiceOptionStore<TValue> {
     assertSupportedOptionCount(options.length);
     for (const option of options) {
       if (
@@ -1010,19 +836,17 @@ export class SearchSelect<TValue extends string | number> {
       }
     }
     // Construction also rejects duplicate typed values.
-    new ChoiceOptionStore(options);
-    return options;
+    return new ChoiceOptionStore(options);
   }
 
-  private setCurrentOptions(options: readonly SelectOption<TValue>[]): void {
+  private setCurrentOptions(
+    options: readonly SelectOption<TValue>[],
+    store: ChoiceOptionStore<TValue>,
+  ): void {
     this.currentRemoteOptions = [...options];
-    this.tokenMap = new ChoiceOptionStore(options);
+    this.tokenMap = store;
     const currentTokens = new Set(this.tokenMap.entries().map(([token]) => token));
-    for (const token of this.optionElementCacheByToken.keys()) {
-      if (!currentTokens.has(token)) {
-        this.optionElementCacheByToken.delete(token);
-      }
-    }
+    this.listbox.retainOptions(currentTokens);
     this.selectedToken =
       this.selectedValue === undefined
         ? undefined
@@ -1045,13 +869,13 @@ export class SearchSelect<TValue extends string | number> {
 
   private startRemoteSearch(query: string): void {
     const remoteDataController = this.#remoteDataController;
-    if (remoteDataController === undefined || this.isDestroyed || !this.isOpen) {
+    if (remoteDataController === undefined || this.isDestroyed || !this.listbox.isOpen) {
       return;
     }
     this.cancelSearchRequest();
     const normalizedQuery = query.trim();
     if (normalizedQuery.length < this.searchThreshold) {
-      this.renderRemoteFeedback(
+      this.listbox.renderFeedback(
         'threshold',
         formatAnnouncement(this.messages.searchTooShort, {
           count: String(this.searchThreshold),
@@ -1062,48 +886,28 @@ export class SearchSelect<TValue extends string | number> {
 
     this.isLoading = true;
     this.updateBusyState();
-    this.renderRemoteFeedback('loading', this.messages.loading);
+    this.listbox.renderFeedback('loading', this.messages.loading);
     void remoteDataController.search(query).then((result) => {
-      if (this.isDestroyed || !this.isOpen || result === undefined) {
+      if (this.isDestroyed || !this.listbox.isOpen || result === undefined) {
         return;
       }
       this.isLoading = false;
       this.updateBusyState();
       if (result[0] === 'error') {
         this.element.classList.add('alteditor-lite-search-select--error');
-        this.renderRemoteFeedback('error', this.messages.loadError);
+        this.listbox.renderFeedback('error', this.messages.loadError);
         return;
       }
       try {
-        const validatedOptions = this.assertRemoteOptions(result[1]);
-        this.setCurrentOptions(validatedOptions);
-        this.filteredEntries = this.tokenMap.entries().map(([token, option]) => ({
-          option,
-          token,
-        }));
+        const options = result[1];
+        this.setCurrentOptions(options, this.createRemoteOptionStore(options));
         this.element.classList.remove('alteditor-lite-search-select--error');
-        this.renderOptionElements();
+        this.renderEntries();
       } catch {
         this.element.classList.add('alteditor-lite-search-select--error');
-        this.renderRemoteFeedback('error', this.messages.loadError);
+        this.listbox.renderFeedback('error', this.messages.loadError);
       }
     });
-  }
-
-  private renderRemoteFeedback(
-    state: 'loading' | 'error' | 'threshold',
-    message: string,
-  ): void {
-    this.filteredEntries = [];
-    this.enabledOptionIndices = [];
-    this.optionElementByToken.clear();
-    const feedback = document.createElement('div');
-    feedback.className = `alteditor-lite-search-select__feedback alteditor-lite-search-select__feedback--${state}`;
-    feedback.textContent = message;
-    this.listboxElement.replaceChildren(feedback);
-    this.resultStatusElement.textContent = message;
-    this.updateListboxPosition();
-    this.setActiveToken(undefined);
   }
 
   private cancelResolveRequest(): void {
@@ -1143,7 +947,7 @@ export class SearchSelect<TValue extends string | number> {
         return;
       }
       try {
-        this.assertRemoteOptions([option]);
+        this.createRemoteOptionStore([option]);
       } catch {
         this.showResolveError();
         return;
@@ -1167,8 +971,8 @@ export class SearchSelect<TValue extends string | number> {
     this.resolveErrorElement.hidden = false;
     this.element.classList.add('alteditor-lite-search-select--error');
     this.resultStatusElement.textContent = this.messages.loadError;
-    if (this.isOpen) {
-      this.renderRemoteFeedback('error', this.messages.loadError);
+    if (this.listbox.isOpen) {
+      this.listbox.renderFeedback('error', this.messages.loadError);
     }
   }
 
