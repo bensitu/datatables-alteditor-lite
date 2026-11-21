@@ -20,6 +20,7 @@ import {
   type DependencyFieldBinding,
   type DependencyPatchApplication,
 } from './form-dependency-controller.js';
+import { dependencyFieldErrors, renderFormFeedback } from './form-feedback.js';
 import { FormValidationRunner } from './form-validation-runner.js';
 
 import type { FieldConfig } from '../contracts/field-config.js';
@@ -237,16 +238,11 @@ export class BatchEditorFormController<TFormValues extends object> {
       await this.waitForChanges(signal);
       signal.throwIfAborted();
       this.clearErrors();
-      const dependencyErrors =
-        this.dependencyController?.errors() ?? new Map<string, AltEditorLiteError>();
-      if (dependencyErrors.size > 0) {
-        const fieldErrors: Record<string, string> = {};
-        for (const [sourcePath, error] of dependencyErrors) {
-          fieldErrors[sourcePath] = error.message;
-        }
+      const dependencyErrors = dependencyFieldErrors(this.dependencyController?.errors());
+      if (dependencyErrors !== undefined) {
         const error = new AltEditorLiteError({
           code: 'VALIDATION',
-          fieldErrors,
+          fieldErrors: dependencyErrors,
           message: this.invalidMessage,
           retryable: true,
         });
@@ -681,12 +677,11 @@ export class BatchEditorFormController<TFormValues extends object> {
   }
 
   private renderSubmissionError(): void {
-    const messages = new Set(this.submissionMessages);
-    for (const error of this.dependencyController?.errors().values() ?? []) {
-      messages.add(error.message);
-    }
-    this.submissionErrorElement.textContent = [...messages].join(' ');
-    this.submissionErrorElement.hidden = messages.size === 0;
+    renderFormFeedback(
+      this.submissionErrorElement,
+      this.submissionMessages,
+      this.dependencyController?.errors(),
+    );
   }
 
   private assertActive(): void {

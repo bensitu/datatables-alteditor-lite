@@ -91,7 +91,21 @@ export class DialogOpenCoordinator<
     }
   }
 
-  public async readSnapshots(
+  /** Captures current records after the consumer has accepted the opening. */
+  public async readForOpen(
+    targets: readonly TTarget[],
+    request: AbortController,
+    errorContext: EditorErrorHookContext,
+    describe: (originals: readonly Readonly<TRow>[]) => DialogOpenDetails<TRow>,
+  ): Promise<readonly Readonly<TRow>[] | undefined> {
+    const originals = await this.#readSnapshots(targets, request, errorContext);
+    if (!(await this.runBeforeOpen(describe(originals), request))) {
+      return undefined;
+    }
+    return await this.#readSnapshots(targets, request, errorContext);
+  }
+
+  async #readSnapshots(
     targets: readonly TTarget[],
     request: AbortController,
     errorContext: EditorErrorHookContext,

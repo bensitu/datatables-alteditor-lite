@@ -303,9 +303,8 @@ export class FormDependencyController<TFormValues extends object> {
 
   private mergeInitialResults(
     results: readonly FormDependencyResult<TFormValues>[],
-  ): FormDependencyResult<TFormValues> {
-    const mergedTargets = new Map<string, Record<string, unknown>>();
-    const assignedProperties = new Map<string, unknown>();
+  ): Readonly<Record<string, Record<string, unknown>>> {
+    const mergedResult = Object.create(null) as Record<string, Record<string, unknown>>;
 
     for (const result of results) {
       if (!isPlainCallbackResult(result)) {
@@ -319,32 +318,25 @@ export class FormDependencyController<TFormValues extends object> {
             `Dependency patch for field "${targetPath}" must be an object.`,
           );
         }
-        let mergedPatch = mergedTargets.get(targetPath);
-        if (mergedPatch === undefined) {
-          mergedPatch = Object.create(null) as Record<string, unknown>;
-          mergedTargets.set(targetPath, mergedPatch);
-        }
+        const mergedPatch = (mergedResult[targetPath] ??= Object.create(null) as Record<
+          string,
+          unknown
+        >);
         for (const [propertyName, propertyValue] of Object.entries(rawPatch)) {
-          const assignmentKey = `${targetPath}\u0000${propertyName}`;
           if (
-            assignedProperties.has(assignmentKey) &&
-            !Object.is(assignedProperties.get(assignmentKey), propertyValue)
+            Object.hasOwn(mergedPatch, propertyName) &&
+            !Object.is(mergedPatch[propertyName], propertyValue)
           ) {
             throw new EditorConfigurationError(
               `Initial dependency resolvers assign conflicting "${propertyName}" values to field "${targetPath}".`,
             );
           }
-          assignedProperties.set(assignmentKey, propertyValue);
           mergedPatch[propertyName] = propertyValue;
         }
       }
     }
 
-    const mergedResult = Object.create(null) as Record<string, unknown>;
-    for (const [targetPath, patch] of mergedTargets) {
-      mergedResult[targetPath] = patch;
-    }
-    return mergedResult as FormDependencyResult<TFormValues>;
+    return mergedResult;
   }
 
   private queuePatches(

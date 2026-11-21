@@ -15,7 +15,6 @@ import { runCleanupSteps } from '../core/run-cleanup-steps.js';
 import { settleWithAbort } from '../core/settle-with-abort.js';
 
 import { InlineCommitCoordinator } from './inline-commit-coordinator.js';
-import { InlineEditPresentationAdapter } from './inline-edit-presentation-adapter.js';
 import { assertInlineEditStateTransition } from './inline-edit-state-transition.js';
 import { InlineFocusCoordinator } from './inline-focus-coordinator.js';
 import { ownsInlineFocus } from './inline-focus-owner.js';
@@ -37,6 +36,7 @@ import type {
   EditOperationResult,
   EditOperationRunner,
 } from '../core/editing/edit-operation-runner.js';
+import type { EditPresentationAdapter } from '../core/editing/edit-presentation-adapter.js';
 import type {
   InteractionCoordinator,
   InteractionToken,
@@ -151,24 +151,8 @@ export class InlineEditSessionController<
       fields: arguments_.fields,
       isCurrentSession: (session) => this.session === session,
       language: arguments_.language,
-      presentFailure: async (session, error, message) => {
-        if (message !== undefined) {
-          session.controller.showError(message);
-        }
-        session.host.setInvalid(true);
-        this.transitionTo({
-          error,
-          status: 'error',
-          target: session.capture.summary,
-        });
-        await this.focusCoordinator.showAlert(
-          session,
-          error,
-          'validation',
-          () => this.session === session,
-          () => this.isDestroyed,
-        );
-      },
+      presentFailure: (session, error, message) =>
+        this.presentFailure(session, error, 'validation', message),
       reportError: arguments_.reportError,
       table: arguments_.table,
       ...(arguments_.editorOptions.validateForm === undefined
@@ -546,8 +530,8 @@ export class InlineEditSessionController<
     session: InlineEditSession<TRow, TFormValues>,
     navigationIntent: InlineNavigationIntent | undefined,
     getFocusTarget: () => Readonly<LogicalCellTarget<TRow>> | undefined,
-  ) {
-    return new InlineEditPresentationAdapter<TRow, TFormValues>({
+  ): EditPresentationAdapter<TRow, TFormValues> {
+    return {
       completeSuccess: async () => {
         this.cleanupSession('success', false, false);
         this.arguments_.host.synchronizeExtensions();
@@ -585,25 +569,13 @@ export class InlineEditSessionController<
           this.focusCoordinator.submissionStarted();
         }
       },
-      showOperationError: async (error: AltEditorLiteError) => {
-        const fieldMessage = error.fieldErrors?.[session.capture.field.name];
-        if (fieldMessage !== undefined) {
-          session.controller.showError(fieldMessage);
-        }
-        session.host.setInvalid(true);
-        this.transitionTo({
-          error,
-          status: 'error',
-          target: session.capture.summary,
-        });
-        await this.focusCoordinator.showAlert(
+      showOperationError: (error: AltEditorLiteError) =>
+        this.presentFailure(
           session,
           error,
           'operation',
-          () => this.session === session,
-          () => this.isDestroyed,
-        );
-      },
+          error.fieldErrors?.[session.capture.field.name],
+        ),
       startValidation: () => {
         if (this.state.status === 'validating') {
           return;
@@ -619,7 +591,31 @@ export class InlineEditSessionController<
       },
       validate: async (signal: AbortSignal) =>
         await this.validationController.validate(session, signal),
+    };
+  }
+
+  private async presentFailure(
+    session: InlineEditSession<TRow, TFormValues>,
+    error: AltEditorLiteError,
+    kind: 'validation' | 'operation',
+    fieldMessage: string | undefined,
+  ): Promise<void> {
+    if (fieldMessage !== undefined) {
+      session.controller.showError(fieldMessage);
+    }
+    session.host.setInvalid(true);
+    this.transitionTo({
+      error,
+      status: 'error',
+      target: session.capture.summary,
     });
+    await this.focusCoordinator.showAlert(
+      session,
+      error,
+      kind,
+      () => this.session === session,
+      () => this.isDestroyed,
+    );
   }
 
   private readonly handleExternalDraw = (): void => {

@@ -7,7 +7,6 @@ import { parseFieldPath } from '../object-path/field-path.js';
 
 import type { FieldConfig, SelectOption } from '../contracts/field-config.js';
 import type { MaybePromise } from '../contracts/field-value.js';
-import type { FormDependencyResult } from '../contracts/form-dependency.js';
 import type { ManagedFieldController } from '../fields/managed-field-controller.js';
 import type { FieldRuntimeController } from './field-runtime-controller.js';
 
@@ -131,7 +130,7 @@ function assertCompatibleValue<TFormValues extends object>(
 }
 
 export function validateDependencyPatches<TFormValues extends object>(
-  result: FormDependencyResult<TFormValues>,
+  result: unknown,
   fields: ReadonlyMap<string, DependencyFieldBinding<TFormValues>>,
 ): readonly ValidatedFieldPatch<TFormValues>[] {
   if (!isPlainCallbackResult(result)) {

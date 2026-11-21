@@ -7,12 +7,12 @@ export interface MergedAbortSignal {
 /** Returns a signal that aborts when any supplied signal aborts. */
 export function mergeAbortSignals(signals: readonly AbortSignal[]): MergedAbortSignal {
   const abortController = new AbortController();
-  const listenerBySignal = new Map<AbortSignal, () => void>();
+  const registeredSignals: AbortSignal[] = [];
   const dispose = (): void => {
-    for (const [signal, listener] of listenerBySignal) {
-      signal.removeEventListener('abort', listener);
+    for (const signal of registeredSignals) {
+      signal.removeEventListener('abort', handleAbort);
     }
-    listenerBySignal.clear();
+    registeredSignals.length = 0;
   };
   const abortFrom = (signal: AbortSignal): void => {
     if (abortController.signal.aborted) {
@@ -21,17 +21,17 @@ export function mergeAbortSignals(signals: readonly AbortSignal[]): MergedAbortS
     dispose();
     abortController.abort(signal.reason);
   };
+  const handleAbort = (event: Event): void => {
+    abortFrom(event.currentTarget as AbortSignal);
+  };
 
   for (const signal of new Set(signals)) {
     if (signal.aborted) {
       abortFrom(signal);
       break;
     }
-    const listener = (): void => {
-      abortFrom(signal);
-    };
-    listenerBySignal.set(signal, listener);
-    signal.addEventListener('abort', listener, { once: true });
+    registeredSignals.push(signal);
+    signal.addEventListener('abort', handleAbort, { once: true });
   }
 
   return { dispose, signal: abortController.signal };

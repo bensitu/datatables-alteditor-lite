@@ -25,6 +25,7 @@ import {
   FormDependencyController,
   type DependencyFieldBinding,
 } from './form-dependency-controller.js';
+import { dependencyFieldErrors, renderFormFeedback } from './form-feedback.js';
 import {
   FormValidationRunner,
   type ValidationExecutionResult,
@@ -380,16 +381,7 @@ export class EditorFormController<
   /** Runs native and custom validation. */
   public async validate(): Promise<EditorFormValidationResult> {
     this.assertActive();
-    const resumeFieldValidation = this.fieldValidation.suspend();
-    this.activeFormValidationAbortController?.abort();
-    const validationAbortController = new AbortController();
-    this.activeFormValidationAbortController = validationAbortController;
-    const mergedSignal = mergeAbortSignals([
-      validationAbortController.signal,
-      this.lifecycleAbortController.signal,
-    ]);
-    const { signal } = mergedSignal;
-    const requestSequence = this.validationSequence.next();
+    const { signal, requestSequence, finish } = this.startFormValidation();
     try {
       await this.waitForCurrentFieldWork(signal);
       if (!this.validationSequence.isCurrent(requestSequence) || signal.aborted) {
@@ -397,15 +389,8 @@ export class EditorFormController<
       }
       this.clearErrors();
 
-      const dependencyErrors =
-        this.dependencyController?.errors() ?? new Map<string, AltEditorLiteError>();
-      if (dependencyErrors.size > 0) {
-        const fieldErrors: Record<string, string> = {};
-        for (const [sourcePath, error] of dependencyErrors) {
-          fieldErrors[sourcePath] = error.message;
-          this.controllerByName.get(sourcePath)?.showError(error.message);
-        }
-        this.renderSubmissionError();
+      const fieldErrors = this.showDependencyErrors();
+      if (fieldErrors !== undefined) {
         return { fieldErrors, valid: false };
       }
 
@@ -440,8 +425,7 @@ export class EditorFormController<
       }
       throw error;
     } finally {
-      resumeFieldValidation();
-      mergedSignal.dispose();
+      finish();
     }
   }
 
@@ -452,17 +436,7 @@ export class EditorFormController<
     context: FormValidationRequestContext,
   ): Promise<FormSubmissionValidationResult<TFormValues>> {
     this.assertActive();
-    const resumeFieldValidation = this.fieldValidation.suspend();
-    this.activeFormValidationAbortController?.abort();
-    const validationAbortController = new AbortController();
-    this.activeFormValidationAbortController = validationAbortController;
-    const mergedSignal = mergeAbortSignals([
-      validationAbortController.signal,
-      this.lifecycleAbortController.signal,
-      operationSignal,
-    ]);
-    const { signal } = mergedSignal;
-    const requestSequence = this.validationSequence.next();
+    const { signal, requestSequence, finish } = this.startFormValidation(operationSignal);
 
     try {
       await this.waitForCurrentFieldWork(signal);
@@ -472,15 +446,8 @@ export class EditorFormController<
       }
       this.clearErrors();
 
-      const dependencyErrors =
-        this.dependencyController?.errors() ?? new Map<string, AltEditorLiteError>();
-      if (dependencyErrors.size > 0) {
-        const fieldErrors: Record<string, string> = {};
-        for (const [sourcePath, error] of dependencyErrors) {
-          fieldErrors[sourcePath] = error.message;
-          this.controllerByName.get(sourcePath)?.showError(error.message);
-        }
-        this.renderSubmissionError();
+      const fieldErrors = this.showDependencyErrors();
+      if (fieldErrors !== undefined) {
         return {
           error: new AltEditorLiteError({
             code: 'VALIDATION',
@@ -533,8 +500,7 @@ export class EditorFormController<
         values: result.values,
       };
     } finally {
-      resumeFieldValidation();
-      mergedSignal.dispose();
+      finish();
     }
   }
 
@@ -810,19 +776,47 @@ export class EditorFormController<
     await this.dependencyController?.waitForCurrent(signal);
   }
 
+  private startFormValidation(operationSignal?: AbortSignal): {
+    readonly signal: AbortSignal;
+    readonly requestSequence: number;
+    readonly finish: () => void;
+  } {
+    const resumeFieldValidation = this.fieldValidation.suspend();
+    this.activeFormValidationAbortController?.abort();
+    const validationAbortController = new AbortController();
+    this.activeFormValidationAbortController = validationAbortController;
+    const mergedSignal = mergeAbortSignals([
+      validationAbortController.signal,
+      this.lifecycleAbortController.signal,
+      operationSignal ?? this.lifecycleAbortController.signal,
+    ]);
+    return {
+      signal: mergedSignal.signal,
+      requestSequence: this.validationSequence.next(),
+      finish: () => {
+        resumeFieldValidation();
+        mergedSignal.dispose();
+      },
+    };
+  }
+
+  private showDependencyErrors(): Record<string, string> | undefined {
+    const fieldErrors = dependencyFieldErrors(this.dependencyController?.errors());
+    if (fieldErrors !== undefined) {
+      for (const [fieldName, message] of Object.entries(fieldErrors)) {
+        this.controllerByName.get(fieldName)?.showError(message);
+      }
+      this.renderSubmissionError();
+    }
+    return fieldErrors;
+  }
+
   private renderSubmissionError(): void {
-    const messages = new Set<string>();
-    if (this.operationErrorMessage !== undefined) {
-      messages.add(this.operationErrorMessage);
-    }
-    if (this.validationErrorMessage !== undefined) {
-      messages.add(this.validationErrorMessage);
-    }
-    for (const error of this.dependencyController?.errors().values() ?? []) {
-      messages.add(error.message);
-    }
-    this.submissionErrorElement.textContent = [...messages].join(' ');
-    this.submissionErrorElement.hidden = messages.size === 0;
+    renderFormFeedback(
+      this.submissionErrorElement,
+      [this.operationErrorMessage, this.validationErrorMessage],
+      this.dependencyController?.errors(),
+    );
   }
 
   private showValidationError(
