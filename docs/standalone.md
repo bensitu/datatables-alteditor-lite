@@ -159,10 +159,15 @@ refresh: async (signal) => {
 ```
 
 `editor.refresh()` invokes this callback when `operations.refresh` is not
-configured. Without either callback, refresh rejects with `EditorConfigurationError`.
-When `operations.refresh` is configured, it owns the refresh and any resulting
-record or UI changes. The Host callback receives its `AbortSignal` directly;
-`operations.refresh` receives the same signal through its operation context.
+configured. When `operations.refresh` is configured, it owns the refresh and any
+resulting record or UI changes. The Host callback receives an `AbortSignal`
+directly, while `operations.refresh` receives the operation's signal through its
+context.
+
+If both callbacks are absent, the Host rejects with `EditorConfigurationError`. The editor reports that failure through
+`alteditor-lite:error` and the optional `onError` hook, then completes the refresh
+lifecycle. Observe `alteditor-lite:success` or `alteditor-lite:error` to determine
+the result of `editor.refresh()`. See [Events](events.md#ordering).
 
 ## Events and cleanup
 

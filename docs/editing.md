@@ -57,8 +57,8 @@ An explicit row selector does not require Select. When the Edit selector is
 omitted, Select must identify exactly one row. Remove accepts one or more explicit
 or selected rows and always presents a confirmation dialog.
 
-Create and Edit render every configured visible field. Dialog editing supports
-all field types, including password, radio, file, and hidden values that are not
+Create and Edit render the configured fields that are editable and visible.
+Dialog editing supports all field types, including password, radio, file, and hidden values that are not
 appropriate for single-cell editing. Native constraints, custom validators,
 local uniqueness, lifecycle hooks, persistence, and safe error normalization run
 before DataTables is changed.

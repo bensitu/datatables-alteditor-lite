@@ -8,9 +8,9 @@ Native field attributes use an allowlist. Event-handler attributes such as
 `onclick` are rejected. Field paths reject prototype-mutating segments, and the
 default Edit merge writes only declared safe paths into new plain nested objects.
 
-Only messages explicitly supplied through `AltEditorLiteError` are eligible for
-display. Unknown exceptions use a localized generic message; raw stacks, response
-bodies, and arbitrary serialized values are not rendered. External language
+Use `AltEditorLiteError` to supply a display-safe message for a thrown operation
+error. Messages returned by field and form validators are also rendered as plain
+text. Unknown exceptions use a localized generic message. External language
 requests require a JSON media type when the server supplies `Content-Type`, and
 have timeout and response-size limits. File count and byte budgets are checked
 before data URL conversion.

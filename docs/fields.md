@@ -394,7 +394,7 @@ choice-only field with unmatched text clears the uncommitted query instead of
 presenting text that has no selected value.
 
 Set `search: { enabled: false }` for a choice-only combobox. Its focusable control
-remains keyboard accessible, opens with Enter, Space, or ArrowDown, and exposes
+remains keyboard accessible, opens on focus or with Enter or an arrow key, and exposes
 the active option through combobox/listbox ARIA without accepting filter text.
 Remote SearchSelect requires search and rejects this setting.
 

@@ -77,6 +77,11 @@ suppresses subsequent close and refresh-completion events. Destroy is published
 once after owned DOM, listeners, operations, snapshots, and instance storage are
 cleaned up.
 
+Observe `success` or `error` to determine the outcome of a refresh that has
+started. The refresh promise can resolve after the editor reports a failure.
+Requests rejected before refresh starts, such as a request while the editor is
+busy, reject the promise.
+
 ## Detail discriminators
 
 Every detail contains `editor`, `type`, and a `mode`. It also contains an

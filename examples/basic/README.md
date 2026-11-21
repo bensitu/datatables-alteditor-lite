@@ -1,7 +1,7 @@
 # Basic ESM example
 
 ```ts
-import DataTable from 'datatables.net';
+import { DataTable } from 'datatables.net';
 import { AltEditorLite } from 'datatables-alteditor-lite/datatables';
 import 'datatables-alteditor-lite/style.css';
 

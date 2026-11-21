@@ -41,17 +41,17 @@ if (output === null || keyInput === null) {
   throw new Error('Standalone example controls are unavailable.');
 }
 
-function renderRecords(): void {
+const renderRecords = (): void => {
   output.textContent = JSON.stringify([...records.values()], null, 2);
-}
+};
 
-function selectedTarget(): string {
+const selectedTarget = (): string => {
   const target = keyInput.value.trim();
   if (target.length === 0) {
     throw new Error('Enter a record key.');
   }
   return target;
-}
+};
 
 const host = new StandaloneHost<UserRecord, string>({
   read(target) {

@@ -33,9 +33,10 @@ Each callback receives an `AbortSignal`, the current operation discriminator, th
 initiating `mode` (`dialog`, `inline`, or `api`), and a stable neutral `target`
 when Edit owns one. Contexts do not contain a DataTables API. DataTables
 applications can retain `table` in application scope or retain a
-`DataTablesHost` and call `unwrap()` explicitly. Closing a submitting
-presentation or destroying the editor aborts the signal. Results from an aborted,
-replaced, or destroyed request are ignored.
+`DataTablesHost` and call `unwrap()` explicitly. An active dialog submission
+rejects close requests with `EditorOperationBusyError`. Destroying the editor
+aborts its active request. Results from an aborted, replaced, or destroyed request
+are ignored.
 
 Cancellation stops editor-owned continuation, not an already completed remote
 write. Callbacks must observe their signal before applying application-owned
@@ -179,17 +180,17 @@ the Host to remove the captured records locally after confirmation.
 
 ## Refresh
 
-`refresh()` does not open a dialog, safely cancels an active double-click
-Inline session, and rejects while a hover Inline session awaits Submit or Cancel,
-and remains mutually exclusive with dialog operations. `DataTablesHost` waits for
-the public reload callback for Ajax tables and redraws local tables without
+`refresh()` runs without a dialog. It safely cancels an active double-click
+Inline session and rejects while a dialog is open or a hover Inline session
+awaits Submit or Cancel. `DataTablesHost` waits for the public reload callback for Ajax tables and redraws local tables without
 resetting paging. If an Ajax reload callback does not arrive within 30 seconds,
 the editor reports a normalized error and releases refresh ownership.
-DataTables does not expose an
-`AbortSignal` parameter for `ajax.reload()`, so aborting editor ownership cannot
+DataTables does not expose an `AbortSignal` parameter for `ajax.reload()`, so aborting editor ownership cannot
 guarantee cancellation of that transport. `StandaloneHost` invokes its optional
-consumer-provided refresh callback. Without that callback or `operations.refresh`,
-refresh rejects with `EditorConfigurationError`.
+consumer-provided refresh callback. If both that callback and
+`operations.refresh` are absent, the Host rejects with `EditorConfigurationError`.
+The editor reports errors from a started refresh through `alteditor-lite:error`
+and the optional `onError` hook.
 
 Configure `operations.refresh(context)` when network-level cancellation is
 required. The callback receives the owned signal, replaces the Host's default

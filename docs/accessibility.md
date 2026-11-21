@@ -41,19 +41,24 @@ their normal label and error relationships.
 
 ## SearchSelect keyboard behavior
 
-| Key                   | Behavior                                                            |
-| --------------------- | ------------------------------------------------------------------- |
-| Arrow Down / Arrow Up | Open and move through enabled options                               |
-| Home / End            | Move to the first or last enabled option                            |
-| Enter                 | Select the active option; never submit the dialog from the combobox |
-| Escape                | Restore the committed selection and close the listbox               |
-| Tab                   | Commit a valid option or manual string and leave                    |
-| Backspace             | Clear an empty clearable field                                      |
+| Key                   | Behavior                                              |
+| --------------------- | ----------------------------------------------------- |
+| Arrow Down / Arrow Up | Open and move through enabled options                 |
+| Home / End            | Move to the first or last enabled option              |
+| Enter                 | Open the listbox or choose its active option          |
+| Escape                | Restore the committed selection and close the listbox |
+| Tab                   | Commit permitted manual text and leave                |
+| Backspace             | Clear an empty clearable field                        |
 
-The input uses `role="combobox"`, `aria-autocomplete="list"`, `aria-expanded`,
-`aria-controls`, and `aria-activedescendant`. Options expose selected and disabled
-states. Result counts and no-result states use a polite live region. The clear
-button has a localized accessible name.
+When an open listbox has no active option, Enter closes it and commits any
+permitted manual text. Tab keeps any existing selection and does not choose a
+highlighted option.
+
+The input uses `role="combobox"`, `aria-expanded`, and `aria-controls`.
+`aria-autocomplete` is `list` for searchable fields and `none` for choice-only
+fields. `aria-activedescendant` identifies the active option when one is present.
+Options expose selected and disabled states. Result counts and no-result states
+use a polite live region. The clear button has a localized accessible name.
 
 Remote loading exposes `aria-busy` on the SearchSelect listbox and a non-selectable
 loading row. Threshold guidance, load failures, and resolved selection labels use

@@ -47,7 +47,8 @@ const editor = new AltEditorLite(table, {
 });
 ```
 
-DataTables changes only after the callback resolves with a complete row.
-Validate the response against the application's record schema before returning
-it. These examples send JSON values; upload `File` values using an
+DataTables changes after the callback returns the complete record for Create
+or one replacement record per original, in the same order, for multi-record
+Edit. Validate the response against the application's record schema before
+returning it. These examples send JSON values; upload `File` values using an
 application-owned `FormData` request instead of `JSON.stringify`.

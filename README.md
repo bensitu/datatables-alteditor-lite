@@ -100,10 +100,11 @@ identify both default assets.
 ## Quick start
 
 Import optional extensions before AltEditorLite so their integrations are
-available during registration:
+available during registration. The stylesheet import assumes a browser build
+that handles CSS assets:
 
 ```ts
-import DataTable from 'datatables.net';
+import { DataTable } from 'datatables.net';
 import 'datatables.net-buttons';
 import 'datatables.net-select';
 import { AltEditorLite, type EditorValues } from 'datatables-alteditor-lite/datatables';
@@ -123,16 +124,6 @@ interface UserForm {
 const table = new DataTable<UserRow>('#users', {
   columns: [{ data: 'name' }, { data: 'rank' }],
   data: [],
-  layout: {
-    topStart: {
-      buttons: [
-        'altEditorLiteCreate',
-        'altEditorLiteEdit',
-        'altEditorLiteRemove',
-        'altEditorLiteRefresh',
-      ],
-    },
-  },
   rowId: 'id',
   select: { style: 'multi' },
 });
@@ -163,6 +154,17 @@ const editor = new AltEditorLite<UserRow, UserForm>(table, {
     },
   ],
 });
+
+new DataTable.Buttons(table, {
+  buttons: [
+    'altEditorLiteCreate',
+    'altEditorLiteEdit',
+    'altEditorLiteRemove',
+    'altEditorLiteRefresh',
+  ],
+})
+  .container()
+  .prependTo(table.table().container());
 ```
 
 Create requires either `clientSide.createRow` or `operations.create`. Edit safely
@@ -236,11 +238,11 @@ const editor = new AltEditorLite<UserRow, UserForm, string>(host, {
 ```
 
 The `records` provider is optional unless a configured field uses local
-uniqueness validation. An optional `refresh` callback defines consumer-owned
-refresh work. Without that callback or `operations.refresh`, refresh rejects with
-`EditorConfigurationError`. Events are
-dispatched on `host.eventTarget`, which can be supplied by the application or
-left as the host's private `EventTarget`.
+uniqueness validation. Supply a Host `refresh` callback or `operations.refresh`
+to refresh standalone records. The editor reports refresh failures through
+`alteditor-lite:error` and the optional `onError` hook. Events are dispatched on
+`host.eventTarget`, which can be supplied by the application or left as the
+host's private `EventTarget`.
 
 See [Standalone usage](docs/standalone.md) for record callback semantics,
 refresh, event ownership, cleanup, and a complete in-memory example.
@@ -258,7 +260,7 @@ const editor = new AltEditorLite<UserRow, UserForm>(table, {
       activation: 'doubleClick',
       columns: {
         actions: false,
-        displayName: 'profile.name',
+        displayName: 'name',
       },
       enabled: true,
     },
@@ -267,7 +269,7 @@ const editor = new AltEditorLite<UserRow, UserForm>(table, {
     {
       inlineEdit: true,
       label: 'Name',
-      name: 'profile.name',
+      name: 'name',
       required: true,
       type: 'text',
     },

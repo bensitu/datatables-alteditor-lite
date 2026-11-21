@@ -147,6 +147,8 @@ editing: {
 | Both disabled                   | Unavailable | Unavailable | Available                                        |
 
 Create additionally requires `operations.create` or `clientSide.createRow`.
+Standalone hosts also need the corresponding apply callbacks for Create and
+Remove, and a Host `refresh` callback or `operations.refresh` for Refresh.
 Dialog and Inline Edit share the same Update implementation and can coexist on
 one editor. An active dialog owns the editor interaction, so Inline activation is
 rejected until it closes. See [Editing](editing.md) for the different
@@ -188,7 +190,9 @@ It can return typed field errors and a submission-level message:
 
 ```ts
 validateForm: (values) =>
-  values.endDate !== undefined && values.endDate < values.startDate
+  values.startDate !== undefined &&
+  values.endDate !== undefined &&
+  values.endDate < values.startDate
     ? {
         fieldErrors: { endDate: 'End date must not precede start date.' },
         message: 'Review the schedule.',

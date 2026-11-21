@@ -28,10 +28,16 @@ npm install --save-dev @types/jquery
 ```
 
 Import DataTables, its explicit auto-registering integration entry, and the
-stylesheet:
+stylesheet. These examples assume a browser build that handles CSS imports.
+If TypeScript reports an unresolved stylesheet import, include this ambient
+declaration in an application `.d.ts` file:
 
 ```ts
-import DataTable from 'datatables.net';
+declare module 'datatables-alteditor-lite/style.css';
+```
+
+```ts
+import { DataTable } from 'datatables.net';
 import { AltEditorLite } from 'datatables-alteditor-lite/datatables';
 import 'datatables-alteditor-lite/style.css';
 
@@ -143,10 +149,11 @@ const host = new StandaloneHost<UserRow, string>({
 const editor = new AltEditorLite<UserRow, UserForm, string>(host, { fields });
 ```
 
-Supply `applyCreate` and `applyRemove` when those operations are used. The
-optional `refresh` callback defines the work performed by `editor.refresh()`;
-without it, the call completes without changing records. Local uniqueness fields
-also require `records`, an iterable provider returning `{ target, row }` entries.
+Supply `applyCreate` and `applyRemove` when those operations are used. To enable
+refresh, provide a Host `refresh` callback or `operations.refresh`. Without either,
+the editor reports a configuration error through its refresh lifecycle. Local
+uniqueness fields also require `records`, an iterable provider returning
+`{ target, row }` entries.
 Lifecycle events use `host.eventTarget`; provide one when another application
 component needs to observe them. See [Standalone usage](standalone.md) for the
 complete Host callback and cleanup contract.
@@ -167,7 +174,7 @@ The ordered update flow is:
 4. publish submit and invoke the configured update implementation;
 5. confirm request ownership and target identity again;
 6. ask the Host to apply one complete replacement row or run its refresh;
-7. wait for stable Host presentation, publish success, and restore logical focus;
+7. publish success after Host application, then complete presentation cleanup and restore logical focus when the editor closes or moves to the next cell;
 8. run `afterSuccess` without changing the committed result.
 
 Validation and persistence failures leave canonical Host data unchanged.
