@@ -5,7 +5,6 @@ import {
   EditorSelectionCountError,
   EditorSelectionUnavailableError,
 } from '../core/alt-editor-lite-error.js';
-import { dispatchEditorEvent, type EditorCloseReason } from '../core/editor-event.js';
 import {
   InternalOperationAbort,
   NEVER_ABORTED_SIGNAL,
@@ -15,6 +14,7 @@ import {
 import { createReadonlyRowView } from '../core/readonly-row-view.js';
 import { runCleanupSteps } from '../core/run-cleanup-steps.js';
 import { settleWithAbort } from '../core/settle-with-abort.js';
+import { dispatchEditorEvent, type EditorCloseReason } from '../editor/editor-event.js';
 import { resolveFieldCapabilities } from '../fields/field-capabilities.js';
 import { BatchEditorFormController } from '../form/batch-editor-form-controller.js';
 import { buildEditorForm } from '../form/build-editor-form.js';
@@ -62,13 +62,13 @@ import type {
 import type { OperationOwner } from '../core/editing/operation-owner.js';
 import type { DialogTemplateSource } from '../core/editing-options.js';
 import type { EditorCapabilities } from '../core/editor-capabilities.js';
-import type { EditorErrorReporter } from '../core/editor-error-reporter.js';
 import type { DialogAction, EditorOperationTarget } from '../core/editor-operation.js';
 import type { EditorStateCoordinator } from '../core/editor-state-coordinator.js';
 import type { EditorValues } from '../core/editor-values.js';
 import type { LocalUniquenessValidator } from '../core/local-uniqueness-validator.js';
 import type { ResolvedDialogEditingOptions } from '../core/resolve-editing-options.js';
 import type { AltEditorLite } from '../editor/alt-editor-lite.js';
+import type { EditorErrorReporter } from '../editor/editor-error-reporter.js';
 import type { EditorFormController } from '../form/form-controller.js';
 import type { EditorHost } from '../host/editor-host.js';
 import type { InlineHostRuntime } from '../host/inline-host-runtime.js';

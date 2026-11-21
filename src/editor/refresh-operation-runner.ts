@@ -1,21 +1,22 @@
-import { EditorOperationBusyError } from './alt-editor-lite-error.js';
-import { dispatchEditorEvent } from './editor-event.js';
+import { EditorOperationBusyError } from '../core/alt-editor-lite-error.js';
 import {
   InternalOperationAbort,
   normalizeOperationError,
-} from './error-normalization.js';
+} from '../core/error-normalization.js';
 
-import type { AltEditorLite } from '../editor/alt-editor-lite.js';
-import type { HostRefreshCapability } from '../host/editor-host.js';
-import type { AltEditorLiteLanguage } from './alt-editor-lite-language.js';
-import type { AltEditorLiteOptions } from './alt-editor-lite-options.js';
+import { dispatchEditorEvent } from './editor-event.js';
+
+import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
+import type { AltEditorLiteOptions } from '../core/alt-editor-lite-options.js';
 import type {
   InteractionCoordinator,
   InteractionToken,
-} from './editing/interaction-coordinator.js';
-import type { OperationOwner } from './editing/operation-owner.js';
+} from '../core/editing/interaction-coordinator.js';
+import type { OperationOwner } from '../core/editing/operation-owner.js';
+import type { EditorStateCoordinator } from '../core/editor-state-coordinator.js';
+import type { HostRefreshCapability } from '../host/editor-host.js';
+import type { AltEditorLite } from './alt-editor-lite.js';
 import type { EditorErrorReporter } from './editor-error-reporter.js';
-import type { EditorStateCoordinator } from './editor-state-coordinator.js';
 
 export interface RefreshOperationRunnerArguments<
   TRow extends object,

@@ -4,7 +4,6 @@ import {
   EditorDestroyedError,
   EditorOperationBusyError,
 } from '../core/alt-editor-lite-error.js';
-import { dispatchEditorEvent, type EditorCloseReason } from '../core/editor-event.js';
 import {
   InternalOperationAbort,
   NEVER_ABORTED_SIGNAL,
@@ -13,6 +12,7 @@ import {
 import { resolveFieldValueComparator } from '../core/field-value-comparator.js';
 import { runCleanupSteps } from '../core/run-cleanup-steps.js';
 import { settleWithAbort } from '../core/settle-with-abort.js';
+import { dispatchEditorEvent, type EditorCloseReason } from '../editor/editor-event.js';
 
 import { InlineCommitCoordinator } from './inline-commit-coordinator.js';
 import { assertInlineEditStateTransition } from './inline-edit-state-transition.js';

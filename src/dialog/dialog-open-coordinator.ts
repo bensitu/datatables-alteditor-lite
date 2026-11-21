@@ -11,8 +11,8 @@ import type {
   AltEditorLiteOptions,
   EditorErrorHookContext,
 } from '../core/alt-editor-lite-options.js';
-import type { EditorErrorReporter } from '../core/editor-error-reporter.js';
 import type { EditorOperationTarget } from '../core/editor-operation.js';
+import type { EditorErrorReporter } from '../editor/editor-error-reporter.js';
 import type { EditorHost } from '../host/editor-host.js';
 
 type DialogOpenDetails<TRow extends object> =

@@ -2,21 +2,21 @@ import {
   EditorConfigurationError,
   type AltEditorLiteError,
 } from '../core/alt-editor-lite-error.js';
-import { dispatchEditorEvent } from '../core/editor-event.js';
 import {
   InternalOperationAbort,
   normalizeOperationError,
 } from '../core/error-normalization.js';
+import { dispatchEditorEvent } from '../editor/editor-event.js';
 import { hasHostBatchUpdateCapability } from '../host/editor-host.js';
 import { readHostRecords } from '../host/host-record-reader.js';
 
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type { AltEditorLiteOptions } from '../core/alt-editor-lite-options.js';
 import type { BatchEditOperationRunner } from '../core/editing/batch-edit-operation-runner.js';
-import type { EditorErrorReporter } from '../core/editor-error-reporter.js';
 import type { EditorOperationTarget } from '../core/editor-operation.js';
 import type { ResolvedDialogEditingOptions } from '../core/resolve-editing-options.js';
 import type { AltEditorLite } from '../editor/alt-editor-lite.js';
+import type { EditorErrorReporter } from '../editor/editor-error-reporter.js';
 import type { BatchEditorFormController } from '../form/batch-editor-form-controller.js';
 import type { EditorHost } from '../host/editor-host.js';
 

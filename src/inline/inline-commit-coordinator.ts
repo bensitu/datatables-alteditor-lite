@@ -1,8 +1,8 @@
-import { dispatchEditorEvent } from '../core/editor-event.js';
 import {
   commitRowUpdateWithFocus,
   type LogicalCellTarget,
 } from '../datatables/commit-row-update.js';
+import { dispatchEditorEvent } from '../editor/editor-event.js';
 
 import {
   createInlineEventTarget,

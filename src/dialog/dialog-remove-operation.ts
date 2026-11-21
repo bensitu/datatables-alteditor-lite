@@ -1,8 +1,8 @@
-import { dispatchEditorEvent } from '../core/editor-event.js';
 import {
   InternalOperationAbort,
   normalizeOperationError,
 } from '../core/error-normalization.js';
+import { dispatchEditorEvent } from '../editor/editor-event.js';
 import { readHostRecords } from '../host/host-record-reader.js';
 
 import type { AltEditorLiteError } from '../core/alt-editor-lite-error.js';
@@ -15,8 +15,8 @@ import type {
   OperationOwner,
   OwnedOperationRequest,
 } from '../core/editing/operation-owner.js';
-import type { EditorErrorReporter } from '../core/editor-error-reporter.js';
 import type { AltEditorLite } from '../editor/alt-editor-lite.js';
+import type { EditorErrorReporter } from '../editor/editor-error-reporter.js';
 import type { EditorHost } from '../host/editor-host.js';
 
 export interface DialogRemovePresentation {

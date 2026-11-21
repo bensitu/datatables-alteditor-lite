@@ -84,7 +84,7 @@ export type {
   EditorRefreshEventDetail,
   EditorSubmitEventDetail,
   EditorSuccessEventDetail,
-} from './core/editor-event.js';
+} from './editor/editor-event.js';
 export type {
   DialogAction,
   EditorOperation,

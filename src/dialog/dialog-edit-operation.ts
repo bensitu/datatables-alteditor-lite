@@ -1,18 +1,18 @@
-import { dispatchEditorEvent } from '../core/editor-event.js';
 import {
   InternalOperationAbort,
   normalizeOperationError,
 } from '../core/error-normalization.js';
+import { dispatchEditorEvent } from '../editor/editor-event.js';
 import { readHostRecord } from '../host/host-record-reader.js';
 
 import type { AltEditorLiteError } from '../core/alt-editor-lite-error.js';
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type { AltEditorLiteOptions } from '../core/alt-editor-lite-options.js';
 import type { EditOperationRunner } from '../core/editing/edit-operation-runner.js';
-import type { EditorErrorReporter } from '../core/editor-error-reporter.js';
 import type { EditorOperationTarget } from '../core/editor-operation.js';
 import type { ResolvedDialogEditingOptions } from '../core/resolve-editing-options.js';
 import type { AltEditorLite } from '../editor/alt-editor-lite.js';
+import type { EditorErrorReporter } from '../editor/editor-error-reporter.js';
 import type { EditorFormController } from '../form/form-controller.js';
 import type { EditorHost } from '../host/editor-host.js';
 import type { FieldPath } from '../object-path/field-path.js';

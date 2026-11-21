@@ -1,18 +1,19 @@
-import { dispatchEditorEvent } from './editor-event.js';
 import {
   InternalOperationAbort,
   NEVER_ABORTED_SIGNAL,
   normalizeOperationError,
-} from './error-normalization.js';
+} from '../core/error-normalization.js';
 
-import type { AltEditorLite } from '../editor/alt-editor-lite.js';
-import type { AltEditorLiteError } from './alt-editor-lite-error.js';
-import type { AltEditorLiteLanguage } from './alt-editor-lite-language.js';
+import { dispatchEditorEvent } from './editor-event.js';
+
+import type { AltEditorLiteError } from '../core/alt-editor-lite-error.js';
+import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type {
   AfterSuccessContext,
   EditorErrorHookContext,
   EditorHooks,
-} from './alt-editor-lite-options.js';
+} from '../core/alt-editor-lite-options.js';
+import type { AltEditorLite } from './alt-editor-lite.js';
 
 /** Publishes normalized operation failures through the configured observers. */
 export class EditorErrorReporter<TRow extends object, TFormValues extends object> {

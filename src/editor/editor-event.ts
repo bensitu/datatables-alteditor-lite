@@ -1,7 +1,11 @@
-import type { AltEditorLite } from '../editor/alt-editor-lite.js';
-import type { AltEditorLiteError } from './alt-editor-lite-error.js';
-import type { EditorOperationMode, EditorOperationTarget } from './editor-operation.js';
-import type { BatchChanges, EditorValues } from './editor-values.js';
+import type { AltEditorLiteError } from '../core/alt-editor-lite-error.js';
+import type { EditorCloseReason } from '../core/editor-close-reason.js';
+import type {
+  EditorOperationMode,
+  EditorOperationTarget,
+} from '../core/editor-operation.js';
+import type { BatchChanges, EditorValues } from '../core/editor-values.js';
+import type { AltEditorLite } from './alt-editor-lite.js';
 
 /** Names of the stable DOM events published by the editor. */
 export type EditorEventName =
@@ -13,9 +17,7 @@ export type EditorEventName =
   | 'alteditor-lite:refresh'
   | 'alteditor-lite:destroy';
 
-/** Reason that an operation dialog was closed. */
-export type EditorCloseReason =
-  'api' | 'cancel' | 'escape' | 'success' | 'unchanged' | 'redraw';
+export type { EditorCloseReason } from '../core/editor-close-reason.js';
 
 interface EditorEventDetailBase<TRow extends object, TFormValues extends object> {
   readonly editor: AltEditorLite<TRow, TFormValues>;

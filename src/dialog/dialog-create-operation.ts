@@ -3,11 +3,11 @@ import {
   EditorConfigurationError,
 } from '../core/alt-editor-lite-error.js';
 import { assertCompleteRow, isPromiseLike } from '../core/complete-row-result.js';
-import { dispatchEditorEvent } from '../core/editor-event.js';
 import {
   InternalOperationAbort,
   normalizeOperationError,
 } from '../core/error-normalization.js';
+import { dispatchEditorEvent } from '../editor/editor-event.js';
 
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type {
@@ -18,9 +18,9 @@ import type {
   OperationOwner,
   OwnedOperationRequest,
 } from '../core/editing/operation-owner.js';
-import type { EditorErrorReporter } from '../core/editor-error-reporter.js';
 import type { EditorValues } from '../core/editor-values.js';
 import type { AltEditorLite } from '../editor/alt-editor-lite.js';
+import type { EditorErrorReporter } from '../editor/editor-error-reporter.js';
 import type { EditorFormController } from '../form/form-controller.js';
 import type { EditorHost } from '../host/editor-host.js';
 

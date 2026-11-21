@@ -7,11 +7,8 @@ import {
   READ_EDITOR_BUTTON_STATE,
   type EditorButtonStateInput,
 } from '../core/editor-button-integration.js';
-import { EditorErrorReporter } from '../core/editor-error-reporter.js';
-import { dispatchEditorEvent } from '../core/editor-event.js';
 import { EditorStateCoordinator } from '../core/editor-state-coordinator.js';
 import { normalizeRejectedReason } from '../core/error-normalization.js';
-import { RefreshOperationRunner } from '../core/refresh-operation-runner.js';
 import { runCleanupSteps } from '../core/run-cleanup-steps.js';
 import { DialogEditingController } from '../dialog/dialog-editing-controller.js';
 import {
@@ -27,6 +24,9 @@ import {
 
 import { readEditorButtonState } from './editor-button-state.js';
 import { resolveEditorConfiguration } from './editor-configuration.js';
+import { EditorErrorReporter } from './editor-error-reporter.js';
+import { dispatchEditorEvent } from './editor-event.js';
+import { RefreshOperationRunner } from './refresh-operation-runner.js';
 
 import type { FieldController } from '../contracts/field-controller.js';
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';

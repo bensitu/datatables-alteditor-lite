@@ -12,7 +12,7 @@ import type {
   AltEditorLiteOptions,
   BeforeCloseReason,
 } from '../core/alt-editor-lite-options.js';
-import type { EditorErrorReporter } from '../core/editor-error-reporter.js';
+import type { EditorErrorReporter } from '../editor/editor-error-reporter.js';
 import type { EditorDialog } from './editor-dialog.js';
 
 interface DialogCloseCoordinatorArguments<

@@ -4,7 +4,7 @@ import type { FormDependencies } from '../contracts/form-dependency.js';
 import type { FormValidator } from '../contracts/form-validation.js';
 import type { PartialEditorLanguage } from './alt-editor-lite-language.js';
 import type { EditingOptions } from './editing-options.js';
-import type { EditorCloseReason } from './editor-event.js';
+import type { EditorCloseReason } from './editor-close-reason.js';
 import type { EditorOperationTarget } from './editor-operation.js';
 import type { BatchChanges, DeepPartial, EditorValues } from './editor-values.js';
 
