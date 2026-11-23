@@ -1,16 +1,16 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, onTestFinished, vi } from 'vitest';
 
 import { AltEditorLiteError } from '../../src/core/alt-editor-lite-error.js';
 import { ENGLISH_LANGUAGE } from '../../src/core/alt-editor-lite-language.js';
 import { OperationOwner } from '../../src/core/editing/operation-owner.js';
 import { DialogCreateOperation } from '../../src/dialog/dialog-create-operation.js';
 import { DialogRemoveOperation } from '../../src/dialog/dialog-remove-operation.js';
+import { AltEditorLite } from '../../src/editor/alt-editor-lite.js';
 
 import type {
   AltEditorLiteOptions,
   EditorErrorHookContext,
 } from '../../src/core/alt-editor-lite-options.js';
-import type { AltEditorLite } from '../../src/editor/alt-editor-lite.js';
 import type { EditorErrorReporter } from '../../src/editor/editor-error-reporter.js';
 import type { EditorFormController } from '../../src/form/form-controller.js';
 import type { EditorHost } from '../../src/host/editor-host.js';
@@ -55,6 +55,14 @@ function createHost(): EditorHost<TestRow, string> {
   };
 }
 
+function createEditor(host: EditorHost<TestRow, string>) {
+  const editor = new AltEditorLite<TestRow, TestValues, string>(host, { fields: [] });
+  onTestFinished(() => {
+    editor.destroy();
+  });
+  return editor;
+}
+
 function createForm(): EditorFormController<TestValues> {
   return {
     validateForSubmission: vi.fn(() =>
@@ -75,11 +83,12 @@ describe('dialog operation recovery', () => {
     });
     const presentationFailure = new Error('Unable to present the error.');
     const { errorReporter, report } = createErrorReporter();
+    const host = createHost();
     const operation = new DialogCreateOperation<TestRow, TestValues, string>({
-      editor: {} as AltEditorLite<TestRow, TestValues>,
+      editor: createEditor(host),
       errorReporter,
       eventTarget: new EventTarget(),
-      host: createHost(),
+      host,
       language: ENGLISH_LANGUAGE,
       onPresentationComplete: vi.fn(),
       operationOwner: new OperationOwner(),
@@ -125,11 +134,12 @@ describe('dialog operation recovery', () => {
       fields: [],
       operations: { remove: () => Promise.reject(persistenceFailure) },
     };
+    const host = createHost();
     const operation = new DialogRemoveOperation<TestRow, TestValues, string>({
-      editor: {} as AltEditorLite<TestRow, TestValues>,
+      editor: createEditor(host),
       errorReporter,
       eventTarget: new EventTarget(),
-      host: createHost(),
+      host,
       language: ENGLISH_LANGUAGE,
       onPresentationComplete: vi.fn(),
       operationOwner: new OperationOwner(),
@@ -163,11 +173,12 @@ describe('dialog operation recovery', () => {
   it('completes Host presentation synchronization after Create cleanup fails', async () => {
     const { errorReporter, report, runAfterSuccess } = createErrorReporter();
     const onPresentationComplete = vi.fn();
+    const host = createHost();
     const operation = new DialogCreateOperation<TestRow, TestValues, string>({
-      editor: {} as AltEditorLite<TestRow, TestValues>,
+      editor: createEditor(host),
       errorReporter,
       eventTarget: new EventTarget(),
-      host: createHost(),
+      host,
       language: ENGLISH_LANGUAGE,
       onPresentationComplete,
       operationOwner: new OperationOwner(),
