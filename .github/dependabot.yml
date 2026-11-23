@@ -21,10 +21,11 @@ updates:
       timezone: 'Asia/Tokyo'
     open-pull-requests-limit: 10
     ignore:
-      # Firefox crashes during accessibility checks with Playwright 1.65.0.
+      # Firefox crashes during accessibility checks with these Playwright versions.
       - dependency-name: '@playwright/test'
         versions:
           - '1.65.0'
+          - '1.65.1'
       # TypeScript 7 is outside the current typescript-eslint peer range.
       - dependency-name: 'typescript'
         versions:
