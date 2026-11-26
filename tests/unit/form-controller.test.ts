@@ -13,7 +13,10 @@ import type {
   FieldConfig,
 } from '../../src/contracts/field-config.js';
 import type { FieldValidationResult } from '../../src/contracts/field-controller.js';
-import type { FormController } from '../../src/form/form-controller.js';
+import type {
+  EditorFormController,
+  FormController,
+} from '../../src/form/form-controller.js';
 import type { LocalUniqueValidator } from '../../src/form/validate-editor-form.js';
 
 interface FormValues {
@@ -161,15 +164,16 @@ afterEach(() => {
 
 function createForm(
   validateUnique?: LocalUniqueValidator<FormValues>,
-): FormController<FormValues> {
-  activeForm = buildEditorForm<FormValues>(
+): EditorFormController<FormValues> {
+  const form = buildEditorForm<FormValues>(
     fields,
     'form-test',
     ENGLISH_LANGUAGE,
     validateUnique,
   );
-  document.body.append(activeForm.element);
-  return activeForm;
+  activeForm = form;
+  document.body.append(form.element);
+  return form;
 }
 
 describe('FormController', () => {
@@ -651,6 +655,21 @@ describe('FormController', () => {
     await expect(nameField.validate()).resolves.toEqual({ valid: true });
     nameField.setRequired(true);
     await expect(nameField.validate()).resolves.toMatchObject({ valid: false });
+    nameField.setVisible(false);
+    const result = await form.validateForSubmission(
+      new AbortController().signal,
+      undefined,
+      {
+        mode: 'dialog',
+        operation: 'create',
+      },
+    );
+    expect(result.valid).toBe(false);
+    const submissionError = form.element.querySelector<HTMLElement>(
+      '.alteditor-lite-form__submission-error',
+    );
+    expect(submissionError?.hidden).toBe(false);
+    expect(submissionError?.textContent).toContain(ENGLISH_LANGUAGE.validation.required);
   });
 
   it('caches field facades and removes explicitly destroyed fields', async () => {

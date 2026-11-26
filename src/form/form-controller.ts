@@ -599,7 +599,10 @@ export class EditorFormController<
 
     for (const [fieldName, message] of Object.entries(error.fieldErrors ?? {})) {
       const controller = this.controllerByName.get(fieldName);
-      if (controller === undefined) {
+      if (
+        controller === undefined ||
+        this.runtimeByName.get(fieldName)?.isVisible() === false
+      ) {
         submissionMessages.push(message);
       } else {
         hasKnownFieldError = true;
@@ -829,7 +832,10 @@ export class EditorFormController<
     }
     for (const [fieldName, fieldMessage] of Object.entries(error.fieldErrors ?? {})) {
       const controller = this.controllerByName.get(fieldName);
-      if (controller === undefined) {
+      if (
+        controller === undefined ||
+        this.runtimeByName.get(fieldName)?.isVisible() === false
+      ) {
         submissionMessages.add(fieldMessage);
       } else {
         this.fieldValidation.forgetError(fieldName);

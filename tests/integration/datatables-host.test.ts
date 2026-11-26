@@ -1,3 +1,5 @@
+import { createServer } from 'node:http';
+
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { EditorConfigurationError } from '../../src/core/alt-editor-lite-error.js';
@@ -184,6 +186,46 @@ describe('DataTablesHost', () => {
       }
     },
   );
+
+  it('reports a failed Ajax request and can reload again', async () => {
+    const onAjaxError = vi.fn();
+    const { api } = createTestTable('host-ajax-refresh', {
+      ajax: { error: onAjaxError, url: '' },
+    });
+    const host = new DataTablesHost(api, 1_250);
+    let responseStatus = 503;
+    const server = createServer((_request, response) => {
+      response.writeHead(responseStatus, {
+        'access-control-allow-origin': '*',
+        'content-type': 'application/json',
+      });
+      response.end(
+        JSON.stringify({ data: [{ id: 'row-a', name: 'Recovered', rank: 1 }] }),
+      );
+    });
+    try {
+      await new Promise<void>((resolve, reject) => {
+        server.once('error', reject);
+        server.listen(0, '127.0.0.1', resolve);
+      });
+      const address = server.address();
+      if (address === null || typeof address === 'string')
+        throw new Error('Missing HTTP port.');
+      api.ajax.url(`http://127.0.0.1:${String(address.port)}/records`);
+      const { signal } = new AbortController();
+      await expect(host.refresh(signal)).rejects.toThrow(
+        'DataTables Ajax refresh failed.',
+      );
+      expect(onAjaxError).toHaveBeenCalledOnce();
+
+      responseStatus = 200;
+      await expect(host.refresh(signal)).resolves.toBeUndefined();
+      expect(api.row('#row-a').data().name).toBe('Recovered');
+    } finally {
+      host.destroy();
+      server.close();
+    }
+  });
 
   it('returns its owned DataTables API through the explicit escape hatch', () => {
     const { api } = createTestTable('host-unwrap');

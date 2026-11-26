@@ -8,6 +8,23 @@ interface RefreshRow {
   readonly id: string;
 }
 
+function createAjaxTable() {
+  const tableElement = document.createElement('table');
+  const reload = vi.fn();
+  const table = {
+    ajax: { reload },
+    init: () => ({ ajax: '/records' }),
+    off: (event: string, listener: EventListener) => {
+      tableElement.removeEventListener(event, listener);
+    },
+    on: (event: string, listener: EventListener) => {
+      tableElement.addEventListener(event, listener);
+    },
+    table: () => ({ node: () => tableElement }),
+  } as unknown as Api<RefreshRow>;
+  return { reload, table, tableElement };
+}
+
 describe('refreshDataTable', () => {
   it('does not touch DataTables when ownership was already aborted', async () => {
     const abortController = new AbortController();
@@ -37,10 +54,7 @@ describe('refreshDataTable', () => {
   it('rejects when an Ajax reload never reports completion', async () => {
     vi.useFakeTimers();
     try {
-      const table = {
-        ajax: { reload: vi.fn() },
-        init: () => ({ ajax: '/records' }),
-      } as unknown as Api<RefreshRow>;
+      const { table } = createAjaxTable();
       const refresh = refreshDataTable(table, new AbortController().signal);
       const rejection = expect(refresh).rejects.toThrow(
         'DataTables Ajax refresh did not complete in time.',
@@ -57,10 +71,7 @@ describe('refreshDataTable', () => {
   it('uses a custom Ajax reload timeout', async () => {
     vi.useFakeTimers();
     try {
-      const table = {
-        ajax: { reload: vi.fn() },
-        init: () => ({ ajax: '/records' }),
-      } as unknown as Api<RefreshRow>;
+      const { table } = createAjaxTable();
       const refresh = refreshDataTable(table, new AbortController().signal, 1_250);
       const rejection = expect(refresh).rejects.toThrow(
         'DataTables Ajax refresh did not complete in time.',
@@ -80,10 +91,7 @@ describe('refreshDataTable', () => {
     vi.useFakeTimers();
     try {
       const abortController = new AbortController();
-      const table = {
-        ajax: { reload: vi.fn() },
-        init: () => ({ ajax: '/records' }),
-      } as unknown as Api<RefreshRow>;
+      const { table } = createAjaxTable();
       const refresh = refreshDataTable(table, abortController.signal, 1_250);
 
       abortController.abort();
@@ -96,19 +104,12 @@ describe('refreshDataTable', () => {
   });
 
   it('resolves when Ajax reload reports completion', async () => {
-    let complete: (() => void) | undefined;
-    const reload = vi.fn((callback: () => void) => {
-      complete = callback;
-    });
-    const table = {
-      ajax: { reload },
-      init: () => ({ ajax: '/records' }),
-    } as unknown as Api<RefreshRow>;
+    const { reload, table, tableElement } = createAjaxTable();
     const refresh = refreshDataTable(table, new AbortController().signal, 1_250);
 
-    complete?.();
+    tableElement.dispatchEvent(new Event('draw.altEditorLiteRefresh'));
 
     await expect(refresh).resolves.toBeUndefined();
-    expect(reload).toHaveBeenCalledWith(expect.any(Function), false);
+    expect(reload).toHaveBeenCalledWith(undefined, false);
   });
 });
