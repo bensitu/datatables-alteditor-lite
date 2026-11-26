@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Updated the demo and development dependencies to DataTables 3.1.6 and
+  Buttons 4.1.4.
 - Consolidated shared editor styles for fields, validation messages, and action
   buttons in both light and dark themes.
 - Separated host record tracking and SearchSelect listbox rendering from editing

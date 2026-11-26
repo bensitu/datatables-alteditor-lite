@@ -32,9 +32,9 @@ exercised by npm-based integration tests.
 
 | Package                                                          | Locked npm version | Main demo CDN version |
 | ---------------------------------------------------------------- | ------------------ | --------------------- |
-| [DataTables](https://cdn.datatables.net/3.1.5/)                  | 3.1.5              | 3.1.5                 |
+| [DataTables](https://cdn.datatables.net/3.1.6/)                  | 3.1.6              | 3.1.6                 |
 | [AutoFill](https://cdn.datatables.net/autofill/3.1.3/)           | 3.1.3              | Not loaded            |
-| [Buttons](https://cdn.datatables.net/buttons/4.1.3/)             | 4.1.3              | 4.1.3                 |
+| [Buttons](https://cdn.datatables.net/buttons/4.1.4/)             | 4.1.4              | 4.1.4                 |
 | [ColReorder](https://cdn.datatables.net/colreorder/3.1.2/)       | 3.1.2              | 3.1.2                 |
 | [ColumnControl](https://cdn.datatables.net/columncontrol/2.1.3/) | 2.1.3              | Not loaded            |
 | [FixedHeader](https://cdn.datatables.net/fixedheader/5.1.2/)     | 5.1.2              | Not loaded            |
