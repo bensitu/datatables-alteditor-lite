@@ -21,6 +21,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Optional unique text fields accept empty values. DataTables reads only the
+  relevant value for top-level scalar uniqueness checks.
+- Numeric inputs reject integers outside the safe JavaScript range. Forms show
+  validation errors for concealed fields in the summary.
+- DataTables reports built-in Ajax reload failures as soon as the request
+  fails. Rejected error observers are logged while the original error is reported.
+- External language resources reject relative network paths, and file fields
+  read selected files one at a time.
 - Inline editing preserves unchanged unique values on the edited record and
   still rejects duplicates in other loaded records.
 - Invalid persistence callbacks and overlapping field paths are rejected when

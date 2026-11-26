@@ -243,13 +243,13 @@ tooling; the runtime itself is browser code.
 
 The browser runtime requires these native platform capabilities:
 
-| Capability                          | Used for                                  |
-| ----------------------------------- | ----------------------------------------- |
-| `<dialog>` and `::backdrop`         | Modal rendering and focus containment     |
-| `AbortController`                   | Operation and validation cancellation     |
-| ES modules and modern `CustomEvent` | Package loading and lifecycle events      |
-| ES2022 JavaScript APIs              | Native object, string, and error handling |
-| `inert` and CSS `:has()`            | Busy-state interaction and focus styling  |
+| Capability                                                                  | Used for                                  |
+| --------------------------------------------------------------------------- | ----------------------------------------- |
+| `<dialog>` and `::backdrop`                                                 | Modal rendering and focus containment     |
+| `AbortController`, `AbortSignal.reason`, and `AbortSignal.throwIfAborted()` | Operation and validation cancellation     |
+| ES modules and modern `CustomEvent`                                         | Package loading and lifecycle events      |
+| ES2022 JavaScript APIs                                                      | Native object, string, and error handling |
+| `inert` and CSS `:has()`                                                    | Busy-state interaction and focus styling  |
 
 No compatibility polyfills are bundled. Applications that support older browser
 engines must provide these capabilities before initializing the editor. The CSS
@@ -259,6 +259,26 @@ includes viewport-unit and color fallbacks for engines that lack `dvh` or
 The package metadata defines the supported DataTables, Buttons, and Select peer
 ranges. Development uses compatible releases resolved by the lockfile without
 requiring one exact patch version at runtime.
+
+### Application themes
+
+The stylesheet follows the operating system color preference by default. To
+follow an application theme, load your overrides after the editor stylesheet
+and use the same selector that controls the rest of the page.
+
+```css
+html[data-theme='dark'] {
+  --alteditor-lite-error-color: #ffb4ab;
+  --alteditor-lite-error-text-color: #410002;
+  --alteditor-lite-primary-color: #8ecaff;
+  --alteditor-lite-primary-text-color: #001d32;
+  --alteditor-lite-popup-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 55%);
+}
+
+html[data-theme='dark'] :is(.alteditor-lite-dialog, .alteditor-lite-inline) {
+  color-scheme: dark;
+}
+```
 
 See [Editing](editing.md), [Dynamic forms](forms.md), [API
 reference](api-reference.md), [Fields](fields.md), [Operations](operations.md),

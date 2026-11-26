@@ -106,6 +106,10 @@ Visibility does not imply availability:
 - a read-only field remains enabled and collectible;
 - a required field applies its native constraint while enabled.
 
+Submission errors for concealed fields are displayed in the form summary. If a
+field is unavailable while concealed, have the same dependency set both
+`visible: false` and `disabled: true`.
+
 ## Runtime field state
 
 `editor.getField(path)` returns a controller only while a Dialog form is open.
@@ -233,9 +237,11 @@ validateForm: async (values, { mode, operation, signal }) => {
 
 For multi-record Edit, the editor builds one effective candidate per original by
 reading configured paths and overlaying the common changes. It invokes
-`validateForm` once per candidate with `operation: 'batchEdit'` and
+`validateForm` serially for each candidate with `operation: 'batchEdit'` and
 `mode: 'dialog'`. Repeated identical errors are presented once, and any invalid
-candidate prevents persistence and Host application.
+candidate prevents persistence and Host application. Use `validateForm` for
+local checks and the batch persistence callback for checks that require a single
+server request across all candidates.
 
 Dialog validation waits for current dependency and `onChange` work, then runs
 native constraints, field validators, local uniqueness, and `validateForm`.

@@ -205,8 +205,9 @@ an optional `HostReadContext`. The apply callbacks are required only for
 operations the application invokes, and each callback may return a value or a
 promise-like value. Provide a Host `refresh` callback or `operations.refresh` for
 consumer-owned refresh work. Without either, the Host rejects with
-`EditorConfigurationError` and `editor.refresh()` reports the error through its
-normal lifecycle. See [Standalone refresh](standalone.md#refresh). `eventTarget`
+`EditorConfigurationError`. Once a refresh starts, `editor.refresh()` reports
+failures through the error event and `hooks.onError` and then resolves. See
+[Standalone refresh](standalone.md#refresh). `eventTarget`
 defaults to a new private `EventTarget`, while `ownershipKey` defaults to the
 Host instance.
 

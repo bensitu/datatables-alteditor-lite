@@ -67,6 +67,9 @@ one-argument synchronous callbacks remain valid. AltEditorLite calls the method
 while capturing and revalidating single Edit, multi-record Edit, and Remove
 targets. A successful Edit with `editing.dialog.closeOnSuccess: false` reads the
 canonical record again and updates the retained form.
+The same target may be read several times during one operation to detect
+replacement or removal. Keep `read` free of side effects and return the latest
+record from application state when it is already loaded.
 
 Reads and `records()` entries return detached, recursively frozen plain objects
 and arrays. Nested `Date`, `Map`, `Set`, browser objects, and class instances keep
