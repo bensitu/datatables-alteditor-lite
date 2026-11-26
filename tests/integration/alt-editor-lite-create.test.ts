@@ -243,7 +243,7 @@ describe('AltEditorLite synchronous Create', () => {
     expect(parentEvents).toEqual([]);
   });
 
-  it('creates another record when an optional unique text field is blank', async () => {
+  it('creates another record when a unique text field is made optional and left blank', async () => {
     const { api } = createTestTable('optional-name', {
       data: [{ id: 'existing-row', name: '', rank: 1 }],
     });
@@ -251,11 +251,14 @@ describe('AltEditorLite synchronous Create', () => {
       clientSide: {
         createRow: ({ name }) => ({ id: 'new-row', name: name ?? '', rank: 2 }),
       },
-      fields: [{ label: 'Name', name: 'name', type: 'text', unique: true }],
+      fields: [
+        { label: 'Name', name: 'name', required: true, type: 'text', unique: true },
+      ],
     });
     activeEditors.add(editor);
 
     await editor.openCreateDialog();
+    editor.getField('name')?.setRequired(false);
     submitOpenDialog();
 
     await vi.waitFor(() => {

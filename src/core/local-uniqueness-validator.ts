@@ -2,6 +2,7 @@ import { parseFieldPath } from '../object-path/field-path.js';
 import { lookupPathSegments } from '../object-path/get-path-value.js';
 
 import { resolveFieldValueComparator } from './field-value-comparator.js';
+import { hasOwn } from './has-own.js';
 
 import type { FieldConfig } from '../contracts/field-config.js';
 import type { HostRowCollectionCapability } from '../host/editor-host.js';
@@ -15,6 +16,17 @@ interface UniqueFieldLookup {
   readonly pathSegments: readonly string[];
 }
 
+export const READ_LOADED_ROWS = Symbol('readLoadedRows');
+
+interface UniqueRowCollection<
+  TRow extends object,
+  TTarget,
+> extends HostRowCollectionCapability<TRow, TTarget> {
+  [READ_LOADED_ROWS]?(
+    exclusion?: Readonly<{ target: TTarget }>,
+  ): Iterable<TRow> | undefined;
+}
+
 /** Performs host-scoped uniqueness checks for configured field paths. */
 export class LocalUniquenessValidator<
   TRow extends object,
@@ -24,7 +36,7 @@ export class LocalUniquenessValidator<
   private readonly fields: readonly UniqueFieldLookup[];
 
   public constructor(
-    private readonly collection: HostRowCollectionCapability<TRow, TTarget>,
+    private readonly collection: UniqueRowCollection<TRow, TTarget>,
     fieldConfigurations: readonly FieldConfig<TFormValues>[],
     private readonly language: Readonly<AltEditorLiteLanguage>,
   ) {
@@ -33,7 +45,6 @@ export class LocalUniquenessValidator<
         .filter((field) => field.unique === true)
         .map((field) => ({
           ignoresBlankText:
-            (!('required' in field) || !field.required) &&
             /^(text|email|password|textarea|date|time|datetime-local)$/u.test(field.type),
           isEqual: resolveFieldValueComparator(field),
           name: field.name,
@@ -62,17 +73,24 @@ export class LocalUniquenessValidator<
       return fieldErrors;
     }
 
-    let remaining = candidates.length;
-    for (const { row, target } of this.collection.entries()) {
-      if (exclusion !== undefined && Object.is(target, exclusion.target)) {
-        continue;
-      }
+    const rows = candidates.every(
+      ([field, value]) =>
+        field.pathSegments.length === 1 &&
+        field.isEqual === Object.is &&
+        (value === null || (typeof value !== 'object' && typeof value !== 'function')),
+    )
+      ? this.collection[READ_LOADED_ROWS]?.(exclusion)
+      : undefined;
 
+    let remaining = candidates.length;
+    for (const row of rows ?? this.readSnapshots(exclusion)) {
       for (const [candidate, value] of candidates) {
-        if (
-          fieldErrors[candidate.name] === undefined &&
-          candidate.isEqual(lookupPathSegments(row, candidate.pathSegments).value, value)
-        ) {
+        if (hasOwn(fieldErrors, candidate.name)) continue;
+        const existing =
+          rows === undefined
+            ? lookupPathSegments(row, candidate.pathSegments).value
+            : readOwnRowValue(row, candidate.name);
+        if (candidate.isEqual(existing, value)) {
           fieldErrors[candidate.name] = this.language.validation.unique;
           remaining -= 1;
         }
@@ -82,4 +100,19 @@ export class LocalUniquenessValidator<
 
     return fieldErrors;
   }
+
+  private *readSnapshots(
+    exclusion?: Readonly<{ target: TTarget }>,
+  ): Iterable<Readonly<TRow>> {
+    for (const { row, target } of this.collection.entries()) {
+      if (exclusion === undefined || !Object.is(target, exclusion.target)) yield row;
+    }
+  }
+}
+
+function readOwnRowValue(row: object, name: string): unknown {
+  return Object.getOwnPropertyDescriptor(row, name)?.enumerable === true ||
+    (name === 'length' && Array.isArray(row))
+    ? Reflect.get(row, name)
+    : undefined;
 }

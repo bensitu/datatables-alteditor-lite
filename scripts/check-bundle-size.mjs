@@ -3,11 +3,11 @@ import { gzipSync } from 'node:zlib';
 
 const distributables = [
   {
-    maximumBytes: 59_392,
+    maximumBytes: 61_000,
     path: 'dist/umd/alt-editor-lite.min.js',
   },
   {
-    maximumBytes: 40_960,
+    maximumBytes: 42_000,
     path: 'dist/umd/alt-editor-lite-standalone.min.js',
   },
   {

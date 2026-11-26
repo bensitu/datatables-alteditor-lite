@@ -3,6 +3,7 @@ import {
   EditorTargetUnavailableError,
 } from '../core/alt-editor-lite-error.js';
 import { READ_SELECTED_ROW_COUNT } from '../core/editor-button-integration.js';
+import { READ_LOADED_ROWS } from '../core/local-uniqueness-validator.js';
 import { createReadonlyRowView } from '../core/readonly-row-view.js';
 import { runCleanupSteps } from '../core/run-cleanup-steps.js';
 
@@ -65,7 +66,11 @@ export class DataTablesRecordHost<TRow extends object>
     protected readonly table: Api<TRow>,
     private readonly refreshTimeout = 30_000,
   ) {
-    if (!(refreshTimeout > 0 && refreshTimeout <= 2_147_483_647)) {
+    if (
+      !Number.isFinite(refreshTimeout) ||
+      refreshTimeout <= 0 ||
+      refreshTimeout > 2_147_483_647
+    ) {
       throw new EditorConfigurationError(
         'refreshTimeout must be positive and at most 2147483647 milliseconds.',
       );
@@ -270,6 +275,24 @@ export class DataTablesRecordHost<TRow extends object>
     Readonly<HostRecordEntry<TRow, DataTablesRecordTarget>>
   > {
     return this.records.entries();
+  }
+
+  public [READ_LOADED_ROWS](
+    exclusion?: Readonly<{ target: DataTablesRecordTarget }>,
+  ): Iterable<TRow> | undefined {
+    const rows = this.table.rows();
+    const data = rows.data().toArray();
+    if (exclusion === undefined) return data;
+
+    try {
+      const excludedPosition = rows
+        .indexes()
+        .indexOf(this.records.resolve(exclusion.target));
+      return data.filter((_row, position) => position !== excludedPosition);
+    } catch (error: unknown) {
+      if (error instanceof EditorTargetUnavailableError) return undefined;
+      throw error;
+    }
   }
 
   /** Finds the loaded record target for one live DataTables row object. */
