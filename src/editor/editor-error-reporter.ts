@@ -15,6 +15,10 @@ import type {
 } from '../core/alt-editor-lite-options.js';
 import type { AltEditorLite } from './alt-editor-lite.js';
 
+function warnAboutErrorObserver(error: unknown): void {
+  console.warn('AltEditorLite onError callback failed.', error);
+}
+
 /** Publishes normalized operation failures through the configured observers. */
 export class EditorErrorReporter<TRow extends object, TFormValues extends object> {
   public constructor(
@@ -35,9 +39,12 @@ export class EditorErrorReporter<TRow extends object, TFormValues extends object
       return;
     }
     try {
-      this.hooks?.onError?.(error, context);
+      const observation: unknown = this.hooks?.onError?.(error, context);
+      if (observation !== undefined) {
+        void Promise.resolve(observation).catch(warnAboutErrorObserver);
+      }
     } catch (hookError: unknown) {
-      console.warn('AltEditorLite onError callback failed.', hookError);
+      warnAboutErrorObserver(hookError);
     }
 
     if (!publishEvent || this.isDestroyed()) {

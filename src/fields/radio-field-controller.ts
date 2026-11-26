@@ -2,6 +2,7 @@ import { EditorConfigurationError } from '../core/alt-editor-lite-error.js';
 
 import { ChoiceOptionStore } from './choice-option-store.js';
 import { applyAllowedFieldAttributes } from './field-attributes.js';
+import { validateFieldResult } from './validate-field-result.js';
 
 import type {
   FieldChangeContext,
@@ -225,7 +226,8 @@ export function createRadioFieldController<
         signal,
         values,
       };
-      return await config.validate(readValue(), validationContext);
+      const result = await config.validate(readValue(), validationContext);
+      return validateFieldResult(result, config.name);
     },
     runOnChange: async (
       values: Readonly<EditorValues<TFormValues>>,

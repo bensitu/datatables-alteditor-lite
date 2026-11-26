@@ -88,7 +88,8 @@ describe('AltEditorLite Standalone editor features', () => {
         shouldFailRead = true;
         return record.id;
       };
-      const onError = vi.fn();
+      const observerError = new Error('Reporting is unavailable.');
+      const onError = vi.fn(() => Promise.reject(observerError));
       const beforeClose = vi.fn(() => false);
       const host = new StandaloneHost<typeof record, string>({
         read: () => record,
@@ -103,6 +104,7 @@ describe('AltEditorLite Standalone editor features', () => {
             { label: 'Name', name: 'name', type: 'text' },
             custom.field<Omit<typeof record, 'id'>>({ label: 'Custom', name: 'custom' }),
           ],
+          // eslint-disable-next-line @typescript-eslint/no-misused-promises -- Exercise promise rejection from a JavaScript callback.
           hooks: { beforeClose, onError },
           operations: {
             create: (values) => ({ ...record, ...values }),
@@ -110,6 +112,7 @@ describe('AltEditorLite Standalone editor features', () => {
           },
         },
       );
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
       try {
         if (operation === 'create') {
           await editor.openCreateDialog(record);
@@ -119,7 +122,10 @@ describe('AltEditorLite Standalone editor features', () => {
         editor.getField('name')?.setValue('Saved');
         submitForm();
         await vi.waitFor(() => {
-          expect(onError).toHaveBeenCalled();
+          expect(warn).toHaveBeenCalledWith(
+            'AltEditorLite onError callback failed.',
+            observerError,
+          );
         });
         expect(record.name).toBe('Saved');
         expect(onError).toHaveBeenCalledWith(
@@ -136,6 +142,7 @@ describe('AltEditorLite Standalone editor features', () => {
           expect.objectContaining({ dirty: true }),
         );
       } finally {
+        warn.mockRestore();
         editor.destroy();
       }
     },

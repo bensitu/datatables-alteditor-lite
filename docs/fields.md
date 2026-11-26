@@ -467,6 +467,7 @@ Budgets are checked before any data URL read.
 Browser validation and file filters are usability features; a server must
 independently validate content, size, and media type. Disabling or substantially
 raising a data URL budget can exhaust browser memory and should be deliberate.
+Files are read one at a time. Their data URLs are retained as the field value.
 Treat returned data URLs as untrusted file content. Do not insert them into active
 HTML or executable frames; preview only application-approved media types under an
 appropriate Content Security Policy.

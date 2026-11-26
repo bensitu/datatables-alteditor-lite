@@ -1,13 +1,11 @@
+import { isPlainRecord } from './readonly-row-view.js';
+
 /** Checks the shape of a result returned by an application callback. */
 export function isPlainCallbackResult(
   value: unknown,
 ): value is Readonly<Record<string, unknown>> {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-    return false;
-  }
   try {
-    const prototype: unknown = Object.getPrototypeOf(value);
-    return prototype === Object.prototype || prototype === null;
+    return !Array.isArray(value) && isPlainRecord(value);
   } catch {
     return false;
   }

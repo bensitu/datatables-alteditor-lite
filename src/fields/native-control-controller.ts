@@ -1,5 +1,6 @@
 import { applyAllowedFieldAttributes } from './field-attributes.js';
 import { createFieldControllerShell } from './field-controller-shell.js';
+import { validateFieldResult } from './validate-field-result.js';
 
 import type {
   BaseFieldConfig,
@@ -133,7 +134,11 @@ export function createNativeControlController<TFormValues extends object, TValue
         signal,
         values,
       };
-      return await config.validate(await adapter.readValue(signal), validationContext);
+      const result = await config.validate(
+        await adapter.readValue(signal),
+        validationContext,
+      );
+      return validateFieldResult(result, config.name);
     },
     runOnChange: async (
       values: Readonly<EditorValues<TFormValues>>,

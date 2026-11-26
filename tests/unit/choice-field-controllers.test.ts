@@ -116,6 +116,10 @@ describe('radio field controller', () => {
     await expect(
       controller.validateCustom({ choice: 'blocked' }, signal),
     ).resolves.toEqual({ message: 'Blocked choice.', valid: false });
+    validationCallback.mockReturnValueOnce(undefined as never);
+    await expect(
+      controller.validateCustom({ choice: 'blocked' }, signal),
+    ).rejects.toThrow('Field "choice" returned an invalid validation result.');
     await controller.runOnChange({ choice: 'blocked' }, signal);
     expect(changeCallback).toHaveBeenCalledWith(
       'blocked',

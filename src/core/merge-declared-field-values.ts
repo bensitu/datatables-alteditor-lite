@@ -1,16 +1,9 @@
 import { parseFieldPath } from '../object-path/field-path.js';
 import { getPathValue } from '../object-path/get-path-value.js';
 
+import { isPlainRecord } from './readonly-row-view.js';
+
 import type { EditorValues } from './editor-values.js';
-
-function isPlainRecord(value: unknown): value is Readonly<Record<string, unknown>> {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-    return false;
-  }
-
-  const valuePrototype = Object.getPrototypeOf(value) as unknown;
-  return valuePrototype === Object.prototype || valuePrototype === null;
-}
 
 function setImmutablePath(
   sourceValues: Readonly<Record<string, unknown>>,
@@ -29,7 +22,7 @@ function setImmutablePath(
 
   const nestedSource = sourceValues[fieldPathSegment];
   updatedValues[fieldPathSegment] = setImmutablePath(
-    isPlainRecord(nestedSource) ? nestedSource : {},
+    !Array.isArray(nestedSource) && isPlainRecord(nestedSource) ? nestedSource : {},
     remainingSegments,
     fieldValue,
   );

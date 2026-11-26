@@ -3,6 +3,7 @@ import { runCleanupSteps } from '../core/run-cleanup-steps.js';
 import { settleWithAbort } from '../core/settle-with-abort.js';
 
 import { createFieldControllerShell } from './field-controller-shell.js';
+import { validateFieldResult } from './validate-field-result.js';
 
 import type {
   CustomFieldAdapter,
@@ -13,7 +14,6 @@ import type {
   FieldChangeContext,
   FieldValidationContext,
 } from '../contracts/field-config.js';
-import type { FieldValidationResult } from '../contracts/field-controller.js';
 import type { EditorValues } from '../core/editor-values.js';
 import type { FieldControllerShell } from './field-controller-shell.js';
 import type { ManagedFieldController } from './managed-field-controller.js';
@@ -90,24 +90,6 @@ function destroyReturnedAdapter(candidate: unknown): void {
   }
 }
 
-function assertValidationResult(result: FieldValidationResult, fieldName: string): void {
-  const candidate: unknown = result;
-  if (typeof candidate !== 'object' || candidate === null) {
-    throw new EditorConfigurationError(
-      `Custom field "${fieldName}" validation must return a result object.`,
-    );
-  }
-  const record = candidate as Readonly<Record<string, unknown>>;
-  if (
-    typeof record['valid'] !== 'boolean' ||
-    (record['message'] !== undefined && typeof record['message'] !== 'string')
-  ) {
-    throw new EditorConfigurationError(
-      `Custom field "${fieldName}" validation result is not valid.`,
-    );
-  }
-}
-
 /** Creates the managed controller that integrates one consumer-owned widget. */
 export function createCustomFieldController<TFormValues extends object>(
   config: Readonly<CustomFieldConfig<TFormValues>>,
@@ -178,8 +160,10 @@ export function createCustomFieldController<TFormValues extends object>(
         signal: AbortSignal,
       ) => {
         if (adapter.validate !== undefined) {
-          const widgetResult = await settleWithAbort(adapter.validate(signal), signal);
-          assertValidationResult(widgetResult, config.name);
+          const widgetResult = validateFieldResult(
+            await settleWithAbort(adapter.validate(signal), signal),
+            config.name,
+          );
           if (!widgetResult.valid) {
             return widgetResult;
           }
@@ -192,7 +176,11 @@ export function createCustomFieldController<TFormValues extends object>(
           values,
         };
         const value = await settleWithAbort(adapter.getValue(), signal);
-        return await settleWithAbort(config.validate(value, validationContext), signal);
+        const result = await settleWithAbort(
+          config.validate(value, validationContext),
+          signal,
+        );
+        return validateFieldResult(result, config.name);
       },
       runOnChange: async (
         values: Readonly<EditorValues<TFormValues>>,
