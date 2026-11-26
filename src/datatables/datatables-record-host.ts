@@ -2,6 +2,7 @@ import {
   EditorConfigurationError,
   EditorTargetUnavailableError,
 } from '../core/alt-editor-lite-error.js';
+import { READ_SELECTED_ROW_COUNT } from '../core/editor-button-integration.js';
 import { createReadonlyRowView } from '../core/readonly-row-view.js';
 import { runCleanupSteps } from '../core/run-cleanup-steps.js';
 
@@ -64,9 +65,9 @@ export class DataTablesRecordHost<TRow extends object>
     protected readonly table: Api<TRow>,
     private readonly refreshTimeout = 30_000,
   ) {
-    if (!Number.isFinite(refreshTimeout) || refreshTimeout <= 0) {
+    if (!(refreshTimeout > 0 && refreshTimeout <= 2_147_483_647)) {
       throw new EditorConfigurationError(
-        'refreshTimeout must be a finite positive number.',
+        'refreshTimeout must be positive and at most 2147483647 milliseconds.',
       );
     }
     const tableElement: unknown = table.table().node();
@@ -296,6 +297,10 @@ export class DataTablesRecordHost<TRow extends object>
   /** Reports whether the optional Select integration is available. */
   public selectionAvailable(): boolean {
     return this.#selectIntegration.available();
+  }
+
+  public [READ_SELECTED_ROW_COUNT](): number | undefined {
+    return this.#selectIntegration.selectedRowCount();
   }
 
   /** Returns the current DataTables Select targets. */

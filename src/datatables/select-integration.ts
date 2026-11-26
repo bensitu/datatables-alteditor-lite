@@ -7,6 +7,7 @@ interface SelectRowsApi {
 }
 
 interface SelectedRowsApi {
+  count(): number;
   indexes(): {
     toArray(): number[];
   };
@@ -63,6 +64,11 @@ export class SelectIntegration<TRow extends object> {
     return this.isAvailable;
   }
 
+  /** Counts selected rows without resolving record targets. */
+  public selectedRowCount(): number | undefined {
+    return this.isAvailable ? this.selectedRows().count() : undefined;
+  }
+
   /**
    * Returns selected row indexes using the public Select selector modifier.
    *
@@ -75,8 +81,12 @@ export class SelectIntegration<TRow extends object> {
       throw new EditorSelectionUnavailableError(unavailableMessage);
     }
 
+    return this.selectedRows().indexes().toArray();
+  }
+
+  private selectedRows(): SelectedRowsApi {
     const selectCapableTable = this.table as unknown as SelectCapableTable;
-    return selectCapableTable.rows({ selected: true }).indexes().toArray();
+    return selectCapableTable.rows({ selected: true });
   }
 
   /**

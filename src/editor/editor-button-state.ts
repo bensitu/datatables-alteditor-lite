@@ -1,4 +1,5 @@
 import { EditorSelectionUnavailableError } from '../core/alt-editor-lite-error.js';
+import { READ_SELECTED_ROW_COUNT } from '../core/editor-button-integration.js';
 import { hasHostSelectionCapability } from '../host/editor-host.js';
 
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
@@ -15,7 +16,16 @@ export function readEditorButtonState<TRow extends object, TTarget>(
 ): Readonly<EditorButtonStateInput> {
   let hasSelect = false;
   let selectedRowCount = 0;
-  if (hasHostSelectionCapability<TTarget>(host)) {
+  if (
+    READ_SELECTED_ROW_COUNT in host &&
+    typeof host[READ_SELECTED_ROW_COUNT] === 'function'
+  ) {
+    const count = (host as { [READ_SELECTED_ROW_COUNT](): number | undefined })[
+      READ_SELECTED_ROW_COUNT
+    ]();
+    hasSelect = count !== undefined;
+    selectedRowCount = count ?? 0;
+  } else if (hasHostSelectionCapability<TTarget>(host)) {
     try {
       selectedRowCount = host.getSelectedTargets().length;
       hasSelect = true;

@@ -250,10 +250,12 @@ describe('optional Buttons and Select integration', () => {
     expect(editButton.title).toContain('one or more');
     expect(removeButton.disabled).toBe(true);
 
+    const readTargets = vi.spyOn(editor.dataTablesHost, 'getSelectedTargets');
     extensionApi.row(0).select();
     expect(editButton.disabled).toBe(false);
     expect(removeButton.disabled).toBe(false);
     expect(editButton.getAttribute('aria-disabled')).toBe('false');
+    expect(readTargets).not.toHaveBeenCalled();
 
     extensionApi.button(0).trigger();
     await vi.waitFor(() => {
