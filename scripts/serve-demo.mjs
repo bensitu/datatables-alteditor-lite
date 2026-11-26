@@ -1,6 +1,6 @@
-import { readFile, stat } from 'node:fs/promises';
+import { readFile, realpath, stat } from 'node:fs/promises';
 import { createServer } from 'node:http';
-import { dirname, extname, isAbsolute, relative, resolve } from 'node:path';
+import { dirname, extname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -24,21 +24,26 @@ const port =
     ? requestedPort
     : 4173;
 
-function resolveWithin(rootDirectory, requestPath) {
-  const targetPath = resolve(rootDirectory, requestPath);
+function isWithin(rootDirectory, targetPath) {
   const relativePath = relative(rootDirectory, targetPath);
-  const isWithinRoot =
-    relativePath.length === 0 ||
-    (!relativePath.startsWith('..') && !isAbsolute(relativePath));
-  return isWithinRoot ? targetPath : undefined;
+  return (
+    relativePath !== '..' &&
+    !relativePath.startsWith(`..${sep}`) &&
+    !isAbsolute(relativePath)
+  );
 }
 
-function resolveStaticFile(urlPath) {
+async function resolveStaticFile(urlPath) {
   for (const route of staticRoutes) {
     if (urlPath.startsWith(route.prefix)) {
       const routePath = urlPath.slice(route.prefix.length);
-      const filePath = routePath.length === 0 ? 'index.html' : routePath;
-      return resolveWithin(route.rootDirectory, filePath);
+      const filePath = resolve(route.rootDirectory, routePath || 'index.html');
+      if (!isWithin(route.rootDirectory, filePath)) return undefined;
+      const [rootDirectory, targetPath] = await Promise.all([
+        realpath(route.rootDirectory),
+        realpath(filePath),
+      ]);
+      return isWithin(rootDirectory, targetPath) ? targetPath : undefined;
     }
   }
 
@@ -54,7 +59,7 @@ const server = createServer(async (request, response) => {
       response.end();
       return;
     }
-    const filePath = resolveStaticFile(decodedPath);
+    const filePath = await resolveStaticFile(decodedPath);
     if (filePath === undefined) {
       response.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
       response.end('Not found.');
