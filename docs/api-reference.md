@@ -135,7 +135,8 @@ const editor = new AltEditorLite<TRow, TFormValues>(table, options);
 
 The DataTables constructor accepts
 `DataTablesAltEditorLiteOptions<TRow, TFormValues>`, which extends the neutral
-options with an optional finite positive `refreshTimeout` in milliseconds. The
+options with an optional positive `refreshTimeout` of up to `2_147_483_647`
+milliseconds. The
 default is `30_000` and bounds the built-in `ajax.reload()` callback and commit
 draw waits. It does not impose a timeout on consumer callbacks.
 

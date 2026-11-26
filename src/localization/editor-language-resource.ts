@@ -54,10 +54,7 @@ function assertSupportedLanguageResource(resource: RequestInfo | URL): void {
       false,
     );
   }
-  if (
-    normalizedResourceUrl.startsWith('//') ||
-    normalizedResourceUrl.startsWith('\\\\')
-  ) {
+  if (/^[\\/]{2}/u.test(normalizedResourceUrl)) {
     throw new EditorLanguageLoadError(
       'Editor language resources must not use a protocol-relative URL.',
       undefined,

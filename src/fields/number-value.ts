@@ -27,7 +27,8 @@ export function normalizeNumberValue(
   }
 
   const numericValue = Number(normalizedInput);
-  return !Number.isFinite(numericValue)
+  return !Number.isFinite(numericValue) ||
+    (Number.isInteger(numericValue) && !Number.isSafeInteger(numericValue))
     ? { valid: false }
     : { valid: true, value: Object.is(numericValue, -0) ? 0 : numericValue };
 }

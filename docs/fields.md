@@ -60,6 +60,8 @@ contain a supported finite number. Reading a field is not validation: call its
 `validate()` method to distinguish an invalid input from an accepted empty value,
 and use native `required`, `min`, `max`, and `step` constraints as appropriate.
 Browsers may discard unsupported numeric text before the editor reads it.
+Integer inputs outside JavaScript's safe integer range fail validation. Use a
+text field for large identifiers or values that require arbitrary precision.
 
 With `trim: true`, text, email, and password fields validate and collect normalized
 text without replacing the visible value or moving its selection. Textarea reads
@@ -343,6 +345,9 @@ currently exposed by the Host:
 
 Dialog and Inline Edit exclude the record being edited, so changing another
 field can preserve the current unique value.
+Blank or whitespace-only values in optional text and date/time fields are
+ignored by local uniqueness checks. Choice fields keep their configured value
+identities.
 Built-in fields preserve JavaScript value identity semantics: numeric `1` and
 string `'1'` are different. Custom fields use their definition's `isEqual`
 comparator when present, allowing separately allocated structured values to be

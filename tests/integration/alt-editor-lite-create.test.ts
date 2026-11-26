@@ -243,6 +243,26 @@ describe('AltEditorLite synchronous Create', () => {
     expect(parentEvents).toEqual([]);
   });
 
+  it('creates another record when an optional unique text field is blank', async () => {
+    const { api } = createTestTable('optional-name', {
+      data: [{ id: 'existing-row', name: '', rank: 1 }],
+    });
+    const editor = new AltEditorLite<TestRow, CreateValues>(api, {
+      clientSide: {
+        createRow: ({ name }) => ({ id: 'new-row', name: name ?? '', rank: 2 }),
+      },
+      fields: [{ label: 'Name', name: 'name', type: 'text', unique: true }],
+    });
+    activeEditors.add(editor);
+
+    await editor.openCreateDialog();
+    submitOpenDialog();
+
+    await vi.waitFor(() => {
+      expect(api.row('#new-row').data()).toMatchObject({ name: '' });
+    });
+  });
+
   it('does not mutate when validation fails', async () => {
     const createRow = vi.fn((values: Readonly<Partial<CreateValues>>) => ({
       id: 'invalid-row',

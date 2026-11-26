@@ -35,7 +35,13 @@ describe('field value normalization', () => {
     expect(normalizeNumberValue('not-a-number', undefined)).toEqual({
       valid: false,
     });
-    for (const unsupportedValue of [' 1 ', 'Infinity', '0x1f', '0b101']) {
+    for (const unsupportedValue of [
+      ' 1 ',
+      'Infinity',
+      '0x1f',
+      '0b101',
+      '9007199254740993',
+    ]) {
       expect(normalizeNumberValue(unsupportedValue, undefined)).toEqual({
         valid: false,
       });

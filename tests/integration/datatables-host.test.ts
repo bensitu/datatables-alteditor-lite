@@ -153,7 +153,7 @@ describe('DataTablesHost', () => {
     }
   });
 
-  it.each([0, -1, NaN, Infinity, -Infinity])(
+  it.each([0, -1, NaN, Infinity, -Infinity, 2_147_483_648])(
     'rejects an invalid refresh timeout (%s)',
     (timeout) => {
       const { api } = createTestTable('host-invalid-timeout');

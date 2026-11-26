@@ -145,7 +145,7 @@ describe('AltEditorLite DataTables configuration', () => {
           fields,
           refreshTimeout: 0,
         }),
-    ).toThrow('refreshTimeout must be a finite positive number.');
+    ).toThrow('refreshTimeout must be positive');
   });
 });
 

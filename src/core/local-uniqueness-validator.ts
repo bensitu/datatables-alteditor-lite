@@ -9,6 +9,7 @@ import type { AltEditorLiteLanguage } from './alt-editor-lite-language.js';
 import type { EditorValues } from './editor-values.js';
 
 interface UniqueFieldLookup {
+  readonly ignoresBlankText: boolean;
   readonly isEqual: (left: unknown, right: unknown) => boolean;
   readonly name: string;
   readonly pathSegments: readonly string[];
@@ -31,6 +32,9 @@ export class LocalUniquenessValidator<
       fieldConfigurations
         .filter((field) => field.unique === true)
         .map((field) => ({
+          ignoresBlankText:
+            (!('required' in field) || !field.required) &&
+            /^(text|email|password|textarea|date|time|datetime-local)$/u.test(field.type),
           isEqual: resolveFieldValueComparator(field),
           name: field.name,
           pathSegments: parseFieldPath(field.name),
@@ -47,7 +51,10 @@ export class LocalUniquenessValidator<
     const candidates: (readonly [UniqueFieldLookup, unknown])[] = [];
     for (const field of this.fields) {
       const value = lookupPathSegments(values, field.pathSegments).value;
-      if (value !== undefined) {
+      if (
+        value !== undefined &&
+        !(field.ignoresBlankText && typeof value === 'string' && value.trim() === '')
+      ) {
         candidates.push([field, value]);
       }
     }

@@ -45,8 +45,9 @@ delegates storage and refresh work to consumer callbacks and is exported from
 `datatables-alteditor-lite/standalone`.
 
 The `/datatables` facade additionally accepts `refreshTimeout`, a finite positive
-number of milliseconds to wait for an Ajax reload callback or a commit draw. It defaults to
-`30_000`. This integration setting is not part of the neutral or standalone
+number of milliseconds to wait for an Ajax reload callback or a commit draw.
+It defaults to `30_000` and accepts up to `2_147_483_647` milliseconds.
+This integration setting is not part of the neutral or standalone
 option types.
 
 ## Options
