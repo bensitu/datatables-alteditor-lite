@@ -133,7 +133,7 @@ export class DrawOwnership<TRow extends object> {
   public async runWhile(
     reason: DrawOwnershipReason,
     signal: AbortSignal,
-    action: () => Promise<void>,
+    action: (signal: AbortSignal) => Promise<void>,
   ): Promise<void> {
     this.assertActive();
     const token = this.acquire(reason);
@@ -142,10 +142,10 @@ export class DrawOwnership<TRow extends object> {
       this.lifecycleAbortController.signal,
     ]);
     try {
-      if (signal.aborted) {
+      if (mergedSignal.signal.aborted) {
         return;
       }
-      await settleWithAbort(action(), mergedSignal.signal);
+      await settleWithAbort(action(mergedSignal.signal), mergedSignal.signal);
     } catch (error: unknown) {
       if (!mergedSignal.signal.aborted) {
         throw error;

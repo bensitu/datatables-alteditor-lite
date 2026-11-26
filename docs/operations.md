@@ -211,8 +211,9 @@ const editor = new AltEditorLite(table, {
 ```
 
 This bounds the built-in DataTables Ajax reload wait and the draw event awaited
-after Create, Edit, or Remove application. Reported failures from the built-in
-Ajax transport end the wait immediately. A missing commit draw reports
+after Create, Edit, or Remove application. The built-in Ajax transport waits
+for the response's draw. A reported transport failure or Host destruction ends
+the wait immediately. A missing commit draw reports
 `DRAW_TIMEOUT`, releases draw ownership, and is not retryable: persistence or row
 application may already have completed. Refresh from authoritative records before
 continuing. It does not set a deadline for `operations.refresh` or any other

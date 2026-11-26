@@ -194,14 +194,19 @@ describe('DataTablesHost', () => {
     });
     const host = new DataTablesHost(api, 1_250);
     let responseStatus = 503;
+    const requestReceived = Promise.withResolvers<() => void>();
     const server = createServer((_request, response) => {
-      response.writeHead(responseStatus, {
-        'access-control-allow-origin': '*',
-        'content-type': 'application/json',
-      });
-      response.end(
-        JSON.stringify({ data: [{ id: 'row-a', name: 'Recovered', rank: 1 }] }),
-      );
+      const respond = (): void => {
+        response.writeHead(responseStatus, {
+          'access-control-allow-origin': '*',
+          'content-type': 'application/json',
+        });
+        response.end(
+          JSON.stringify({ data: [{ id: 'row-a', name: 'Recovered', rank: 1 }] }),
+        );
+      };
+      if (responseStatus === 503) requestReceived.resolve(respond);
+      else respond();
     });
     try {
       await new Promise<void>((resolve, reject) => {
@@ -213,9 +218,12 @@ describe('DataTablesHost', () => {
         throw new Error('Missing HTTP port.');
       api.ajax.url(`http://127.0.0.1:${String(address.port)}/records`);
       const { signal } = new AbortController();
-      await expect(host.refresh(signal)).rejects.toThrow(
-        'DataTables Ajax refresh failed.',
-      );
+      const refresh = host.refresh(signal);
+      const failure = expect(refresh).rejects.toThrow('DataTables Ajax refresh failed.');
+      const respond = await requestReceived.promise;
+      api.draw(false);
+      respond();
+      await failure;
       expect(onAjaxError).toHaveBeenCalledOnce();
 
       responseStatus = 200;
@@ -224,6 +232,25 @@ describe('DataTablesHost', () => {
     } finally {
       host.destroy();
       server.close();
+    }
+  });
+
+  it('cleans up an outstanding Ajax refresh when the host is destroyed', async () => {
+    const { api } = createTestTable('host-destroy-refresh');
+    const host = new DataTablesHost(api);
+    vi.spyOn(api, 'init').mockReturnValue({ ajax: '/records' });
+    vi.spyOn(api.ajax, 'reload').mockReturnValue(api);
+    vi.useFakeTimers();
+    try {
+      const { signal } = new AbortController();
+      const refresh = host.refresh(signal);
+      expect(vi.getTimerCount()).toBe(1);
+      host.destroy();
+      await refresh;
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      host.destroy();
+      vi.useRealTimers();
     }
   });
 

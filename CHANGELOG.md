@@ -27,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   validation errors for concealed fields in the summary.
 - DataTables reports built-in Ajax reload failures as soon as the request
   fails. Rejected error observers are logged while the original error is reported.
+- Built-in Ajax refresh waits for the response's draw. Destroying the
+  DataTables host releases pending refresh listeners and timers.
 - External language resources reject relative network paths, and file fields
   read selected files one at a time.
 - Inline editing preserves unchanged unique values on the edited record and

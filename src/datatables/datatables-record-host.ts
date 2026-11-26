@@ -261,9 +261,9 @@ export class DataTablesRecordHost<TRow extends object>
 
   /** Refreshes DataTables while marking any resulting redraw as editor-owned. */
   public async refresh(signal: AbortSignal, action?: () => Promise<void>): Promise<void> {
-    await this.#drawOwnership.runWhile('refresh', signal, async () => {
+    await this.#drawOwnership.runWhile('refresh', signal, async (refreshSignal) => {
       if (action === undefined) {
-        await refreshDataTable(this.table, signal, this.refreshTimeout);
+        await refreshDataTable(this.table, refreshSignal, this.refreshTimeout);
       } else {
         await action();
       }
