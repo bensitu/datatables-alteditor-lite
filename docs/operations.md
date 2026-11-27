@@ -219,6 +219,11 @@ application may already have completed. Refresh from authoritative records befor
 continuing. It does not set a deadline for `operations.refresh` or any other
 consumer callback.
 
+Use HTTP 200 with a JSON response containing an empty data array when the Ajax
+data source has no records. Server-side processing also requires its usual draw
+and record counts. The native DataTables 3.1.6 Ajax transport can report a JSON
+parsing error for an HTTP 204 response with no body.
+
 ## Errors and retry
 
 Backend or domain validation should use the existing operation error path. It
