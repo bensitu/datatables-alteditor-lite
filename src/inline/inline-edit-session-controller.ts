@@ -618,8 +618,12 @@ export class InlineEditSessionController<
     );
   }
 
-  private readonly handleExternalDraw = (): void => {
-    if (this.arguments_.host.ownsPresentationChange() || !this.isEditing()) {
+  private readonly handleExternalDraw = (event: Event): void => {
+    if (
+      event.target !== this.arguments_.tableElement ||
+      this.arguments_.host.ownsPresentationChange() ||
+      !this.isEditing()
+    ) {
       return;
     }
     this.activationAbortController?.abort();

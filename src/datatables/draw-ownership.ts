@@ -56,6 +56,7 @@ export class DrawOwnership<TRow extends object> {
       this.release(token);
       return false;
     }
+    const tableElement = this.table.table().node();
     let didInvokeDraw = false;
     await new Promise<void>((resolve, reject) => {
       let isSettled = false;
@@ -82,7 +83,10 @@ export class DrawOwnership<TRow extends object> {
       const handleAbort = (): void => {
         finish();
       };
-      const handleDraw = (): void => {
+      const handleDraw = (event: Event): void => {
+        if (event.target !== tableElement) {
+          return;
+        }
         if (isInvokingDraw) {
           didDraw = true;
           return;
@@ -101,7 +105,7 @@ export class DrawOwnership<TRow extends object> {
       }, this.timeoutMs);
       this.pendingDraws.add(finish);
       signal.addEventListener('abort', handleAbort, { once: true });
-      this.table.one('draw.altEditorLiteOwnedDraw', handleDraw);
+      this.table.on('draw.altEditorLiteOwnedDraw', handleDraw);
       if (signal.aborted) {
         finish();
         return;

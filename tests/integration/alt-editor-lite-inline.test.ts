@@ -1996,6 +1996,8 @@ describe('AltEditorLite inline interaction and redraw behavior', () => {
     });
     const closeListener = vi.fn();
     tableElement.addEventListener('alteditor-lite:close', closeListener);
+    const nested = createTestTable('nested-inline-table');
+    api.row('#row-a').child(nested.api.table().container()).show();
 
     await editor.openInlineEdit('#row-a', 0);
     const editedCell = api.cell('#row-a', 0).node();
@@ -2004,6 +2006,9 @@ describe('AltEditorLite inline interaction and redraw behavior', () => {
     await vi.waitFor(() => {
       expect(editor.getInlineState().status).toBe('submitting');
     });
+    nested.api.draw(false);
+    expect(operationSignal?.aborted).toBe(false);
+    expect(editor.getInlineState().status).toBe('submitting');
     api.draw(false);
     expect(operationSignal?.aborted).toBe(true);
     expect(editor.getInlineState()).toEqual({ status: 'idle' });

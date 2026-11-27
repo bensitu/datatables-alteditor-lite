@@ -26,6 +26,11 @@ version.
 
 ### DataTables compatibility
 
+Match extension releases to their DataTables core dependency. Buttons and Select
+4.1 and the 3.1 releases of KeyTable and ColReorder require DataTables 3.1.
+Use DataTables 3.1 and matching extensions when importing the DataTables entry in
+a windowless Node.js environment. Creating an editor requires a browser DOM.
+
 The lockfile resolves the following development versions. The main demo pins the
 same versions for the extensions it loads from the CDN; other extensions are
 exercised by npm-based integration tests.

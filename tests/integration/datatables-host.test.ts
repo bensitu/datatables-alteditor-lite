@@ -94,6 +94,8 @@ describe('DataTablesHost', () => {
   });
   it('releases draw ownership when a committed redraw never completes', async () => {
     const { api } = createTestTable('host-draw-timeout');
+    const nested = createTestTable('nested-draw-timeout');
+    api.row('#row-a').child(nested.api.table().container()).show();
     const host = new DataTablesHost(api, 1250);
     const draw = vi.spyOn(api, 'draw').mockReturnValue(api);
     vi.useFakeTimers();
@@ -111,6 +113,7 @@ describe('DataTablesHost', () => {
         retryable: false,
         code: 'DRAW_TIMEOUT',
       });
+      nested.api.draw(false);
       await vi.advanceTimersByTimeAsync(1250);
       await rejection;
       expect(vi.getTimerCount()).toBe(0);

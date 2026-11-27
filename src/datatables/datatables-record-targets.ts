@@ -145,8 +145,8 @@ export class DataTablesRecordTargets<TRow extends object> {
     return this.#recordCaptures.has(target as DataTablesRecordTarget);
   }
 
-  readonly #pruneRecordTargets = (): void => {
-    if (this.#targetsByRowId.size === 0) return;
+  readonly #pruneRecordTargets = (event: Event): void => {
+    if (event.target !== this.#eventTarget || this.#targetsByRowId.size === 0) return;
     const counts = new Map<string, number>();
     for (const rowId of this.#table.rows().ids().toArray() as unknown[]) {
       if (typeof rowId === 'string' && this.#targetsByRowId.has(rowId)) {

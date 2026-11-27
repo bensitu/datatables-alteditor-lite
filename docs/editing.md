@@ -424,10 +424,11 @@ the existing theme variables, and forced-colors-safe focus indicators.
 
 ## Redraw, cancellation, and destroy
 
-An unrelated draw, column visibility change, Scroller recycle, or column reorder
-cancels an active inline session with close reason `redraw`. Validation and
-persistence are aborted, late results are ignored, and detached content is not
-restored.
+A draw, column visibility change, Scroller recycle, or column reorder in the
+edited table cancels an active inline session with close reason `redraw`.
+Redraws in nested tables leave the session active. On cancellation, validation
+and persistence are aborted, late results are ignored, and detached content is
+not restored.
 
 This includes Ajax reloads and row replacement, even when a unique `rowId`
 still identifies the record. Reopen the cell to edit its current presentation.

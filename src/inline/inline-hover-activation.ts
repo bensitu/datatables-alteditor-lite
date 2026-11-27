@@ -210,6 +210,9 @@ export class InlineHoverActivation<
       this.pendingTouchCell = undefined;
       this.trigger.hide();
     };
+    const handleTableStructuralChange = (event: Event): void => {
+      if (event.target === context.tableElement) handleStructuralChange();
+    };
     const detach = (): void => {
       if (!isAttached) {
         return;
@@ -244,7 +247,7 @@ export class InlineHoverActivation<
     document.addEventListener('pointerdown', handleDocumentPointerDown);
     context.table.on(
       'draw.altEditorLiteInlineHover column-reorder.altEditorLiteInlineHover responsive-resize.altEditorLiteInlineHover',
-      handleStructuralChange,
+      handleTableStructuralChange,
     );
     context.signal.addEventListener('abort', detach, { once: true });
     if (context.signal.aborted) {
