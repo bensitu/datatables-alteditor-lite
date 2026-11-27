@@ -56,9 +56,9 @@ export class DrawOwnership<TRow extends object> {
       this.release(token);
       return false;
     }
-    const tableElement = this.table.table().node();
     let didInvokeDraw = false;
     await new Promise<void>((resolve, reject) => {
+      const tableElement = this.table.table().node();
       let isSettled = false;
       let isInvokingDraw = false;
       let didDraw = false;

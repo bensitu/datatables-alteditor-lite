@@ -24,18 +24,17 @@ import { InlineOriginalContent } from '../../src/inline/inline-original-content.
 import type { Api } from 'datatables.net';
 
 function createDrawTableStub(): Api<Record<string, unknown>> {
-  let drawListener: (() => void) | undefined;
+  const element = document.createElement('table');
   const table = {
-    off: vi.fn((eventName: string, listener?: () => void) => {
-      if (listener === undefined || listener === drawListener) {
-        drawListener = undefined;
-      }
+    off: (eventName: string, listener: EventListener) => {
+      element.removeEventListener(eventName, listener);
       return table;
-    }),
-    one: vi.fn((_eventName: string, listener: () => void) => {
-      drawListener = listener;
+    },
+    on: (eventName: string, listener: EventListener) => {
+      element.addEventListener(eventName, listener);
       return table;
-    }),
+    },
+    table: () => ({ node: () => element }),
   };
   return table as unknown as Api<Record<string, unknown>>;
 }
@@ -260,19 +259,12 @@ describe('owned DataTables draws', () => {
   });
 
   it('rejects when a synchronous draw event is followed by an exception', async () => {
-    let drawListener: (() => void) | undefined;
-    const table = {
-      off: vi.fn(),
-      one: vi.fn((_eventName: string, listener: () => void) => {
-        drawListener = listener;
-        return table;
-      }),
-    } as unknown as Api<Record<string, unknown>>;
+    const table = createDrawTableStub();
     const owner = new DrawOwnership(table);
 
     await expect(
       owner.runWithDraw('dialog-edit-success', new AbortController().signal, () => {
-        drawListener?.();
+        table.table().node().dispatchEvent(new Event('draw.altEditorLiteOwnedDraw'));
         throw new Error('Draw listener failed.');
       }),
     ).rejects.toThrow('Draw listener failed.');
