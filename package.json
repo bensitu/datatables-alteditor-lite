@@ -43,6 +43,10 @@
       "types": "./dist/esm/index.d.ts",
       "import": "./dist/esm/index.js"
     },
+    "./ag-grid": {
+      "types": "./dist/esm/ag-grid.d.ts",
+      "import": "./dist/esm/ag-grid.js"
+    },
     "./datatables": {
       "types": "./dist/esm/datatables.d.ts",
       "import": "./dist/esm/datatables.js"
@@ -95,11 +99,15 @@
     "check": "npm run format:check && npm run lint && npm run lint:styles && npm run test:coverage && npm run build && npm run check:size && npm run verify:package && npm run test:types && npm run test:e2e"
   },
   "peerDependencies": {
+    "ag-grid-community": ">=36.3.0 <37",
     "datatables.net": ">=3.0.0 <4",
     "datatables.net-buttons": ">=4.0.0 <5",
     "datatables.net-select": ">=4.0.0 <5"
   },
   "peerDependenciesMeta": {
+    "ag-grid-community": {
+      "optional": true
+    },
     "datatables.net": {
       "optional": true
     },
@@ -120,6 +128,7 @@
     "@types/jquery": "4.0.1",
     "@types/node": "^22.20.5",
     "@vitest/coverage-v8": "5.1.2",
+    "ag-grid-community": "36.3.0",
     "datatables.net": "^3.0.4",
     "datatables.net-autofill": "^3.0.1",
     "datatables.net-buttons": "^4.0.3",

@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { defineConfig, type Plugin, type RolldownOptions } from 'rolldown';
 
 const peerPackageNames = [
+  'ag-grid-community',
   'datatables.net',
   'datatables.net-buttons',
   'datatables.net-select',
@@ -99,6 +100,7 @@ function createUmdLocaleConfig(localeName: string, isMinified: boolean): Rolldow
 
 const coreEsmConfig: RolldownOptions = {
   input: {
+    'ag-grid': 'src/ag-grid.ts',
     datatables: 'src/datatables.ts',
     index: 'src/index.ts',
     standalone: 'src/standalone.ts',

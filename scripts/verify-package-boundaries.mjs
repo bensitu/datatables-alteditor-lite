@@ -55,6 +55,28 @@ async function assertMissing(path, message) {
   throw new Error(message);
 }
 
+async function installConsumer(directory, packagePath, peers = []) {
+  await mkdir(directory, { recursive: true });
+  await writeFile(
+    join(directory, 'package.json'),
+    JSON.stringify({ private: true, type: 'module' }),
+  );
+  runNpm(
+    [
+      'install',
+      packagePath,
+      ...peers,
+      '--prefer-offline',
+      '--ignore-scripts',
+      '--omit=optional',
+      '--no-audit',
+      '--no-fund',
+      '--no-package-lock',
+    ],
+    directory,
+  );
+}
+
 async function bundleAndInspect(input, output) {
   await build({
     input,
@@ -63,6 +85,8 @@ async function bundleAndInspect(input, output) {
   });
   const source = await readFile(output, 'utf8');
   for (const forbiddenText of [
+    'ag-grid-community',
+    'AgGridHost',
     'datatables.net',
     'DataTablesHost',
     'registerAltEditorLite',
@@ -79,7 +103,6 @@ try {
   const packageDirectory = join(temporaryRoot, 'package');
   const consumerDirectory = join(temporaryRoot, 'consumer');
   await mkdir(packageDirectory);
-  await mkdir(consumerDirectory);
 
   const packOutput = execFileSync(
     process.execPath,
@@ -100,21 +123,10 @@ try {
   }
   const packagePath = join(packageDirectory, packageFilename);
 
-  await writeFile(
-    join(consumerDirectory, 'package.json'),
-    JSON.stringify({ name: 'neutral-consumer', private: true, type: 'module' }),
-  );
-  runNpm(
-    [
-      'install',
-      packagePath,
-      '--ignore-scripts',
-      '--omit=optional',
-      '--no-audit',
-      '--no-fund',
-      '--no-package-lock',
-    ],
-    consumerDirectory,
+  await installConsumer(consumerDirectory, packagePath);
+  await assertMissing(
+    join(consumerDirectory, 'node_modules', 'ag-grid-community'),
+    'The neutral consumer unexpectedly installed AG Grid.',
   );
   await assertMissing(
     join(consumerDirectory, 'node_modules', 'datatables.net'),
@@ -213,7 +225,58 @@ try {
     join(consumerDirectory, 'standalone-bundle.js'),
   );
 
-  console.log('Package boundaries verified without DataTables.');
+  const lock = JSON.parse(await readFile(join(projectRoot, 'package-lock.json'), 'utf8'));
+  for (const [entry, peer, excluded, source] of [
+    [
+      'ag-grid',
+      'ag-grid-community',
+      'datatables.net',
+      `
+      import type { GridApi } from 'ag-grid-community';
+      import { AgGridHost, AltEditorLite } from 'datatables-alteditor-lite/ag-grid';
+      declare const api: GridApi<{ id: string; name: string }>;
+      const host = new AgGridHost(api);
+      const name: string = (await host.read('employee-1')).name;
+      await new AltEditorLite(host, { fields: [] }).openEditDialog('employee-1');
+    `,
+    ],
+    [
+      'datatables',
+      'datatables.net',
+      'ag-grid-community',
+      `
+      import type { Api } from 'datatables.net';
+      import { AltEditorLite } from 'datatables-alteditor-lite/datatables';
+      declare const table: Api<{ id: string; name: string }>;
+      await new AltEditorLite(table, { fields: [] }).openEditDialog('#employee-1');
+    `,
+    ],
+  ]) {
+    const directory = join(temporaryRoot, entry);
+    await installConsumer(directory, packagePath, [
+      lock.packages[`node_modules/${peer}`].resolved,
+    ]);
+    await assertMissing(
+      join(directory, 'node_modules', excluded),
+      `The ${entry} consumer unexpectedly installed ${excluded}.`,
+    );
+    await writeFile(join(directory, 'consumer.ts'), source);
+    await writeFile(
+      join(directory, 'tsconfig.json'),
+      await readFile(join(consumerDirectory, 'tsconfig.json')),
+    );
+    run(
+      process.execPath,
+      [resolve(projectRoot, 'node_modules/typescript/bin/tsc')],
+      directory,
+    );
+    run(
+      process.execPath,
+      ['--input-type=module', '-e', `import 'datatables-alteditor-lite/${entry}'`],
+      directory,
+    );
+  }
+  console.log('Neutral, AG Grid, and DataTables package entries verified.');
 } finally {
   const resolvedTemporaryRoot = await realpath(temporaryRoot);
   const resolvedSystemTemporaryRoot = await realpath(tmpdir());

@@ -3,13 +3,14 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     environment: 'jsdom',
-    include: ['tests/unit/**/*.test.ts', 'tests/integration/**/*.test.ts'],
+    include: ['tests/unit/**/*.test.ts', 'tests/integration/**/*.test.{ts,mjs}'],
     fileParallelism: false,
     isolate: true,
     coverage: {
       provider: 'v8',
       include: [
         'src/*.ts',
+        'src/ag-grid/**/*.ts',
         'src/core/**/*.ts',
         'src/datatables/**/*.ts',
         'src/dialog/**/*.ts',

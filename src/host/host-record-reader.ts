@@ -5,6 +5,12 @@ import type { EditorHost } from './editor-host.js';
 
 const MAX_CONCURRENT_READS = 16;
 
+export const READ_RECORDS = Symbol('readRecords');
+
+interface CollectionReader<TRow extends object, TTarget> {
+  [READ_RECORDS]?(targets: readonly TTarget[]): readonly Readonly<TRow>[];
+}
+
 /** Reads one Host record with cancellation-aware settlement. */
 export async function readHostRecord<TRow extends object, TTarget>(
   host: EditorHost<TRow, TTarget>,
@@ -18,10 +24,16 @@ export async function readHostRecord<TRow extends object, TTarget>(
 
 /** Reads Host records with bounded concurrency while retaining target order. */
 export async function readHostRecords<TRow extends object, TTarget>(
-  host: EditorHost<TRow, TTarget>,
+  host: EditorHost<TRow, TTarget> & CollectionReader<TRow, TTarget>,
   targets: readonly TTarget[],
   signal: AbortSignal,
 ): Promise<readonly Readonly<TRow>[]> {
+  if (host[READ_RECORDS] !== undefined) {
+    signal.throwIfAborted();
+    const records = host[READ_RECORDS](targets);
+    signal.throwIfAborted();
+    return records;
+  }
   const rows = new Array<Readonly<TRow>>(targets.length);
   const readAbortController = new AbortController();
   const mergedSignal = mergeAbortSignals([signal, readAbortController.signal]);
