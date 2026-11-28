@@ -64,6 +64,24 @@ it('resolves every ID before updating and restores an incomplete grid transactio
   expect(host.read('row-b').name).toBe('Updated');
 });
 
+it('restores only the removals reported by an incomplete grid transaction', async () => {
+  const { api, host } = createFixture();
+  api.setGridOption('rowSelection', { mode: 'multiRow' });
+  api.getRowNode('row-a').setSelected(true);
+  const apply = api.applyTransaction.bind(api);
+  vi.spyOn(api, 'applyTransaction').mockImplementationOnce(({ remove }) => {
+    const result = apply({ remove: [remove[0]] });
+    apply({ remove: [remove[1]] });
+    return result;
+  });
+  await expect(host.applyRemove(['row-a', 'row-b'], context)).rejects.toMatchObject({
+    code: 'GRID_TRANSACTION',
+  });
+  expect(host.read('row-a').name).toBe('Alpha');
+  expect(host.getSelectedTargets()).toEqual(['row-a']);
+  expect(api.getRowNode('row-b')?.id).toBeUndefined();
+});
+
 it('rejects changed IDs and cancels an outstanding refresh when the grid is destroyed', async () => {
   const { api, host } = createFixture();
   await expect(

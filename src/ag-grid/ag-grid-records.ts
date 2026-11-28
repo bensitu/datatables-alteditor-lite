@@ -127,11 +127,11 @@ export class AgGridRecords<TRow extends object> {
       originals.map(({ row }) => row),
       ids,
       signal,
-      () => {
+      (appliedIds) => {
         for (const { id, row, index, isSelected } of originals.sort(
           (a, b) => a.index - b.index,
         )) {
-          if (this.api.getRowNode(id) !== undefined) continue;
+          if (!appliedIds.has(id) || this.api.getRowNode(id) !== undefined) continue;
           const result = this.api.applyTransaction({ add: [row], addIndex: index });
           if (isSelected) result?.add[0]?.setSelected(true);
         }
@@ -157,20 +157,23 @@ export class AgGridRecords<TRow extends object> {
     rows: TRow[],
     ids: readonly string[],
     signal: AbortSignal,
-    restore: () => void,
+    restore: (appliedIds: ReadonlySet<string>) => void,
   ): void {
     signal.throwIfAborted();
+    const appliedIds = new Set<string>();
     try {
-      const result = this.api.applyTransaction({ [kind]: rows });
-      const applied = new Set(result?.[kind].map((node) => node.id));
-      if (result?.[kind].length !== ids.length || !ids.every((id) => applied.has(id))) {
+      const nodes = this.api.applyTransaction({ [kind]: rows })?.[kind];
+      for (const node of nodes ?? []) {
+        if (node.id !== undefined) appliedIds.add(node.id);
+      }
+      if (nodes?.length !== ids.length || !ids.every((id) => appliedIds.has(id))) {
         throw new EditorTargetUnavailableError(
           'The grid applied an incomplete record transaction.',
         );
       }
     } catch (cause: unknown) {
       try {
-        restore();
+        restore(appliedIds);
       } catch (recoveryError: unknown) {
         throw new AltEditorLiteError({
           code: 'GRID_TRANSACTION',
