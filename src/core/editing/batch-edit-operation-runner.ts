@@ -98,7 +98,6 @@ export class BatchEditOperationRunner<TRow extends object, TFormValues extends o
       runArguments.targets,
     );
     let phase: EditorErrorHookContext['phase'] = 'validation';
-    const persistenceState = { hasCompleted: false };
 
     try {
       runArguments.presentation.startValidation();
@@ -175,9 +174,7 @@ export class BatchEditOperationRunner<TRow extends object, TFormValues extends o
 
       runArguments.presentation.setBusy(true);
       phase = 'persistence';
-      const rows = await this.updateRows(transaction, request, () => {
-        persistenceState.hasCompleted = true;
-      });
+      const rows = await this.updateRows(transaction, request);
       if (!this.operationOwner.owns(request)) {
         return { status: 'aborted' };
       }
@@ -210,6 +207,7 @@ export class BatchEditOperationRunner<TRow extends object, TFormValues extends o
           presentationError,
           {
             committed: true,
+            persistenceOutcome: request.persistenceOutcome,
             mode: 'dialog',
             operation: 'batchEdit',
             phase: 'afterSuccess',
@@ -240,6 +238,7 @@ export class BatchEditOperationRunner<TRow extends object, TFormValues extends o
               hookError,
               {
                 committed: true,
+                persistenceOutcome: request.persistenceOutcome,
                 mode: 'dialog',
                 operation: 'batchEdit',
                 phase,
@@ -259,7 +258,8 @@ export class BatchEditOperationRunner<TRow extends object, TFormValues extends o
       }
 
       const operationError = this.normalize(rawError, request);
-      const isCommitted = persistenceState.hasCompleted || phase === 'commit';
+      const isCommitted =
+        request.persistenceOutcome === 'acknowledged' || phase === 'commit';
       this.operationOwner.complete(request);
       runArguments.presentation.setBusy(false);
       if (operationError instanceof InternalOperationAbort) {
@@ -276,6 +276,7 @@ export class BatchEditOperationRunner<TRow extends object, TFormValues extends o
             presentationError,
             {
               committed: isCommitted,
+              persistenceOutcome: request.persistenceOutcome,
               mode: 'dialog',
               operation: 'batchEdit',
               phase,
@@ -290,6 +291,7 @@ export class BatchEditOperationRunner<TRow extends object, TFormValues extends o
         operationError,
         {
           committed: isCommitted,
+          persistenceOutcome: request.persistenceOutcome,
           mode: 'dialog',
           operation: 'batchEdit',
           phase,
@@ -328,19 +330,18 @@ export class BatchEditOperationRunner<TRow extends object, TFormValues extends o
   private async updateRows<TTarget>(
     transaction: Readonly<BatchEditTransaction<TRow, TFormValues, TTarget>>,
     request: OwnedOperationRequest<'batchEdit'>,
-    onPersistenceCompleted: () => void,
   ): Promise<readonly TRow[]> {
     if (this.operations?.updateMany !== undefined) {
       const validateRows = createBatchRowValidator(transaction.originals, this.rows);
-      const rowCandidates: unknown = await this.operationOwner.wait(
+      const rowCandidates: unknown = await this.operationOwner.persist(
         request,
-        this.operations.updateMany(
+        this.operations.updateMany.bind(
+          this.operations,
           transaction.changes,
           transaction.originals,
           this.operationOwner.context(request),
         ),
       );
-      onPersistenceCompleted();
       return validateRows(rowCandidates);
     }
 

@@ -328,6 +328,7 @@ export class InlineEditSessionController<
           error,
           {
             committed: false,
+            persistenceOutcome: 'not-attempted',
             mode: 'inline',
             operation: 'edit',
             phase: 'open',
@@ -385,6 +386,7 @@ export class InlineEditSessionController<
       }
       const errorContext = {
         committed: false,
+        persistenceOutcome: 'not-attempted',
         mode: 'inline',
         operation: 'edit',
         phase: 'validation',
@@ -459,6 +461,7 @@ export class InlineEditSessionController<
             error,
             {
               committed: false,
+              persistenceOutcome: 'not-attempted',
               mode: 'inline',
               operation: 'edit',
               phase: 'close',

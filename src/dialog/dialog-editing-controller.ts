@@ -230,6 +230,7 @@ export class DialogEditingController<
           (form) => ({ action: 'create', form }),
           {
             committed: false,
+            persistenceOutcome: 'not-attempted',
             mode: 'dialog',
             operation: 'create',
             phase: 'open',
@@ -266,6 +267,7 @@ export class DialogEditingController<
         const operationTarget = this.#createEditOperationTarget(recordTarget);
         const errorContext: EditorErrorHookContext = {
           committed: false,
+          persistenceOutcome: 'not-attempted',
           mode: 'dialog',
           operation: 'edit',
           phase: 'open',
@@ -337,6 +339,7 @@ export class DialogEditingController<
         );
         const errorContext: EditorErrorHookContext = {
           committed: false,
+          persistenceOutcome: 'not-attempted',
           mode: 'dialog',
           operation: 'batchEdit',
           phase: 'open',
@@ -398,6 +401,7 @@ export class DialogEditingController<
       );
       const errorContext: EditorErrorHookContext = {
         committed: false,
+        persistenceOutcome: 'not-attempted',
         mode: 'dialog',
         operation: 'remove',
         phase: 'open',
@@ -678,6 +682,7 @@ export class DialogEditingController<
   ): Promise<void> {
     const errorContext: EditorErrorHookContext = {
       committed: false,
+      persistenceOutcome: 'not-attempted',
       mode: 'dialog',
       operation: 'batchEdit',
       phase: 'open',

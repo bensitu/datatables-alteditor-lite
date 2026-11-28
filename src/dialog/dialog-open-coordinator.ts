@@ -134,6 +134,7 @@ export class DialogOpenCoordinator<
     const context = Object.freeze({ ...details, mode: 'dialog' as const, signal });
     const errorContext: EditorErrorHookContext = {
       committed: false,
+      persistenceOutcome: 'not-attempted',
       mode: 'dialog',
       phase: 'open',
       ...(details.operation === 'edit'

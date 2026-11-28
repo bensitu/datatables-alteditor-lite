@@ -125,6 +125,7 @@ export class DialogCloseCoordinator<
         error,
         {
           committed: false,
+          persistenceOutcome: 'not-attempted',
           mode: 'dialog',
           phase: 'close',
           ...getDialogSessionOperation(session),

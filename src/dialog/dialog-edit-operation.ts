@@ -9,6 +9,7 @@ import type { AltEditorLiteError } from '../core/alt-editor-lite-error.js';
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type { AltEditorLiteOptions } from '../core/alt-editor-lite-options.js';
 import type { EditOperationRunner } from '../core/editing/edit-operation-runner.js';
+import type { OwnedOperationRequest } from '../core/editing/operation-owner.js';
 import type { EditorOperationTarget } from '../core/editor-operation.js';
 import type { ResolvedDialogEditingOptions } from '../core/resolve-editing-options.js';
 import type { AltEditorLite } from '../editor/alt-editor-lite.js';
@@ -73,7 +74,7 @@ export class DialogEditOperation<
     } = this.arguments_;
     let committedTarget = recordTarget;
     let committedRow: Readonly<TRow> | undefined;
-    let committedSignal: AbortSignal | undefined;
+    let committedRequest: OwnedOperationRequest | undefined;
 
     await editOperationRunner.run({
       ...(options.hooks?.afterSuccess === undefined
@@ -98,7 +99,7 @@ export class DialogEditOperation<
             },
           }),
       commit: async (row, request) => {
-        committedSignal = request.abortController.signal;
+        committedRequest = request;
         const nextTarget = await host.applyUpdate(recordTarget, row, {
           mode: 'dialog',
           operation: 'edit',
@@ -151,9 +152,9 @@ export class DialogEditOperation<
             if (
               !editing.closeOnSuccess &&
               committedRow !== undefined &&
-              committedSignal !== undefined
+              committedRequest !== undefined
             ) {
-              const signal = committedSignal;
+              const signal = committedRequest.abortController.signal;
               try {
                 const nextOriginal = await readHostRecord(host, committedTarget, signal);
                 await updateRetainedForm(nextOriginal);
@@ -182,6 +183,7 @@ export class DialogEditOperation<
                   operationError,
                   {
                     committed: true,
+                    persistenceOutcome: committedRequest.persistenceOutcome,
                     mode: 'dialog',
                     operation: 'edit',
                     phase: 'commit',
@@ -193,7 +195,7 @@ export class DialogEditOperation<
             }
             await presentation.completeSuccess();
           } finally {
-            if (committedSignal?.aborted !== true)
+            if (committedRequest?.abortController.signal.aborted !== true)
               this.arguments_.onPresentationComplete();
           }
         },

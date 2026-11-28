@@ -62,8 +62,8 @@ cleans up and returns to `ready`, then publishes `error` without a preceding
 `submit` occurs after validation, collection, and target validation but before the
 persistence callback. `success` occurs after canonical Host application; retained
 form preparation and final presentation cleanup can still be pending. `error`
-occurs after safe normalization; consult the error hook's `committed` flag before
-retrying because persistence or Host application may already have completed.
+includes the normalized error, `phase`, `committed`, and `persistenceOutcome`.
+An `unknown` outcome requires reconciliation with the service before a retry.
 `close` occurs after dialog cleanup, focus restoration, and target
 release.
 

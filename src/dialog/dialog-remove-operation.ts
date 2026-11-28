@@ -63,7 +63,6 @@ export class DialogRemoveOperation<
   ): Promise<void> {
     const request = this.arguments_.operationOwner.begin('remove', 'dialog');
     let phase: EditorErrorHookContext['phase'] = 'submit';
-    let hasPersistenceCompleted = false;
 
     try {
       presentation.startSubmission();
@@ -93,14 +92,14 @@ export class DialogRemoveOperation<
 
       phase = 'persistence';
       if (this.arguments_.options.operations?.remove !== undefined) {
-        await this.arguments_.operationOwner.wait(
+        await this.arguments_.operationOwner.persist(
           request,
-          this.arguments_.options.operations.remove(
+          this.arguments_.options.operations.remove.bind(
+            this.arguments_.options.operations,
             rows,
             this.arguments_.operationOwner.context(request),
           ),
         );
-        hasPersistenceCompleted = true;
       }
       if (!this.owns(request)) {
         return;
@@ -145,13 +144,16 @@ export class DialogRemoveOperation<
       } catch (rawError: unknown) {
         this.reportPresentationFailure(rawError, request, true, 'commit');
       }
-      await this.arguments_.errorReporter.runAfterSuccess({
-        mode: 'dialog',
-        operation: 'remove',
-        rows,
-      });
+      await this.arguments_.errorReporter.runAfterSuccess(
+        {
+          mode: 'dialog',
+          operation: 'remove',
+          rows,
+        },
+        request.persistenceOutcome,
+      );
     } catch (rawError: unknown) {
-      this.handleFailure(presentation, request, rawError, phase, hasPersistenceCompleted);
+      this.handleFailure(presentation, request, rawError, phase);
     }
   }
 
@@ -164,7 +166,6 @@ export class DialogRemoveOperation<
     request: OwnedOperationRequest<'remove'>,
     rawError: unknown,
     phase: EditorErrorHookContext['phase'],
-    hasPersistenceCompleted: boolean,
   ): void {
     if (!this.owns(request)) {
       return;
@@ -175,7 +176,8 @@ export class DialogRemoveOperation<
       request.abortController.signal,
       this.arguments_.language,
     );
-    const isCommitted = hasPersistenceCompleted || phase === 'commit';
+    const isCommitted =
+      request.persistenceOutcome === 'acknowledged' || phase === 'commit';
     this.arguments_.operationOwner.complete(request);
     if (operationError instanceof InternalOperationAbort) {
       presentation.restoreAfterAbort();
@@ -191,6 +193,7 @@ export class DialogRemoveOperation<
       operationError,
       {
         committed: isCommitted,
+        persistenceOutcome: request.persistenceOutcome,
         mode: 'dialog',
         operation: 'remove',
         phase,
@@ -217,6 +220,7 @@ export class DialogRemoveOperation<
       presentationError,
       {
         committed,
+        persistenceOutcome: request.persistenceOutcome,
         mode: 'dialog',
         operation: 'remove',
         phase,

@@ -7,6 +7,7 @@ import type {
   CreateOperationContext,
   EditOperationContext,
   OperationContext,
+  PersistenceOutcome,
   RefreshOperationContext,
   RemoveOperationContext,
 } from '../alt-editor-lite-options.js';
@@ -24,6 +25,7 @@ export interface OwnedOperationRequest<
   readonly mode: EditorOperationMode;
   readonly operation: TOperation;
   readonly sequence: number;
+  persistenceOutcome: PersistenceOutcome;
   readonly target?: Readonly<EditorOperationTarget>;
   readonly targets?: readonly Readonly<EditorOperationTarget>[];
 }
@@ -64,6 +66,7 @@ export class OperationOwner {
       abortController: new AbortController(),
       mode,
       operation,
+      persistenceOutcome: 'not-attempted',
       sequence: this.#sequence.next(),
       ...(Array.isArray(targetOrTargets)
         ? {
@@ -147,6 +150,18 @@ export class OperationOwner {
   /** Stops waiting when the owning request is cancelled or destroyed. */
   public wait<T>(request: OwnedOperationRequest, value: T | PromiseLike<T>): Promise<T> {
     return settleWithAbort(value, request.abortController.signal);
+  }
+
+  /** Tracks write acknowledgement independently of host application. */
+  public async persist<T>(
+    request: OwnedOperationRequest,
+    write: () => T | PromiseLike<T>,
+  ): Promise<T> {
+    request.abortController.signal.throwIfAborted();
+    request.persistenceOutcome = 'unknown';
+    const result = await this.wait(request, write());
+    request.persistenceOutcome = 'acknowledged';
+    return result;
   }
 
   /** Completes a request only when it still owns the operation. */

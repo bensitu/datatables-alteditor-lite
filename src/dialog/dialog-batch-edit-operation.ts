@@ -13,6 +13,7 @@ import { readHostRecords } from '../host/host-record-reader.js';
 import type { AltEditorLiteLanguage } from '../core/alt-editor-lite-language.js';
 import type { AltEditorLiteOptions } from '../core/alt-editor-lite-options.js';
 import type { BatchEditOperationRunner } from '../core/editing/batch-edit-operation-runner.js';
+import type { OwnedOperationRequest } from '../core/editing/operation-owner.js';
 import type { EditorOperationTarget } from '../core/editor-operation.js';
 import type { ResolvedDialogEditingOptions } from '../core/resolve-editing-options.js';
 import type { AltEditorLite } from '../editor/alt-editor-lite.js';
@@ -79,7 +80,7 @@ export class DialogBatchEditOperation<
       host,
       options,
     } = this.arguments_;
-    let committedSignal: AbortSignal | undefined;
+    let committedRequest: OwnedOperationRequest | undefined;
 
     await batchEditOperationRunner.run({
       ...(options.hooks?.afterSuccess === undefined
@@ -101,7 +102,7 @@ export class DialogBatchEditOperation<
             },
           }),
       commit: async (rows, request) => {
-        committedSignal = request.abortController.signal;
+        committedRequest = request;
         if (!hasHostBatchUpdateCapability<TRow, TTarget>(host)) {
           throw new EditorConfigurationError(
             'The configured Host cannot apply batch updates.',
@@ -154,8 +155,8 @@ export class DialogBatchEditOperation<
       presentation: {
         completeSuccess: async (result) => {
           try {
-            if (!editing.closeOnSuccess && committedSignal !== undefined) {
-              const signal = committedSignal;
+            if (!editing.closeOnSuccess && committedRequest !== undefined) {
+              const signal = committedRequest.abortController.signal;
               try {
                 const nextOriginals = await readHostRecords(host, recordTargets, signal);
                 updateOriginals(nextOriginals);
@@ -184,6 +185,7 @@ export class DialogBatchEditOperation<
                   operationError,
                   {
                     committed: true,
+                    persistenceOutcome: committedRequest.persistenceOutcome,
                     mode: 'dialog',
                     operation: 'batchEdit',
                     phase: 'commit',
@@ -195,7 +197,7 @@ export class DialogBatchEditOperation<
             }
             await presentation.completeSuccess(result.rows);
           } finally {
-            if (committedSignal?.aborted !== true)
+            if (committedRequest?.abortController.signal.aborted !== true)
               this.arguments_.onPresentationComplete();
           }
         },

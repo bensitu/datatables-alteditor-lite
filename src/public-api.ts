@@ -41,6 +41,7 @@ export type {
   EditorHooks,
   EditorOperations,
   OperationContext,
+  PersistenceOutcome,
   CreateOperationContext,
   EditOperationContext,
   RefreshOperationContext,

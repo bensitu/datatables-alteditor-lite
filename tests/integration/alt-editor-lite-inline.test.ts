@@ -939,7 +939,11 @@ describe('AltEditorLite programmatic inline editing', () => {
     expect(api.row('#row-a').data().name).toBe('Hook Alpha');
     expect(onError).toHaveBeenCalledWith(
       expect.objectContaining({ code: 'UNKNOWN' }),
-      expect.objectContaining({ committed: true, phase: 'afterSuccess' }),
+      expect.objectContaining({
+        committed: true,
+        phase: 'afterSuccess',
+        persistenceOutcome: 'not-attempted',
+      }),
     );
     expect(errorEvent).not.toHaveBeenCalled();
   });

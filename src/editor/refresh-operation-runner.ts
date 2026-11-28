@@ -152,6 +152,7 @@ export class RefreshOperationRunner<TRow extends object, TFormValues extends obj
           operationError,
           {
             committed: false,
+            persistenceOutcome: 'not-attempted',
             mode: 'api',
             operation: 'refresh',
             phase: 'persistence',
@@ -181,10 +182,13 @@ export class RefreshOperationRunner<TRow extends object, TFormValues extends obj
     }
 
     if (didSucceed) {
-      await errorReporter.runAfterSuccess({
-        mode: 'api',
-        operation: 'refresh',
-      });
+      await errorReporter.runAfterSuccess(
+        {
+          mode: 'api',
+          operation: 'refresh',
+        },
+        request.persistenceOutcome,
+      );
     }
   }
 

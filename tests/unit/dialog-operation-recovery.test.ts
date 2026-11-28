@@ -114,13 +114,21 @@ describe('dialog operation recovery', () => {
     expect(report).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({ cause: presentationFailure }),
-      expect.objectContaining({ committed: false, operation: 'create' }),
+      expect.objectContaining({
+        committed: false,
+        operation: 'create',
+        persistenceOutcome: 'unknown',
+      }),
       false,
     );
     expect(report).toHaveBeenNthCalledWith(
       2,
       persistenceFailure,
-      expect.objectContaining({ committed: false, operation: 'create' }),
+      expect.objectContaining({
+        committed: false,
+        operation: 'create',
+        persistenceOutcome: 'unknown',
+      }),
       true,
     );
   });
@@ -161,13 +169,21 @@ describe('dialog operation recovery', () => {
     expect(report).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({ cause: presentationFailure }),
-      expect.objectContaining({ committed: false, operation: 'remove' }),
+      expect.objectContaining({
+        committed: false,
+        operation: 'remove',
+        persistenceOutcome: 'unknown',
+      }),
       false,
     );
     expect(report).toHaveBeenNthCalledWith(
       2,
       persistenceFailure,
-      expect.objectContaining({ committed: false, operation: 'remove' }),
+      expect.objectContaining({
+        committed: false,
+        operation: 'remove',
+        persistenceOutcome: 'unknown',
+      }),
       true,
     );
   });

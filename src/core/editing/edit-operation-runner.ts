@@ -89,7 +89,6 @@ export class EditOperationRunner<TRow extends object, TFormValues extends object
       runArguments.target,
     );
     let phase: EditorErrorHookContext['phase'] = 'validation';
-    const persistenceState = { hasCompleted: false };
 
     try {
       runArguments.presentation.startValidation();
@@ -150,9 +149,7 @@ export class EditOperationRunner<TRow extends object, TFormValues extends object
 
       runArguments.presentation.setBusy(true);
       phase = 'persistence';
-      const row = await this.updateRow(transaction, request, () => {
-        persistenceState.hasCompleted = true;
-      });
+      const row = await this.updateRow(transaction, request);
       if (!this.operationOwner.owns(request)) {
         return { status: 'aborted' };
       }
@@ -187,6 +184,7 @@ export class EditOperationRunner<TRow extends object, TFormValues extends object
           presentationError,
           {
             committed: true,
+            persistenceOutcome: request.persistenceOutcome,
             mode: runArguments.mode,
             operation: 'edit',
             phase: 'afterSuccess',
@@ -217,6 +215,7 @@ export class EditOperationRunner<TRow extends object, TFormValues extends object
               hookError,
               {
                 committed: true,
+                persistenceOutcome: request.persistenceOutcome,
                 mode: runArguments.mode,
                 operation: 'edit',
                 phase: 'afterSuccess',
@@ -236,7 +235,8 @@ export class EditOperationRunner<TRow extends object, TFormValues extends object
       }
 
       const operationError = this.normalize(rawError, request);
-      const isCommitted = persistenceState.hasCompleted || phase === 'commit';
+      const isCommitted =
+        request.persistenceOutcome === 'acknowledged' || phase === 'commit';
       this.operationOwner.complete(request);
       runArguments.presentation.setBusy(false);
       if (operationError instanceof InternalOperationAbort) {
@@ -253,6 +253,7 @@ export class EditOperationRunner<TRow extends object, TFormValues extends object
             presentationError,
             {
               committed: isCommitted,
+              persistenceOutcome: request.persistenceOutcome,
               mode: runArguments.mode,
               operation: 'edit',
               phase,
@@ -267,6 +268,7 @@ export class EditOperationRunner<TRow extends object, TFormValues extends object
         operationError,
         {
           committed: isCommitted,
+          persistenceOutcome: request.persistenceOutcome,
           mode: runArguments.mode,
           operation: 'edit',
           phase,
@@ -281,22 +283,21 @@ export class EditOperationRunner<TRow extends object, TFormValues extends object
   private async updateRow(
     transaction: Readonly<EditTransaction<TRow, TFormValues>>,
     request: OwnedOperationRequest<'edit'>,
-    onPersistenceCompleted: () => void,
   ): Promise<TRow> {
     const replacement = this.rows.replacement(
       transaction.original,
       this.operations?.update !== undefined,
     );
     if (this.operations?.update !== undefined) {
-      const rowCandidate: unknown = await this.operationOwner.wait(
+      const rowCandidate: unknown = await this.operationOwner.persist(
         request,
-        this.operations.update(
+        this.operations.update.bind(
+          this.operations,
           transaction.values,
           transaction.original,
           this.operationOwner.context(request),
         ),
       );
-      onPersistenceCompleted();
       return replacement(rowCandidate, 'operations.update');
     }
 

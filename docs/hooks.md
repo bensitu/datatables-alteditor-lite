@@ -113,11 +113,19 @@ result. It is reported to `onError` with `committed: true` and
 
 ## onError
 
-`onError(error, context)` receives normalized errors with operation, mode, phase,
-commit state, and optional target. `committed` becomes `true` when configured
-persistence completes or Host application begins; it does not imply that
-presentation completion or success observers ran. Applications should reconcile
-current state instead of repeating the complete persistence operation after
-such an error. Use the callback for application reporting. AltEditorLite
+`onError(error, context)` receives the operation, mode, phase, optional target,
+`committed`, and `persistenceOutcome`. The same context accompanies the error
+event when one is published.
+
+| `persistenceOutcome` | What the editor observed                                                                                                      |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `not-attempted`      | No configured write callback was invoked for this operation. Local mappings and standalone refresh operations use this value. |
+| `unknown`            | A write callback was invoked and threw or rejected. The service may have saved the change.                                    |
+| `acknowledged`       | The write callback returned successfully. Response validation, host application, or a subsequent observer can still fail.     |
+
+`committed` becomes `true` when configured persistence completes or host
+application begins. A service can complete a write while the client still
+reports `committed: false`. Read the authoritative record or request status
+before resubmitting an uncertain write. AltEditorLite
 continues without waiting for a returned promise and logs callback failures
 while preserving the original error.

@@ -75,7 +75,6 @@ export class DialogCreateOperation<
   ): Promise<void> {
     const request = this.arguments_.operationOwner.begin('create', 'dialog');
     let phase: EditorErrorHookContext['phase'] = 'validation';
-    let hasPersistenceCompleted = false;
 
     try {
       presentation.startSubmission();
@@ -132,9 +131,7 @@ export class DialogCreateOperation<
       }
 
       phase = 'persistence';
-      const row = await this.createRow(values, request, () => {
-        hasPersistenceCompleted = true;
-      });
+      const row = await this.createRow(values, request);
       if (!this.owns(request)) {
         return;
       }
@@ -179,21 +176,17 @@ export class DialogCreateOperation<
       } catch (rawError: unknown) {
         this.reportPresentationFailure(rawError, request, true, 'commit');
       }
-      await this.arguments_.errorReporter.runAfterSuccess({
-        mode: 'dialog',
-        operation: 'create',
-        row,
-        values,
-      });
-    } catch (rawError: unknown) {
-      this.handleFailure(
-        form,
-        presentation,
-        request,
-        rawError,
-        phase,
-        hasPersistenceCompleted,
+      await this.arguments_.errorReporter.runAfterSuccess(
+        {
+          mode: 'dialog',
+          operation: 'create',
+          row,
+          values,
+        },
+        request.persistenceOutcome,
       );
+    } catch (rawError: unknown) {
+      this.handleFailure(form, presentation, request, rawError, phase);
     }
   }
 
@@ -204,15 +197,17 @@ export class DialogCreateOperation<
   private async createRow(
     values: Readonly<EditorValues<TFormValues>>,
     request: OwnedOperationRequest<'create'>,
-    onPersistenceCompleted: () => void,
   ): Promise<TRow> {
     const { options, operationOwner } = this.arguments_;
     if (options.operations?.create !== undefined) {
-      const rowCandidate: unknown = await operationOwner.wait(
+      const rowCandidate: unknown = await operationOwner.persist(
         request,
-        options.operations.create(values, operationOwner.context(request)),
+        options.operations.create.bind(
+          options.operations,
+          values,
+          operationOwner.context(request),
+        ),
       );
-      onPersistenceCompleted();
       return this.arguments_.rows.check(rowCandidate, 'operations.create');
     }
 
@@ -237,7 +232,6 @@ export class DialogCreateOperation<
     request: OwnedOperationRequest<'create'>,
     rawError: unknown,
     phase: EditorErrorHookContext['phase'],
-    hasPersistenceCompleted: boolean,
   ): void {
     if (!this.owns(request)) {
       return;
@@ -248,7 +242,8 @@ export class DialogCreateOperation<
       request.abortController.signal,
       this.arguments_.language,
     );
-    const isCommitted = hasPersistenceCompleted || phase === 'commit';
+    const isCommitted =
+      request.persistenceOutcome === 'acknowledged' || phase === 'commit';
     this.arguments_.operationOwner.complete(request);
     if (operationError instanceof InternalOperationAbort) {
       presentation.restoreAfterAbort(form);
@@ -264,6 +259,7 @@ export class DialogCreateOperation<
       operationError,
       {
         committed: isCommitted,
+        persistenceOutcome: request.persistenceOutcome,
         mode: 'dialog',
         operation: 'create',
         phase,
@@ -290,6 +286,7 @@ export class DialogCreateOperation<
       presentationError,
       {
         committed,
+        persistenceOutcome: request.persistenceOutcome,
         mode: 'dialog',
         operation: 'create',
         phase,

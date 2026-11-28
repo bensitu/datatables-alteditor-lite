@@ -163,6 +163,7 @@ export class InlineValidationController<TRow extends object, TFormValues extends
         error,
         {
           committed: false,
+          persistenceOutcome: 'not-attempted',
           mode: 'inline',
           operation: 'edit',
           phase: 'validation',

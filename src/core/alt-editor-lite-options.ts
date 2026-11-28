@@ -143,6 +143,9 @@ export type AfterSuccessContext<TRow extends object, TFormValues extends object>
       readonly target?: Readonly<EditorOperationTarget>;
     };
 
+/** Outcome observed at the configured write callback boundary. */
+export type PersistenceOutcome = 'not-attempted' | 'unknown' | 'acknowledged';
+
 /** Context supplied to the non-recursive error callback. */
 interface EditorErrorHookContextBase {
   readonly phase:
@@ -155,6 +158,8 @@ interface EditorErrorHookContextBase {
     | 'close';
   /** Whether configured persistence completed or Host application began. */
   readonly committed: boolean;
+  /** Whether a write callback was invoked and whether it returned successfully. */
+  readonly persistenceOutcome: PersistenceOutcome;
 }
 
 /** Context supplied to the non-recursive error callback. */

@@ -115,6 +115,48 @@ describe('AltEditorLite Standalone Edit', () => {
     },
   );
 
+  it('reports an unknown write outcome and reloads the saved record without a second write', async () => {
+    let saved: StandaloneRecord = { id: 'record-a', name: 'Alpha' };
+    const update = vi.fn((values: Readonly<EditorValues<StandaloneValues>>) => {
+      saved = { ...saved, name: values.name ?? saved.name };
+      return Promise.reject(new Error('HTTP 503 after saving the record.'));
+    });
+    const onError = vi.fn();
+    const observed = vi.fn<(detail: unknown) => void>();
+    const fixture = createStandaloneTestFixture({
+      hooks: { onError },
+      operations: {
+        update,
+        refresh: () => {
+          fixture.records.set(saved.id, saved);
+        },
+      },
+    });
+    fixture.eventTarget.addEventListener('alteditor-lite:error', (event) => {
+      observed((event as CustomEvent<unknown>).detail);
+    });
+    await fixture.editor.openEditDialog('record-a');
+    replaceName('Saved');
+    submitDialog();
+    await vi.waitFor(() => {
+      expect(observed).toHaveBeenCalledOnce();
+    });
+    const context = {
+      committed: false,
+      persistenceOutcome: 'unknown',
+    };
+    expect(onError).toHaveBeenCalledWith(
+      expect.objectContaining({ retryable: false }),
+      expect.objectContaining(context),
+    );
+    expect(observed.mock.calls[0]?.[0]).toMatchObject(context);
+    expect(fixture.records.get(saved.id)?.name).toBe('Alpha');
+    await fixture.editor.closeDialog();
+    await fixture.editor.refresh();
+    expect(fixture.records.get(saved.id)?.name).toBe('Saved');
+    expect(update).toHaveBeenCalledOnce();
+  });
+
   it('reports a Host application failure after persistence completes', async () => {
     let shouldFail = true;
     const onError = vi.fn();
@@ -156,7 +198,11 @@ describe('AltEditorLite Standalone Edit', () => {
     expect(success).not.toHaveBeenCalled();
     expect(onError).toHaveBeenCalledWith(
       expect.objectContaining({ code: 'STATE_WRITE_FAILED' }),
-      expect.objectContaining({ committed: true, phase: 'commit' }),
+      expect.objectContaining({
+        committed: true,
+        phase: 'commit',
+        persistenceOutcome: 'acknowledged',
+      }),
     );
 
     submitDialog();

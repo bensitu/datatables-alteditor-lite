@@ -1,4 +1,5 @@
 import type { AltEditorLiteError } from '../core/alt-editor-lite-error.js';
+import type { EditorErrorHookContext } from '../core/alt-editor-lite-options.js';
 import type { EditorCloseReason } from '../core/editor-close-reason.js';
 import type {
   EditorOperationMode,
@@ -192,33 +193,14 @@ export type EditorSuccessEventDetail<TRow extends object, TFormValues extends ob
   | EditorRemoveSuccessEventDetail<TRow, TFormValues>
   | EditorRefreshSuccessEventDetail<TRow, TFormValues>;
 
-/** Detail published after an error is visible without a Host mutation. */
+/** Detail published for an operation error, including its observed write outcome. */
 export type EditorErrorEventDetail<
   TRow extends object,
   TFormValues extends object,
 > = EditorEventDetailBase<TRow, TFormValues> & {
   readonly type: 'error';
   readonly error: AltEditorLiteError;
-} & (
-    | { readonly operation: 'create'; readonly mode: 'dialog' }
-    | {
-        readonly operation: 'edit';
-        readonly mode: 'dialog' | 'inline';
-        readonly target: Readonly<EditorOperationTarget>;
-      }
-    | {
-        readonly operation: 'batchEdit';
-        readonly mode: 'dialog';
-        readonly targets: readonly Readonly<EditorOperationTarget>[];
-      }
-    | { readonly operation: 'remove'; readonly mode: 'dialog' }
-    | { readonly operation: 'refresh'; readonly mode: 'api' }
-    | {
-        readonly operation: 'refresh';
-        readonly mode: 'inline';
-        readonly target: Readonly<EditorOperationTarget>;
-      }
-  );
+} & EditorErrorHookContext;
 
 /** Detail published after dialog cleanup and focus restoration. */
 export type EditorCloseEventDetail<

@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Error hooks and DOM error events expose `persistenceOutcome` so applications
+  can reconcile writes when a service response is lost.
 - Added an optional `/ag-grid` ESM entry for AG Grid Community 36.3 and later
   36.x releases. The client-side host supports dialog Create, Edit, multi-record
   Edit, Remove and Refresh with stable string row IDs and optional row selection.

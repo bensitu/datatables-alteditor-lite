@@ -57,7 +57,10 @@ describe('edit operation runner', () => {
       expect(result.status).toBe('failed');
       expect(reportError).toHaveBeenCalledWith(
         expect.objectContaining({ cause: failure }),
-        expect.objectContaining({ committed: false }),
+        expect.objectContaining({
+          committed: false,
+          persistenceOutcome: 'not-attempted',
+        }),
         true,
       );
       expect(commit).not.toHaveBeenCalled();

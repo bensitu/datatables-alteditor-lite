@@ -314,6 +314,14 @@ updated. Mark such an error retryable only when repeating the complete
 persistence operation is safe. Otherwise, close the presentation and reconcile
 the Host with the authoritative data source.
 
+A timeout, lost connection, or HTTP 503 can occur after the service has saved
+the change. The error hook and event then carry `persistenceOutcome: 'unknown'`
+even when `committed` is `false`. Close the failed editor and fetch the
+authoritative record or operation status. A write still in progress can finish
+after a read. Before offering a retry, confirm the first outcome or use a
+server-enforced idempotency key shared by attempts for the same change.
+Versioned updates can use a service-enforced version precondition.
+
 If the editor cannot present an operation error, the original operation error
 is still reported. The presentation failure is reported separately without
 publishing a second error event.

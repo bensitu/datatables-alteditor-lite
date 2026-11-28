@@ -277,7 +277,11 @@ describe('batch edit operation runner', () => {
     const reportedError = runArguments.reportError.mock.calls[0]?.[0];
     expect(runArguments.reportError).toHaveBeenCalledWith(
       reportedError,
-      expect.objectContaining({ committed: true, phase: 'persistence' }),
+      expect.objectContaining({
+        committed: true,
+        phase: 'persistence',
+        persistenceOutcome: 'acknowledged',
+      }),
       true,
     );
   });
@@ -344,7 +348,11 @@ describe('batch edit operation runner', () => {
     const reportedError = runArguments.reportError.mock.calls[0]?.[0];
     expect(runArguments.reportError).toHaveBeenCalledWith(
       reportedError,
-      expect.objectContaining({ committed: true, phase: 'persistence' }),
+      expect.objectContaining({
+        committed: true,
+        phase: 'persistence',
+        persistenceOutcome: 'acknowledged',
+      }),
       true,
     );
   });

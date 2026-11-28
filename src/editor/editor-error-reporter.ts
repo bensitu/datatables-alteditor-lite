@@ -12,6 +12,7 @@ import type {
   AfterSuccessContext,
   EditorErrorHookContext,
   EditorHooks,
+  PersistenceOutcome,
 } from '../core/alt-editor-lite-options.js';
 import type { AltEditorLite } from './alt-editor-lite.js';
 
@@ -54,13 +55,14 @@ export class EditorErrorReporter<TRow extends object, TFormValues extends object
     dispatchEditorEvent<TRow, TFormValues, 'alteditor-lite:error'>(
       this.eventTarget,
       'alteditor-lite:error',
-      { editor: this.editor, error, type: 'error', ...this.operationContext(context) },
+      { editor: this.editor, error, type: 'error', ...context },
     );
   }
 
   /** Runs the optional success observer after the canonical commit. */
   public async runAfterSuccess(
     context: AfterSuccessContext<TRow, TFormValues>,
+    persistenceOutcome: PersistenceOutcome,
   ): Promise<void> {
     const hook = this.hooks?.afterSuccess;
     if (hook === undefined || this.isDestroyed()) {
@@ -78,16 +80,19 @@ export class EditorErrorReporter<TRow extends object, TFormValues extends object
       if (!(error instanceof InternalOperationAbort)) {
         this.report(
           error,
-          { committed: true, phase: 'afterSuccess', ...this.operationContext(context) },
+          {
+            committed: true,
+            persistenceOutcome,
+            phase: 'afterSuccess',
+            ...this.operationContext(context),
+          },
           false,
         );
       }
     }
   }
 
-  private operationContext(
-    context: AfterSuccessContext<TRow, TFormValues> | EditorErrorHookContext,
-  ) {
+  private operationContext(context: AfterSuccessContext<TRow, TFormValues>) {
     switch (context.operation) {
       case 'create':
       case 'remove': {
