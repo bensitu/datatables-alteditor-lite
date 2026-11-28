@@ -179,7 +179,7 @@ describe('DataTables server-side materialized rows', () => {
         for (const replacement of replacements) {
           replaceRow(rows, replacement);
         }
-        return replacements;
+        return replacements.reverse();
       },
     );
     const currentEditor = new AltEditorLite<TestRow, Values>(api, {
@@ -218,8 +218,8 @@ describe('DataTables server-side materialized rows', () => {
       'Shared server name',
       'Shared server name',
     ]);
-    expect(api.row('#row-a').data().name).toBe('Shared server name');
-    expect(api.row('#row-b').data().name).toBe('Shared server name');
+    expect(api.row(0).data()).toEqual(rows[0]);
+    expect(api.row(1).data()).toEqual(rows[1]);
   });
 
   it('removes a currently materialized row and reloads the current page', async () => {

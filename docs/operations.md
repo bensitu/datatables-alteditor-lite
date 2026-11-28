@@ -57,6 +57,33 @@ object; form values are never cast to the row type.
 When both Create implementations are absent, opening Create rejects with
 `EditorConfigurationError`.
 
+### Canonical row validation
+
+Configure `rowValidation` when records have a custom business identifier,
+nested required fields, or optional properties that may disappear on update.
+
+```ts
+rowValidation: {
+  getId: (row) => row.accountNumber,
+  validate: (row) =>
+    typeof row.accountNumber === 'string' &&
+    typeof row.profile?.name === 'string' &&
+    Number.isFinite(row.balance),
+},
+```
+
+The synchronous validator must return `true` for a complete record. It runs on
+Create and Edit results before host application. Without a validator, updates
+must retain all own top-level fields in the original snapshot. Create has no
+original snapshot, so applications that require a specific schema must supply it.
+
+Remote updates require a nonempty string or finite numeric ID. The editor uses
+`getId`, the configured host identifier (DataTables `rowId` or AG Grid
+`getRowId`), or the record's own `id` property. A custom business ID and an
+existing host ID must both remain stable. Standalone host targets can remain
+opaque. Local single-record mappings and declared-field updates can operate
+on records without IDs.
+
 ## Edit
 
 ```ts
@@ -141,9 +168,9 @@ operations: {
 ```
 
 `updateMany` receives the common changes, readonly original rows in target
-order, and a `batchEdit` / `dialog` context. It must return the same number of
-complete canonical rows in the same order. All results are checked before the
-Host mutates any record.
+order, and a `batchEdit` / `dialog` context. Each original ID must occur exactly
+once in the response. Results may arrive in any order. The editor matches them by
+ID and validates the entire batch before applying rows in target order.
 Return an independent row object for each distinct record. Do not reuse one
 mutable object for multiple results or mutate the supplied originals.
 

@@ -15,6 +15,14 @@ export function validateOperationConfiguration<
   if (options.validateForm !== undefined && typeof options.validateForm !== 'function') {
     throw new EditorConfigurationError('validateForm must be a function.');
   }
+  for (const name of ['getId', 'validate'] as const) {
+    if (
+      options.rowValidation?.[name] !== undefined &&
+      typeof options.rowValidation[name] !== 'function'
+    ) {
+      throw new EditorConfigurationError(`rowValidation.${name} must be a function.`);
+    }
+  }
   for (const name of ['create', 'update', 'updateMany', 'remove', 'refresh'] as const) {
     if (
       options.operations?.[name] !== undefined &&

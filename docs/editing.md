@@ -116,7 +116,7 @@ against known common values and explicit overrides; a preserved differing source
 does not run its resolver.
 
 Remote persistence uses `operations.updateMany(changes, originals, context)` and
-must return one complete canonical row per original in the same order. A
+must return one complete canonical row per original ID in any order. A
 configured `operations.update` is never called repeatedly. Without remote Update
 ownership, `clientSide.updateRow(original, changes)` or the safe declared-field
 merge builds each replacement. The Host applies the complete set only after all

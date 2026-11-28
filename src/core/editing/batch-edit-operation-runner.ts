@@ -3,7 +3,7 @@ import {
   EditorConfigurationError,
   EditorSelectionCountError,
 } from '../alt-editor-lite-error.js';
-import { assertCompleteRow, isPromiseLike } from '../complete-row-result.js';
+import { CanonicalRows, isPromiseLike } from '../complete-row-result.js';
 import {
   InternalOperationAbort,
   normalizeOperationError,
@@ -11,7 +11,7 @@ import {
 import { freezeEditorValues } from '../freeze-editor-values.js';
 import { mergeDeclaredFieldValues } from '../merge-declared-field-values.js';
 
-import { validateBatchRows } from './validate-batch-rows.js';
+import { createBatchRowValidator } from './validate-batch-rows.js';
 
 import type { MaybePromise } from '../../contracts/field-value.js';
 import type { AltEditorLiteLanguage } from '../alt-editor-lite-language.js';
@@ -84,6 +84,7 @@ export class BatchEditOperationRunner<TRow extends object, TFormValues extends o
       Readonly<EditorOperations<TRow, TFormValues>> | undefined,
     private readonly clientSide:
       Readonly<ClientSideOperations<TRow, TFormValues>> | undefined,
+    private readonly rows = new CanonicalRows<TRow>(),
   ) {}
 
   /** Validates, persists, and commits one common change set. */
@@ -330,6 +331,7 @@ export class BatchEditOperationRunner<TRow extends object, TFormValues extends o
     onPersistenceCompleted: () => void,
   ): Promise<readonly TRow[]> {
     if (this.operations?.updateMany !== undefined) {
+      const validateRows = createBatchRowValidator(transaction.originals, this.rows);
       const rowCandidates: unknown = await this.operationOwner.wait(
         request,
         this.operations.updateMany(
@@ -339,7 +341,7 @@ export class BatchEditOperationRunner<TRow extends object, TFormValues extends o
         ),
       );
       onPersistenceCompleted();
-      return validateBatchRows<TRow>(rowCandidates, transaction.originals);
+      return validateRows(rowCandidates);
     }
 
     if (this.operations?.update !== undefined) {
@@ -350,6 +352,7 @@ export class BatchEditOperationRunner<TRow extends object, TFormValues extends o
 
     return Object.freeze(
       transaction.originals.map((original) => {
+        const replacement = this.rows.replacement(original, false);
         const rowCandidate: unknown =
           this.clientSide?.updateRow === undefined
             ? mergeDeclaredFieldValues(
@@ -364,13 +367,12 @@ export class BatchEditOperationRunner<TRow extends object, TFormValues extends o
             'clientSide.updateRow must return synchronously.',
           );
         }
-        assertCompleteRow(
+        return replacement(
           rowCandidate,
           this.clientSide?.updateRow === undefined
             ? 'the declared-field batch update'
             : 'clientSide.updateRow',
         );
-        return rowCandidate as TRow;
       }),
     );
   }

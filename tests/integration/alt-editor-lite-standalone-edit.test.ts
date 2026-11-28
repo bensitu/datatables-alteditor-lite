@@ -94,6 +94,27 @@ describe('AltEditorLite Standalone Edit', () => {
     expect(lifecycle).toEqual(['persist', 'apply', 'success', 'afterSuccess']);
   });
 
+  it.each([{ name: 'Updated' }, { id: 'record-b', name: 'Updated' }])(
+    'rejects an incomplete or mismatched replacement %o before applying it',
+    async (replacement) => {
+      const onError = vi.fn();
+      const success = vi.fn();
+      const fixture = createStandaloneTestFixture({
+        hooks: { onError },
+        operations: { update: () => replacement as StandaloneRecord },
+      });
+      fixture.eventTarget.addEventListener('alteditor-lite:success', success);
+      await fixture.editor.openEditDialog('record-a');
+      replaceName('Updated');
+      submitDialog();
+      await vi.waitFor(() => {
+        expect(onError).toHaveBeenCalledOnce();
+      });
+      expect(fixture.records.get('record-a')).toEqual({ id: 'record-a', name: 'Alpha' });
+      expect(success).not.toHaveBeenCalled();
+    },
+  );
+
   it('reports a Host application failure after persistence completes', async () => {
     let shouldFail = true;
     const onError = vi.fn();

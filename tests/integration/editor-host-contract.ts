@@ -1,4 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+import { AltEditorLite } from '../../src/editor/alt-editor-lite.js';
+
+import { installDialogElementSupport } from './standalone-test-fixture.js';
 
 import type { EditorHost, HostApplyContext } from '../../src/host/editor-host.js';
 
@@ -31,6 +35,35 @@ export function describeEditorHostContract<TTarget>(
   createFixture: () => HostContractFixture<TTarget>,
 ): void {
   describe(`${name} record contract`, () => {
+    it('preserves the record when persistence omits an unedited field', async () => {
+      const { host, eventTarget, initialTarget } = createFixture();
+      const restore = installDialogElementSupport();
+      const onError = vi.fn();
+      const success = vi.fn();
+      const editor = new AltEditorLite(host, {
+        fields: [{ name: 'name', type: 'text', label: 'Name' }],
+        operations: {
+          update: () => ({ id: 'row-a', name: 'Updated' }) as HostContractRecord,
+        },
+        hooks: { onError },
+      });
+      try {
+        eventTarget.addEventListener('alteditor-lite:success', success);
+        const original = await host.read(initialTarget);
+        await editor.openEditDialog(initialTarget);
+        editor.getField('name')?.setValue('Updated');
+        document.querySelector<HTMLFormElement>('.alteditor-lite-form')?.requestSubmit();
+        await vi.waitFor(() => {
+          expect(onError).toHaveBeenCalledOnce();
+        });
+        expect(await host.read(initialTarget)).toEqual(original);
+        expect(success).not.toHaveBeenCalled();
+      } finally {
+        editor.destroy();
+        restore();
+      }
+    });
+
     it('reads and applies canonical record changes through opaque targets', async () => {
       const fixture = createFixture();
       const { host } = fixture;

@@ -117,7 +117,9 @@ const coreEsmConfig: RolldownOptions = {
 function createCoreUmdConfig(isMinified: boolean): RolldownOptions {
   return {
     input: 'src/browser-global.ts',
+    external: ['datatables.net'],
     output: {
+      globals: { 'datatables.net': 'DataTable' },
       file: `dist/umd/alt-editor-lite${isMinified ? '.min' : ''}.js`,
       format: 'umd',
       minify: isMinified,

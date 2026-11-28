@@ -1,4 +1,5 @@
 import { EditorConfigurationError } from '../core/alt-editor-lite-error.js';
+import { CanonicalRows } from '../core/complete-row-result.js';
 import { BatchEditOperationRunner } from '../core/editing/batch-edit-operation-runner.js';
 import { EditOperationRunner } from '../core/editing/edit-operation-runner.js';
 import { InteractionCoordinator } from '../core/editing/interaction-coordinator.js';
@@ -91,17 +92,20 @@ export class AltEditorLite<
       this.notifyIntegration();
     });
 
+    const rows = new CanonicalRows(options.rowValidation, host.getRowId?.bind(host));
     const editOperationRunner = new EditOperationRunner<TRow, TFormValues>(
       this.operationOwner,
       this.language,
       options.operations,
       options.clientSide,
+      rows,
     );
     const batchEditOperationRunner = new BatchEditOperationRunner<TRow, TFormValues>(
       this.operationOwner,
       this.language,
       options.operations,
       options.clientSide,
+      rows,
     );
 
     storeEditorInstance(host.ownershipKey, this);
@@ -148,6 +152,7 @@ export class AltEditorLite<
 
       dialogController = new DialogEditingController({
         batchEditOperationRunner,
+        rows,
         capabilities: this.capabilities,
         editing: editing.dialog,
         editor: this,

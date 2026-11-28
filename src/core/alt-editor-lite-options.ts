@@ -229,7 +229,7 @@ export interface EditorOperations<TRow extends object, TFormValues extends objec
     context: EditOperationContext,
   ): TRow | Promise<TRow>;
   /**
-   * Persists one common change set and returns position-matched canonical rows.
+   * Persists one common change set and returns one complete row per original ID.
    */
   updateMany?(
     changes: Readonly<BatchChanges<TFormValues>>,
@@ -272,15 +272,23 @@ export interface ClientSideOperations<TRow extends object, TFormValues extends o
   updateRow?(original: Readonly<TRow>, values: Readonly<EditorValues<TFormValues>>): TRow;
 }
 
-/**
- * Configuration for an AltEditorLite instance.
- */
+/** Application-defined identity and completeness rules for canonical rows. */
+export interface RowValidation<TRow extends object> {
+  /** Returns a stable, nonempty string or finite numeric business identifier. */
+  readonly getId?: (row: Readonly<TRow>) => string | number;
+  /** Checks the complete record, including required fields and their values. */
+  readonly validate?: (row: Readonly<TRow>) => boolean;
+}
+
+/** Configuration for an AltEditorLite instance. */
 export interface AltEditorLiteOptions<
   TRow extends object,
   TFormValues extends object = DeepPartial<TRow>,
 > {
   /** Ordered field definitions used by Create and Edit forms. */
   readonly fields: readonly FieldConfig<TFormValues>[];
+  /** Identity and validation rules applied before replacing records. */
+  readonly rowValidation?: RowValidation<TRow>;
   /** Declarative field state derived from dialog form values. */
   readonly dependencies?: FormDependencies<TFormValues>;
   /** Optional cross-field validator shared by dialog and inline editing. */

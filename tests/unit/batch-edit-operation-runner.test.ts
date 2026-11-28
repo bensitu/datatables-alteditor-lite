@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { AltEditorLiteError } from '../../src/core/alt-editor-lite-error.js';
 import { ENGLISH_LANGUAGE } from '../../src/core/alt-editor-lite-language.js';
+import { CanonicalRows } from '../../src/core/complete-row-result.js';
 import { BatchEditOperationRunner } from '../../src/core/editing/batch-edit-operation-runner.js';
 import { OperationOwner } from '../../src/core/editing/operation-owner.js';
 
@@ -158,7 +159,7 @@ describe('batch edit operation runner', () => {
       expect(rows).toEqual(originals);
       expect(context).toMatchObject({ mode: 'dialog', operation: 'batchEdit' });
       expect(context.targets).toEqual(operationTargets);
-      return canonicalRows;
+      return [...canonicalRows].reverse();
     });
     const runner = new BatchEditOperationRunner<TestRow, TestValues>(
       new OperationOwner(),
@@ -305,6 +306,28 @@ describe('batch edit operation runner', () => {
     expect(presentation.restoreAfterOperationFailure).toHaveBeenCalledOnce();
   });
 
+  it('matches application keys and validates the complete response before applying it', async () => {
+    const records = originals.map((row) => ({ ...row, id: 'shared' }));
+    const updateMany = vi.fn(() => [...records].reverse());
+    const runner = new BatchEditOperationRunner<TestRow, TestValues>(
+      new OperationOwner(),
+      ENGLISH_LANGUAGE,
+      { updateMany },
+      undefined,
+      new CanonicalRows({
+        getId: (row) => row.profile.city,
+        validate: (row) => row.name.length > 0,
+      }),
+    );
+    const args = { ...createRunArguments(createPresentation()), originals: records };
+    updateMany.mockReturnValueOnce(records.map((row) => ({ ...row, name: '' })));
+    expect((await runner.run(args)).status).toBe('failed');
+    expect(args.commit).not.toHaveBeenCalled();
+    expect(args.dispatchSuccess).not.toHaveBeenCalled();
+    expect((await runner.run(args)).status).toBe('success');
+    expect(args.commit).toHaveBeenCalledWith(records, expect.any(Object));
+  });
+
   it('rejects a canonical row count mismatch before commit', async () => {
     const runner = new BatchEditOperationRunner<TestRow, TestValues>(
       new OperationOwner(),
@@ -344,8 +367,13 @@ describe('batch edit operation runner', () => {
     expect(runArguments.commit).not.toHaveBeenCalled();
   });
 
-  it('rejects an invalid canonical row before commit', async () => {
-    const updateMany = vi.fn(() => [originals[0], null] as unknown as TestRow[]);
+  it.each([
+    [null],
+    [originals[0]],
+    [{ ...originals[1], id: 'unexpected' }],
+    [{ id: 'b', name: 'Updated' }],
+  ])('rejects an invalid batch replacement %o before commit', async (replacement) => {
+    const updateMany = vi.fn(() => [originals[0], replacement] as unknown as TestRow[]);
     const runner = new BatchEditOperationRunner<TestRow, TestValues>(
       new OperationOwner(),
       ENGLISH_LANGUAGE,
@@ -358,6 +386,7 @@ describe('batch edit operation runner', () => {
 
     expect(result.status).toBe('failed');
     expect(runArguments.commit).not.toHaveBeenCalled();
+    expect(runArguments.dispatchSuccess).not.toHaveBeenCalled();
   });
 
   it('does not fan out a single-record remote update operation', async () => {

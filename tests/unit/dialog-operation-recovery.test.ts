@@ -2,6 +2,7 @@ import { describe, expect, it, onTestFinished, vi } from 'vitest';
 
 import { AltEditorLiteError } from '../../src/core/alt-editor-lite-error.js';
 import { ENGLISH_LANGUAGE } from '../../src/core/alt-editor-lite-language.js';
+import { CanonicalRows } from '../../src/core/complete-row-result.js';
 import { OperationOwner } from '../../src/core/editing/operation-owner.js';
 import { DialogCreateOperation } from '../../src/dialog/dialog-create-operation.js';
 import { DialogRemoveOperation } from '../../src/dialog/dialog-remove-operation.js';
@@ -85,6 +86,7 @@ describe('dialog operation recovery', () => {
     const { errorReporter, report } = createErrorReporter();
     const host = createHost();
     const operation = new DialogCreateOperation<TestRow, TestValues, string>({
+      rows: new CanonicalRows(),
       editor: createEditor(host),
       errorReporter,
       eventTarget: new EventTarget(),
@@ -175,6 +177,7 @@ describe('dialog operation recovery', () => {
     const onPresentationComplete = vi.fn();
     const host = createHost();
     const operation = new DialogCreateOperation<TestRow, TestValues, string>({
+      rows: new CanonicalRows(),
       editor: createEditor(host),
       errorReporter,
       eventTarget: new EventTarget(),

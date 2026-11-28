@@ -2,7 +2,7 @@ import {
   type AltEditorLiteError,
   EditorConfigurationError,
 } from '../alt-editor-lite-error.js';
-import { assertCompleteRow, isPromiseLike } from '../complete-row-result.js';
+import { CanonicalRows, isPromiseLike } from '../complete-row-result.js';
 import {
   InternalOperationAbort,
   normalizeOperationError,
@@ -76,6 +76,7 @@ export class EditOperationRunner<TRow extends object, TFormValues extends object
       Readonly<EditorOperations<TRow, TFormValues>> | undefined,
     private readonly clientSide:
       Readonly<ClientSideOperations<TRow, TFormValues>> | undefined,
+    private readonly rows = new CanonicalRows<TRow>(),
   ) {}
 
   /** Runs validation, persistence, commit, events, and hooks in a fixed order. */
@@ -282,6 +283,10 @@ export class EditOperationRunner<TRow extends object, TFormValues extends object
     request: OwnedOperationRequest<'edit'>,
     onPersistenceCompleted: () => void,
   ): Promise<TRow> {
+    const replacement = this.rows.replacement(
+      transaction.original,
+      this.operations?.update !== undefined,
+    );
     if (this.operations?.update !== undefined) {
       const rowCandidate: unknown = await this.operationOwner.wait(
         request,
@@ -292,8 +297,7 @@ export class EditOperationRunner<TRow extends object, TFormValues extends object
         ),
       );
       onPersistenceCompleted();
-      assertCompleteRow(rowCandidate, 'operations.update');
-      return rowCandidate as TRow;
+      return replacement(rowCandidate, 'operations.update');
     }
 
     if (this.clientSide?.updateRow !== undefined) {
@@ -306,15 +310,17 @@ export class EditOperationRunner<TRow extends object, TFormValues extends object
           'clientSide.updateRow must return synchronously.',
         );
       }
-      assertCompleteRow(rowCandidate, 'clientSide.updateRow');
-      return rowCandidate as TRow;
+      return replacement(rowCandidate, 'clientSide.updateRow');
     }
 
-    return mergeDeclaredFieldValues(
-      transaction.original,
-      transaction.values,
-      transaction.changedFields,
-      transaction.collectedFieldValues,
+    return replacement(
+      mergeDeclaredFieldValues(
+        transaction.original,
+        transaction.values,
+        transaction.changedFields,
+        transaction.collectedFieldValues,
+      ),
+      'the declared-field update',
     );
   }
 

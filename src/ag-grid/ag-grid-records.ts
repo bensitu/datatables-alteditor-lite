@@ -139,7 +139,7 @@ export class AgGridRecords<TRow extends object> {
     );
   }
 
-  private idFor(row: TRow): string {
+  public idFor(row: Readonly<TRow>): string {
     const id: unknown = this.getRowId({
       api: this.api,
       context: this.api.getGridOption('context'),

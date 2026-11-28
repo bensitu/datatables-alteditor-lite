@@ -229,16 +229,17 @@ Edit, and Remove. It intentionally does not supply DataTables inline behavior.
 
 `AltEditorLiteOptions<TRow, TFormValues>` contains:
 
-| Property       | Type                                      | Description                                             |
-| -------------- | ----------------------------------------- | ------------------------------------------------------- |
-| `fields`       | `readonly FieldConfig<TFormValues>[]`     | Ordered Create and Edit field definitions.              |
-| `editing`      | `EditingOptions<TRow, TFormValues>`       | Composable Dialog and Inline behavior.                  |
-| `operations`   | `EditorOperations<TRow, TFormValues>`     | Optional synchronous or asynchronous editor operations. |
-| `clientSide`   | `ClientSideOperations<TRow, TFormValues>` | Optional synchronous row mappings.                      |
-| `dependencies` | `FormDependencies<TFormValues>`           | Declarative Dialog field-state resolvers.               |
-| `validateForm` | `FormValidator<TFormValues>`              | Shared cross-field validator.                           |
-| `language`     | `PartialEditorLanguage`                   | Language data or overrides merged with English.         |
-| `hooks`        | `EditorHooks<TRow, TFormValues>`          | Lifecycle observation and veto callbacks.               |
+| Property        | Type                                      | Description                                             |
+| --------------- | ----------------------------------------- | ------------------------------------------------------- |
+| `fields`        | `readonly FieldConfig<TFormValues>[]`     | Ordered Create and Edit field definitions.              |
+| `editing`       | `EditingOptions<TRow, TFormValues>`       | Composable Dialog and Inline behavior.                  |
+| `operations`    | `EditorOperations<TRow, TFormValues>`     | Optional synchronous or asynchronous editor operations. |
+| `clientSide`    | `ClientSideOperations<TRow, TFormValues>` | Optional synchronous row mappings.                      |
+| `dependencies`  | `FormDependencies<TFormValues>`           | Declarative Dialog field-state resolvers.               |
+| `validateForm`  | `FormValidator<TFormValues>`              | Shared cross-field validator.                           |
+| `rowValidation` | `RowValidation<TRow>`                     | Business ID selector and complete-record validator.     |
+| `language`      | `PartialEditorLanguage`                   | Language data or overrides merged with English.         |
+| `hooks`         | `EditorHooks<TRow, TFormValues>`          | Lifecycle observation and veto callbacks.               |
 
 `EditingOptions` contains independent `dialog` and `inline` objects.
 `DialogEditingOptions` provides `enabled`, a static or operation-resolved

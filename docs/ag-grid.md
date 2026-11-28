@@ -82,7 +82,7 @@ can be owned by one active editor. Lifecycle events are dispatched directly on
   This also applies when a filtered record has no rendered cell.
 - Multi-record Edit requires at least two distinct IDs. Remote batch persistence
   uses a single `operations.updateMany` call that returns one complete record
-  per target in the original order. With only `operations.update` configured,
+  per target, matched by ID. With only `operations.update` configured,
   the editor offers single-record Edit.
 
 The host checks all targets before a transaction and checks the returned node

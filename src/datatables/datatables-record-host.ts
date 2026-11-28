@@ -1,3 +1,5 @@
+import DataTable from 'datatables.net';
+
 import {
   EditorConfigurationError,
   EditorTargetUnavailableError,
@@ -38,7 +40,7 @@ import type {
   HostSelectionCapability,
 } from '../host/editor-host.js';
 import type { EditTargetCapture, RemoveTargetCapture } from './row-target-resolution.js';
-import type { Api, RowSelector } from 'datatables.net';
+import type { Api, RowSelector, Config } from 'datatables.net';
 
 /** DataTables-backed implementation of the neutral record host contract. */
 export class DataTablesRecordHost<TRow extends object>
@@ -51,6 +53,7 @@ export class DataTablesRecordHost<TRow extends object>
     HostSelectionCapability<DataTablesRecordTarget>
 {
   public readonly eventTarget: HTMLTableElement;
+  public readonly getRowId: (row: Readonly<TRow>) => unknown;
 
   public readonly ownershipKey: object;
 
@@ -83,6 +86,9 @@ export class DataTablesRecordHost<TRow extends object>
     }
 
     this.eventTarget = tableElement;
+    this.getRowId = DataTable.util.get(
+      (table.init() as Config).rowId ?? DataTable.defaults.rowId,
+    );
     this.ownershipKey = tableElement;
     this.#drawOwnership = new DrawOwnership(table, refreshTimeout);
     this.records = new DataTablesRecordTargets(table, tableElement);

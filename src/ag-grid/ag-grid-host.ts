@@ -96,6 +96,10 @@ export class AgGridHost<TRow extends object>
     return this.#records.resolve(targets).map(({ data }) => createReadonlyRowView(data));
   }
 
+  public getRowId(row: Readonly<TRow>): string {
+    return this.#records.idFor(row);
+  }
+
   public getSelectedTargets(): readonly string[] {
     this.#assertActive();
     if (

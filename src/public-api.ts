@@ -45,6 +45,7 @@ export type {
   EditOperationContext,
   RefreshOperationContext,
   RemoveOperationContext,
+  RowValidation,
 } from './core/alt-editor-lite-options.js';
 export type {
   BatchFieldBaseline,

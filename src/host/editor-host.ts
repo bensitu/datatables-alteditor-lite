@@ -40,6 +40,8 @@ export interface EditorHost<TRow extends object, TTarget> {
   readonly eventTarget: EventTarget;
   /** Stable object identity used to enforce exclusive editor ownership. */
   readonly ownershipKey: object;
+  /** Reads the configured host row identifier from a record, when available. */
+  getRowId?(row: Readonly<TRow>): unknown;
 
   /** Reads the current record represented by an opaque host target. */
   read(

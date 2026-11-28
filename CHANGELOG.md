@@ -20,6 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Validate replacement records before applying them and match batch responses
+  by stable row ID. Applications can supply a business ID and a record validator
+  through `rowValidation`.
 - Shared host checks cover asynchronous reads and complete row replacement.
   Package checks exercise neutral, AG Grid and DataTables consumers independently.
   Coverage includes editor orchestration, dialog presentation and the AG Grid host.

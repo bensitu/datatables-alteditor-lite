@@ -222,7 +222,7 @@ for template ownership, dependency ordering, cancellation, and error behavior.
 
 - `create(values, context)`, which returns one complete row;
 - `update(values, original, context)`, which returns one complete replacement row;
-- `updateMany(changes, originals, context)`, which returns ordered complete rows;
+- `updateMany(changes, originals, context)`, which returns complete rows matched by ID;
 - `remove(rows, context)`, which resolves after persistence succeeds;
 - `refresh(context)`, which optionally replaces the default refresh behavior.
 

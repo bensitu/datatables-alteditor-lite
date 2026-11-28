@@ -53,6 +53,7 @@ import type {
   BeforeCloseReason,
   EditorErrorHookContext,
 } from '../core/alt-editor-lite-options.js';
+import type { CanonicalRows } from '../core/complete-row-result.js';
 import type { BatchEditOperationRunner } from '../core/editing/batch-edit-operation-runner.js';
 import type { EditOperationRunner } from '../core/editing/edit-operation-runner.js';
 import type {
@@ -92,6 +93,7 @@ export interface DialogEditingControllerArguments<
   readonly notifyIntegration: () => void;
   readonly onPresentationComplete: () => void;
   readonly batchEditOperationRunner: BatchEditOperationRunner<TRow, TFormValues>;
+  readonly rows: CanonicalRows<TRow>;
   readonly editOperationRunner: EditOperationRunner<TRow, TFormValues>;
   readonly inlineController: InlineHostRuntime;
   readonly errorReporter: EditorErrorReporter<TRow, TFormValues>;
@@ -178,7 +180,10 @@ export class DialogEditingController<
       options: arguments_.options,
       onPresentationComplete: arguments_.onPresentationComplete,
     };
-    this.#createOperation = new DialogCreateOperation(sharedOperationArguments);
+    this.#createOperation = new DialogCreateOperation({
+      ...sharedOperationArguments,
+      rows: arguments_.rows,
+    });
     this.#batchEditOperation = new DialogBatchEditOperation({
       batchEditOperationRunner: arguments_.batchEditOperationRunner,
       editing: arguments_.editing,

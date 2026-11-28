@@ -2,7 +2,7 @@ import {
   type AltEditorLiteError,
   EditorConfigurationError,
 } from '../core/alt-editor-lite-error.js';
-import { assertCompleteRow, isPromiseLike } from '../core/complete-row-result.js';
+import { type CanonicalRows, isPromiseLike } from '../core/complete-row-result.js';
 import {
   InternalOperationAbort,
   normalizeOperationError,
@@ -47,6 +47,7 @@ export interface DialogCreateOperationArguments<
   readonly host: EditorHost<TRow, TTarget>;
   readonly eventTarget: EventTarget;
   readonly options: Readonly<AltEditorLiteOptions<TRow, TFormValues>>;
+  readonly rows: CanonicalRows<TRow>;
   readonly language: Readonly<AltEditorLiteLanguage>;
   readonly operationOwner: OperationOwner;
   readonly errorReporter: EditorErrorReporter<TRow, TFormValues>;
@@ -212,8 +213,7 @@ export class DialogCreateOperation<
         options.operations.create(values, operationOwner.context(request)),
       );
       onPersistenceCompleted();
-      assertCompleteRow(rowCandidate, 'operations.create');
-      return rowCandidate as TRow;
+      return this.arguments_.rows.check(rowCandidate, 'operations.create');
     }
 
     if (options.clientSide?.createRow === undefined) {
@@ -228,8 +228,7 @@ export class DialogCreateOperation<
         'clientSide.createRow must return synchronously.',
       );
     }
-    assertCompleteRow(rowCandidate, 'clientSide.createRow');
-    return rowCandidate as TRow;
+    return this.arguments_.rows.check(rowCandidate, 'clientSide.createRow');
   }
 
   private handleFailure(
