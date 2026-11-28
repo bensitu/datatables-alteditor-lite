@@ -6,6 +6,7 @@ export interface HostContractRecord {
   readonly id: string;
   readonly name: string;
   readonly rank: number;
+  readonly department?: string;
 }
 
 export interface HostContractFixture<TTarget> {
@@ -37,20 +38,21 @@ export function describeEditorHostContract<TTarget>(
       try {
         expect(host.eventTarget).toBe(fixture.eventTarget);
         expect(typeof host.ownershipKey).toBe('object');
-        expect(host.read(fixture.initialTarget)).toMatchObject({
+        expect(await host.read(fixture.initialTarget)).toMatchObject({
           id: 'row-a',
           name: 'Alpha',
         });
 
         const createdTarget = await host.applyCreate(
-          { id: 'row-created', name: 'Created', rank: 10 },
+          { id: 'row-created', name: 'Created', rank: 10, department: 'Sales' },
           createContext('create'),
         );
         expect(createdTarget).toBeDefined();
         if (createdTarget === undefined) {
           throw new Error('The host did not return the created record target.');
         }
-        expect(host.read(createdTarget)).toEqual({
+        expect(await host.read(createdTarget)).toEqual({
+          department: 'Sales',
           id: 'row-created',
           name: 'Created',
           rank: 10,
@@ -65,14 +67,14 @@ export function describeEditorHostContract<TTarget>(
         if (updatedTarget === undefined) {
           throw new Error('The host did not return the updated record target.');
         }
-        expect(host.read(updatedTarget)).toEqual({
+        expect(await host.read(updatedTarget)).toEqual({
           id: 'row-created',
           name: 'Updated',
           rank: 11,
         });
 
         await host.applyRemove([updatedTarget], createContext('remove'));
-        expect(() => host.read(updatedTarget)).toThrow();
+        await expect(async () => await host.read(updatedTarget)).rejects.toThrow();
       } finally {
         host.destroy();
         host.destroy();
