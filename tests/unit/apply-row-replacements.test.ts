@@ -82,8 +82,8 @@ describe('DataTables row replacements', () => {
         {
           previousRow: { value: 'second' },
           row: { value: 'second-updated' },
-          write: () => {
-            throw failure;
+          write: (row) => {
+            if (row.value === 'second-updated') throw failure;
           },
         },
       ]);

@@ -1,8 +1,4 @@
-import {
-  type AltEditorLiteError,
-  EditorConfigurationError,
-} from '../alt-editor-lite-error.js';
-import { CanonicalRows, isPromiseLike } from '../complete-row-result.js';
+import { CanonicalRows, assertSynchronous } from '../complete-row-result.js';
 import {
   InternalOperationAbort,
   normalizeOperationError,
@@ -11,6 +7,7 @@ import { freezeEditorValues } from '../freeze-editor-values.js';
 import { mergeDeclaredFieldValues } from '../merge-declared-field-values.js';
 
 import type { MaybePromise } from '../../contracts/field-value.js';
+import type { AltEditorLiteError } from '../alt-editor-lite-error.js';
 import type { AltEditorLiteLanguage } from '../alt-editor-lite-language.js';
 import type {
   AfterSuccessContext,
@@ -182,14 +179,7 @@ export class EditOperationRunner<TRow extends object, TFormValues extends object
         }
         runArguments.reportError(
           presentationError,
-          {
-            committed: true,
-            persistenceOutcome: request.persistenceOutcome,
-            mode: runArguments.mode,
-            operation: 'edit',
-            phase: 'afterSuccess',
-            target: runArguments.target,
-          },
+          this.operationOwner.errorContext(request, 'afterSuccess', true),
           false,
         );
       }
@@ -213,14 +203,7 @@ export class EditOperationRunner<TRow extends object, TFormValues extends object
           if (!(hookError instanceof InternalOperationAbort)) {
             runArguments.reportError(
               hookError,
-              {
-                committed: true,
-                persistenceOutcome: request.persistenceOutcome,
-                mode: runArguments.mode,
-                operation: 'edit',
-                phase: 'afterSuccess',
-                target: runArguments.target,
-              },
+              this.operationOwner.errorContext(request, 'afterSuccess', true),
               false,
             );
           }
@@ -251,14 +234,7 @@ export class EditOperationRunner<TRow extends object, TFormValues extends object
         if (!(presentationError instanceof InternalOperationAbort)) {
           runArguments.reportError(
             presentationError,
-            {
-              committed: isCommitted,
-              persistenceOutcome: request.persistenceOutcome,
-              mode: runArguments.mode,
-              operation: 'edit',
-              phase,
-              target: runArguments.target,
-            },
+            this.operationOwner.errorContext(request, phase, isCommitted),
             false,
           );
         }
@@ -266,14 +242,7 @@ export class EditOperationRunner<TRow extends object, TFormValues extends object
       runArguments.presentation.restoreAfterOperationFailure();
       runArguments.reportError(
         operationError,
-        {
-          committed: isCommitted,
-          persistenceOutcome: request.persistenceOutcome,
-          mode: runArguments.mode,
-          operation: 'edit',
-          phase,
-          target: runArguments.target,
-        },
+        this.operationOwner.errorContext(request, phase, isCommitted),
         true,
       );
       return { error: operationError, status: 'failed' };
@@ -306,11 +275,7 @@ export class EditOperationRunner<TRow extends object, TFormValues extends object
         transaction.original,
         transaction.values,
       );
-      if (isPromiseLike(rowCandidate)) {
-        throw new EditorConfigurationError(
-          'clientSide.updateRow must return synchronously.',
-        );
-      }
+      assertSynchronous(rowCandidate, 'clientSide.updateRow');
       return replacement(rowCandidate, 'clientSide.updateRow');
     }
 

@@ -187,7 +187,7 @@ export class RefreshOperationRunner<TRow extends object, TFormValues extends obj
           mode: 'api',
           operation: 'refresh',
         },
-        request.persistenceOutcome,
+        operationOwner.errorContext(request, 'afterSuccess', true),
       );
     }
   }

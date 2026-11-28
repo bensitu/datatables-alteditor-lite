@@ -22,18 +22,24 @@ const prepareRequestEvent = 'preXhr.altEditorLiteRefresh';
  *
  * @param table - Public DataTables API.
  * @param signal - Current Refresh ownership signal.
+ * @param recoveryError - Failure requiring fresh data before editing resumes.
  */
 export async function refreshDataTable<TRow extends object>(
   table: Api<TRow>,
   signal: AbortSignal,
   timeoutMs = AJAX_RELOAD_TIMEOUT_MS,
+  recoveryError?: Error,
 ): Promise<void> {
   if (signal.aborted) {
     return;
   }
 
-  const { ajax } = table.init() as unknown as DataTableInitialization;
-  if (ajax === undefined || ajax === null) {
+  const ajax: unknown =
+    recoveryError === undefined
+      ? (table.init() as DataTableInitialization).ajax
+      : table.ajax.url();
+  if (ajax == null || (recoveryError !== undefined && ajax === '')) {
+    if (recoveryError !== undefined) throw recoveryError;
     table.draw(false);
     return;
   }
@@ -42,6 +48,7 @@ export async function refreshDataTable<TRow extends object>(
     const tableElement = table.table().node();
     let isSettled = false;
     let canCompleteOnDraw = true;
+    let hasResponse = recoveryError === undefined;
     const finish = (error?: Error): void => {
       if (isSettled) {
         return;
@@ -49,6 +56,8 @@ export async function refreshDataTable<TRow extends object>(
 
       isSettled = true;
       table.off(drawEvent, handleDraw);
+      if (recoveryError !== undefined)
+        table.off('xhr.altEditorLiteRefresh', handleResponse);
       table.off(prepareRequestEvent, prepareRequest);
       signal.removeEventListener('abort', handleAbort);
       globalThis.clearTimeout(timeoutId);
@@ -62,7 +71,10 @@ export async function refreshDataTable<TRow extends object>(
       finish();
     };
     const handleDraw = (event: Event): void => {
-      if (canCompleteOnDraw && event.target === tableElement) finish();
+      if (hasResponse && canCompleteOnDraw && event.target === tableElement) finish();
+    };
+    const handleResponse = (event: Event, _settings: unknown, json: unknown): void => {
+      if (event.target === tableElement && json != null) hasResponse = true;
     };
     const prepareRequest = (
       event: Event,
@@ -98,6 +110,8 @@ export async function refreshDataTable<TRow extends object>(
     }, timeoutMs);
     try {
       table.on(drawEvent, handleDraw);
+      if (recoveryError !== undefined)
+        table.on('xhr.altEditorLiteRefresh', handleResponse);
       table.on(prepareRequestEvent, prepareRequest);
       table.ajax.reload(undefined, false);
     } catch (error: unknown) {

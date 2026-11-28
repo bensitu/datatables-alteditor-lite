@@ -1,6 +1,7 @@
 import DataTable from 'datatables.net';
 
 import {
+  type AltEditorLiteError,
   EditorConfigurationError,
   EditorTargetUnavailableError,
 } from '../core/alt-editor-lite-error.js';
@@ -62,6 +63,7 @@ export class DataTablesRecordHost<TRow extends object>
   readonly #selectIntegration: SelectIntegration<TRow>;
 
   #isDestroyed = false;
+  #recoveryError: AltEditorLiteError | undefined;
 
   protected readonly records: DataTablesRecordTargets<TRow>;
 
@@ -139,11 +141,16 @@ export class DataTablesRecordHost<TRow extends object>
     return target;
   }
 
+  public assertBatchUpdateAvailable(): void {
+    if (this.#recoveryError !== undefined) throw this.#recoveryError;
+  }
+
   /** Replaces multiple records and performs one editor-owned draw. */
   public async applyUpdates(
     updates: readonly Readonly<HostBatchUpdate<TRow, DataTablesRecordTarget>>[],
     context: Readonly<HostApplyContext>,
   ): Promise<void> {
+    this.assertBatchUpdateAvailable();
     const rowIndexById = this.records.indexFor(updates.map(({ target }) => target));
     const resolvedUpdates = updates.map((update) => {
       const rowIndex = this.records.resolve(update.target, rowIndexById);
@@ -175,6 +182,9 @@ export class DataTablesRecordHost<TRow extends object>
               this.table.row(update.rowIndex).data(row);
             },
           })),
+          (error) => {
+            this.#recoveryError = error;
+          },
         );
         this.table.draw(false);
       },
@@ -267,12 +277,20 @@ export class DataTablesRecordHost<TRow extends object>
 
   /** Refreshes DataTables while marking any resulting redraw as editor-owned. */
   public async refresh(signal: AbortSignal, action?: () => Promise<void>): Promise<void> {
+    const recoveryError = this.#recoveryError;
     await this.#drawOwnership.runWhile('refresh', signal, async (refreshSignal) => {
       if (action === undefined) {
-        await refreshDataTable(this.table, refreshSignal, this.refreshTimeout);
+        await refreshDataTable(
+          this.table,
+          refreshSignal,
+          this.refreshTimeout,
+          recoveryError,
+        );
       } else {
         await action();
       }
+      if (!refreshSignal.aborted && this.#recoveryError === recoveryError)
+        this.#recoveryError = undefined;
     });
   }
 

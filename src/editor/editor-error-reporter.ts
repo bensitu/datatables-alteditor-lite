@@ -12,7 +12,6 @@ import type {
   AfterSuccessContext,
   EditorErrorHookContext,
   EditorHooks,
-  PersistenceOutcome,
 } from '../core/alt-editor-lite-options.js';
 import type { AltEditorLite } from './alt-editor-lite.js';
 
@@ -40,7 +39,7 @@ export class EditorErrorReporter<TRow extends object, TFormValues extends object
       return;
     }
     try {
-      const observation: unknown = this.hooks?.onError?.(error, context);
+      const observation: unknown = this.hooks?.onError?.(error, { ...context });
       if (observation !== undefined) {
         void Promise.resolve(observation).catch(warnAboutErrorObserver);
       }
@@ -62,7 +61,7 @@ export class EditorErrorReporter<TRow extends object, TFormValues extends object
   /** Runs the optional success observer after the canonical commit. */
   public async runAfterSuccess(
     context: AfterSuccessContext<TRow, TFormValues>,
-    persistenceOutcome: PersistenceOutcome,
+    errorContext: EditorErrorHookContext,
   ): Promise<void> {
     const hook = this.hooks?.afterSuccess;
     if (hook === undefined || this.isDestroyed()) {
@@ -78,51 +77,7 @@ export class EditorErrorReporter<TRow extends object, TFormValues extends object
         this.language,
       );
       if (!(error instanceof InternalOperationAbort)) {
-        this.report(
-          error,
-          {
-            committed: true,
-            persistenceOutcome,
-            phase: 'afterSuccess',
-            ...this.operationContext(context),
-          },
-          false,
-        );
-      }
-    }
-  }
-
-  private operationContext(context: AfterSuccessContext<TRow, TFormValues>) {
-    switch (context.operation) {
-      case 'create':
-      case 'remove': {
-        return {
-          mode: 'dialog' as const,
-          operation: context.operation,
-        };
-      }
-      case 'edit': {
-        return {
-          mode: context.mode,
-          operation: 'edit' as const,
-          target: context.target,
-        };
-      }
-      case 'batchEdit': {
-        return {
-          mode: 'dialog' as const,
-          operation: 'batchEdit' as const,
-          targets: context.targets,
-        };
-      }
-      case 'refresh': {
-        return context.mode === 'inline' && context.target !== undefined
-          ? {
-              mode: 'inline' as const,
-              operation: 'refresh' as const,
-              target: context.target,
-            }
-          : { mode: 'api' as const, operation: 'refresh' as const };
+        this.report(error, errorContext, false);
       }
     }
   }

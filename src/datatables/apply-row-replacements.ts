@@ -1,3 +1,4 @@
+import { AltEditorLiteError } from '../core/alt-editor-lite-error.js';
 import { createMutableRowCopy } from '../core/readonly-row-view.js';
 
 /** One synchronous row replacement with its restoration value. */
@@ -10,6 +11,7 @@ export interface RowReplacement<TRow extends object> {
 /** Applies row replacements and restores earlier writes when a later write fails. */
 export function applyRowReplacements<TRow extends object>(
   replacements: readonly Readonly<RowReplacement<TRow>>[],
+  onRollbackFailure?: (error: AltEditorLiteError) => void,
 ): void {
   const appliedReplacements: Readonly<RowReplacement<TRow>>[] = [];
   const snapshots = replacements.map((replacement) => ({
@@ -22,12 +24,23 @@ export function applyRowReplacements<TRow extends object>(
       replacement.write(replacement.row);
     }
   } catch (error: unknown) {
+    const causes = [error];
     for (const replacement of [...appliedReplacements].reverse()) {
       try {
         replacement.write(replacement.previousRow);
-      } catch {
-        // Preserve the replacement failure while attempting every restoration.
+      } catch (restoreError: unknown) {
+        causes.push(restoreError);
       }
+    }
+    if (causes.length > 1) {
+      const failure = new AltEditorLiteError({
+        code: 'ROW_ROLLBACK_FAILED',
+        message:
+          'Some records could not be restored. Reload the data before another batch update.',
+        cause: new AggregateError(causes),
+      });
+      onRollbackFailure?.(failure);
+      throw failure;
     }
     throw error;
   }

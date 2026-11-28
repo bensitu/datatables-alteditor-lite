@@ -81,6 +81,11 @@ export class DialogBatchEditOperation<
       options,
     } = this.arguments_;
     let committedRequest: OwnedOperationRequest | undefined;
+    if (!hasHostBatchUpdateCapability<TRow, TTarget>(host)) {
+      throw new EditorConfigurationError(
+        'The configured Host cannot apply batch updates.',
+      );
+    }
 
     await batchEditOperationRunner.run({
       ...(options.hooks?.afterSuccess === undefined
@@ -103,11 +108,6 @@ export class DialogBatchEditOperation<
           }),
       commit: async (rows, request) => {
         committedRequest = request;
-        if (!hasHostBatchUpdateCapability<TRow, TTarget>(host)) {
-          throw new EditorConfigurationError(
-            'The configured Host cannot apply batch updates.',
-          );
-        }
         await host.applyUpdates(
           rows.map((row, index) => ({
             row,
@@ -227,6 +227,7 @@ export class DialogBatchEditOperation<
         errorReporter.report(error, context, publishEvent);
       },
       revalidateTargets: async (signal) => {
+        host.assertBatchUpdateAvailable?.();
         await readHostRecords(host, recordTargets, signal);
       },
       targets,

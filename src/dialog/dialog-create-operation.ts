@@ -2,7 +2,7 @@ import {
   type AltEditorLiteError,
   EditorConfigurationError,
 } from '../core/alt-editor-lite-error.js';
-import { type CanonicalRows, isPromiseLike } from '../core/complete-row-result.js';
+import { type CanonicalRows, assertSynchronous } from '../core/complete-row-result.js';
 import {
   InternalOperationAbort,
   normalizeOperationError,
@@ -183,7 +183,7 @@ export class DialogCreateOperation<
           row,
           values,
         },
-        request.persistenceOutcome,
+        this.arguments_.operationOwner.errorContext(request, 'afterSuccess', true),
       );
     } catch (rawError: unknown) {
       this.handleFailure(form, presentation, request, rawError, phase);
@@ -218,11 +218,7 @@ export class DialogCreateOperation<
     }
 
     const rowCandidate: unknown = options.clientSide.createRow(values);
-    if (isPromiseLike(rowCandidate)) {
-      throw new EditorConfigurationError(
-        'clientSide.createRow must return synchronously.',
-      );
-    }
+    assertSynchronous(rowCandidate, 'clientSide.createRow');
     return this.arguments_.rows.check(rowCandidate, 'clientSide.createRow');
   }
 
@@ -257,13 +253,7 @@ export class DialogCreateOperation<
     }
     this.arguments_.errorReporter.report(
       operationError,
-      {
-        committed: isCommitted,
-        persistenceOutcome: request.persistenceOutcome,
-        mode: 'dialog',
-        operation: 'create',
-        phase,
-      },
+      this.arguments_.operationOwner.errorContext(request, phase, isCommitted),
       true,
     );
   }
@@ -284,13 +274,7 @@ export class DialogCreateOperation<
     }
     this.arguments_.errorReporter.report(
       presentationError,
-      {
-        committed,
-        persistenceOutcome: request.persistenceOutcome,
-        mode: 'dialog',
-        operation: 'create',
-        phase,
-      },
+      this.arguments_.operationOwner.errorContext(request, phase, committed),
       false,
     );
   }

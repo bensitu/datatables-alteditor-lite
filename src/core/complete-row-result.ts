@@ -12,6 +12,19 @@ export function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
   );
 }
 
+export function assertSynchronous(value: unknown, source: string): void {
+  if (isPromiseLike(value)) {
+    const error = new EditorConfigurationError(
+      `${source} must return synchronously.`,
+      value,
+    );
+    void Promise.resolve(value).catch((cause: unknown) => {
+      error.cause = cause;
+    });
+    throw error;
+  }
+}
+
 export function assertCompleteRow(
   rowCandidate: unknown,
   callbackName: string,
@@ -36,6 +49,7 @@ export function requireRowId(value: unknown): string | number {
   ) {
     return value;
   }
+  assertSynchronous(value, 'rowValidation.getId');
   throw new EditorConfigurationError(
     'A stable row ID is required. Configure rowValidation.getId.',
   );
@@ -62,15 +76,16 @@ export class CanonicalRows<TRow extends object> {
         ? original === undefined ||
           Reflect.ownKeys(original).every((key) => hasOwn(row, key))
         : this.options.validate(row);
-    if (!isValid)
+    if (!Object.is(isValid, true)) {
+      assertSynchronous(isValid, 'rowValidation.validate');
       throw new EditorConfigurationError(`${source} must return a complete row object.`);
-    if (this.options?.getId !== undefined) {
-      if (original === undefined) requireRowId(this.options.getId(row));
-      else {
-        const hostId = this.hostId?.(original);
-        if (hostId !== undefined && this.hostId?.(row) !== hostId) {
-          throw new EditorConfigurationError(`${source} must retain the host row ID.`);
-        }
+    }
+    if (original === undefined) {
+      if (this.options?.getId !== undefined) requireRowId(this.options.getId(row));
+    } else {
+      const hostId = this.hostId?.(original);
+      if (hostId !== undefined && this.hostId?.(row) !== hostId) {
+        throw new EditorConfigurationError(`${source} must retain the host row ID.`);
       }
     }
     return row;
@@ -86,7 +101,7 @@ export class CanonicalRows<TRow extends object> {
       requireRowId(id);
     return (candidate, source) => {
       const row = this.check(candidate, source, original);
-      if (id !== undefined && readId(row) !== id) {
+      if (id !== undefined && requireRowId(readId(row)) !== id) {
         throw new EditorConfigurationError(`${source} must retain the original row ID.`);
       }
       return row;

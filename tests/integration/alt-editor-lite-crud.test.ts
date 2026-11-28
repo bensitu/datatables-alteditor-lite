@@ -794,6 +794,93 @@ describe('AltEditorLite Edit snapshots', () => {
   });
 });
 
+describe('DataTables batch recovery', () => {
+  it('reports write and restoration errors and requires a reload before another batch write', async () => {
+    const writeError = new Error('Unable to display the updated record.');
+    const restoreError = new Error('Unable to display the restored record.');
+    let shouldFail = false;
+    let isRestoring = false;
+    let saved: TestRow[] = [];
+    const onError = vi.fn<(error: AltEditorLiteError) => void>();
+    const success = vi.fn();
+    const updateMany = vi.fn(
+      (changes: Readonly<Partial<CrudValues>>, originals: readonly TestRow[]) => {
+        saved = originals.map((row) => ({ ...row, ...changes }));
+        return saved;
+      },
+    );
+    const { api, editor, tableElement } = createCrudEditor(
+      'batch-recovery',
+      {
+        operations: {
+          updateMany,
+          refresh: () => {
+            for (const row of saved) api.row(`#${row.id}`).data(row);
+            api.draw(false);
+          },
+        },
+        hooks: { onError },
+      },
+      {
+        columns: [
+          {
+            data: 'name',
+            render: (value: string, type: string, row: TestRow) => {
+              if (shouldFail && type === 'display') {
+                if (row.id === 'row-b' && value === 'Saved') {
+                  isRestoring = true;
+                  throw writeError;
+                }
+                if (isRestoring && row.id === 'row-a' && value === 'Alpha') {
+                  shouldFail = false;
+                  throw restoreError;
+                }
+              }
+              return value;
+            },
+          },
+          { data: 'rank' },
+        ],
+      },
+    );
+    tableElement.addEventListener('alteditor-lite:success', success);
+    const submitBatch = async (name: string) => {
+      await editor.openBatchEditDialog(['#row-a', '#row-b']);
+      editor.getField('name')?.setValue(name);
+      submitForm();
+    };
+    shouldFail = true;
+    await submitBatch('Saved');
+    await vi.waitFor(() => {
+      expect(onError).toHaveBeenCalledOnce();
+    });
+    const failure = onError.mock.calls[0]?.[0];
+    expect(failure).toMatchObject({ code: 'ROW_ROLLBACK_FAILED', retryable: false });
+    expect(failure?.cause).toBeInstanceOf(AggregateError);
+    expect(failure?.cause).toMatchObject({ errors: [writeError, restoreError] });
+    expect(api.cell('#row-a', 0).node().textContent).toBe('Saved');
+    await editor.closeDialog();
+    await expect(
+      editor.dataTablesHost.refresh(new AbortController().signal),
+    ).rejects.toBe(failure);
+    await submitBatch('Saved');
+    await vi.waitFor(() => {
+      expect(onError).toHaveBeenCalledTimes(2);
+    });
+    expect(updateMany).toHaveBeenCalledOnce();
+    expect(success).not.toHaveBeenCalled();
+    await editor.closeDialog();
+    await editor.refresh();
+    expect([api.row('#row-a').data(), api.row('#row-b').data()]).toEqual(saved);
+    expect(updateMany).toHaveBeenCalledOnce();
+    await submitBatch('Updated');
+    await vi.waitFor(() => {
+      expect(editor.getState().status).toBe('ready');
+    });
+    expect(updateMany).toHaveBeenCalledTimes(2);
+  });
+});
+
 describe('AltEditorLite Remove snapshots', () => {
   it('confirms without a form and removes only after async persistence', async () => {
     const deferredRemoval = createDeferred<undefined>();

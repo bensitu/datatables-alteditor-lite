@@ -3,7 +3,7 @@ import {
   EditorConfigurationError,
   EditorSelectionCountError,
 } from '../alt-editor-lite-error.js';
-import { CanonicalRows, isPromiseLike } from '../complete-row-result.js';
+import { CanonicalRows, assertSynchronous } from '../complete-row-result.js';
 import {
   InternalOperationAbort,
   normalizeOperationError,
@@ -205,14 +205,7 @@ export class BatchEditOperationRunner<TRow extends object, TFormValues extends o
         }
         runArguments.reportError(
           presentationError,
-          {
-            committed: true,
-            persistenceOutcome: request.persistenceOutcome,
-            mode: 'dialog',
-            operation: 'batchEdit',
-            phase: 'afterSuccess',
-            targets: runArguments.targets,
-          },
+          this.operationOwner.errorContext(request, 'afterSuccess', true),
           false,
         );
       }
@@ -236,14 +229,7 @@ export class BatchEditOperationRunner<TRow extends object, TFormValues extends o
           if (!(hookError instanceof InternalOperationAbort)) {
             runArguments.reportError(
               hookError,
-              {
-                committed: true,
-                persistenceOutcome: request.persistenceOutcome,
-                mode: 'dialog',
-                operation: 'batchEdit',
-                phase,
-                targets: transaction.targets,
-              },
+              this.operationOwner.errorContext(request, phase, true),
               false,
             );
           }
@@ -274,14 +260,7 @@ export class BatchEditOperationRunner<TRow extends object, TFormValues extends o
         if (!(presentationError instanceof InternalOperationAbort)) {
           runArguments.reportError(
             presentationError,
-            {
-              committed: isCommitted,
-              persistenceOutcome: request.persistenceOutcome,
-              mode: 'dialog',
-              operation: 'batchEdit',
-              phase,
-              targets: runArguments.targets,
-            },
+            this.operationOwner.errorContext(request, phase, isCommitted),
             false,
           );
         }
@@ -289,14 +268,7 @@ export class BatchEditOperationRunner<TRow extends object, TFormValues extends o
       runArguments.presentation.restoreAfterOperationFailure();
       runArguments.reportError(
         operationError,
-        {
-          committed: isCommitted,
-          persistenceOutcome: request.persistenceOutcome,
-          mode: 'dialog',
-          operation: 'batchEdit',
-          phase,
-          targets: runArguments.targets,
-        },
+        this.operationOwner.errorContext(request, phase, isCommitted),
         true,
       );
       return { error: operationError, status: 'failed' };
@@ -363,11 +335,7 @@ export class BatchEditOperationRunner<TRow extends object, TFormValues extends o
                 transaction.collectedFieldValues,
               )
             : this.clientSide.updateRow(original, transaction.changes);
-        if (isPromiseLike(rowCandidate)) {
-          throw new EditorConfigurationError(
-            'clientSide.updateRow must return synchronously.',
-          );
-        }
+        assertSynchronous(rowCandidate, 'clientSide.updateRow');
         return replacement(
           rowCandidate,
           this.clientSide?.updateRow === undefined

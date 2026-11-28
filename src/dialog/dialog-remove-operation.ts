@@ -150,7 +150,7 @@ export class DialogRemoveOperation<
           operation: 'remove',
           rows,
         },
-        request.persistenceOutcome,
+        this.arguments_.operationOwner.errorContext(request, 'afterSuccess', true),
       );
     } catch (rawError: unknown) {
       this.handleFailure(presentation, request, rawError, phase);
@@ -191,13 +191,7 @@ export class DialogRemoveOperation<
     }
     this.arguments_.errorReporter.report(
       operationError,
-      {
-        committed: isCommitted,
-        persistenceOutcome: request.persistenceOutcome,
-        mode: 'dialog',
-        operation: 'remove',
-        phase,
-      },
+      this.arguments_.operationOwner.errorContext(request, phase, isCommitted),
       true,
     );
   }
@@ -218,13 +212,7 @@ export class DialogRemoveOperation<
     }
     this.arguments_.errorReporter.report(
       presentationError,
-      {
-        committed,
-        persistenceOutcome: request.persistenceOutcome,
-        mode: 'dialog',
-        operation: 'remove',
-        phase,
-      },
+      this.arguments_.operationOwner.errorContext(request, phase, committed),
       false,
     );
   }

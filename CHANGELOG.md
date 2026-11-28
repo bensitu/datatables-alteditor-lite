@@ -25,6 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Validate replacement records before applying them and match batch responses
   by stable row ID. Applications can supply a business ID and a record validator
   through `rowValidation`.
+- DataTables reports the write and restoration errors when a batch rollback
+  is incomplete. Batch editing can resume after a successful data reload.
 - Shared host checks cover asynchronous reads and complete row replacement.
   Package checks exercise neutral, AG Grid and DataTables consumers independently.
   Coverage includes editor orchestration, dialog presentation and the AG Grid host.

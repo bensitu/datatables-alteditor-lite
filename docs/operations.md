@@ -186,6 +186,14 @@ and attempts to restore independent plain-data snapshots for all attempted write
 if a setter throws, including a setter that mutates its input before failing.
 Restored plain records and arrays remain writable so application-owned DataTables
 updates can continue after recovery.
+If any restoration fails, the error code is `ROW_ROLLBACK_FAILED`. Its
+`AggregateError` cause contains the write error followed by the restoration
+errors in attempt order. The editor publishes an error and blocks subsequent
+batch writes on that host before calling persistence. Close the dialog and call
+`editor.refresh()` to reload the authoritative records. For a local table,
+provide an `operations.refresh` callback that replaces its data and rejects
+if reloading fails. A local redraw alone cannot resume batch writes.
+
 `AgGridHost` checks the requested and returned row IDs in each client-side
 transaction and attempts local recovery after partial application.
 `StandaloneHost` exposes the capability only when `applyUpdates` is

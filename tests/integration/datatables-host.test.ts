@@ -5,8 +5,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { EditorConfigurationError } from '../../src/core/alt-editor-lite-error.js';
 import { resolveLogicalCellTarget } from '../../src/datatables/commit-inline-update.js';
 import { DataTablesHost } from '../../src/datatables/datatables-host.js';
+import { refreshDataTable } from '../../src/datatables/refresh-data-table.js';
 
-import { destroyTestTables, createTestTable } from './datatables-test-fixture.js';
+import {
+  destroyTestTables,
+  createTestTable,
+  type TestRow,
+} from './datatables-test-fixture.js';
 import { describeEditorHostContract } from './editor-host-contract.js';
 
 afterEach(() => {
@@ -236,6 +241,33 @@ describe('DataTablesHost', () => {
       host.destroy();
       server.close();
     }
+  });
+
+  it('waits for fresh records when an unrelated draw occurs during recovery', async () => {
+    type Respond = (response: { data: TestRow[] }) => void;
+    const responses: Respond[] = [];
+    const { api } = createTestTable('batch-reload', {
+      data: undefined,
+      ajax: (_request: unknown, respond: Respond) => {
+        responses.push(respond);
+      },
+    });
+    responses.shift()?.({ data: [] });
+    const settled = vi.fn<() => void>();
+    const pending = refreshDataTable(
+      api,
+      new AbortController().signal,
+      1250,
+      new Error('Reload required.'),
+    ).then(settled);
+    api.draw(false);
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 0);
+    });
+    expect(settled).not.toHaveBeenCalled();
+    responses.shift()?.({ data: [{ id: 'row-a', name: 'Recovered', rank: 1 }] });
+    await pending;
+    expect(api.row('#row-a').data().name).toBe('Recovered');
   });
 
   it('cleans up an outstanding Ajax refresh when the host is destroyed', async () => {

@@ -6,6 +6,7 @@ import type {
   BatchEditOperationContext,
   CreateOperationContext,
   EditOperationContext,
+  EditorErrorHookContext,
   OperationContext,
   PersistenceOutcome,
   RefreshOperationContext,
@@ -106,43 +107,46 @@ export class OperationOwner {
     request: OwnedOperationRequest,
     operation: EditorOperation = request.operation,
   ): OperationContext {
-    const signal = request.abortController.signal;
+    return Object.freeze({
+      ...this.operationDetails(request, operation),
+      signal: request.abortController.signal,
+    });
+  }
+
+  private operationDetails(request: OwnedOperationRequest, operation: EditorOperation) {
     switch (operation) {
       case 'create':
       case 'remove': {
-        return Object.freeze({ mode: 'dialog', operation, signal });
+        return { mode: 'dialog', operation } as const;
       }
       case 'edit': {
         if (request.target === undefined || request.mode === 'api') {
           throw new Error('Edit operation context is incomplete.');
         }
-        return Object.freeze({
+        return {
           mode: request.mode,
           operation,
-          signal,
           target: request.target,
-        });
+        } as const;
       }
       case 'batchEdit': {
         if (request.targets === undefined) {
           throw new Error('Batch Edit operation context is incomplete.');
         }
-        return Object.freeze({
+        return {
           mode: 'dialog',
           operation,
-          signal,
           targets: request.targets,
-        });
+        } as const;
       }
       case 'refresh': {
         return request.mode === 'inline' && request.target !== undefined
-          ? Object.freeze({
+          ? ({
               mode: 'inline',
               operation,
-              signal,
               target: request.target,
-            })
-          : Object.freeze({ mode: 'api', operation, signal });
+            } as const)
+          : ({ mode: 'api', operation } as const);
       }
     }
   }
@@ -150,6 +154,20 @@ export class OperationOwner {
   /** Stops waiting when the owning request is cancelled or destroyed. */
   public wait<T>(request: OwnedOperationRequest, value: T | PromiseLike<T>): Promise<T> {
     return settleWithAbort(value, request.abortController.signal);
+  }
+
+  /** Describes a write or presentation failure without exposing the request signal. */
+  public errorContext(
+    request: OwnedOperationRequest,
+    phase: EditorErrorHookContext['phase'],
+    committed: boolean,
+  ): EditorErrorHookContext {
+    return {
+      ...this.operationDetails(request, request.operation),
+      committed,
+      phase,
+      persistenceOutcome: request.persistenceOutcome,
+    };
   }
 
   /** Tracks write acknowledgement independently of host application. */

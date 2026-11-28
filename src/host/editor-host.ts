@@ -28,6 +28,8 @@ export interface HostBatchUpdate<TRow extends object, TTarget> {
 
 /** Optional Host support for applying multiple canonical replacement rows. */
 export interface HostBatchUpdateCapability<TRow extends object, TTarget> {
+  /** Rejects a batch before persistence when the host requires a data reload. */
+  assertBatchUpdateAvailable?(): void;
   applyUpdates(
     updates: readonly Readonly<HostBatchUpdate<TRow, TTarget>>[],
     context: Readonly<HostApplyContext>,

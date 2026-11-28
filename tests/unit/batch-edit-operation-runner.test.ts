@@ -313,6 +313,7 @@ describe('batch edit operation runner', () => {
   it('matches application keys and validates the complete response before applying it', async () => {
     const records = originals.map((row) => ({ ...row, id: 'shared' }));
     const updateMany = vi.fn(() => [...records].reverse());
+    const validate = vi.fn((row: Readonly<TestRow>) => row.name.length > 0);
     const runner = new BatchEditOperationRunner<TestRow, TestValues>(
       new OperationOwner(),
       ENGLISH_LANGUAGE,
@@ -320,11 +321,15 @@ describe('batch edit operation runner', () => {
       undefined,
       new CanonicalRows({
         getId: (row) => row.profile.city,
-        validate: (row) => row.name.length > 0,
+        validate,
       }),
     );
     const args = { ...createRunArguments(createPresentation()), originals: records };
     updateMany.mockReturnValueOnce(records.map((row) => ({ ...row, name: '' })));
+    expect((await runner.run(args)).status).toBe('failed');
+    validate.mockImplementationOnce(
+      () => Promise.reject(new Error('Invalid record.')) as unknown as boolean,
+    );
     expect((await runner.run(args)).status).toBe('failed');
     expect(args.commit).not.toHaveBeenCalled();
     expect(args.dispatchSuccess).not.toHaveBeenCalled();
