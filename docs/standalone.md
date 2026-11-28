@@ -206,3 +206,24 @@ before changing application data or UI. Already completed writes are not undone.
 
 See the [Standalone example](../examples/standalone/README.md) for a complete
 in-memory setup.
+
+## Table integrations
+
+The following runnable examples use one explicit business ID per record and
+the same dialog fields. Select **Simulate a failure on the next save** to try
+the retry behavior. Each page loads only the third-party assets it uses.
+
+| Example                                                       | Record and view updates                                                                                                                                                                                                          |
+| ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Bootstrap Table](../examples/demo/tables/bootstrap-table.js) | Set `uniqueId`, read with `getRowByUniqueId(id)`, then call `updateByUniqueId({ id, row, replace: true })`. Complete replacement removes fields omitted from the saved row. The example uses client-side sorting and pagination. |
+| [Plotly Table](../examples/demo/tables/plotly.js)             | Replace the source record by ID. Build fresh column arrays for the table, recompute the total and bars, and await `Plotly.react` before completing the update.                                                                   |
+| [VTable ListTable](../examples/demo/tables/vtable.js)         | Resolve a detail cell to its source record with `getCellOriginRecord`. Replace the record by ID and pass the records and current sort state to `setRecords`. The region selector provides keyboard access to the same records.   |
+
+These examples implement single-record dialog Edit. Persist changes to source
+records before calculating totals or redrawing charts. A computed total does
+not identify an editable record. With remotely paged data, read by business ID
+from the authoritative source and reload the affected view after saving.
+Bootstrap Table uses jQuery in its own page. Neither jQuery nor a charting
+library is required by the standalone editor.
+
+[Open the table examples](https://bensitu.github.io/datatables-alteditor-lite/examples/demo/reference.html#tables)

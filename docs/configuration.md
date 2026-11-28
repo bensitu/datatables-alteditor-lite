@@ -38,6 +38,10 @@ an event target, and cleanup. Optional capabilities add selection, refresh,
 record enumeration, presentation notifications, or inline behavior. The root
 entry exports this neutral API without importing DataTables.
 
+`AgGridHost` accepts an AG Grid client-side API with a configured `getRowId`.
+It supplies selection, record enumeration, batch replacement, and local refresh
+through the same neutral editor options.
+
 `DataTablesHost` implements the relevant capabilities for DataTables. Its
 `unwrap()` method returns the owned DataTables API only when application code
 intentionally needs an integration-specific escape hatch. `StandaloneHost`
@@ -138,6 +142,10 @@ editing: {
 `operations.refresh`. In that mode, the application owns the DataTables mutation.
 
 ## Capability matrix
+
+The inline combinations below apply to DataTables. AG Grid Community and the
+standalone host provide dialog editing. For AG Grid, configure the grid's
+`getRowId` and pass its API to [AgGridHost](ag-grid.md).
 
 | Configuration                   | Dialog Edit | Inline Edit | Create / Remove / Refresh                        |
 | ------------------------------- | ----------- | ----------- | ------------------------------------------------ |

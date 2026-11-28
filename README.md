@@ -5,12 +5,13 @@
 [![jsdelivr](https://data.jsdelivr.com/v1/package/npm/datatables-alteditor-lite/badge)](https://www.jsdelivr.com/package/npm/datatables-alteditor-lite)
 
 AltEditorLite is an independent, lightweight record editor published as
-`datatables-alteditor-lite`. It provides neutral, DataTables 3, and standalone
-Host APIs for Create, Edit, Remove, and Refresh workflows using TypeScript and
-native browser controls. It has no jQuery or UI-framework runtime dependency.
+`datatables-alteditor-lite`. It provides neutral, DataTables 3, AG Grid Community,
+and standalone Host APIs for Create, Edit, Remove, and Refresh workflows using
+TypeScript and native browser controls. It has no jQuery or UI-framework runtime
+dependency.
 
 [Live demo](https://bensitu.github.io/datatables-alteditor-lite/examples/demo/) ·
-[Getting started](docs/getting-started.md) · [Standalone](docs/standalone.md) ·
+[Getting started](docs/getting-started.md) · [AG Grid](docs/ag-grid.md) · [Standalone](docs/standalone.md) ·
 [Editing](docs/editing.md) ·
 [Configuration](docs/configuration.md) · [Fields](docs/fields.md) ·
 [Dynamic forms](docs/forms.md) ·
@@ -47,8 +48,17 @@ native browser controls. It has no jQuery or UI-framework runtime dependency.
   German, French, Italian, Japanese, Korean, Dutch, Brazilian Portuguese, Russian,
   Spanish, Turkish, Ukrainian, and Simplified Chinese
 - ESM and Browser Global distributions with responsive light and dark CSS
-- A host-neutral root API, an explicit DataTables integration, and a standalone
-  callback-backed host
+- Opt-in DataTables and AG Grid integrations and a callback-backed standalone host
+
+## Choose an integration
+
+| Data view                                  | Package entry                   | Editing                                                                |
+| ------------------------------------------ | ------------------------------- | ---------------------------------------------------------------------- |
+| DataTables 3                               | `/datatables`                   | Dialog CRUD, batch and inline editing with DataTables selectors        |
+| AG Grid Community (`>=36.3.0 <37`)         | `/ag-grid`                      | Client-side dialog CRUD and batch editing by business ID or selection  |
+| Bootstrap Table                            | `/standalone`                   | Reference implementation using `uniqueId` and complete row replacement |
+| Plotly Table or VTable ListTable           | `/standalone`                   | Reference implementations that edit source records and redraw the view |
+| Application-owned records or a custom Host | `/standalone` or the root entry | Dialog workflows with application-defined targets                      |
 
 ## Installation
 
@@ -65,6 +75,10 @@ Install DataTables when using the DataTables integration:
 ```bash
 npm install datatables.net datatables-alteditor-lite
 ```
+
+For AG Grid, install `ag-grid-community@^36.3.0` alongside the editor and pass
+the grid API to `new AgGridHost(api)`. Both table runtimes are optional peers.
+See [AG Grid Community](docs/ag-grid.md) for a complete setup.
 
 Install Buttons and Select when the registered editor buttons and selection-based
 targeting are needed:
@@ -409,9 +423,10 @@ order, self-hosted paths, and language resources.
 
 ## Events
 
-Listen directly on the host event target. DataTables uses the owned table element;
-Standalone uses the configured or host-created `EventTarget`. Events are
-observation-only, do not bubble, and cannot cancel an operation.
+Listen directly on the host event target. DataTables uses the owned table element,
+AG Grid uses its grid element, and Standalone uses the configured or host-created
+`EventTarget`. Events are observation-only, do not bubble, and cannot cancel an
+operation.
 
 ```ts
 table
@@ -444,6 +459,10 @@ The [reference examples](https://bensitu.github.io/datatables-alteditor-lite/exa
 include [MultiChoice custom fields](examples/multichoice/README.md),
 [parent and child editors](examples/parent-child/README.md), and
 [multipart file submissions](examples/multipart-upload/README.md).
+
+The [table integration examples](https://bensitu.github.io/datatables-alteditor-lite/examples/demo/reference.html#tables)
+demonstrate AG Grid Community, Bootstrap Table, Plotly Table, and VTable ListTable.
+Each page loads its own table library and simulates asynchronous persistence locally.
 
 See [SECURITY.md](SECURITY.md) for private vulnerability reporting.
 

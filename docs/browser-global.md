@@ -9,6 +9,9 @@ table. Call `destroy()` on the active editor before creating its replacement.
 
 ## Quick start
 
+AG Grid applications use the [ESM integration](ag-grid.md). The standalone
+global can also drive [application-owned table views](standalone.md#table-integrations).
+
 This example loads DataTables from its CDN and loads both AltEditorLite assets
 from jsDelivr:
 

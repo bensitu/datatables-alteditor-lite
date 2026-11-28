@@ -48,3 +48,9 @@ and provide independently verified Subresource Integrity metadata with anonymous
 cross-origin loading, or self-host the exact assets. Embedding restrictions such
 as CSP `frame-ancestors` must be delivered through an HTTP response header;
 browser metadata cannot enforce that directive.
+
+The table example pages pin third-party scripts and styles individually.
+Their document policies allow the assets required by each library, including
+the specific styles inserted by Plotly and VTable. These policies apply to the
+example documents. Applications should define policies for the components and
+assets they actually load.

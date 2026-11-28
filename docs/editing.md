@@ -18,6 +18,11 @@ met, regardless of which Edit presentations are enabled.
 
 ## Dialog editing
 
+AG Grid accepts string business IDs and can resolve the grid's current row
+selection. Bootstrap Table, Plotly Table, and VTable examples open standalone
+dialogs with explicit record IDs. See [AG Grid](ag-grid.md) and
+[standalone table integrations](standalone.md#table-integrations).
+
 Dialog Create and Remove are independent of Edit presentation. Dialog Edit
 requires `editing.dialog.enabled` to be true, which is the default. These
 workflows are available through public methods or the optional DataTables Buttons

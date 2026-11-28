@@ -159,6 +159,8 @@ and attempts to restore independent plain-data snapshots for all attempted write
 if a setter throws, including a setter that mutates its input before failing.
 Restored plain records and arrays remain writable so application-owned DataTables
 updates can continue after recovery.
+`AgGridHost` checks the requested and returned row IDs in each client-side
+transaction and attempts local recovery after partial application.
 `StandaloneHost` exposes the capability only when `applyUpdates` is
 configured. These Host guarantees do not roll back remote persistence that has
 already completed.
@@ -179,6 +181,10 @@ duplicates are rejected before hooks or persistence run.
 the Host to remove the captured records locally after confirmation.
 
 ## Refresh
+
+AG Grid recomputes the client-side row model by default. Supply
+`operations.refresh` to replace row data from a remote source. See
+[AG Grid refresh and cleanup](ag-grid.md#refresh-and-cleanup).
 
 `refresh()` runs without a dialog. It safely cancels an active double-click
 Inline session and rejects while a dialog is open or a hover Inline session

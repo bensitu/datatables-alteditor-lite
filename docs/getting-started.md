@@ -5,6 +5,10 @@ complete dialog behavior and optional single-cell editing.
 
 ## Install
 
+Choose the entry for the component that owns your records. For AG Grid Community,
+follow the [AG Grid setup](ag-grid.md). For Bootstrap Table, Plotly Table, or
+VTable ListTable, start with the [standalone table examples](standalone.md#table-integrations).
+
 Install AltEditorLite by itself for neutral or standalone use. Add DataTables 3
 for the DataTables integration; Buttons and Select are optional peers:
 

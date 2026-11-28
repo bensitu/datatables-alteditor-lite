@@ -66,6 +66,12 @@ loaded identifiers to detect duplicates reliably.
 
 ## Internal responsibilities
 
+The AG Grid entry accepts the public grid API through a structural interface.
+The integration suite exercises the installed AG Grid runtime. The packaged
+consumer check also compiles a real `GridApi<TRow>` against the published
+declarations. Consumers of the neutral entries can install the editor
+independently of either grid peer.
+
 - The editor entry implementation assembles host capabilities, configuration,
   and editing controllers. Core modules provide host-independent operation,
   cancellation, validation, and state logic. Shared field and form types live
@@ -94,6 +100,13 @@ or clean up a newer session. Batch operation targets share an immutable field-na
 list calculated once per opening.
 
 ## Adding reference examples
+
+The table integrations have separate pages in `examples/demo/tables/`. Each
+page pins its own external assets and integrity metadata. Local and Pages
+examples use the same document Content Security Policy. When changing a vendor
+version, verify both the asset integrity and any hashes for styles the library
+inserts. The AG Grid page uses external theme styles and the no-style browser
+bundle. The Plotly page uses the strict distribution.
 
 Add a section to `examples/demo/reference.html` with a stable identifier and a
 labelled heading, then add a matching anchor to its example navigation. Keep the

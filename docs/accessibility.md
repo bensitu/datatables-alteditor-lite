@@ -18,6 +18,13 @@ Dialog focus entry and Tab containment exclude controls with negative
 inside the disabled fieldset's first `legend` remain eligible according to native
 HTML behavior.
 
+## Table views
+
+For a chart or Canvas view, expose a labelled record selector and an edit
+button that can be operated from the keyboard. The Plotly and VTable examples
+also present saved values as text. Pointer activation and the keyboard controls
+open the same dialog for the same business ID.
+
 ## Custom controls
 
 For a simple custom control, return the native control as `control`. The editor

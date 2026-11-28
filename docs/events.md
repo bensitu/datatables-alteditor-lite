@@ -17,6 +17,9 @@ Events do not bubble and are not cancelable. Listen directly on the configured
 event target. `StandaloneHost` uses an application-supplied `EventTarget` or
 creates a private one exposed through `host.eventTarget`.
 
+For AG Grid, listen on `host.eventTarget` or `api.getGridElement()`. Mutation
+success follows the grid transaction and its render queue flush.
+
 ## Event names
 
 - `alteditor-lite:open`

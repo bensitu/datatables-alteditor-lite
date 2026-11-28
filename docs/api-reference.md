@@ -6,6 +6,7 @@
 | ------------------------------------------ | -------------------------------------------------------------------------- |
 | `datatables-alteditor-lite`                | Host-neutral editor, contracts, fields, operations, events, and languages. |
 | `datatables-alteditor-lite/datatables`     | DataTables host, facade, registration, selector targets, and snapshots.    |
+| `datatables-alteditor-lite/ag-grid`        | Neutral API, `AgGridHost` and its structural `AgGridApi` type.             |
 | `datatables-alteditor-lite/standalone`     | Neutral API plus the callback-backed standalone host.                      |
 | `datatables-alteditor-lite/style.css`      | Shared Dialog and Inline stylesheet.                                       |
 | `datatables-alteditor-lite/locales/<name>` | Included ESM language module.                                              |
@@ -27,6 +28,10 @@ to load first. The optional `dist/umd/alt-editor-lite-standalone.js` build expos
 `globalThis.AltEditorLiteStandalone` without a DataTables runtime.
 
 ## Neutral AltEditorLite
+
+Construct an AG Grid editor with `new AltEditorLite(new AgGridHost(api), options)`.
+Its target type is `string`. See [AG Grid Community](ag-grid.md) for module
+requirements, ID resolution, transaction behavior and refresh.
 
 ```ts
 new AltEditorLite<TRow, TFormValues, TTarget>(host, options);

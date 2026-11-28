@@ -352,6 +352,7 @@ Built-in fields preserve JavaScript value identity semantics: numeric `1` and
 string `'1'` are different. Custom fields use their definition's `isEqual`
 comparator when present, allowing separately allocated structured values to be
 treated as duplicates. `DataTablesHost` enumerates currently loaded rows;
+`AgGridHost` includes all loaded ordinary records across client-side filtering and pagination.
 `StandaloneHost` uses its configured `records` provider. This is a fast local
 usability check, not a persistence guarantee. Server-side, paged, filtered,
 unloaded, or concurrently changing data can contain values the browser cannot

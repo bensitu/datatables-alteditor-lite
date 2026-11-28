@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.0] - Unreleased
+
+### Added
+
+- Added an optional `/ag-grid` ESM entry for AG Grid Community 36.3 and later
+  36.x releases. The client-side host supports dialog Create, Edit, multi-record
+  Edit, Remove and Refresh with stable string row IDs and optional row selection.
+  Partial grid transactions report an error and attempt to restore affected rows.
+- Added runnable AG Grid, Bootstrap Table, Plotly Table and VTable ListTable
+  examples with asynchronous persistence, failure recovery and keyboard access.
+  The chart examples edit source records and update the associated views.
+
+### Changed
+
+- Shared host checks cover asynchronous reads and complete row replacement.
+  Package checks exercise neutral, AG Grid and DataTables consumers independently.
+  Coverage includes editor orchestration, dialog presentation and the AG Grid host.
+- Updated Rolldown to 1.3.4, ESLint to 10.16.0, lint-staged to 17.6.3,
+  commitlint to 21.3.0 and Playwright to 1.65.1.
+
 ## [0.10.1] - 2026-11-27
 
 ### Changed

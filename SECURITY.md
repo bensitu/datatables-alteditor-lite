@@ -2,9 +2,8 @@
 
 ## Supported versions
 
-The latest supported release receives security fixes. Unsupported DataTables major
-versions and older development revisions do not receive fixes. See the package
-metadata for the supported DataTables and Node ranges.
+The latest supported release receives security fixes. See the package metadata
+for the supported DataTables, AG Grid Community, and Node.js versions.
 
 ## Reporting a vulnerability
 
@@ -18,7 +17,7 @@ disclosure when a fix is available.
 
 ## Security boundaries
 
-The project uses documented DataTables APIs, renders configured text without raw
+The project uses documented grid APIs, renders configured text without raw
 HTML, and does not require jQuery or a third-party UI runtime. Browser input
 constraints are usability features and are not substitutes for server-side
 validation.
