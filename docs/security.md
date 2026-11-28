@@ -51,6 +51,8 @@ browser metadata cannot enforce that directive.
 
 The table example pages pin third-party scripts and styles individually.
 Their document policies allow the assets required by each library, including
-the specific styles inserted by Plotly and VTable. These policies apply to the
-example documents. Applications should define policies for the components and
-assets they actually load.
+the specific styles inserted by Plotly and VTable. On pages with a native
+record selector, a single style-attribute hash permits the
+`text-overflow:inherit` declaration used by mobile WebKit. These policies apply
+to the example documents. Applications should define policies for the components
+and assets they actually load.
