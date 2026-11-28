@@ -22,8 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Shared host checks cover asynchronous reads and complete row replacement.
   Package checks exercise neutral, AG Grid and DataTables consumers independently.
   Coverage includes editor orchestration, dialog presentation and the AG Grid host.
-- Updated Rolldown to 1.3.4, ESLint to 10.16.0, lint-staged to 17.6.3,
-  commitlint to 21.3.0 and Playwright to 1.65.1.
+- Updated Rolldown to 1.3.4, ESLint to 10.16.0, lint-staged to 17.6.3 and
+  commitlint to 21.3.0.
 
 ## [0.10.1] - 2026-11-27
 

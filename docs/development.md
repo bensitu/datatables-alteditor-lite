@@ -9,6 +9,10 @@ tests.
 
 Git 2.32 or newer is required for the development commit hooks.
 
+Browser tests use Playwright 1.64.1. On Windows, the Firefox build supplied
+with 1.65.1 crashes while axe-core examines the custom-field dialog. Include
+this accessibility test when evaluating a newer browser build.
+
 Run `npm outdated` before updating dependencies. Check both the package's Node.js
 engine requirement and the peer requirements of the complete toolchain.
 Keep the lockfile and demonstration CDN versions aligned with dependency changes;
