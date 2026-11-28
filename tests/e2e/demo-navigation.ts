@@ -37,14 +37,17 @@ async function readCdnResource(route: Route): Promise<CdnResource> {
 
 /** Reuses versioned CDN resources without changing content or integrity checks. */
 export async function openDemo(page: Page, fragment = ''): Promise<void> {
-  await page.route('https://cdn.datatables.net/**', async (route) => {
-    const url = route.request().url();
-    let resource = cdnResources.get(url);
-    if (resource === undefined) {
-      resource = await readCdnResource(route);
-      if (resource.status === 200) cdnResources.set(url, resource);
-    }
-    await route.fulfill(resource);
-  });
+  await page.route(
+    /^https:\/\/(?:cdn\.datatables\.net\/|cdn\.jsdelivr\.net\/npm\/)/u,
+    async (route) => {
+      const url = route.request().url();
+      let resource = cdnResources.get(url);
+      if (resource === undefined) {
+        resource = await readCdnResource(route);
+        if (resource.status === 200) cdnResources.set(url, resource);
+      }
+      await route.fulfill(resource);
+    },
+  );
   await page.goto(`http://127.0.0.1:4173/examples/demo/${fragment}`);
 }

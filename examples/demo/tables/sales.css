@@ -1,0 +1,35 @@
+.sales-example {
+  max-width: 56rem;
+}
+
+.sales-example section {
+  min-width: 0;
+  padding: clamp(1rem, 3vw, 2rem);
+  border: 1px solid var(--demo-border);
+  border-radius: 1rem;
+  background: var(--demo-card);
+}
+
+.sales-example h2 {
+  margin: 0;
+  font-size: 1.375rem;
+}
+
+.sales-example table {
+  min-width: 0;
+}
+
+.sales-example .reference-choice {
+  margin-block: 1rem;
+}
+
+.sales-grid {
+  width: 100%;
+  height: 17rem;
+  color-scheme: light;
+}
+
+.sales-figure {
+  width: 100%;
+  height: 26rem;
+}

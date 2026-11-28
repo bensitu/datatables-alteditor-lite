@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js https://cdn.jsdelivr.net/npm/bootstrap@5.3.9/dist/js/bootstrap.bundle.min.js https://cdn.jsdelivr.net/npm/bootstrap-table@1.28.0/dist/bootstrap-table.min.js; style-src 'self' https://cdn.jsdelivr.net/npm/bootstrap@5.3.9/dist/css/bootstrap.min.css https://cdn.jsdelivr.net/npm/bootstrap-table@1.28.0/dist/bootstrap-table.min.css; font-src 'self' data:; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'"
+    />
+    <title>Bootstrap Table · AltEditorLite</title>
+    <link rel="icon" href="../favicon.ico" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.9/dist/css/bootstrap.min.css"
+      integrity="sha384-yEPZ7jP9S0QKiUQ0m3jjsO4ProIW7wvR9gXkI7JOGa2XVsw53Yke2bsdkBbjmmiX"
+      crossorigin="anonymous"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-table@1.28.0/dist/bootstrap-table.min.css"
+      integrity="sha384-0sajwRCyTnwBOV6ttb9YAE5jXLlpx/g/XFmbZmz3nGaTSdo0vx0i4i8K60gPnIAy"
+      crossorigin="anonymous"
+    />
+    <link rel="stylesheet" href="../../../dist/umd/alt-editor-lite.css" />
+    <link rel="stylesheet" href="../demo.css" />
+    <link rel="stylesheet" href="../reference.css" />
+    <link rel="stylesheet" href="./sales.css" />
+  </head>
+  <body>
+    <header class="demo-topbar">
+      <a class="demo-brand" href="../">AltEditorLite</a>
+      <a href="../reference.html#tables">Table integrations</a>
+    </header>
+    <main class="reference-page sales-example">
+      <header class="reference-heading">
+        <h1>Bootstrap Table</h1>
+        <p>
+          Edit a region by its ID. Sort the table or change pages to locate the saved
+          record.
+        </p>
+      </header>
+      <section aria-labelledby="sales-title">
+        <h2 id="sales-title">Regional sales</h2>
+        <div class="reference-actions">
+          <label for="region">Region</label
+          ><select id="region"></select
+          ><button type="button" id="edit">Edit region</button>
+        </div>
+        <table id="sales" aria-label="Regional sales"></table>
+        <label class="reference-choice"
+          ><input type="checkbox" id="fail-save" /> Simulate a failure on the next
+          save</label
+        >
+        <h3 class="reference-result-title">Saved records</h3>
+        <output aria-label="Saved records"></output>
+        <p role="status"></p>
+      </section>
+    </main>
+    <script
+      src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"
+      integrity="sha384-1H217gwSVyLSIfaLxHbE7dRb3v4mYCKbpQvzx0cegeju1MVsGrX5xXxAvs/HgeFs"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.9/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-WyOxWvTyr1QaMPfiPJSv76iReVthorl5uWlFtZPyK0IEB0hGzo9y5Bp9mYanr8Bu"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap-table@1.28.0/dist/bootstrap-table.min.js"
+      integrity="sha384-8rz2EDULrxGjqTDNDyKc9zEpyD/RthtjiBdE5Prl4FF0Qdevv//gAu603sSFABcK"
+      crossorigin="anonymous"
+    ></script>
+    <script type="module" src="./bootstrap-table.js"></script>
+  </body>
+</html>

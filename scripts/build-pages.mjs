@@ -31,6 +31,9 @@ await Promise.all([
 ]);
 await Promise.all([
   cp(distributionDirectory, resolve(outputDirectory, 'dist'), { recursive: true }),
+  cp(resolve(demoDirectory, 'tables'), resolve(outputDirectory, 'examples/demo/tables'), {
+    recursive: true,
+  }),
   ...demoAssetPaths.map((assetPath) =>
     copyFile(
       resolve(demoDirectory, assetPath),

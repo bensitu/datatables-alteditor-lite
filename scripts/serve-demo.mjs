@@ -77,10 +77,16 @@ const server = createServer(async (request, response) => {
       contentTypeByExtension.get(extname(filePath).toLowerCase()) ??
       'application/octet-stream';
     const content = await readFile(filePath);
+    const defaultPolicy =
+      "default-src 'self'; script-src 'self' https://cdn.datatables.net; style-src 'self' https://cdn.datatables.net; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'";
+    const documentPolicy = contentType.startsWith('text/html')
+      ? /<meta\s+http-equiv="Content-Security-Policy"\s+content="([^"]+)"/iu.exec(
+          content.toString('utf8'),
+        )?.[1]
+      : undefined;
     response.writeHead(200, {
       'cache-control': 'no-store',
-      'content-security-policy':
-        "default-src 'self'; script-src 'self' https://cdn.datatables.net; style-src 'self' https://cdn.datatables.net; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
+      'content-security-policy': `${documentPolicy ?? defaultPolicy}; frame-ancestors 'none'`,
       'content-type': contentType,
       'x-content-type-options': 'nosniff',
     });

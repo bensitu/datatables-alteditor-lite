@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net/npm/ag-grid-community@36.3.0/dist/ag-grid-community.min.noStyle.js; style-src 'self' https://cdn.jsdelivr.net/npm/ag-grid-community@36.3.0/styles/ag-grid.min.css https://cdn.jsdelivr.net/npm/ag-grid-community@36.3.0/styles/ag-theme-quartz.min.css; font-src 'self' data:; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'"
+    />
+    <title>AG Grid Community · AltEditorLite</title>
+    <link rel="icon" href="../favicon.ico" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/ag-grid-community@36.3.0/styles/ag-grid.min.css"
+      integrity="sha384-ibuT4DExQB89urFsREyP+E/VymUN6pH8WSqxDV/38zLbBPQRXYNc0HVSwhtAovvP"
+      crossorigin="anonymous"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/ag-grid-community@36.3.0/styles/ag-theme-quartz.min.css"
+      integrity="sha384-SsHwxjc4hc2bB6/Bq8lyEECFx9c14SX2VZNlsedQ09fuvEyrLuHgMMkvUbM7hl08"
+      crossorigin="anonymous"
+    />
+    <link rel="stylesheet" href="../../../dist/umd/alt-editor-lite.css" />
+    <link rel="stylesheet" href="../demo.css" />
+    <link rel="stylesheet" href="../reference.css" />
+    <link rel="stylesheet" href="./sales.css" />
+  </head>
+  <body>
+    <header class="demo-topbar">
+      <a class="demo-brand" href="../">AltEditorLite</a>
+      <a href="../reference.html#tables">Table integrations</a>
+    </header>
+    <main class="reference-page sales-example">
+      <header class="reference-heading">
+        <h1>AG Grid Community</h1>
+        <p>
+          Select one or more regions to edit their sales. Create, remove, or refresh
+          records using the client-side row model.
+        </p>
+      </header>
+      <section aria-labelledby="sales-title">
+        <h2 id="sales-title">Regional sales</h2>
+        <div class="reference-actions">
+          <button type="button" id="create">Create region</button
+          ><button type="button" id="edit" disabled>Edit selection</button
+          ><button type="button" id="remove" disabled>Remove selection</button
+          ><button type="button" id="refresh">Refresh</button>
+        </div>
+        <div id="sales" class="sales-grid ag-theme-quartz"></div>
+        <label class="reference-choice"
+          ><input type="checkbox" id="fail-save" /> Simulate a failure on the next
+          save</label
+        >
+        <h3 class="reference-result-title">Saved records</h3>
+        <output aria-label="Saved records"></output>
+        <p role="status"></p>
+      </section>
+    </main>
+    <script
+      src="https://cdn.jsdelivr.net/npm/ag-grid-community@36.3.0/dist/ag-grid-community.min.noStyle.js"
+      integrity="sha384-tFJTJV0RpbYo4o6kuQZqSJT2hKZSKstuBqURzDN2odsUkfw0yFVVhHX+q2hfK7jq"
+      crossorigin="anonymous"
+    ></script>
+    <script type="module" src="./ag-grid.js"></script>
+  </body>
+</html>
