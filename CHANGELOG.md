@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   36.x releases. The client-side host supports dialog Create, Edit, multi-record
   Edit, Remove and Refresh with stable string row IDs and optional row selection.
   Partial grid transactions report an error and attempt to restore affected rows.
+  Destroying the grid closes its editor and aborts pending operation signals.
 - Added runnable AG Grid, Bootstrap Table, Plotly Table and VTable ListTable
   examples with asynchronous persistence, failure recovery and keyboard access.
   The chart examples edit source records and update the associated views.

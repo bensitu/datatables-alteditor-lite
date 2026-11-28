@@ -7,12 +7,19 @@ import {
 import { READ_LOADED_ROWS } from '../core/local-uniqueness-validator.js';
 import { createReadonlyRowView } from '../core/readonly-row-view.js';
 import { READ_RECORDS } from '../host/host-record-reader.js';
+import { getEditorInstance } from '../instance/editor-instance-store.js';
 import { StandaloneHost } from '../standalone/standalone-host.js';
 
 import { AgGridRecords } from './ag-grid-records.js';
 
 import type { HostSelectionCapability } from '../host/editor-host.js';
 import type { AgGridApi } from './ag-grid-api.js';
+
+function hasDestroyMethod(instance: object | null): instance is { destroy(): void } {
+  return (
+    instance !== null && 'destroy' in instance && typeof instance.destroy === 'function'
+  );
+}
 
 /** Dialog editing for an AG Grid client-side row model with stable string row IDs. */
 export class AgGridHost<TRow extends object>
@@ -26,7 +33,12 @@ export class AgGridHost<TRow extends object>
   declare public readonly entries: NonNullable<StandaloneHost<TRow, string>['entries']>;
   #isDestroyed = false;
   readonly #onGridDestroy = (): void => {
-    this.destroy();
+    const editor = getEditorInstance(this.ownershipKey);
+    try {
+      if (hasDestroyMethod(editor)) editor.destroy();
+    } finally {
+      this.destroy();
+    }
   };
 
   public constructor(private readonly api: AgGridApi<TRow>) {

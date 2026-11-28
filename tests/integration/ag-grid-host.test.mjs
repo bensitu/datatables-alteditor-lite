@@ -1,7 +1,7 @@
 import { AllCommunityModule, createGrid } from 'ag-grid-community';
 import { afterEach, expect, it, vi } from 'vitest';
 
-import { AgGridHost } from '../../src/ag-grid.js';
+import { AgGridHost, AltEditorLite } from '../../src/ag-grid.js';
 
 import { describeEditorHostContract } from './editor-host-contract.js';
 
@@ -88,16 +88,23 @@ it('rejects changed IDs and cancels an outstanding refresh when the grid is dest
     host.applyUpdate('row-a', { id: 'row-b', name: 'Updated', rank: 3 }, context),
   ).rejects.toThrow('retain its row ID');
   expect(host.read('row-b').name).toBe('Beta');
-  let finish;
-  const pending = host.refresh(
-    context.signal,
-    () =>
-      new Promise((resolve) => {
-        finish = resolve;
-      }),
-  );
+  const started = Promise.withResolvers();
+  const finished = Promise.withResolvers();
+  const editor = new AltEditorLite(host, {
+    fields: [{ name: 'name', type: 'text', label: 'Name' }],
+    operations: {
+      refresh({ signal }) {
+        started.resolve(signal);
+        return finished.promise;
+      },
+    },
+  });
+  const pending = editor.refresh();
+  const signal = await started.promise;
   api.destroy();
-  await expect(pending).rejects.toMatchObject({ name: 'AbortError' });
-  finish();
+  await pending;
+  finished.resolve();
+  expect(signal.aborted).toBe(true);
+  expect(() => editor.getState()).toThrow();
   expect(() => host.read('row-a')).toThrow();
 });

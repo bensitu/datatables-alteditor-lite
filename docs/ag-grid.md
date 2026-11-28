@@ -102,7 +102,8 @@ checking the signal. Local-only applications can omit this callback.
 
 Call `editor.destroy()` when removing the editor, then `api.destroy()` when
 removing the grid. Destroying the host releases its listener and cancels
-pending host work. The grid's `gridPreDestroyed` event also releases the host.
+pending host work. If the grid is destroyed first, its `gridPreDestroyed` event
+destroys the active editor, closes its dialog and aborts pending operation signals.
 
 [Runnable example](https://bensitu.github.io/datatables-alteditor-lite/examples/demo/tables/ag-grid.html) ·
 [Example source](../examples/demo/tables/ag-grid.js) ·
